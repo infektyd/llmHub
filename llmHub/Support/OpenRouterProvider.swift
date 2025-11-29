@@ -1,26 +1,26 @@
 import Foundation
 
-struct OpenRouterProvider: LLMProvider, Sendable {
+struct OpenRouterProvider: LLMProvider {
     let id: String = "openrouter"
     let name: String = "OpenRouter"
-
+    
     private let keychain: KeychainStore
     private let config: ProvidersConfig.OpenRouter
-
+    
     init(keychain: KeychainStore, config: ProvidersConfig.OpenRouter) {
         self.keychain = keychain
         self.config = config
     }
-
+    
     var endpoint: URL {
-        // Replace with the official OpenRouter endpoint
-        config.baseURL ?? URL(string: "https://openrouter.ai/api")!
+        if let url = config.baseURL { return url }
+        return URL(string: "https://openrouter.ai/api/v1")!
     }
-
+    
     var supportsStreaming: Bool { true }
-
+    
     var availableModels: [LLMModel] { config.models }
-
+    
     var defaultHeaders: [String : String] {
         guard let key = keychain.apiKey(for: .openRouter) else { return [:] }
         return [
@@ -28,42 +28,144 @@ struct OpenRouterProvider: LLMProvider, Sendable {
             "Content-Type": "application/json"
         ]
     }
-
+    
     var pricing: PricingMetadata {
         config.pricing ?? PricingMetadata(inputPer1KUSD: 0, outputPer1KUSD: 0, currency: "USD")
     }
-
+    
     func buildRequest(messages: [ChatMessage], model: String) throws -> URLRequest {
-        guard defaultHeaders["Authorization"] != nil else { throw LLMProviderError.authenticationMissing }
-        // Replace path and payload structure per OpenRouter docs
-        let url = endpoint.appendingPathComponent("/v1/chat/completions")
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        defaultHeaders.forEach { request.setValue($1, forHTTPHeaderField: $0) }
-        let payload = OpenRouterPayload(model: model, messages: messages.map { OpenRouterMessage(role: $0.role.rawValue, content: $0.content) })
-        request.httpBody = try JSONEncoder().encode(payload)
-        return request
+        try buildRequest(messages: messages, model: model, jsonMode: false)
     }
 
+    func buildRequest(messages: [ChatMessage], model: String, jsonMode: Bool) throws -> URLRequest {
+        guard let apiKey = keychain.apiKey(for: .openRouter) else {
+            throw LLMProviderError.authenticationMissing
+        }
+        
+        let manager = OpenRouterManager(apiKey: apiKey)
+        
+        // Map messages
+        let orMessages = messages.map { msg -> ORMessage in
+            // Check for parts
+            if !msg.parts.isEmpty {
+                var parts: [ORContentPart] = []
+                
+                if !msg.content.isEmpty {
+                    parts.append(.text(msg.content))
+                }
+                
+                for part in msg.parts {
+                    switch part {
+                    case .text(let t):
+                        if t != msg.content { parts.append(.text(t)) }
+                    case .image(let data, _):
+                        parts.append(.image(base64: data.base64EncodedString()))
+                    case .imageURL(let url):
+                        parts.append(.image(url: url.absoluteString))
+                    }
+                }
+                
+                if parts.isEmpty {
+                    return ORMessage(role: msg.role.rawValue, content: .text(msg.content))
+                }
+                return ORMessage(role: msg.role.rawValue, content: .parts(parts))
+            } else {
+                return ORMessage(role: msg.role.rawValue, content: .text(msg.content))
+            }
+        }
+        
+        // Default to non-streaming request builder
+        return try manager.makeChatRequest(
+            messages: orMessages,
+            model: model,
+            stream: false
+        )
+    }
+    
     func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {
         AsyncThrowingStream { continuation in
-            // TODO: Implement streaming per OpenRouter docs
-            continuation.finish()
+            Task {
+                do {
+                    // 1. Modify request to enable streaming if not already
+                    var streamRequest = request
+                    // Ensure stream=true in body
+                    if let bodyData = request.httpBody,
+                       var json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any] {
+                        json["stream"] = true
+                        streamRequest.httpBody = try JSONSerialization.data(withJSONObject: json)
+                    }
+                    streamRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+                    
+                    // 2. Execute
+                    let (result, response) = try await URLSession.shared.bytes(for: streamRequest)
+                    
+                    guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+                        var errorText = ""
+                        for try await line in result.lines { errorText += line }
+                        continuation.yield(.error(.server(reason: errorText.isEmpty ? "Unknown stream error" : errorText)))
+                        continuation.finish()
+                        return
+                    }
+                    
+                    var fullText = ""
+                    
+                    for try await line in result.lines {
+                        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if trimmed.hasPrefix("data: ") {
+                            let jsonStr = String(trimmed.dropFirst(6))
+                            if jsonStr == "[DONE]" { break }
+                            
+                            if let data = jsonStr.data(using: .utf8),
+                               let chunk = try? JSONDecoder().decode(ORStreamChunk.self, from: data) {
+                                
+                                if let choice = chunk.choices.first, let content = choice.delta.content {
+                                    fullText += content
+                                    continuation.yield(.token(text: content))
+                                }
+                                
+                                // Usage in stream (OpenRouter often sends this in the last chunk or separate event)
+                                if let usage = chunk.usage {
+                                    continuation.yield(.usage(TokenUsage(
+                                        inputTokens: usage.promptTokens,
+                                        outputTokens: usage.completionTokens,
+                                        cachedTokens: 0
+                                    )))
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Final completion
+                    let message = ChatMessage(
+                        id: UUID(),
+                        role: .assistant,
+                        content: fullText,
+                        parts: [], // Initialize with empty parts
+                        createdAt: Date(),
+                        codeBlocks: [],
+                        tokenUsage: nil,
+                        costBreakdown: nil
+                    )
+                    continuation.yield(.completion(message: message))
+                    continuation.finish()
+                    
+                } catch {
+                    continuation.yield(.error(.network(error as? URLError ?? URLError(.unknown))))
+                    continuation.finish()
+                }
+            }
         }
     }
-
+    
     func parseTokenUsage(from response: Data) throws -> TokenUsage? {
-        // TODO: Parse token usage per OpenRouter response schema
+        let decoded = try? JSONDecoder().decode(ORChatResponse.self, from: response)
+        if let usage = decoded?.usage {
+            return TokenUsage(
+                inputTokens: usage.promptTokens,
+                outputTokens: usage.completionTokens,
+                cachedTokens: 0
+            )
+        }
         return nil
     }
-}
-
-private struct OpenRouterPayload: Encodable {
-    let model: String
-    let messages: [OpenRouterMessage]
-}
-
-private struct OpenRouterMessage: Encodable {
-    let role: String
-    let content: String
 }

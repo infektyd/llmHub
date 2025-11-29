@@ -1,8 +1,8 @@
 import Foundation
 
-struct XAIProvider: LLMProvider, Sendable {
+struct XAIProvider: LLMProvider {
     let id: String = "xai"
-    let name: String = "xAI"
+    let name: String = "xAI (Grok)"
 
     private let keychain: KeychainStore
     private let config: ProvidersConfig.XAI
@@ -13,8 +13,8 @@ struct XAIProvider: LLMProvider, Sendable {
     }
 
     var endpoint: URL {
-        // Replace with the official xAI endpoint
-        config.baseURL ?? URL(string: "https://api.x.ai")!
+        if let url = config.baseURL { return url }
+        return URL(string: "https://api.x.ai/v1")!
     }
 
     var supportsStreaming: Bool { true }
@@ -34,36 +34,134 @@ struct XAIProvider: LLMProvider, Sendable {
     }
 
     func buildRequest(messages: [ChatMessage], model: String) throws -> URLRequest {
-        guard defaultHeaders["Authorization"] != nil else { throw LLMProviderError.authenticationMissing }
-        // Replace path and payload structure per xAI docs
-        let url = endpoint.appendingPathComponent("/v1/chat/completions")
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        defaultHeaders.forEach { request.setValue($1, forHTTPHeaderField: $0) }
-        let payload = XAIPayload(model: model, messages: messages.map { XAIMessage(role: $0.role.rawValue, content: $0.content) })
-        request.httpBody = try JSONEncoder().encode(payload)
-        return request
+        try buildRequest(messages: messages, model: model, jsonMode: false)
+    }
+
+    func buildRequest(messages: [ChatMessage], model: String, jsonMode: Bool) throws -> URLRequest {
+        guard let apiKey = keychain.apiKey(for: .xai) else {
+            throw LLMProviderError.authenticationMissing
+        }
+        
+        let manager = XAIManager(apiKey: apiKey)
+        
+        // Map messages
+        let xaiMessages = messages.map { msg -> XAIChatMessage in
+            // Check for parts
+            if !msg.parts.isEmpty {
+                var xaiParts: [XAIChatMessage.Part] = []
+                
+                // Add text if present
+                if !msg.content.isEmpty {
+                    xaiParts.append(.text(msg.content))
+                }
+                
+                for part in msg.parts {
+                    switch part {
+                    case .text(let t):
+                        // If content is already populated, this might be dup, but let's trust parts if present
+                        if t != msg.content { xaiParts.append(.text(t)) }
+                    case .image(let data, _):
+                         // XAI supports base64 images
+                         xaiParts.append(.image(base64: data.base64EncodedString()))
+                    case .imageURL:
+                        // Not directly supported in XAIChatMessage helper yet, but schema supports it.
+                        // For now, ignore or fetch? Assuming data based.
+                        break 
+                    }
+                }
+                
+                if xaiParts.isEmpty {
+                     return XAIChatMessage(role: msg.role.rawValue, content: msg.content)
+                }
+                
+                return XAIChatMessage(role: msg.role.rawValue, parts: xaiParts)
+            } else {
+                // Legacy / Text only
+                return XAIChatMessage(role: msg.role.rawValue, content: msg.content)
+            }
+        }
+        
+        // Default to non-streaming
+        return try manager.makeChatRequest(
+            messages: xaiMessages,
+            model: model,
+            stream: false
+        )
     }
 
     func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {
         AsyncThrowingStream { continuation in
-            // TODO: Implement streaming per xAI docs
-            continuation.finish()
+            Task {
+                do {
+                    // 1. Modify request to enable streaming
+                    var streamRequest = request
+                    if let bodyData = request.httpBody,
+                       var json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any] {
+                        json["stream"] = true
+                        streamRequest.httpBody = try JSONSerialization.data(withJSONObject: json)
+                    }
+                    
+                    // 2. Execute
+                    let (result, response) = try await URLSession.shared.bytes(for: streamRequest)
+                    
+                    guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+                         var errorText = ""
+                         for try await line in result.lines { errorText += line }
+                         continuation.yield(.error(.server(reason: errorText.isEmpty ? "Unknown stream error" : errorText)))
+                         continuation.finish()
+                         return
+                    }
+                    
+                    var fullText = ""
+                    
+                    for try await line in result.lines {
+                        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if trimmed.hasPrefix("data: ") {
+                            let jsonStr = String(trimmed.dropFirst(6))
+                            if jsonStr == "[DONE]" { break }
+                            
+                            if let data = jsonStr.data(using: .utf8),
+                               let chunk = try? JSONDecoder().decode(XAIChatStreamChunk.self, from: data) {
+                                
+                                if let choice = chunk.choices.first, let content = choice.delta.content {
+                                    fullText += content
+                                    continuation.yield(.token(text: content))
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Final completion
+                    let message = ChatMessage(
+                        id: UUID(),
+                        role: .assistant,
+                        content: fullText,
+                        parts: [], // Initialize with empty parts
+                        createdAt: Date(),
+                        codeBlocks: [],
+                        tokenUsage: nil,
+                        costBreakdown: nil
+                    )
+                    continuation.yield(.completion(message: message))
+                    continuation.finish()
+                    
+                } catch {
+                    continuation.yield(.error(.network(error as? URLError ?? URLError(.unknown))))
+                    continuation.finish()
+                }
+            }
         }
     }
 
     func parseTokenUsage(from response: Data) throws -> TokenUsage? {
-        // TODO: Parse token usage per xAI response schema
+        let decoded = try? JSONDecoder().decode(XAIChatResponse.self, from: response)
+        if let usage = decoded?.usage {
+            return TokenUsage(
+                inputTokens: usage.prompt_tokens,
+                outputTokens: usage.completion_tokens,
+                cachedTokens: 0
+            )
+        }
         return nil
     }
-}
-
-private struct XAIPayload: Encodable {
-    let model: String
-    let messages: [XAIMessage]
-}
-
-private struct XAIMessage: Encodable {
-    let role: String
-    let content: String
 }
