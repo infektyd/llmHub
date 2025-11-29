@@ -27,6 +27,7 @@
 		A3C71F262ED9389A0088DF32 /* llmHub.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = llmHub.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3C71F372ED9389B0088DF32 /* llmHubTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = llmHubTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3C71F412ED9389B0088DF32 /* llmHubUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = llmHubUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A3C71F9B2EDB57F60088DF32 /* Untitled.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Untitled.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -34,6 +35,49 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+			);
+			target = A3C71F252ED9389A0088DF32 /* llmHub */;
+		};
+		A3C71FC82EDB64EE0088DF32 /* Exceptions for "Tests" folder in "llmHub" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				llmHubTests/llmHubTests.swift,
+				llmHubUITests/llmHubUITests.swift,
+				llmHubUITests/llmHubUITestsLaunchTests.swift,
+			);
+			target = A3C71F252ED9389A0088DF32 /* llmHub */;
+		};
+		A3C71FC92EDB64EE0088DF32 /* Exceptions for "Tests" folder in "llmHubTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				llmHubTests/llmHubTests.swift,
+			);
+			target = A3C71F362ED9389B0088DF32 /* llmHubTests */;
+		};
+		A3C71FCA2EDB64EE0088DF32 /* Exceptions for "Tests" folder in "llmHubUITests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				llmHubUITests/llmHubUITests.swift,
+				llmHubUITests/llmHubUITestsLaunchTests.swift,
+			);
+			target = A3C71F402ED9389B0088DF32 /* llmHubUITests */;
+		};
+		A3C71FE82EDB64FC0088DF32 /* Exceptions for "Docs" folder in "llmHub" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"client integration/additional_mistral_information.md",
+				"client integration/anthropic_integration.md",
+				"client integration/gemini_integration.md",
+				"client integration/Mistral_Integration.md",
+				"client integration/openai_integration.md",
+				"client integration/openrouter_integration.md",
+				"client integration/xAiGrok_integration.md",
+				TODO/anthropic_TODO.md,
+				TODO/gemini_TODO.md,
+				TODO/mistral_TODO.md,
+				TODO/openai_TODO.md,
+				TODO/openrouter_TODO.md,
+				TODO/xai_TODO.md,
 			);
 			target = A3C71F252ED9389A0088DF32 /* llmHub */;
 		};
@@ -48,14 +92,22 @@
 			path = llmHub;
 			sourceTree = "<group>";
 		};
-		A3C71F3A2ED9389B0088DF32 /* llmHubTests */ = {
+		A3C71FBF2EDB64DD0088DF32 /* Tests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = llmHubTests;
+			exceptions = (
+				A3C71FC82EDB64EE0088DF32 /* Exceptions for "Tests" folder in "llmHub" target */,
+				A3C71FC92EDB64EE0088DF32 /* Exceptions for "Tests" folder in "llmHubTests" target */,
+				A3C71FCA2EDB64EE0088DF32 /* Exceptions for "Tests" folder in "llmHubUITests" target */,
+			);
+			path = Tests;
 			sourceTree = "<group>";
 		};
-		A3C71F442ED9389B0088DF32 /* llmHubUITests */ = {
+		A3C71FCB2EDB64F50088DF32 /* Docs */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = llmHubUITests;
+			exceptions = (
+				A3C71FE82EDB64FC0088DF32 /* Exceptions for "Docs" folder in "llmHub" target */,
+			);
+			path = Docs;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -89,15 +141,16 @@
 			isa = PBXGroup;
 			children = (
 				A3C71F282ED9389A0088DF32 /* llmHub */,
-				A3C71F3A2ED9389B0088DF32 /* llmHubTests */,
-				A3C71F442ED9389B0088DF32 /* llmHubUITests */,
 				A3C71F272ED9389A0088DF32 /* Products */,
+				A3C71FBF2EDB64DD0088DF32 /* Tests */,
+				A3C71FCB2EDB64F50088DF32 /* Docs */,
 			);
 			sourceTree = "<group>";
 		};
 		A3C71F272ED9389A0088DF32 /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				A3C71F9B2EDB57F60088DF32 /* Untitled.swift */,
 				A3C71F262ED9389A0088DF32 /* llmHub.app */,
 				A3C71F372ED9389B0088DF32 /* llmHubTests.xctest */,
 				A3C71F412ED9389B0088DF32 /* llmHubUITests.xctest */,
@@ -122,6 +175,8 @@
 			);
 			fileSystemSynchronizedGroups = (
 				A3C71F282ED9389A0088DF32 /* llmHub */,
+				A3C71FBF2EDB64DD0088DF32 /* Tests */,
+				A3C71FCB2EDB64F50088DF32 /* Docs */,
 			);
 			name = llmHub;
 			packageProductDependencies = (
@@ -143,9 +198,6 @@
 			dependencies = (
 				A3C71F392ED9389B0088DF32 /* PBXTargetDependency */,
 			);
-			fileSystemSynchronizedGroups = (
-				A3C71F3A2ED9389B0088DF32 /* llmHubTests */,
-			);
 			name = llmHubTests;
 			packageProductDependencies = (
 			);
@@ -165,9 +217,6 @@
 			);
 			dependencies = (
 				A3C71F432ED9389B0088DF32 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				A3C71F442ED9389B0088DF32 /* llmHubUITests */,
 			);
 			name = llmHubUITests;
 			packageProductDependencies = (

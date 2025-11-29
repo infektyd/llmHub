@@ -1,75 +1,172 @@
 import Foundation
 
-struct OpenAIProvider: LLMProvider, Sendable {
+struct OpenAIProvider: LLMProvider {
     let id: String = "openai"
     let name: String = "OpenAI"
-    let endpoint: URL = URL(string: "https://api.openai.com/v1/chat/completions")!
-    let supportsStreaming: Bool = true
-
-    let availableModels: [LLMModel] = [
-        .init(id: "gpt-4o", displayName: "GPT-4o", contextWindow: 128_000, supportsToolUse: true, maxOutputTokens: 16_384)
-    ]
-
-    let pricing: PricingMetadata = PricingMetadata(inputPer1KUSD: 0.005, outputPer1KUSD: 0.015, currency: "USD")
-
+    
     private let keychain: KeychainStore
-
-    init(keychain: KeychainStore) {
+    private let config: ProvidersConfig.OpenAI
+    
+    init(keychain: KeychainStore, config: ProvidersConfig.OpenAI) {
         self.keychain = keychain
+        self.config = config
     }
-
-    var defaultHeaders: [String: String] {
+    
+    var endpoint: URL {
+        if let url = config.baseURL { return url }
+        return URL(string: "https://api.openai.com/v1")!
+    }
+    
+    var supportsStreaming: Bool { true }
+    
+    var availableModels: [LLMModel] { config.models }
+    
+    var defaultHeaders: [String : String] {
         guard let key = keychain.apiKey(for: .openAI) else { return [:] }
         return [
             "Authorization": "Bearer \(key)",
             "Content-Type": "application/json"
         ]
     }
-
+    
+    var pricing: PricingMetadata {
+        config.pricing ?? PricingMetadata(inputPer1KUSD: 0.005, outputPer1KUSD: 0.015, currency: "USD")
+    }
+    
     func buildRequest(messages: [ChatMessage], model: String) throws -> URLRequest {
-        guard defaultHeaders["Authorization"] != nil else {
+        try buildRequest(messages: messages, model: model, jsonMode: false)
+    }
+    
+    func buildRequest(messages: [ChatMessage], model: String, jsonMode: Bool) throws -> URLRequest {
+        guard let apiKey = keychain.apiKey(for: .openAI) else {
             throw LLMProviderError.authenticationMissing
         }
-        var request = URLRequest(url: endpoint)
-        request.httpMethod = "POST"
-        defaultHeaders.forEach { header, value in
-            request.setValue(value, forHTTPHeaderField: header)
+        
+        let manager = OpenAIManager(apiKey: apiKey)
+        
+        // Map messages
+        let openAIMessages = messages.map { msg -> OpenAIChatMessage in
+            // Check for parts
+            if !msg.parts.isEmpty {
+                var parts: [OpenAIContentPart] = []
+                
+                if !msg.content.isEmpty {
+                    parts.append(.text(msg.content))
+                }
+                
+                for part in msg.parts {
+                    switch part {
+                    case .text(let t):
+                        if t != msg.content { parts.append(.text(t)) }
+                    case .image(let data, _):
+                        parts.append(.image(base64: data.base64EncodedString()))
+                    case .imageURL(let url):
+                        parts.append(.image(url: url.absoluteString))
+                    }
+                }
+                
+                if parts.isEmpty {
+                    return OpenAIChatMessage(role: msg.role.rawValue, content: .text(msg.content))
+                }
+                return OpenAIChatMessage(role: msg.role.rawValue, content: .parts(parts))
+            } else {
+                return OpenAIChatMessage(role: msg.role.rawValue, content: .text(msg.content))
+            }
         }
-        let payload = OpenAIPayload(
+        
+        // Default to non-streaming request builder
+        return try manager.makeChatRequest(
+            messages: openAIMessages,
             model: model,
-            messages: messages.map { ["role": $0.role.rawValue, "content": $0.content] },
-            temperature: nil,
-            maxTokens: nil,
-            topP: nil,
-            frequencyPenalty: nil,
-            presencePenalty: nil,
-            stop: nil
+            stream: false,
+            responseFormat: jsonMode ? OpenAIResponseFormat(type: "json_object") : nil
         )
-        request.httpBody = try JSONEncoder().encode(payload)
-        return request
     }
-
+    
     func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {
         AsyncThrowingStream { continuation in
-            // TODO: Implement streaming (SSE/Chunked) parsing for real responses.
-            // For now, immediately finish to keep the pipeline compiling.
-            continuation.finish()
+            Task {
+                do {
+                    // 1. Modify request to enable streaming if not already
+                    var streamRequest = request
+                    // Ensure stream=true in body
+                    if let bodyData = request.httpBody,
+                       var json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any] {
+                        json["stream"] = true
+                        streamRequest.httpBody = try JSONSerialization.data(withJSONObject: json)
+                    }
+                    streamRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+                    
+                    // 2. Execute
+                    let (result, response) = try await URLSession.shared.bytes(for: streamRequest)
+                    
+                    guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+                        var errorText = ""
+                        for try await line in result.lines { errorText += line }
+                        continuation.yield(.error(.server(reason: errorText.isEmpty ? "Unknown stream error" : errorText)))
+                        continuation.finish()
+                        return
+                    }
+                    
+                    var fullText = ""
+                    
+                    for try await line in result.lines {
+                        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if trimmed.hasPrefix("data: ") {
+                            let jsonStr = String(trimmed.dropFirst(6))
+                            if jsonStr == "[DONE]" { break }
+                            
+                            if let data = jsonStr.data(using: .utf8),
+                               let chunk = try? JSONDecoder().decode(OpenAIStreamChunk.self, from: data) {
+                                
+                                if let choice = chunk.choices.first, let content = choice.delta.content {
+                                    fullText += content
+                                    continuation.yield(.token(text: content))
+                                }
+                                
+                                // Usage in final chunk (sometimes provided by OpenAI)
+                                if let usage = chunk.usage {
+                                    continuation.yield(.usage(TokenUsage(
+                                        inputTokens: usage.promptTokens,
+                                        outputTokens: usage.completionTokens,
+                                        cachedTokens: 0
+                                    )))
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Final completion
+                    let message = ChatMessage(
+                        id: UUID(),
+                        role: .assistant,
+                        content: fullText,
+                        parts: [], // Initialize with empty parts
+                        createdAt: Date(),
+                        codeBlocks: [],
+                        tokenUsage: nil,
+                        costBreakdown: nil
+                    )
+                    continuation.yield(.completion(message: message))
+                    continuation.finish()
+                    
+                } catch {
+                    continuation.yield(.error(.network(error as? URLError ?? URLError(.unknown))))
+                    continuation.finish()
+                }
+            }
         }
     }
-
+    
     func parseTokenUsage(from response: Data) throws -> TokenUsage? {
-        // TODO: Parse actual token usage from OpenAI response.
+        let decoded = try? JSONDecoder().decode(OpenAIChatResponse.self, from: response)
+        if let usage = decoded?.usage {
+            return TokenUsage(
+                inputTokens: usage.promptTokens,
+                outputTokens: usage.completionTokens,
+                cachedTokens: 0
+            )
+        }
         return nil
     }
-}
-
-private struct OpenAIPayload: Encodable {
-    let model: String
-    let messages: [[String: String]]
-    let temperature: Double?
-    let maxTokens: Int?
-    let topP: Double?
-    let frequencyPenalty: Double?
-    let presencePenalty: Double?
-    let stop: [String]?
 }

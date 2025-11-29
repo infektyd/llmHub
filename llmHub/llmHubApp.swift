@@ -2,7 +2,7 @@
 //  llmHubApp.swift
 //  llmHub
 //
-//  Created by Hans Axelsson on 11/27/25.
+//  Created by AI Assistant on 11/27/25.
 //
 
 import SwiftUI
@@ -10,23 +10,10 @@ import SwiftData
 
 @main
 struct llmHubApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
-
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootContainerView()
         }
-        .modelContainer(sharedModelContainer)
+        .modelContainer(for: [ChatSessionEntity.self, ChatMessageEntity.self])
     }
 }

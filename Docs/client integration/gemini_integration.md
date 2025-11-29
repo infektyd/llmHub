@@ -21,7 +21,7 @@ import Foundation
 
 // MARK: - Gemini Manager
 /// A clean, unified manager for Google's Gemini API (Text, Vision, Thinking, Imagen, Veo).
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 26.1, macOS 26.1, *)
 public class GeminiManager {
     private let apiKey: String
     private let baseURL = "https://generativelanguage.googleapis.com/v1beta"

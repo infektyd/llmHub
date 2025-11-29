@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Gemini Manager
 /// A clean, unified manager for Google's Gemini API (Text, Vision, Thinking, Imagen, Veo).
-@available(iOS 15.0, macOS 12.0, *)
+@available(iOS 26.1, macOS 26.1, *)
 public class GeminiManager {
     private let apiKey: String
     private let baseURL = "https://generativelanguage.googleapis.com/v1beta"
@@ -27,8 +27,108 @@ public class GeminiManager {
         thinkingLevel: ThinkingLevel = .off,
         history: [Content] = []
     ) async throws -> GenerationResponse {
+        let request = try makeGenerateContentRequest(
+            prompt: prompt,
+            files: files,
+            model: model,
+            thinkingLevel: thinkingLevel,
+            history: history,
+            stream: false
+        )
         
-        let endpoint = "\(baseURL)/models/\(model):generateContent?key=\(apiKey)"
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+            if let errorText = String(data: data, encoding: .utf8) {
+                print("Gemini API Error: \(errorText)")
+            }
+            throw GeminiError.apiError
+        }
+        
+        return try JSONDecoder().decode(GenerationResponse.self, from: data)
+    }
+
+    /// Generates content with streaming response.
+    public func streamGenerateContent(
+        prompt: String,
+        files: [MediaFile] = [],
+        model: String = "gemini-1.5-pro",
+        thinkingLevel: ThinkingLevel = .off,
+        history: [Content] = []
+    ) -> AsyncThrowingStream<GenerationResponse, Error> {
+        AsyncThrowingStream { continuation in
+            Task {
+                do {
+                    let request = try makeGenerateContentRequest(
+                        prompt: prompt,
+                        files: files,
+                        model: model,
+                        thinkingLevel: thinkingLevel,
+                        history: history,
+                        stream: true
+                    )
+                    
+                    let (result, response) = try await URLSession.shared.bytes(for: request)
+                    
+                    guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+                        // Read error body if possible
+                        var errorText = ""
+                        for try await line in result.lines {
+                            errorText += line
+                        }
+                        print("Gemini Streaming Error: \(errorText)")
+                        throw GeminiError.apiError
+                    }
+                    
+                    for try await line in result.lines {
+                        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if trimmed.hasPrefix("data: ") {
+                            let json = String(trimmed.dropFirst(6)) // Remove "data: "
+                            if json == "[DONE]" { break }
+                            
+                            if let data = json.data(using: .utf8) {
+                                let chunk = try JSONDecoder().decode(GenerationResponse.self, from: data)
+                                continuation.yield(chunk)
+                            }
+                        } else if trimmed.hasPrefix("[") || trimmed.hasPrefix("{") {
+                            // Some endpoints might return raw JSON array elements without "data: " prefix
+                            // Depending on exact API version. 
+                            // Standard SSE uses "data: ".
+                            // If it's a raw JSON stream (not SSE), we might need different parsing.
+                            // For v1beta/models/...:streamGenerateContent it is often a JSON array stream where each chunk is an object.
+                            // However, URLSession.bytes.lines handles line-delimited.
+                            // Let's assume standard JSON stream for now, but handle potential raw JSON object parsing if needed.
+                            
+                            // Attempt to decode line as direct JSON if not SSE
+                            if let data = trimmed.data(using: .utf8),
+                               let chunk = try? JSONDecoder().decode(GenerationResponse.self, from: data) {
+                                continuation.yield(chunk)
+                            }
+                        }
+                    }
+                    continuation.finish()
+                    
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+    }
+
+    /// Creates a URLRequest for generating content.
+    public func makeGenerateContentRequest(
+        prompt: String,
+        files: [MediaFile] = [],
+        model: String = "gemini-1.5-pro",
+        thinkingLevel: ThinkingLevel = .off,
+        history: [Content] = [],
+        stream: Bool = false
+    ) throws -> URLRequest {
+        let action = stream ? "streamGenerateContent" : "generateContent"
+        var endpoint = "\(baseURL)/models/\(model):\(action)?key=\(apiKey)"
+        if stream {
+             endpoint += "&alt=sse" // Request SSE format
+        }
         
         // Construct Request Parts
         var parts: [Part] = [.text(prompt)]
@@ -51,7 +151,14 @@ public class GeminiManager {
         
         let payload = GenerateContentRequest(contents: contents, generationConfig: config)
         
-        return try await performRequest(endpoint: endpoint, payload: payload)
+        guard let url = URL(string: endpoint) else { throw GeminiError.invalidURL }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(payload)
+        
+        return request
     }
 
     // MARK: - 2. Image Generation (Imagen 3)
@@ -96,30 +203,80 @@ public class GeminiManager {
         prompt: String,
         model: String = "veo-2.0-generate-001"
     ) async throws -> String {
-        let endpoint = "\(baseURL)/models/\(model):generateVideos?key=\(apiKey)" // Likely endpoint structure for Veo
+        let endpoint = "\(baseURL)/models/\(model):predict?key=\(apiKey)" // Using predict as generic entry point often used for Veo alpha
         
-        // Fallback to :predict if generateVideos is not available, but standard API uses specific verbs often.
-        // For Veo, the structure often looks like this:
         let payload: [String: Any] = [
-            "prompt": prompt,
-            "video_length": "5s" // example param
+            "instances": [
+                [
+                    "prompt": prompt,
+                    "video_length": "5s" 
+                ]
+            ],
+            "parameters": [
+                "sampleCount": 1
+            ]
         ]
-        
-        // Note: Veo integration often requires polling an Operation object.
-        // This is a simplified "fire and forget" or synchronous wait depending on the specific model version.
-        // If the API returns an "operation", you would need a polling mechanism.
         
         let data = try await performRawRequest(endpoint: endpoint, payload: payload)
         
-        // Assuming direct return or operation name. 
-        // Real-world Veo usage often involves: Response -> Operation -> Poll -> URL.
-        if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let videoUri = json["videoUri"] as? String {
+        // 1. Check for immediate result
+        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let predictions = json["predictions"] as? [[String: Any]],
+           let first = predictions.first,
+           let videoUri = first["videoUri"] as? String {
             return videoUri
         }
         
-        throw GeminiError.custom("Video generation requires polling implementation or updated endpoint.")
+        // 2. Check for Operation (long running)
+        // If the API returns an "name" field indicating an operation
+        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let operationName = json["name"] as? String {
+            return try await pollOperation(name: operationName)
+        }
+
+        throw GeminiError.custom("Video generation response could not be parsed or requires implementation update.")
     }
+
+    private func pollOperation(name: String) async throws -> String {
+        let pollEndpoint = "\(baseURL)/\(name)?key=\(apiKey)"
+        
+        // Poll for up to 60 seconds? Video gen can be slow.
+        let maxAttempts = 30
+        for _ in 0..<maxAttempts {
+            try await Task.sleep(nanoseconds: 2 * 1_000_000_000) // 2 seconds
+            
+            guard let url = URL(string: pollEndpoint) else { throw GeminiError.invalidURL }
+            let (data, response) = try await URLSession.shared.data(from: url)
+            
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+                continue
+            }
+            
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                // Check if done
+                if let done = json["done"] as? Bool, done == true {
+                    if let error = json["error"] as? [String: Any] {
+                        let msg = error["message"] as? String ?? "Unknown operation error"
+                        throw GeminiError.custom(msg)
+                    }
+                    
+                    if let response = json["response"] as? [String: Any],
+                       let videoUri = response["videoUri"] as? String { // Schema varies; adjust based on real response
+                        return videoUri
+                    }
+                    
+                    // Fallback: sometimes result is in metadata or result field
+                    if let result = json["result"] as? [String: Any],
+                       let videoUri = result["videoUri"] as? String {
+                        return videoUri
+                    }
+                }
+            }
+        }
+        
+        throw GeminiError.custom("Operation timed out")
+    }
+
 
     // MARK: - Helpers
     
@@ -133,10 +290,31 @@ public class GeminiManager {
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
-        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
-            if let errorText = String(data: data, encoding: .utf8) {
-                print("Gemini API Error: \(errorText)")
+        guard let httpResponse = response as? HTTPURLResponse else {
+             throw GeminiError.apiError
+        }
+        
+        if !(200...299).contains(httpResponse.statusCode) {
+            // Try to parse detailed error
+            if let errorJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let errorObj = errorJson["error"] as? [String: Any],
+               let message = errorObj["message"] as? String {
+                
+                print("Gemini API Error: \(message)")
+                
+                if httpResponse.statusCode == 429 {
+                    throw GeminiError.rateLimited
+                }
+                if message.contains("quota") {
+                    throw GeminiError.quotaExceeded
+                }
+                
+                throw GeminiError.custom(message)
             }
+            
+            if httpResponse.statusCode == 429 { throw GeminiError.rateLimited }
+            if httpResponse.statusCode >= 500 { throw GeminiError.serverError(httpResponse.statusCode) }
+            
             throw GeminiError.apiError
         }
         
@@ -153,7 +331,19 @@ public class GeminiManager {
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
-        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw GeminiError.apiError
+        }
+        
+        if !(200...299).contains(httpResponse.statusCode) {
+             if let errorJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let errorObj = errorJson["error"] as? [String: Any],
+               let message = errorObj["message"] as? String {
+                print("Gemini Raw API Error: \(message)")
+                if httpResponse.statusCode == 429 { throw GeminiError.rateLimited }
+                if message.contains("quota") { throw GeminiError.quotaExceeded }
+                throw GeminiError.custom(message)
+            }
             print("API Error: \(String(data: data, encoding: .utf8) ?? "Unknown")")
             throw GeminiError.apiError
         }
@@ -272,4 +462,50 @@ enum GeminiError: Error {
     case apiError
     case parsingError
     case custom(String)
+    case rateLimited
+    case quotaExceeded
+    case serverError(Int)
 }
+
+// ... (in helpers)
+
+    private func performRequest<T: Encodable, U: Decodable>(endpoint: String, payload: T) async throws -> U {
+        guard let url = URL(string: endpoint) else { throw GeminiError.invalidURL }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(payload)
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+             throw GeminiError.apiError
+        }
+        
+        if !(200...299).contains(httpResponse.statusCode) {
+            // Try to parse detailed error
+            if let errorJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let errorObj = errorJson["error"] as? [String: Any],
+               let message = errorObj["message"] as? String {
+                
+                print("Gemini API Error: \(message)")
+                
+                if httpResponse.statusCode == 429 {
+                    throw GeminiError.rateLimited
+                }
+                if message.contains("quota") {
+                    throw GeminiError.quotaExceeded
+                }
+                
+                throw GeminiError.custom(message)
+            }
+            
+            if httpResponse.statusCode == 429 { throw GeminiError.rateLimited }
+            if httpResponse.statusCode >= 500 { throw GeminiError.serverError(httpResponse.statusCode) }
+            
+            throw GeminiError.apiError
+        }
+        
+        return try JSONDecoder().decode(U.self, from: data)
+    }

@@ -1,8 +1,8 @@
 import Foundation
 
-struct GoogleAIProvider: LLMProvider, Sendable {
+struct GoogleAIProvider: LLMProvider {
     let id: String = "google"
-    let name: String = "Google AI"
+    let name: String = "Google AI (Gemini)"
 
     private let keychain: KeychainStore
     private let config: ProvidersConfig.GoogleAI
@@ -13,66 +13,181 @@ struct GoogleAIProvider: LLMProvider, Sendable {
     }
 
     var endpoint: URL {
-        // Replace with the official Gemini/Vertex AI endpoint depending on your integration
-        config.baseURL ?? URL(string: "https://generativelanguage.googleapis.com")!
+        if let url = config.baseURL { return url }
+        return URL(string: "https://generativelanguage.googleapis.com/v1beta")!
     }
 
     var supportsStreaming: Bool { true }
 
     var availableModels: [LLMModel] { config.models }
 
-    var defaultHeaders: [String : String] {
-        // Some Google endpoints use API key as query param. If headers are required, set here.
-        ["Content-Type": "application/json"]
-    }
+    var defaultHeaders: [String : String] { ["Content-Type": "application/json"] }
 
     var pricing: PricingMetadata {
         config.pricing ?? PricingMetadata(inputPer1KUSD: 0, outputPer1KUSD: 0, currency: "USD")
     }
 
     func buildRequest(messages: [ChatMessage], model: String) throws -> URLRequest {
-        // Replace path, query key, and payload per Google AI docs (Gemini/Vertex)
-        var url = endpoint
-        // Example path placeholder; consult docs
-        url.appendPathComponent("/v1beta/models/\(model):generateContent")
+        try buildRequest(messages: messages, model: model, jsonMode: false)
+    }
 
-        var components = URLComponents(url: url, resolvingAgainstBaseURL: false)!
-        if let apiKey = keychain.apiKey(for: .google) {
-            components.queryItems = [URLQueryItem(name: "key", value: apiKey)]
+    func buildRequest(messages: [ChatMessage], model: String, jsonMode: Bool) throws -> URLRequest {
+        guard let apiKey = keychain.apiKey(for: .google) else {
+            throw LLMProviderError.authenticationMissing
         }
-        guard let finalURL = components.url else { throw LLMProviderError.invalidRequest }
-
-        var request = URLRequest(url: finalURL)
-        request.httpMethod = "POST"
-        defaultHeaders.forEach { request.setValue($1, forHTTPHeaderField: $0) }
-
-        let payload = GooglePayload(messages: messages.map { GoogleMessage(role: $0.role.rawValue, parts: [GooglePart(text: $0.content)]) })
-        request.httpBody = try JSONEncoder().encode(payload)
-        return request
+        
+        let manager = GeminiManager(apiKey: apiKey)
+        
+        var prompt = ""
+        var history: [Content] = []
+        
+        // Filter out empty messages just in case
+        let validMessages = messages.filter { !$0.content.isEmpty }
+        
+        if let last = validMessages.last {
+            prompt = last.content
+            
+            if validMessages.count > 1 {
+                let historyMessages = validMessages.dropLast()
+                history = historyMessages.map { msg in
+                    let role: String
+                    switch msg.role {
+                    case .user, .system: role = "user" // Gemini 1.5 usually treats system prompts via config or user role
+                    case .assistant: role = "model"
+                    case .tool: role = "user" // tool responses feed as user content
+                    }
+                    return Content(role: role, parts: [.text(msg.content)])
+                }
+            }
+        }
+        
+        // Note: For now we default to no media files and thinking level off.
+        // These could be exposed via options if LLMProvider protocol supported them.
+        
+        // Extract media from parts
+        var mediaFiles: [MediaFile] = []
+        
+        // Only the LAST user message usually carries new attachments in a typical chat flow,
+        // but if history has images, Gemini expects them inline in the history.
+        // We'll map all history.
+        
+        if let last = validMessages.last {
+            prompt = last.content // Text content
+            
+            // Add attachments from last message
+            for part in last.parts {
+                if case .image(let data, let mime) = part {
+                    mediaFiles.append(MediaFile(data: data, mimeType: mime))
+                }
+            }
+            
+            if validMessages.count > 1 {
+                let historyMessages = validMessages.dropLast()
+                history = historyMessages.map { msg in
+                    let role: String
+                    switch msg.role {
+                    case .user, .system: role = "user" 
+                    case .assistant: role = "model"
+                    case .tool: role = "user"
+                    }
+                    
+                    var parts: [Part] = []
+                    // Text
+                    if !msg.content.isEmpty {
+                        parts.append(.text(msg.content))
+                    }
+                    // Images
+                    for part in msg.parts {
+                        if case .image(let data, let mime) = part {
+                            let base64 = data.base64EncodedString()
+                            parts.append(.inlineData(InlineData(mimeType: mime, data: base64)))
+                        }
+                    }
+                    
+                    // Fallback if empty (shouldn't happen with filter)
+                    if parts.isEmpty { parts.append(.text("...")) }
+                    
+                    return Content(role: role, parts: parts)
+                }
+            }
+        }
+        
+        // We build a non-streaming request by default. 
+        // streamResponse will convert it to a streaming request if needed.
+        return try manager.makeGenerateContentRequest(
+            prompt: prompt,
+            files: mediaFiles, // Only new files attached to the current prompt
+            model: model,
+            history: history,
+            stream: false
+        )
     }
 
     func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {
         AsyncThrowingStream { continuation in
-            // TODO: Implement streaming per Google AI docs
-            continuation.finish()
+            Task {
+                do {
+                    // Convert to streaming request
+                    var streamRequest = request
+                    if let url = request.url, url.absoluteString.contains(":generateContent") {
+                        let newString = url.absoluteString
+                            .replacingOccurrences(of: ":generateContent", with: ":streamGenerateContent")
+                            + "&alt=sse"
+                        streamRequest.url = URL(string: newString)
+                    }
+                    
+                    let (result, response) = try await URLSession.shared.bytes(for: streamRequest)
+                    
+                    guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+                        // Attempt to read error
+                        var errorText = ""
+                        for try await line in result.lines { errorText += line }
+                        continuation.yield(.error(.server(reason: errorText.isEmpty ? "Unknown streaming error" : errorText)))
+                        continuation.finish()
+                        return
+                    }
+                    
+                    var fullText = ""
+                    
+                    for try await line in result.lines {
+                        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                        
+                        if trimmed.hasPrefix("data: ") {
+                            let json = String(trimmed.dropFirst(6))
+                            if json == "[DONE]" { break }
+                            
+                            if let data = json.data(using: .utf8),
+                               let chunk = try? JSONDecoder().decode(GenerationResponse.self, from: data),
+                               let text = chunk.text {
+                                fullText += text
+                                continuation.yield(.token(text: text))
+                            }
+                        }
+                    }
+                    
+                    // Final completion event with full message
+                    let message = ChatMessage(
+                        id: UUID(),
+                        role: .assistant,
+                        content: fullText,
+                        parts: [], // Initialize with empty parts
+                        createdAt: Date(),
+                        codeBlocks: [],
+                        tokenUsage: nil,
+                        costBreakdown: nil
+                    )
+                    continuation.yield(.completion(message: message))
+                    continuation.finish()
+                    
+                } catch {
+                    continuation.yield(.error(.network(error as? URLError ?? URLError(.unknown))))
+                    continuation.finish()
+                }
+            }
         }
     }
 
     func parseTokenUsage(from response: Data) throws -> TokenUsage? {
-        // TODO: Parse token usage per Google AI response schema
         return nil
     }
-}
-
-private struct GooglePayload: Encodable {
-    let messages: [GoogleMessage]
-}
-
-private struct GoogleMessage: Encodable {
-    let role: String
-    let parts: [GooglePart]
-}
-
-private struct GooglePart: Encodable {
-    let text: String
 }
