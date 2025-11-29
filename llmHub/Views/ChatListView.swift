@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ChatListView: View {
     @ObservedObject var viewModel: ChatViewModel
+    @State private var showSettings = false
 
     var body: some View {
         List(selection: Binding(
@@ -28,6 +29,16 @@ struct ChatListView: View {
                     }
                     .tag(session.id)
                 }
+            }
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(action: { showSettings = true }) {
+                        Label("Settings", systemImage: "gear")
+                    }
+                }
+            }
+            .sheet(isPresented: $showSettings) {
+                SettingsView()
             }
     }
 }
