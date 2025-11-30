@@ -13,15 +13,27 @@ final class ChatService {
     let modelContext: ModelContext
     let providerRegistry: ProviderRegistry
     private let costCalculator: CostCalculator
+    private let toolRegistry: ToolRegistry
 
     private let logger = Logger(subsystem: "com.llmhub", category: "ChatService")
+    
+    /// Maximum number of tool execution loops to prevent infinite recursion
+    private let maxToolIterations = 10
 
-    init(modelContext: ModelContext, providerRegistry: ProviderRegistry, costCalculator: CostCalculator = CostCalculator()) {
+    init(
+        modelContext: ModelContext,
+        providerRegistry: ProviderRegistry,
+        costCalculator: CostCalculator = CostCalculator(),
+        toolRegistry: ToolRegistry? = nil
+    ) {
         self.modelContext = modelContext
         self.providerRegistry = providerRegistry
         self.costCalculator = costCalculator
+        // Use provided registry or create default on MainActor
+        self.toolRegistry = toolRegistry ?? ToolRegistry.createDefaultRegistrySync()
     }
 
+    // MARK: - Sessions
     func loadSessions() throws -> [ChatSession] {
         let descriptor = FetchDescriptor<ChatSessionEntity>(sortBy: [SortDescriptor(\.updatedAt, order: .reverse)])
         return try modelContext.fetch(descriptor).map { $0.asDomain() }
@@ -58,9 +70,10 @@ final class ChatService {
 
     func streamCompletion(for session: ChatSession, userMessage: String, images: [Data] = []) async throws -> AsyncThrowingStream<ProviderEvent, Error> {
         
-         var parts: [ChatContentPart] = [.text(userMessage)]
+        var parts: [ChatContentPart] = [.text(userMessage)]
         for imgData in images {
-            parts.append(.image(imgData, mimeType: "image/jpeg")) // Defaulting to jpeg for simplicity
+            let mimeType = detectImageMimeType(from: imgData)
+            parts.append(.image(imgData, mimeType: mimeType))
         }
         
         let message = ChatMessage(
@@ -76,49 +89,132 @@ final class ChatService {
         
         try appendMessage(message, to: session.id)
         
-        // Reload session to get full history
-        let updatedSession = try loadSession(id: session.id)
+        logger.debug("Using provider: \(session.providerID), model: \(session.model)")
         
-        logger.debug("Using provider: \(updatedSession.providerID), model: \(updatedSession.model)")
-
-        // This loop handles tool calls.
-        // For streaming, it's tricky because the stream yields chunks.
-        // If a tool call occurs, we usually get a specific stop reason or event.
-        // LLMProviderProtocol's streamResponse returns ProviderEvent.
-        
-        let provider = try providerRegistry.provider(for: updatedSession.providerID)
-        let request = try provider.buildRequest(messages: updatedSession.messages, model: updatedSession.model)
+        let provider = try providerRegistry.provider(for: session.providerID)
+        let sessionID = session.id
+        let toolReg = self.toolRegistry
+        let maxIterations = self.maxToolIterations
+        let logger = self.logger
+        let service = self
         
         return AsyncThrowingStream { continuation in
             Task {
                 do {
-                    // Initial Request
-                    for try await event in provider.streamResponse(from: request) {
-                        switch event {
-                        case .toolUse(let id, let name, let input):
-                            // HANDLE TOOL EXECUTION HERE
-                            // 1. Notify UI of tool use?
-                            continuation.yield(.toolUse(id: id, name: name, input: input))
+                    var iterationCount = 0
+                    var continueLoop = true
+                    
+                    while continueLoop && iterationCount < maxIterations {
+                        iterationCount += 1
+                        continueLoop = false
+                        
+                        // Reload session to get updated history (including any tool results)
+                        let currentSession = try service.loadSession(id: sessionID)
+                        
+                        // Build tool definitions from registry
+                        let toolDefs: [ToolDefinition]? = toolReg.allTools.isEmpty ? nil : toolReg.allTools.map { ToolDefinition(from: $0) }
+                        
+                        let request = try provider.buildRequest(messages: currentSession.messages, model: currentSession.model, tools: toolDefs)
+                        
+                        // Track accumulated tool calls for this iteration
+                        var accumulatedToolCalls: [ToolCall] = []
+                        
+                        // Stream response
+                        for try await event in provider.streamResponse(from: request) {
+                            switch event {
+                            case .token(let text):
+                                continuation.yield(.token(text: text))
+                                
+                            case .thinking(let thought):
+                                continuation.yield(.thinking(thought))
+                                
+                            case .toolUse(let id, let name, let input):
+                                // Notify UI of tool use
+                                continuation.yield(.toolUse(id: id, name: name, input: input))
+                                
+                                // Accumulate the tool call
+                                let toolCall = ToolCall(id: id, name: name, input: input)
+                                accumulatedToolCalls.append(toolCall)
+                                
+                            case .usage(let usage):
+                                continuation.yield(.usage(usage))
+                                
+                            case .reference(let ref):
+                                continuation.yield(.reference(ref))
+                                
+                            case .completion(let msg):
+                                // If we have tool calls, save assistant message with them
+                                if !accumulatedToolCalls.isEmpty {
+                                    var assistantMsg = msg
+                                    assistantMsg.toolCalls = accumulatedToolCalls
+                                    try service.appendMessage(assistantMsg, to: sessionID)
+                                } else {
+                                    // Normal completion - save and we're done
+                                    try service.appendMessage(msg, to: sessionID)
+                                    continuation.yield(.completion(message: msg))
+                                }
+                                
+                            case .error(let error):
+                                continuation.yield(.error(error))
+                            }
+                        }
+                        
+                        // After stream completes, execute any pending tool calls
+                        if !accumulatedToolCalls.isEmpty {
+                            for toolCall in accumulatedToolCalls {
+                                logger.info("Executing tool: \(toolCall.name) with input: \(toolCall.input.prefix(100))...")
+                                
+                                // Execute the tool
+                                let toolResult: String
+                                if let tool = toolReg.tool(named: toolCall.name) {
+                                    do {
+                                        // Parse input JSON
+                                        let inputDict = try JSONSerialization.jsonObject(
+                                            with: toolCall.input.data(using: .utf8) ?? Data()
+                                        ) as? [String: Any] ?? [:]
+                                        
+                                        toolResult = try await tool.execute(input: inputDict)
+                                        logger.info("Tool \(toolCall.name) succeeded: \(toolResult.prefix(100))...")
+                                    } catch {
+                                        toolResult = "Error executing tool: \(error.localizedDescription)"
+                                        logger.error("Tool \(toolCall.name) failed: \(error)")
+                                    }
+                                } else {
+                                    toolResult = "Tool '\(toolCall.name)' not found in registry"
+                                    logger.warning("Unknown tool requested: \(toolCall.name)")
+                                }
+                                
+                                // Create and save tool result message
+                                let toolResultMessage = ChatMessage(
+                                    id: UUID(),
+                                    role: .tool,
+                                    content: toolResult,
+                                    parts: [],
+                                    createdAt: Date(),
+                                    codeBlocks: [],
+                                    tokenUsage: nil,
+                                    costBreakdown: nil,
+                                    toolCallID: toolCall.id
+                                )
+                                
+                                try service.appendMessage(toolResultMessage, to: sessionID)
+                                
+                                // Notify UI of tool result (as a token for now)
+                                continuation.yield(.token(text: "\n[Tool Result: \(toolCall.name)]\n\(toolResult)\n"))
+                            }
                             
-                            // 2. Execute Tool (Mock for now, or registry lookup)
-                            // In a real agent loop, we'd wait for this stream to finish (accumulating the tool call),
-                            // then execute, append result, and call provider again.
-                            // Since this is a stream, we can't easily "pause and recurse" inside the stream yield.
-                            // A common pattern is: The stream yields the tool call delta.
-                            // The client (UI) sees it.
-                            // The Service needs to collect the full tool call message.
-                            
-                            // For this MVP step: we just yield it.
-                            // A proper "Agent Loop" usually requires a different signature than just returning a stream of the *first* response.
-                            // But let's assume we want to support it.
-                            break
-                            
-                        default:
-                            continuation.yield(event)
+                            // Continue the loop to let LLM process tool results
+                            continueLoop = true
                         }
                     }
+                    
+                    if iterationCount >= maxIterations {
+                        logger.warning("Agent loop reached maximum iterations (\(maxIterations))")
+                    }
+                    
                     continuation.finish()
                 } catch {
+                    logger.error("Stream completion error: \(error)")
                     continuation.yield(.error(.network(error as? URLError ?? URLError(.unknown))))
                     continuation.finish()
                 }
@@ -158,16 +254,184 @@ final class ChatService {
         entity.totalCostUSD += additionalCost
         try modelContext.save()
     }
+
+    // MARK: - Folders
+
+    func loadFolders() throws -> [ChatFolder] {
+        let descriptor = FetchDescriptor<ChatFolderEntity>(sortBy: [SortDescriptor(\.orderIndex)])
+        return try modelContext.fetch(descriptor).map { $0.asDomain() }
+    }
+
+    func createFolder(name: String, icon: String, color: String) throws -> ChatFolder {
+        let folder = ChatFolder(
+            id: UUID(),
+            name: name,
+            icon: icon,
+            color: color,
+            orderIndex: try loadFolders().count,
+            createdAt: Date(),
+            updatedAt: Date()
+        )
+        let entity = ChatFolderEntity(folder: folder)
+        modelContext.insert(entity)
+        try modelContext.save()
+        return folder
+    }
+
+    func updateFolder(_ folder: ChatFolder) throws {
+        let folderID = folder.id
+        guard let entity = try modelContext.fetch(FetchDescriptor<ChatFolderEntity>(predicate: #Predicate { $0.id == folderID })).first else {
+            throw ChatServiceError.folderMissing
+        }
+        entity.name = folder.name
+        entity.icon = folder.icon
+        entity.color = folder.color
+        entity.updatedAt = Date()
+        try modelContext.save()
+    }
+
+    func deleteFolder(id: UUID) throws {
+        guard let entity = try modelContext.fetch(FetchDescriptor<ChatFolderEntity>(predicate: #Predicate { $0.id == id })).first else {
+            throw ChatServiceError.folderMissing
+        }
+        // Sessions in this folder will have their folder relationship set to null (nullify rule)
+        modelContext.delete(entity)
+        try modelContext.save()
+    }
+
+    func moveSession(_ sessionID: UUID, to folderID: UUID?) throws {
+        guard let sessionEntity = try modelContext.fetch(FetchDescriptor<ChatSessionEntity>(predicate: #Predicate { $0.id == sessionID })).first else {
+            throw ChatServiceError.sessionMissing
+        }
+
+        if let folderID = folderID {
+            guard let folderEntity = try modelContext.fetch(FetchDescriptor<ChatFolderEntity>(predicate: #Predicate { $0.id == folderID })).first else {
+                throw ChatServiceError.folderMissing
+            }
+            sessionEntity.folder = folderEntity
+        } else {
+            sessionEntity.folder = nil
+        }
+        try modelContext.save()
+    }
+
+    // MARK: - Tags
+
+    func loadTags() throws -> [ChatTag] {
+        let descriptor = FetchDescriptor<ChatTagEntity>(sortBy: [SortDescriptor(\.name)])
+        return try modelContext.fetch(descriptor).map { $0.asDomain() }
+    }
+
+    func createTag(name: String, color: String) throws -> ChatTag {
+        let tag = ChatTag(id: UUID(), name: name, color: color)
+        let entity = ChatTagEntity(tag: tag)
+        modelContext.insert(entity)
+        try modelContext.save()
+        return tag
+    }
+
+    func deleteTag(id: UUID) throws {
+        guard let entity = try modelContext.fetch(FetchDescriptor<ChatTagEntity>(predicate: #Predicate { $0.id == id })).first else {
+            throw ChatServiceError.tagMissing
+        }
+        modelContext.delete(entity)
+        try modelContext.save()
+    }
+
+    func addTag(tagID: UUID, to sessionID: UUID) throws {
+        guard let sessionEntity = try modelContext.fetch(FetchDescriptor<ChatSessionEntity>(predicate: #Predicate { $0.id == sessionID })).first else {
+            throw ChatServiceError.sessionMissing
+        }
+        guard let tagEntity = try modelContext.fetch(FetchDescriptor<ChatTagEntity>(predicate: #Predicate { $0.id == tagID })).first else {
+            throw ChatServiceError.tagMissing
+        }
+        
+        if !sessionEntity.tags.contains(where: { $0.id == tagID }) {
+            sessionEntity.tags.append(tagEntity)
+            try modelContext.save()
+        }
+    }
+
+    func removeTag(tagID: UUID, from sessionID: UUID) throws {
+        guard let sessionEntity = try modelContext.fetch(FetchDescriptor<ChatSessionEntity>(predicate: #Predicate { $0.id == sessionID })).first else {
+            throw ChatServiceError.sessionMissing
+        }
+        sessionEntity.tags.removeAll(where: { $0.id == tagID })
+        try modelContext.save()
+    }
+
+    // MARK: - Pinning
+
+    func togglePin(sessionID: UUID) throws {
+        guard let sessionEntity = try modelContext.fetch(FetchDescriptor<ChatSessionEntity>(predicate: #Predicate { $0.id == sessionID })).first else {
+            throw ChatServiceError.sessionMissing
+        }
+        sessionEntity.isPinned.toggle()
+        try modelContext.save()
+    }
+    
+    // MARK: - Image Helpers
+    
+    /// Detects the image MIME type from the file's magic bytes
+    private func detectImageMimeType(from data: Data) -> String {
+        guard data.count >= 12 else { return "image/jpeg" }
+        
+        let bytes = [UInt8](data.prefix(12))
+        
+        // PNG: 89 50 4E 47 0D 0A 1A 0A
+        if bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47 {
+            return "image/png"
+        }
+        
+        // JPEG: FF D8 FF
+        if bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF {
+            return "image/jpeg"
+        }
+        
+        // GIF: 47 49 46 38 (GIF8)
+        if bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x38 {
+            return "image/gif"
+        }
+        
+        // WebP: RIFF....WEBP (bytes 0-3: RIFF, bytes 8-11: WEBP)
+        if bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46 &&
+           bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50 {
+            return "image/webp"
+        }
+        
+        // TIFF: 49 49 2A 00 (little-endian) or 4D 4D 00 2A (big-endian)
+        if (bytes[0] == 0x49 && bytes[1] == 0x49 && bytes[2] == 0x2A && bytes[3] == 0x00) ||
+           (bytes[0] == 0x4D && bytes[1] == 0x4D && bytes[2] == 0x00 && bytes[3] == 0x2A) {
+            return "image/tiff"
+        }
+        
+        // BMP: 42 4D (BM)
+        if bytes[0] == 0x42 && bytes[1] == 0x4D {
+            return "image/bmp"
+        }
+        
+        // Default fallback
+        return "image/jpeg"
+    }
 }
 
 enum ChatServiceError: LocalizedError {
     case sessionMissing
     case messageMissing
+    case folderMissing
+    case tagMissing
 
     var errorDescription: String? {
         switch self {
-        case .sessionMissing: "Chat session missing"
-        case .messageMissing: "Chat message missing"
+        case .sessionMissing:
+            return "Chat session missing"
+        case .messageMissing:
+            return "Chat message missing"
+        case .folderMissing:
+            return "Folder missing"
+        case .tagMissing:
+            return "Tag missing"
         }
     }
 }
+

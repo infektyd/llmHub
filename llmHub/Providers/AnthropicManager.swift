@@ -138,15 +138,16 @@ public class AnthropicManager {
         messages: [AnthropicMessage],
         model: String,
         maxTokens: Int,
-        stream: Bool
+        stream: Bool,
+        tools: [AnthropicTool]? = nil
     ) throws -> URLRequest {
-         let payload = AnthropicMessagesRequest(
+        let payload = AnthropicMessagesRequest(
             model: model,
             max_tokens: maxTokens,
             messages: messages,
             stream: stream,
             system: nil,
-            tools: nil,
+            tools: tools,
             thinking: nil
         )
         return try makeRequest(url: baseURL.appendingPathComponent("messages"), payload: payload)
@@ -220,7 +221,65 @@ public struct AnthropicThinkingConfig: Encodable {
 public struct AnthropicTool: Encodable {
     public let name: String
     public let description: String?
-    // public let input_schema: JSONSchema // Defined elsewhere or AnyCodable
+    public let input_schema: AnthropicJSONValue?
+    
+    public init(name: String, description: String?, inputSchema: [String: Any]?) {
+        self.name = name
+        self.description = description
+        self.input_schema = inputSchema.map { AnthropicJSONValue.from($0) }
+    }
+}
+
+// JSON value wrapper for Anthropic API (handles Any -> Encodable conversion)
+public enum AnthropicJSONValue: Encodable {
+    case null
+    case bool(Bool)
+    case int(Int)
+    case double(Double)
+    case string(String)
+    case array([AnthropicJSONValue])
+    case object([String: AnthropicJSONValue])
+    
+    public static func from(_ value: Any) -> AnthropicJSONValue {
+        switch value {
+        case is NSNull:
+            return .null
+        case let b as Bool:
+            return .bool(b)
+        case let i as Int:
+            return .int(i)
+        case let d as Double:
+            return .double(d)
+        case let s as String:
+            return .string(s)
+        case let arr as [Any]:
+            return .array(arr.map { from($0) })
+        case let dict as [String: Any]:
+            return .object(dict.mapValues { from($0) })
+        default:
+            return .null
+        }
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .null:
+            try container.encodeNil()
+        case .bool(let b):
+            try container.encode(b)
+        case .int(let i):
+            try container.encode(i)
+        case .double(let d):
+            try container.encode(d)
+        case .string(let s):
+            try container.encode(s)
+        case .array(let arr):
+            try container.encode(arr)
+        case .object(let dict):
+            try container.encode(dict)
+        }
+    }
 }
 
 public struct AnthropicMessage: Encodable {
@@ -236,22 +295,50 @@ public struct AnthropicMessage: Encodable {
 public enum AnthropicContentBlock: Encodable {
     case text(AnthropicTextBlock)
     case image(AnthropicImageSource)
-    // case document...
+    case toolUse(AnthropicToolUse)
+    case toolResult(AnthropicToolResult)
     
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         switch self {
         case .text(let t):
-             // Anthropic flat structure for text block in array?
-             // Actually it's { type: "text", text: "..." }
-             try t.encode(to: encoder)
+            try t.encode(to: encoder)
         case .image(let i):
-             try container.encode("image", forKey: .type)
-             try container.encode(i, forKey: .source)
+            try container.encode("image", forKey: .type)
+            try container.encode(i, forKey: .source)
+        case .toolUse(let tu):
+            try tu.encode(to: encoder)
+        case .toolResult(let tr):
+            try container.encode("tool_result", forKey: .type)
+            try container.encode(tr.tool_use_id, forKey: .tool_use_id)
+            try container.encode(tr.content, forKey: .content)
         }
     }
     
-    enum CodingKeys: String, CodingKey { case type, source }
+    enum CodingKeys: String, CodingKey { case type, source, id, name, input, tool_use_id, content }
+}
+
+public struct AnthropicToolUse: Encodable {
+    public let type: String = "tool_use"
+    public let id: String
+    public let name: String
+    public let input: AnthropicJSONValue
+    
+    public init(id: String, name: String, input: [String: Any]) {
+        self.id = id
+        self.name = name
+        self.input = .object(input.mapValues { AnthropicJSONValue.from($0) })
+    }
+}
+
+public struct AnthropicToolResult: Encodable {
+    public let tool_use_id: String
+    public let content: String
+    
+    public init(tool_use_id: String, content: String) {
+        self.tool_use_id = tool_use_id
+        self.content = content
+    }
 }
 
 public struct AnthropicTextBlock: Encodable {
@@ -320,11 +407,20 @@ public struct AnthropicStreamEvent: Decodable {
     public let type: String
     public let delta: AnthropicStreamDelta?
     public let usage: AnthropicMessageResponse.Usage?
+    public let content_block: AnthropicStreamContentBlock?
+    public let index: Int?
+}
+
+public struct AnthropicStreamContentBlock: Decodable {
+    public let type: String
+    public let id: String?
+    public let name: String?
 }
 
 public struct AnthropicStreamDelta: Decodable {
     public let type: String?
     public let text: String?
     public let thinking: String?
+    public let partial_json: String?
 }
 

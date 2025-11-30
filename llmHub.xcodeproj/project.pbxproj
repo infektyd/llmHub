@@ -6,6 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		B3000001303030300001 /* CodeExecutionXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000010303030300001 /* CodeExecutionXPCProtocol.swift */; };
+		B3000002303030300001 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000011303030300001 /* main.swift */; };
+		B3000003303030300001 /* CodeExecutionServiceDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000012303030300001 /* CodeExecutionServiceDelegate.swift */; };
+		B3000004303030300001 /* CodeExecutionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000013303030300001 /* CodeExecutionHandler.swift */; };
+		B3000005303030300001 /* CodeExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000014303030300001 /* CodeExecutor.swift */; };
+		B3000006303030300001 /* llmHubHelper.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = B3000020303030300001 /* llmHubHelper.xpc */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		A3C71F382ED9389B0088DF32 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -21,13 +30,42 @@
 			remoteGlobalIDString = A3C71F252ED9389A0088DF32;
 			remoteInfo = llmHub;
 		};
+		B3000030303030300001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A3C71F1E2ED9389A0088DF32 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B3000019303030300001;
+			remoteInfo = llmHubHelper;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B3000040303030300001 /* Embed XPC Services */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/XPCServices";
+			dstSubfolderSpec = 16;
+			files = (
+				B3000006303030300001 /* llmHubHelper.xpc in Embed XPC Services */,
+			);
+			name = "Embed XPC Services";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		A3C71F262ED9389A0088DF32 /* llmHub.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = llmHub.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3C71F372ED9389B0088DF32 /* llmHubTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = llmHubTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3C71F412ED9389B0088DF32 /* llmHubUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = llmHubUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3C71F9B2EDB57F60088DF32 /* Untitled.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Untitled.swift; sourceTree = "<group>"; };
+		B3000010303030300001 /* CodeExecutionXPCProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeExecutionXPCProtocol.swift; sourceTree = "<group>"; };
+		B3000011303030300001 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		B3000012303030300001 /* CodeExecutionServiceDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeExecutionServiceDelegate.swift; sourceTree = "<group>"; };
+		B3000013303030300001 /* CodeExecutionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeExecutionHandler.swift; sourceTree = "<group>"; };
+		B3000014303030300001 /* CodeExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeExecutor.swift; sourceTree = "<group>"; };
+		B3000015303030300001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B3000016303030300001 /* llmHubHelper.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = llmHubHelper.entitlements; sourceTree = "<group>"; };
+		B3000020303030300001 /* llmHubHelper.xpc */ = {isa = PBXFileReference; explicitFileType = "wrapper.xpc-service"; includeInIndex = 0; path = llmHubHelper.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -134,6 +172,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B3000017303030300001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -141,6 +186,7 @@
 			isa = PBXGroup;
 			children = (
 				A3C71F282ED9389A0088DF32 /* llmHub */,
+				B3000021303030300001 /* llmHubHelper */,
 				A3C71F272ED9389A0088DF32 /* Products */,
 				A3C71FBF2EDB64DD0088DF32 /* Tests */,
 				A3C71FCB2EDB64F50088DF32 /* Docs */,
@@ -154,8 +200,23 @@
 				A3C71F262ED9389A0088DF32 /* llmHub.app */,
 				A3C71F372ED9389B0088DF32 /* llmHubTests.xctest */,
 				A3C71F412ED9389B0088DF32 /* llmHubUITests.xctest */,
+				B3000020303030300001 /* llmHubHelper.xpc */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		B3000021303030300001 /* llmHubHelper */ = {
+			isa = PBXGroup;
+			children = (
+				B3000010303030300001 /* CodeExecutionXPCProtocol.swift */,
+				B3000011303030300001 /* main.swift */,
+				B3000012303030300001 /* CodeExecutionServiceDelegate.swift */,
+				B3000013303030300001 /* CodeExecutionHandler.swift */,
+				B3000014303030300001 /* CodeExecutor.swift */,
+				B3000015303030300001 /* Info.plist */,
+				B3000016303030300001 /* llmHubHelper.entitlements */,
+			);
+			path = llmHubHelper;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -168,10 +229,12 @@
 				A3C71F222ED9389A0088DF32 /* Sources */,
 				A3C71F232ED9389A0088DF32 /* Frameworks */,
 				A3C71F242ED9389A0088DF32 /* Resources */,
+				B3000040303030300001 /* Embed XPC Services */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				B3000031303030300001 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				A3C71F282ED9389A0088DF32 /* llmHub */,
@@ -225,6 +288,24 @@
 			productReference = A3C71F412ED9389B0088DF32 /* llmHubUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		B3000019303030300001 /* llmHubHelper */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B3000050303030300001 /* Build configuration list for PBXNativeTarget "llmHubHelper" */;
+			buildPhases = (
+				B3000018303030300001 /* Sources */,
+				B3000017303030300001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = llmHubHelper;
+			packageProductDependencies = (
+			);
+			productName = llmHubHelper;
+			productReference = B3000020303030300001 /* llmHubHelper.xpc */;
+			productType = "com.apple.product-type.xpc-service";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -246,6 +327,9 @@
 						CreatedOnToolsVersion = 26.2;
 						TestTargetID = A3C71F252ED9389A0088DF32;
 					};
+					B3000019303030300001 = {
+						CreatedOnToolsVersion = 26.2;
+					};
 				};
 			};
 			buildConfigurationList = A3C71F212ED9389A0088DF32 /* Build configuration list for PBXProject "llmHub" */;
@@ -265,6 +349,7 @@
 				A3C71F252ED9389A0088DF32 /* llmHub */,
 				A3C71F362ED9389B0088DF32 /* llmHubTests */,
 				A3C71F402ED9389B0088DF32 /* llmHubUITests */,
+				B3000019303030300001 /* llmHubHelper */,
 			);
 		};
 /* End PBXProject section */
@@ -315,6 +400,18 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B3000018303030300001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B3000001303030300001 /* CodeExecutionXPCProtocol.swift in Sources */,
+				B3000002303030300001 /* main.swift in Sources */,
+				B3000003303030300001 /* CodeExecutionServiceDelegate.swift in Sources */,
+				B3000004303030300001 /* CodeExecutionHandler.swift in Sources */,
+				B3000005303030300001 /* CodeExecutor.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -327,6 +424,11 @@
 			isa = PBXTargetDependency;
 			target = A3C71F252ED9389A0088DF32 /* llmHub */;
 			targetProxy = A3C71F422ED9389B0088DF32 /* PBXContainerItemProxy */;
+		};
+		B3000031303030300001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B3000019303030300001 /* llmHubHelper */;
+			targetProxy = B3000030303030300001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -667,6 +769,54 @@
 			};
 			name = Release;
 		};
+		B3000051303030300001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = llmHubHelper/llmHubHelper.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5BMZT525A2;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = llmHubHelper/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = llmHubHelper;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Syntra.llmHub.CodeExecutionHelper;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		B3000052303030300001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = llmHubHelper/llmHubHelper.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5BMZT525A2;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = llmHubHelper/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = llmHubHelper;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Syntra.llmHub.CodeExecutionHelper;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -702,6 +852,15 @@
 			buildConfigurations = (
 				A3C71F532ED9389B0088DF32 /* Debug */,
 				A3C71F542ED9389B0088DF32 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B3000050303030300001 /* Build configuration list for PBXNativeTarget "llmHubHelper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B3000051303030300001 /* Debug */,
+				B3000052303030300001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

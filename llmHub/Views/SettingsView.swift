@@ -20,6 +20,12 @@ struct SettingsView: View {
     
     @State private var errorMessage: String?
     
+    // Code Interpreter Settings
+    @AppStorage("codeInterpreter.securityMode") private var securityMode: CodeSecurityMode = .sandbox
+    @AppStorage("codeInterpreter.timeout") private var executionTimeout: Int = 30
+    @State private var interpreterStatus: [InterpreterInfo] = []
+    @State private var isCheckingInterpreters = false
+    
     var body: some View {
         NavigationStack {
             Form {
@@ -32,17 +38,81 @@ struct SettingsView: View {
                     SecureField("OpenRouter API Key", text: $openRouterKey)
                 }
                 
-                if let errorMessage {
-                    Text(errorMessage)
-                        .foregroundStyle(.red)
-                        .font(.caption)
-                }
-                
                 Section {
                     Button("Save Keys") {
                         saveKeys()
                     }
                     .disabled(openAIKey.isEmpty && anthropicKey.isEmpty && mistralKey.isEmpty && googleKey.isEmpty && xaiKey.isEmpty && openRouterKey.isEmpty)
+                }
+                
+                // Code Interpreter Section
+                Section("Code Interpreter") {
+                    Picker("Security Mode", selection: $securityMode) {
+                        ForEach(CodeSecurityMode.allCases, id: \.self) { mode in
+                            Label {
+                                VStack(alignment: .leading) {
+                                    Text(mode.displayName)
+                                    Text(mode.description)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            } icon: {
+                                Image(systemName: mode.systemImage)
+                            }
+                            .tag(mode)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                    
+                    Stepper("Timeout: \(executionTimeout)s", value: $executionTimeout, in: 5...120, step: 5)
+                }
+                
+                Section("Available Interpreters") {
+                    if isCheckingInterpreters {
+                        HStack {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                            Text("Checking interpreters...")
+                                .foregroundStyle(.secondary)
+                        }
+                    } else if interpreterStatus.isEmpty {
+                        Button("Check Availability") {
+                            checkInterpreters()
+                        }
+                    } else {
+                        ForEach(interpreterStatus, id: \.language) { info in
+                            HStack {
+                                Image(systemName: info.isAvailable ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                    .foregroundStyle(info.isAvailable ? .green : .red)
+                                
+                                Text(info.language.displayName)
+                                
+                                Spacer()
+                                
+                                if info.isAvailable {
+                                    Text(info.version ?? "")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                } else {
+                                    Text("Not installed")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                        
+                        Button("Refresh") {
+                            checkInterpreters()
+                        }
+                        .font(.caption)
+                    }
+                }
+                
+                if let errorMessage {
+                    Text(errorMessage)
+                        .foregroundStyle(.red)
+                        .font(.caption)
                 }
             }
             .navigationTitle("Settings")
@@ -53,7 +123,7 @@ struct SettingsView: View {
             }
             .onAppear(perform: loadKeys)
         }
-        .frame(width: 400, height: 500)
+        .frame(width: 450, height: 650)
     }
     
     private func loadKeys() {
@@ -78,5 +148,18 @@ struct SettingsView: View {
             errorMessage = "Failed to save keys: \(error.localizedDescription)"
         }
     }
+    
+    private func checkInterpreters() {
+        isCheckingInterpreters = true
+        Task {
+            let tool = CodeInterpreterTool()
+            let status = await tool.checkAvailability()
+            await MainActor.run {
+                interpreterStatus = status
+                isCheckingInterpreters = false
+            }
+        }
+    }
 }
+
 
