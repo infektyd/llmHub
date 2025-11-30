@@ -64,7 +64,7 @@ enum MCPJSONValue: Encodable, Sendable {
     case array([MCPJSONValue])
     case object([String: MCPJSONValue])
 
-    static func from(_ value: Any) -> MCPJSONValue {
+    nonisolated static func from(_ value: Any) -> MCPJSONValue {
         switch value {
         case is NSNull:
             return .null
@@ -111,12 +111,35 @@ struct MCPRequest<T: Encodable & Sendable>: Encodable, Sendable {
     let id: Int
     let method: String
     let params: T
+
+    enum CodingKeys: String, CodingKey {
+        case jsonrpc, id, method, params
+    }
+
+    nonisolated func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(jsonrpc, forKey: .jsonrpc)
+        try container.encode(id, forKey: .id)
+        try container.encode(method, forKey: .method)
+        try container.encode(params, forKey: .params)
+    }
 }
 
 struct MCPNotification<T: Encodable & Sendable>: Encodable, Sendable {
     let jsonrpc: String
     let method: String
     let params: T
+
+    enum CodingKeys: String, CodingKey {
+        case jsonrpc, method, params
+    }
+
+    nonisolated func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(jsonrpc, forKey: .jsonrpc)
+        try container.encode(method, forKey: .method)
+        try container.encode(params, forKey: .params)
+    }
 }
 
 struct MCPResponse: Decodable, Sendable {
@@ -129,7 +152,7 @@ struct MCPResponse: Decodable, Sendable {
         case jsonrpc, id, result, error
     }
 
-    init(from decoder: Decoder) throws {
+    nonisolated init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         jsonrpc = try container.decode(String.self, forKey: .jsonrpc)
         id = try container.decodeIfPresent(Int.self, forKey: .id)
@@ -148,9 +171,9 @@ struct MCPResponse: Decodable, Sendable {
 
 /// Thread-safe wrapper for Any values
 struct AnySendable: @unchecked Sendable {
-    let value: Any
+    nonisolated let value: Any
 
-    init(_ value: Any) {
+    nonisolated init(_ value: Any) {
         self.value = value
     }
 }
@@ -180,6 +203,8 @@ struct MCPInitializeParams: Encodable, Sendable {
 
 struct MCPClientCapabilities: Encodable, Sendable {
     // Empty for now - add capabilities as needed
+    nonisolated init() {}
+
     nonisolated func encode(to encoder: Encoder) throws {
         var _ = encoder.container(keyedBy: CodingKeys.self)
     }
@@ -207,6 +232,18 @@ struct MCPInitializeResult: Decodable, Sendable {
     let protocolVersion: String?
     let capabilities: MCPServerCapabilities?
     let serverInfo: MCPServerInfo?
+
+    enum CodingKeys: String, CodingKey {
+        case protocolVersion, capabilities, serverInfo
+    }
+
+    nonisolated init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        protocolVersion = try container.decodeIfPresent(String.self, forKey: .protocolVersion)
+        capabilities = try container.decodeIfPresent(
+            MCPServerCapabilities.self, forKey: .capabilities)
+        serverInfo = try container.decodeIfPresent(MCPServerInfo.self, forKey: .serverInfo)
+    }
 }
 
 struct MCPServerCapabilities: Decodable, Sendable {
@@ -240,6 +277,16 @@ struct MCPPropertySchema: Decodable, Sendable {
 struct MCPToolResult: Decodable, Sendable {
     let content: [MCPContent]
     let isError: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case content, isError
+    }
+
+    nonisolated init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        content = try container.decode([MCPContent].self, forKey: .content)
+        isError = try container.decodeIfPresent(Bool.self, forKey: .isError)
+    }
 }
 
 struct MCPContent: Decodable, Sendable {
@@ -258,6 +305,15 @@ struct MCPResource: Decodable, Sendable {
 
 struct MCPResourceContent: Decodable, Sendable {
     let contents: [MCPResourceItem]
+
+    enum CodingKeys: String, CodingKey {
+        case contents
+    }
+
+    nonisolated init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        contents = try container.decode([MCPResourceItem].self, forKey: .contents)
+    }
 }
 
 struct MCPResourceItem: Decodable, Sendable {

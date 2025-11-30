@@ -1,12 +1,12 @@
 import Foundation
 
 protocol Tool: Sendable {
-    var id: String { get }
-    var name: String { get }
-    var description: String { get }
-    var inputSchema: [String: Any] { get }
+    nonisolated var id: String { get }
+    nonisolated var name: String { get }
+    nonisolated var description: String { get }
+    nonisolated var inputSchema: [String: Any] { get }
 
-    func execute(input: [String: Any]) async throws -> String
+    nonisolated func execute(input: [String: Any]) async throws -> String
 }
 
 struct ToolRegistry {
@@ -107,11 +107,14 @@ extension ToolRegistry {
 
 // Basic Calculator Tool
 struct CalculatorTool: Tool {
-    let id = "calculator"
-    let name = "calculator"
-    let description = "Evaluates mathematical expressions. Use this for any math questions."
+    nonisolated let id = "calculator"
+    nonisolated let name = "calculator"
+    nonisolated let description =
+        "Evaluates mathematical expressions. Use this for any math questions."
 
-    var inputSchema: [String: Any] {
+    nonisolated init() {}
+
+    nonisolated var inputSchema: [String: Any] {
         [
             "type": "object",
             "properties": [
@@ -124,7 +127,7 @@ struct CalculatorTool: Tool {
         ]
     }
 
-    func execute(input: [String: Any]) async throws -> String {
+    nonisolated func execute(input: [String: Any]) async throws -> String {
         guard let expression = input["expression"] as? String else {
             throw ToolError.invalidInput
         }
