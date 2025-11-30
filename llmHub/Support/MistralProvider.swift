@@ -33,6 +33,19 @@ struct MistralProvider: LLMProvider {
         config.pricing ?? PricingMetadata(inputPer1KUSD: 0, outputPer1KUSD: 0, currency: "USD")
     }
     
+    var isConfigured: Bool {
+        keychain.apiKey(for: .mistral) != nil
+    }
+    
+    func fetchModels() async throws -> [LLMModel] {
+        guard let apiKey = keychain.apiKey(for: .mistral) else { return [] }
+        let manager = MistralManager(apiKey: apiKey)
+        let models = try await manager.listModels()
+        return models.data.map { 
+            LLMModel(id: $0.id, name: $0.id, maxOutputTokens: 4096) // Approximate defaults
+        }
+    }
+    
     func buildRequest(messages: [ChatMessage], model: String) throws -> URLRequest {
         try buildRequest(messages: messages, model: model, jsonMode: false)
     }

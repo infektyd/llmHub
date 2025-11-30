@@ -15,7 +15,9 @@ protocol LLMProvider: Identifiable {
     var availableModels: [LLMModel] { get }
     var defaultHeaders: [String: String] { get }
     var pricing: PricingMetadata { get }
+    var isConfigured: Bool { get }
 
+    func fetchModels() async throws -> [LLMModel]
     func buildRequest(messages: [ChatMessage], model: String) throws -> URLRequest
     func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error>
     func parseTokenUsage(from response: Data) throws -> TokenUsage?
@@ -47,7 +49,8 @@ struct PricingMetadata: Sendable {
 
 enum ProviderEvent: Sendable {
     case token(text: String)
-    case toolUse(id: String, name: String, input: String) // Added for tool support
+    case thinking(String) // Add this back
+    case toolUse(id: String, name: String, input: String)
     case completion(message: ChatMessage)
     case usage(TokenUsage)
     case reference(String)

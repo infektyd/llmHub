@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 /// A manager for xAI's Grok API, handling text, vision, and image generation.
 /// xAI is largely OpenAI-compatible.
@@ -6,6 +7,7 @@ import Foundation
 public class XAIManager {
     private let apiKey: String
     private let baseURL = URL(string: "https://api.x.ai/v1")!
+    private let logger = Logger(subsystem: "com.llmhub", category: "XAIManager")
     
     public init(apiKey: String) {
         self.apiKey = apiKey
@@ -73,7 +75,16 @@ public class XAIManager {
         request.httpMethod = "POST"
         request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONEncoder().encode(payload)
+        
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .prettyPrinted
+        let bodyData = try encoder.encode(payload)
+        request.httpBody = bodyData
+        
+        // Debug: Log the actual request body being sent
+        if let bodyString = String(data: bodyData, encoding: .utf8) {
+            logger.debug("XAI Request Body:\n\(bodyString)")
+        }
         
         return request
     }
@@ -269,6 +280,7 @@ public struct XAIChatResponse: Decodable {
 
 public struct XAIChatStreamChunk: Decodable {
     public let id: String?
+    public let model: String?  // Capture which model xAI says it used
     public let choices: [Choice]
     
     public struct Choice: Decodable {

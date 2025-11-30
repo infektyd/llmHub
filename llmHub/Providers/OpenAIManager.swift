@@ -99,6 +99,22 @@ public class OpenAIManager {
         }
     }
     
+    // MARK: - Models
+    
+    public func listModels() async throws -> [OpenAIModel] {
+        let url = baseURL.appendingPathComponent("models")
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        addHeaders(to: &request)
+        
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw OpenAIError.networkError
+        }
+        
+        return try JSONDecoder().decode(OpenAIModelList.self, from: data).data
+    }
+    
     // MARK: - Request Helper
     
     public func makeChatRequest(
@@ -254,6 +270,24 @@ public class OpenAIManager {
 }
 
 // MARK: - Models
+
+// --- Models ---
+
+public struct OpenAIModelList: Decodable {
+    public let data: [OpenAIModel]
+}
+
+public struct OpenAIModel: Decodable, Identifiable {
+    public let id: String
+    public let object: String
+    public let created: Int
+    public let ownedBy: String
+    
+    enum CodingKeys: String, CodingKey {
+        case id, object, created
+        case ownedBy = "owned_by"
+    }
+}
 
 public enum OpenAIError: Error {
     case apiError(message: String)

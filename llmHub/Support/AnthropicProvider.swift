@@ -25,6 +25,18 @@ struct AnthropicProvider: LLMProvider {
         config.pricing ?? PricingMetadata(inputPer1KUSD: 0, outputPer1KUSD: 0, currency: "USD")
     }
     
+    var isConfigured: Bool {
+        keychain.apiKey(for: .anthropic) != nil
+    }
+    
+    func fetchModels() async throws -> [LLMModel] {
+
+        // Anthropic does not provide a public /models endpoint; using static config list
+
+        return config.models
+
+    }
+    
     var defaultHeaders: [String: String] {
         [:] // Handled by Manager
     }

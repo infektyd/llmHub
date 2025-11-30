@@ -97,6 +97,22 @@ public class MistralManager {
         }
     }
     
+    // MARK: - Models List
+    
+    public func listModels() async throws -> MistralModelList {
+        let url = primaryURL.appendingPathComponent("models")
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw MistralError.networkError
+        }
+        
+        return try JSONDecoder().decode(MistralModelList.self, from: data)
+    }
+    
     // MARK: - Helper Request Builder
     
     public func makeChatRequest(
@@ -227,6 +243,17 @@ public class MistralManager {
 }
 
 // MARK: - Models
+
+// --- Models List ---
+
+public struct MistralModelList: Decodable {
+    public let data: [MistralModel]
+}
+
+public struct MistralModel: Decodable {
+    public let id: String
+    public let object: String
+}
 
 public enum MistralError: Error {
     case apiError(message: String)

@@ -7,11 +7,14 @@
 
 import Foundation
 import SwiftData
+import OSLog
 
 final class ChatService {
-    private let modelContext: ModelContext
-    private let providerRegistry: ProviderRegistry
+    let modelContext: ModelContext
+    let providerRegistry: ProviderRegistry
     private let costCalculator: CostCalculator
+
+    private let logger = Logger(subsystem: "com.llmhub", category: "ChatService")
 
     init(modelContext: ModelContext, providerRegistry: ProviderRegistry, costCalculator: CostCalculator = CostCalculator()) {
         self.modelContext = modelContext
@@ -76,12 +79,14 @@ final class ChatService {
         // Reload session to get full history
         let updatedSession = try loadSession(id: session.id)
         
+        logger.debug("Using provider: \(updatedSession.providerID), model: \(updatedSession.model)")
+
         // This loop handles tool calls.
         // For streaming, it's tricky because the stream yields chunks.
         // If a tool call occurs, we usually get a specific stop reason or event.
         // LLMProviderProtocol's streamResponse returns ProviderEvent.
         
-        let provider = try providerRegistry.provider(for: session.providerID)
+        let provider = try providerRegistry.provider(for: updatedSession.providerID)
         let request = try provider.buildRequest(messages: updatedSession.messages, model: updatedSession.model)
         
         return AsyncThrowingStream { continuation in

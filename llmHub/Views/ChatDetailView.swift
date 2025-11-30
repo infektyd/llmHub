@@ -37,6 +37,9 @@ struct ChatDetailView: View {
                 TextField("Message", text: $inputText, axis: .vertical)
                     .textFieldStyle(.roundedBorder)
                     .lineLimit(1...6)
+                    .onSubmit {
+                        Task { await send() }
+                    }
 
                 Button("Send") {
                     Task { await send() }

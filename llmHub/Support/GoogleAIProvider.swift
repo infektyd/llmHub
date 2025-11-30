@@ -26,7 +26,87 @@ struct GoogleAIProvider: LLMProvider {
     var pricing: PricingMetadata {
         config.pricing ?? PricingMetadata(inputPer1KUSD: 0, outputPer1KUSD: 0, currency: "USD")
     }
+    
+    var isConfigured: Bool {
+        keychain.apiKey(for: .google) != nil
+    }
+    
+    func fetchModels() async throws -> [LLMModel] {
 
+        guard let apiKey = keychain.apiKey(for: .google) else { throw LLMProviderError.authenticationMissing }
+
+        
+
+        let urlString = "https://generativelanguage.googleapis.com/v1beta/models?key=\(apiKey)"
+
+        guard let url = URL(string: urlString) else { throw LLMProviderError.invalidRequest }
+
+        
+
+        var request = URLRequest(url: url)
+
+        request.httpMethod = "GET"
+
+        
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        
+
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+
+            throw LLMProviderError.server(reason: "Failed to fetch models")
+
+        }
+
+        
+
+        struct GoogleModelsResponse: Decodable {
+
+            let models: [GoogleModel]
+
+            
+
+            struct GoogleModel: Decodable {
+
+                let name: String
+
+                let displayName: String?
+
+                let inputTokenLimit: Int?
+
+                let outputTokenLimit: Int?
+
+            }
+
+        }
+
+        
+
+        let decoded = try JSONDecoder().decode(GoogleModelsResponse.self, from: data)
+
+        
+
+        return decoded.models.map { model in
+
+            LLMModel(
+
+                id: model.name.replacingOccurrences(of: "models/", with: ""),
+
+                displayName: model.displayName ?? model.name,
+
+                contextWindow: model.inputTokenLimit ?? 128000,
+
+                supportsToolUse: true,
+
+                maxOutputTokens: model.outputTokenLimit ?? 8192
+
+            )
+
+        }
+
+    }
+    
     func buildRequest(messages: [ChatMessage], model: String) throws -> URLRequest {
         try buildRequest(messages: messages, model: model, jsonMode: false)
     }
