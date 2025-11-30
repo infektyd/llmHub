@@ -14,6 +14,11 @@ struct llmHubApp: App {
         WindowGroup {
             RootContainerView()
         }
-        .modelContainer(for: [ChatSessionEntity.self, ChatMessageEntity.self])
+        .modelContainer(for: [
+            ChatSessionEntity.self,
+            ChatMessageEntity.self,
+            ChatFolderEntity.self,
+            ChatTagEntity.self
+        ])
     }
 }
