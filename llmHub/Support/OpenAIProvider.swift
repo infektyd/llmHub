@@ -56,10 +56,14 @@ struct OpenAIProvider: LLMProvider {
     }
     
     func buildRequest(messages: [ChatMessage], model: String) throws -> URLRequest {
-        try buildRequest(messages: messages, model: model, jsonMode: false)
+        try buildRequest(messages: messages, model: model, tools: nil, jsonMode: false)
     }
     
-    func buildRequest(messages: [ChatMessage], model: String, jsonMode: Bool) throws -> URLRequest {
+    func buildRequest(messages: [ChatMessage], model: String, tools: [ToolDefinition]?) throws -> URLRequest {
+        try buildRequest(messages: messages, model: model, tools: tools, jsonMode: false)
+    }
+    
+    func buildRequest(messages: [ChatMessage], model: String, tools: [ToolDefinition]?, jsonMode: Bool) throws -> URLRequest {
         guard let apiKey = keychain.apiKey(for: .openAI) else {
             throw LLMProviderError.authenticationMissing
         }
@@ -68,6 +72,31 @@ struct OpenAIProvider: LLMProvider {
         
         // Map messages
         let openAIMessages = messages.map { msg -> OpenAIChatMessage in
+            // Handle tool role messages
+            if msg.role == .tool {
+                return OpenAIChatMessage(
+                    role: "tool",
+                    content: .text(msg.content),
+                    toolCallId: msg.toolCallID
+                )
+            }
+            
+            // Handle assistant messages with tool calls
+            if msg.role == .assistant, let toolCalls = msg.toolCalls, !toolCalls.isEmpty {
+                let openAIToolCalls = toolCalls.map { tc in
+                    OpenAIToolCall(
+                        id: tc.id,
+                        type: "function",
+                        function: OpenAIToolCall.FunctionCall(name: tc.name, arguments: tc.input)
+                    )
+                }
+                return OpenAIChatMessage(
+                    role: "assistant",
+                    content: .text(msg.content),
+                    toolCalls: openAIToolCalls
+                )
+            }
+            
             // Check for parts
             if !msg.parts.isEmpty {
                 var parts: [OpenAIContentPart] = []
@@ -80,8 +109,8 @@ struct OpenAIProvider: LLMProvider {
                     switch part {
                     case .text(let t):
                         if t != msg.content { parts.append(.text(t)) }
-                    case .image(let data, _):
-                        parts.append(.image(base64: data.base64EncodedString()))
+                    case .image(let data, let mimeType):
+                        parts.append(.image(base64: data.base64EncodedString(), mimeType: mimeType))
                     case .imageURL(let url):
                         parts.append(.image(url: url.absoluteString))
                     }
@@ -96,11 +125,24 @@ struct OpenAIProvider: LLMProvider {
             }
         }
         
-        // Default to non-streaming request builder
+        // Convert tool definitions to OpenAI format
+        let openAITools: [OpenAITool]? = tools?.map { toolDef in
+            OpenAITool(
+                type: "function",
+                function: OpenAIFunction(
+                    name: toolDef.name,
+                    description: toolDef.description,
+                    parameters: toolDef.inputSchema.mapValues { OpenAIJSONValue.from($0) }
+                )
+            )
+        }
+        
+        // Build request with tools
         return try manager.makeChatRequest(
             messages: openAIMessages,
             model: model,
             stream: false,
+            tools: openAITools,
             responseFormat: jsonMode ? OpenAIResponseFormat(type: "json_object") : nil
         )
     }
@@ -115,6 +157,8 @@ struct OpenAIProvider: LLMProvider {
                     if let bodyData = request.httpBody,
                        var json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any] {
                         json["stream"] = true
+                        // Enable stream options for usage in final chunk
+                        json["stream_options"] = ["include_usage": true]
                         streamRequest.httpBody = try JSONSerialization.data(withJSONObject: json)
                     }
                     streamRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
@@ -131,6 +175,8 @@ struct OpenAIProvider: LLMProvider {
                     }
                     
                     var fullText = ""
+                    // Track tool calls being accumulated (streaming tool calls come in chunks)
+                    var toolCallsInProgress: [Int: (id: String, name: String, arguments: String)] = [:]
                     
                     for try await line in result.lines {
                         let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -141,9 +187,51 @@ struct OpenAIProvider: LLMProvider {
                             if let data = jsonStr.data(using: .utf8),
                                let chunk = try? JSONDecoder().decode(OpenAIStreamChunk.self, from: data) {
                                 
-                                if let choice = chunk.choices.first, let content = choice.delta.content {
-                                    fullText += content
-                                    continuation.yield(.token(text: content))
+                                if let choice = chunk.choices.first {
+                                    // Handle text content
+                                    if let content = choice.delta.content {
+                                        fullText += content
+                                        continuation.yield(.token(text: content))
+                                    }
+                                    
+                                    // Handle tool calls (streamed in chunks)
+                                    if let toolCalls = choice.delta.toolCalls {
+                                        for tc in toolCalls {
+                                            let idx = tc.index
+                                            
+                                            // Initialize new tool call
+                                            if let id = tc.id {
+                                                toolCallsInProgress[idx] = (id: id, name: tc.function?.name ?? "", arguments: "")
+                                            }
+                                            
+                                            // Accumulate function name
+                                            if let name = tc.function?.name, !name.isEmpty {
+                                                if var existing = toolCallsInProgress[idx] {
+                                                    existing.name += name
+                                                    toolCallsInProgress[idx] = existing
+                                                }
+                                            }
+                                            
+                                            // Accumulate arguments
+                                            if let args = tc.function?.arguments, !args.isEmpty {
+                                                if var existing = toolCallsInProgress[idx] {
+                                                    existing.arguments += args
+                                                    toolCallsInProgress[idx] = existing
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Check for finish_reason to emit completed tool calls
+                                    if choice.finishReason == "tool_calls" {
+                                        for (_, toolCall) in toolCallsInProgress.sorted(by: { $0.key < $1.key }) {
+                                            continuation.yield(.toolUse(
+                                                id: toolCall.id,
+                                                name: toolCall.name,
+                                                input: toolCall.arguments
+                                            ))
+                                        }
+                                    }
                                 }
                                 
                                 // Usage in final chunk (sometimes provided by OpenAI)
@@ -159,16 +247,24 @@ struct OpenAIProvider: LLMProvider {
                     }
                     
                     // Final completion
-                    let message = ChatMessage(
+                    var message = ChatMessage(
                         id: UUID(),
                         role: .assistant,
                         content: fullText,
-                        parts: [], // Initialize with empty parts
+                        parts: [],
                         createdAt: Date(),
                         codeBlocks: [],
                         tokenUsage: nil,
                         costBreakdown: nil
                     )
+                    
+                    // Add tool calls to message if any
+                    if !toolCallsInProgress.isEmpty {
+                        message.toolCalls = toolCallsInProgress.values.map { tc in
+                            ToolCall(id: tc.id, name: tc.name, input: tc.arguments)
+                        }
+                    }
+                    
                     continuation.yield(.completion(message: message))
                     continuation.finish()
                     

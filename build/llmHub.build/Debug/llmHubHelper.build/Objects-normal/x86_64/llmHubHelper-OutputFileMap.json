@@ -1,0 +1,59 @@
+{
+  "" : {
+    "diagnostics" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/llmHubHelper-primary.dia",
+    "emit-module-dependencies" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/llmHubHelper-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/llmHubHelper-primary-emit-module.dia",
+    "pch" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/llmHubHelper-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/llmHubHelper-primary.swiftdeps"
+  },
+  "/Users/hansaxelsson/llmHub/llmHubHelper/CodeExecutionHandler.swift" : {
+    "const-values" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionHandler.swiftconstvalues",
+    "dependencies" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionHandler.d",
+    "diagnostics" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionHandler.dia",
+    "index-unit-output-path" : "/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionHandler.o",
+    "llvm-bc" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionHandler.bc",
+    "object" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionHandler.o",
+    "swift-dependencies" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionHandler.swiftdeps",
+    "swiftmodule" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionHandler~partial.swiftmodule"
+  },
+  "/Users/hansaxelsson/llmHub/llmHubHelper/CodeExecutionServiceDelegate.swift" : {
+    "const-values" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionServiceDelegate.swiftconstvalues",
+    "dependencies" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionServiceDelegate.d",
+    "diagnostics" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionServiceDelegate.dia",
+    "index-unit-output-path" : "/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionServiceDelegate.o",
+    "llvm-bc" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionServiceDelegate.bc",
+    "object" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionServiceDelegate.o",
+    "swift-dependencies" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionServiceDelegate.swiftdeps",
+    "swiftmodule" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionServiceDelegate~partial.swiftmodule"
+  },
+  "/Users/hansaxelsson/llmHub/llmHubHelper/CodeExecutionXPCProtocol.swift" : {
+    "const-values" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionXPCProtocol.swiftconstvalues",
+    "dependencies" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionXPCProtocol.d",
+    "diagnostics" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionXPCProtocol.dia",
+    "index-unit-output-path" : "/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionXPCProtocol.o",
+    "llvm-bc" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionXPCProtocol.bc",
+    "object" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionXPCProtocol.o",
+    "swift-dependencies" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionXPCProtocol.swiftdeps",
+    "swiftmodule" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutionXPCProtocol~partial.swiftmodule"
+  },
+  "/Users/hansaxelsson/llmHub/llmHubHelper/CodeExecutor.swift" : {
+    "const-values" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutor.swiftconstvalues",
+    "dependencies" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutor.d",
+    "diagnostics" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutor.dia",
+    "index-unit-output-path" : "/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutor.o",
+    "llvm-bc" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutor.bc",
+    "object" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutor.o",
+    "swift-dependencies" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutor.swiftdeps",
+    "swiftmodule" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/CodeExecutor~partial.swiftmodule"
+  },
+  "/Users/hansaxelsson/llmHub/llmHubHelper/main.swift" : {
+    "const-values" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/main.swiftconstvalues",
+    "dependencies" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/main.d",
+    "diagnostics" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/main.dia",
+    "index-unit-output-path" : "/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/main.o",
+    "llvm-bc" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/main.bc",
+    "object" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/main.o",
+    "swift-dependencies" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/main.swiftdeps",
+    "swiftmodule" : "/Users/hansaxelsson/llmHub/build/llmHub.build/Debug/llmHubHelper.build/Objects-normal/x86_64/main~partial.swiftmodule"
+  }
+}

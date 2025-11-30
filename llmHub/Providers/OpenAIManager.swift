@@ -121,12 +121,16 @@ public class OpenAIManager {
         messages: [OpenAIChatMessage],
         model: String,
         stream: Bool,
+        tools: [OpenAITool]? = nil,
+        toolChoice: OpenAIToolChoice? = nil,
         responseFormat: OpenAIResponseFormat? = nil
     ) throws -> URLRequest {
         let payload = OpenAIChatRequest(
             model: model,
             messages: messages,
             stream: stream,
+            tools: tools,
+            toolChoice: toolChoice,
             responseFormat: responseFormat
         )
         let url = baseURL.appendingPathComponent("chat/completions")
@@ -371,6 +375,10 @@ public struct OpenAIContentPart: Encodable {
     public static func image(base64: String, detail: String? = "auto") -> OpenAIContentPart {
         OpenAIContentPart(type: "image_url", text: nil, imageUrl: OpenAIImageURL(url: "data:image/jpeg;base64,\(base64)", detail: detail))
     }
+    
+    public static func image(base64: String, mimeType: String, detail: String? = "auto") -> OpenAIContentPart {
+        OpenAIContentPart(type: "image_url", text: nil, imageUrl: OpenAIImageURL(url: "data:\(mimeType);base64,\(base64)", detail: detail))
+    }
 }
 
 public struct OpenAIImageURL: Encodable {
@@ -386,7 +394,59 @@ public struct OpenAITool: Encodable {
 public struct OpenAIFunction: Encodable {
     let name: String
     let description: String?
-    let parameters: [String: AnyEncodable]?
+    let parameters: [String: OpenAIJSONValue]?
+}
+
+// JSON value wrapper for OpenAI API (handles Any -> Encodable conversion)
+public enum OpenAIJSONValue: Encodable, Sendable {
+    case null
+    case bool(Bool)
+    case int(Int)
+    case double(Double)
+    case string(String)
+    case array([OpenAIJSONValue])
+    case object([String: OpenAIJSONValue])
+    
+    public static func from(_ value: Any) -> OpenAIJSONValue {
+        switch value {
+        case is NSNull:
+            return .null
+        case let b as Bool:
+            return .bool(b)
+        case let i as Int:
+            return .int(i)
+        case let d as Double:
+            return .double(d)
+        case let s as String:
+            return .string(s)
+        case let arr as [Any]:
+            return .array(arr.map { from($0) })
+        case let dict as [String: Any]:
+            return .object(dict.mapValues { from($0) })
+        default:
+            return .null
+        }
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .null:
+            try container.encodeNil()
+        case .bool(let b):
+            try container.encode(b)
+        case .int(let i):
+            try container.encode(i)
+        case .double(let d):
+            try container.encode(d)
+        case .string(let s):
+            try container.encode(s)
+        case .array(let arr):
+            try container.encode(arr)
+        case .object(let dict):
+            try container.encode(dict)
+        }
+    }
 }
 
 public enum OpenAIToolChoice: Encodable {

@@ -19,8 +19,30 @@ protocol LLMProvider: Identifiable {
 
     func fetchModels() async throws -> [LLMModel]
     func buildRequest(messages: [ChatMessage], model: String) throws -> URLRequest
+    func buildRequest(messages: [ChatMessage], model: String, tools: [ToolDefinition]?) throws -> URLRequest
     func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error>
     func parseTokenUsage(from response: Data) throws -> TokenUsage?
+}
+
+/// Tool definition for LLM function calling
+struct ToolDefinition: Sendable {
+    let name: String
+    let description: String
+    let inputSchema: [String: Any]
+    
+    init(from tool: any Tool) {
+        self.name = tool.name
+        self.description = tool.description
+        self.inputSchema = tool.inputSchema
+    }
+}
+
+// Default implementation for providers that don't support tools yet
+extension LLMProvider {
+    func buildRequest(messages: [ChatMessage], model: String, tools: [ToolDefinition]?) throws -> URLRequest {
+        // Default: ignore tools, just build regular request
+        try buildRequest(messages: messages, model: model)
+    }
 }
 
 struct LLMModel: Identifiable, Hashable, Sendable {
