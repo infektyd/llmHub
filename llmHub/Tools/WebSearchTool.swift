@@ -102,10 +102,8 @@ struct WebSearchTool: Tool {
         
         // Parse DuckDuckGo HTML results
         // Results are in <div class="result"> blocks
-        let resultPattern = #"<div class="result[^"]*"[^>]*>.*?</div>\s*</div>"#
-        let titlePattern = #"<a[^>]*class="result__a"[^>]*>([^<]+)</a>"#
-        let urlPattern = #"<a[^>]*class="result__url"[^>]*href="([^"]+)"[^>]*>([^<]*)</a>"#
-        let snippetPattern = #"<a[^>]*class="result__snippet"[^>]*>([^<]*(?:<[^/][^>]*>[^<]*</[^>]*>)*[^<]*)</a>"#
+        // Parse DuckDuckGo HTML results
+        // Results are in <div class="result"> blocks
         
         // Alternative simpler patterns for DuckDuckGo's structure
         let linkPattern = #"<a rel="nofollow" class="result__a" href="([^"]+)">([^<]+)</a>"#

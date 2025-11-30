@@ -5,37 +5,37 @@ protocol Tool: Sendable {
     var name: String { get }
     var description: String { get }
     var inputSchema: [String: Any] { get }
-    
+
     func execute(input: [String: Any]) async throws -> String
 }
 
 struct ToolRegistry {
     private(set) var tools: [String: any Tool] = [:]
-    
-    init(tools: [any Tool] = []) {
+
+    nonisolated init(tools: [any Tool] = []) {
         self.tools = Dictionary(uniqueKeysWithValues: tools.map { ($0.name, $0) })
     }
-    
+
     func tool(named name: String) -> (any Tool)? {
         tools[name]
     }
-    
+
     mutating func register(_ tool: any Tool) {
         tools[tool.name] = tool
     }
-    
+
     /// Get all registered tools
     var allTools: [any Tool] {
         Array(tools.values)
     }
-    
+
     /// Get tool schemas for LLM function calling
     var toolSchemas: [[String: Any]] {
         allTools.map { tool in
             [
                 "name": tool.name,
                 "description": tool.description,
-                "input_schema": tool.inputSchema
+                "input_schema": tool.inputSchema,
             ]
         }
     }
@@ -51,39 +51,42 @@ extension ToolRegistry {
     @MainActor
     static func defaultRegistry() -> ToolRegistry {
         var registry = ToolRegistry()
-        
+
         // Register Calculator
         registry.register(CalculatorTool())
-        
+
         // Register Code Interpreter with settings from UserDefaults
         let codeInterpreter = CodeInterpreterTool()
         if let modeString = UserDefaults.standard.string(forKey: "codeInterpreter.securityMode"),
-           let mode = CodeSecurityMode(rawValue: modeString) {
+            let mode = CodeSecurityMode(rawValue: modeString)
+        {
             codeInterpreter.securityMode = mode
         }
-        codeInterpreter.timeoutSeconds = UserDefaults.standard.integer(forKey: "codeInterpreter.timeout")
+        codeInterpreter.timeoutSeconds = UserDefaults.standard.integer(
+            forKey: "codeInterpreter.timeout")
         if codeInterpreter.timeoutSeconds == 0 {
-            codeInterpreter.timeoutSeconds = 30 // Default
+            codeInterpreter.timeoutSeconds = 30  // Default
         }
         registry.register(codeInterpreter)
-        
+
         // Register Web Search
         registry.register(WebSearchTool())
-        
+
         // Register File Reader
         registry.register(FileReaderTool())
-        
+
         // Register File Editor with settings from UserDefaults
         let fileEditor = FileEditorTool()
         if let modeString = UserDefaults.standard.string(forKey: "fileEditor.securityMode"),
-           let mode = FileSecurityMode(rawValue: modeString) {
+            let mode = FileSecurityMode(rawValue: modeString)
+        {
             fileEditor.securityMode = mode
         }
         registry.register(fileEditor)
-        
+
         return registry
     }
-    
+
     /// Synchronous factory for use in nonisolated contexts
     /// Uses MainActor.assumeIsolated for safe synchronous access when called from MainActor
     /// Falls back to minimal registry when called from other contexts
@@ -107,25 +110,25 @@ struct CalculatorTool: Tool {
     let id = "calculator"
     let name = "calculator"
     let description = "Evaluates mathematical expressions. Use this for any math questions."
-    
+
     var inputSchema: [String: Any] {
         [
             "type": "object",
             "properties": [
                 "expression": [
                     "type": "string",
-                    "description": "The mathematical expression to evaluate (e.g., '5 * 5 + 2')"
+                    "description": "The mathematical expression to evaluate (e.g., '5 * 5 + 2')",
                 ]
             ],
-            "required": ["expression"]
+            "required": ["expression"],
         ]
     }
-    
+
     func execute(input: [String: Any]) async throws -> String {
         guard let expression = input["expression"] as? String else {
             throw ToolError.invalidInput
         }
-        
+
         // Using NSExpression for basic safety (avoiding full eval)
         let expr = NSExpression(format: expression)
         if let result = expr.expressionValue(with: nil, context: nil) as? NSNumber {
@@ -139,7 +142,7 @@ struct CalculatorTool: Tool {
 enum ToolError: LocalizedError {
     case invalidInput
     case executionFailed(String)
-    
+
     var errorDescription: String? {
         switch self {
         case .invalidInput:
