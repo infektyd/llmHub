@@ -17,12 +17,14 @@ struct ChatSession: Identifiable {
     var updatedAt: Date
     var messages: [ChatMessage]
     var metadata: ChatSessionMetadata
+    var jsonMode: Bool = false
 }
 
 struct ChatMessage: Identifiable {
     let id: UUID
     let role: MessageRole
-    let content: String
+    var content: String
+    var thoughtProcess: String?
     let parts: [ChatContentPart]
     let createdAt: Date
     var codeBlocks: [CodeBlock]
@@ -78,6 +80,7 @@ final class ChatSessionEntity {
     var lastTokenUsageCachedTokens: Int?
     var totalCostUSD: Decimal
     var referenceID: String
+    var jsonMode: Bool = false
 
     init(session: ChatSession) {
         id = session.id
@@ -92,6 +95,7 @@ final class ChatSessionEntity {
         lastTokenUsageCachedTokens = session.metadata.lastTokenUsage?.cachedTokens
         totalCostUSD = session.metadata.totalCostUSD
         referenceID = session.metadata.referenceID
+        jsonMode = session.jsonMode
     }
 
     func asDomain() -> ChatSession {
@@ -107,7 +111,8 @@ final class ChatSessionEntity {
                 lastTokenUsage: lastTokenUsageInputTokens.map { TokenUsage(inputTokens: $0, outputTokens: lastTokenUsageOutputTokens!, cachedTokens: lastTokenUsageCachedTokens!) },
                 totalCostUSD: totalCostUSD,
                 referenceID: referenceID
-            )
+            ),
+            jsonMode: jsonMode
         )
     }
 }
@@ -117,6 +122,7 @@ final class ChatMessageEntity {
     @Attribute(.unique) var id: UUID
     var role: String
     var content: String
+    var thoughtProcess: String?
     var partsData: Data? // JSON encoded [ChatContentPart]
     var createdAt: Date
     var codeBlocksData: Data?
@@ -133,6 +139,7 @@ final class ChatMessageEntity {
         id = message.id
         role = message.role.rawValue
         content = message.content
+        thoughtProcess = message.thoughtProcess
         partsData = try? JSONEncoder().encode(message.parts)
         createdAt = message.createdAt
         codeBlocksData = try? JSONEncoder().encode(message.codeBlocks)
@@ -146,7 +153,7 @@ final class ChatMessageEntity {
     }
 
     func asDomain() -> ChatMessage {
-        ChatMessage(
+        var domainMsg = ChatMessage(
             id: id,
             role: MessageRole(rawValue: role)!,
             content: content,
@@ -156,5 +163,7 @@ final class ChatMessageEntity {
             tokenUsage: tokenUsageInputTokens.map { TokenUsage(inputTokens: $0, outputTokens: tokenUsageOutputTokens!, cachedTokens: tokenUsageCachedTokens!) },
             costBreakdown: costBreakdownInputCost.map { CostBreakdown(inputCost: $0, outputCost: costBreakdownOutputCost!, cachedCost: costBreakdownCachedCost!, totalCost: costBreakdownTotalCost!) }
         )
+        domainMsg.thoughtProcess = thoughtProcess
+        return domainMsg
     }
 }

@@ -33,6 +33,24 @@ struct OpenRouterProvider: LLMProvider {
         config.pricing ?? PricingMetadata(inputPer1KUSD: 0, outputPer1KUSD: 0, currency: "USD")
     }
     
+    var isConfigured: Bool {
+        keychain.apiKey(for: .openRouter) != nil
+    }
+    
+    func fetchModels() async throws -> [LLMModel] {
+        guard let apiKey = keychain.apiKey(for: .openRouter) else { return [] }
+        let manager = OpenRouterManager(apiKey: apiKey)
+        let models = try await manager.listModels()
+        return models.map {
+            LLMModel(
+                id: $0.id,
+                name: $0.name,
+                maxOutputTokens: $0.context_length,
+                contextWindow: $0.context_length
+            )
+        }
+    }
+    
     func buildRequest(messages: [ChatMessage], model: String) throws -> URLRequest {
         try buildRequest(messages: messages, model: model, jsonMode: false)
     }

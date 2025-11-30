@@ -22,25 +22,20 @@ final class KeychainStore: @unchecked Sendable {
             try deleteKey(for: provider)
             return
         }
+        
+        // First, try to delete existing item
+        try? deleteKey(for: provider)
+        
         var query = baseQuery(for: provider)
-        var access: SecAccessControl?
-        #if os(iOS)
-        access = SecAccessControlCreateWithFlags(nil, kSecAttrAccessibleWhenUnlockedThisDeviceOnly, [.biometryCurrentSet], nil)
-        #else
-        access = SecAccessControlCreateWithFlags(nil, kSecAttrAccessibleWhenUnlockedThisDeviceOnly, [.biometryCurrentSet], nil)
-        #endif
-
-        query[kSecAttrAccessControl as String] = access
+        
+        // Simplified security: Use standard attribute security instead of SecAccessControl
+        // This is more robust across Simulators/macOS/iOS for basic API key storage.
+        query[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlocked
         query[kSecValueData as String] = data
-        query[kSecUseAuthenticationUI as String] = kSecUseAuthenticationUISkip
 
         let status = SecItemAdd(query as CFDictionary, nil)
-        if status == errSecDuplicateItem {
-            let updateStatus = SecItemUpdate(baseQuery(for: provider) as CFDictionary, [kSecValueData as String: data] as CFDictionary)
-            guard updateStatus == errSecSuccess else {
-                throw KeychainError.operationFailed(updateStatus)
-            }
-        } else if status != errSecSuccess {
+        
+        if status != errSecSuccess {
             throw KeychainError.operationFailed(status)
         }
     }
@@ -67,8 +62,8 @@ final class KeychainStore: @unchecked Sendable {
         [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrAccount as String: provider.rawValue,
-            kSecAttrService as String: "com.llmhub.keys",
-            kSecUseAuthenticationContext as String: authenticationContext
+            kSecAttrService as String: "com.llmhub.keys"
+            // Removed kSecUseAuthenticationContext to let system handle UI prompt if needed
         ]
     }
 
@@ -79,6 +74,13 @@ final class KeychainStore: @unchecked Sendable {
     }
 }
 
-enum KeychainError: Error {
+enum KeychainError: LocalizedError {
     case operationFailed(OSStatus)
+    
+    var errorDescription: String? {
+        switch self {
+        case .operationFailed(let status):
+            return "Keychain operation failed with status: \(status)"
+        }
+    }
 }

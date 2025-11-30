@@ -33,6 +33,28 @@ struct OpenAIProvider: LLMProvider {
         config.pricing ?? PricingMetadata(inputPer1KUSD: 0.005, outputPer1KUSD: 0.015, currency: "USD")
     }
     
+    var isConfigured: Bool {
+        keychain.apiKey(for: .openAI) != nil
+    }
+    
+    func fetchModels() async throws -> [LLMModel] {
+        guard let apiKey = keychain.apiKey(for: .openAI) else { return [] }
+        let manager = OpenAIManager(apiKey: apiKey)
+        
+        do {
+            let models = try await manager.listModels()
+            return models.map { model in
+                LLMModel(
+                    id: model.id,
+                    name: model.id,
+                    maxOutputTokens: 4096 // Default as API doesn't return this
+                )
+            }
+        } catch {
+            return config.models // Fallback
+        }
+    }
+    
     func buildRequest(messages: [ChatMessage], model: String) throws -> URLRequest {
         try buildRequest(messages: messages, model: model, jsonMode: false)
     }

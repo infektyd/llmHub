@@ -16,7 +16,9 @@ struct ChatListView: View {
             get: { viewModel.selectedSession?.id },
             set: { id in
                 if let id, let session = viewModel.sessions.first(where: { $0.id == id }) {
-                    viewModel.selectedSession = session
+                    DispatchQueue.main.async {
+                        viewModel.selectedSession = session
+                    }
                 }
             })) {
                 ForEach(viewModel.sessions) { session in
@@ -42,3 +44,4 @@ struct ChatListView: View {
             }
     }
 }
+

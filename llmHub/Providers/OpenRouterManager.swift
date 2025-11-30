@@ -312,5 +312,7 @@ public struct ORModelInfo: Decodable {
         public let prompt: String
         public let completion: String
     }
+    
+    public let context_length: Int
 }
 
