@@ -188,16 +188,16 @@ actor MCPToolBridge {
 /// Uses @unchecked Sendable because inputSchema is [String: Any] which is not Sendable,
 /// but we know it's immutable and thread-safe in this context.
 final class MCPBridgedTool: Tool, @unchecked Sendable {
-    let id: String
-    let name: String
-    let description: String
-    let inputSchema: [String: Any]
+    nonisolated let id: String
+    nonisolated let name: String
+    nonisolated let description: String
+    nonisolated let inputSchema: [String: Any]
 
-    let serverID: UUID
+    nonisolated let serverID: UUID
     private let client: MCPClient
     private let logger = Logger(subsystem: "com.llmhub", category: "MCPBridgedTool")
 
-    init(serverID: UUID, client: MCPClient, toolInfo: MCPToolInfo) {
+    nonisolated init(serverID: UUID, client: MCPClient, toolInfo: MCPToolInfo) {
         self.serverID = serverID
         self.client = client
         self.id = "mcp_\(serverID.uuidString.prefix(8))_\(toolInfo.name)"
@@ -227,7 +227,7 @@ final class MCPBridgedTool: Tool, @unchecked Sendable {
         }
     }
 
-    func execute(input: [String: Any]) async throws -> String {
+    nonisolated func execute(input: [String: Any]) async throws -> String {
         logger.info("Calling MCP tool: \(self.name)")
 
         do {
