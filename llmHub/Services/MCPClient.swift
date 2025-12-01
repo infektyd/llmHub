@@ -147,8 +147,8 @@ actor MCPClient {
     }
 
     /// Call a tool on the server
-    func callTool(name: String, arguments: [String: Any]) async throws -> MCPToolResult {
-        let params = MCPToolCallParams(name: name, arguments: MCPJSONValue.from(arguments))
+    func callTool(name: String, arguments: MCPJSONValue) async throws -> MCPToolResult {
+        let params = MCPToolCallParams(name: name, arguments: arguments)
 
         let response = try await sendRequest(method: "tools/call", params: params)
 

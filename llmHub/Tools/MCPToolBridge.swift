@@ -231,7 +231,7 @@ final class MCPBridgedTool: Tool, @unchecked Sendable {
         logger.info("Calling MCP tool: \(self.name)")
 
         do {
-            let result = try await client.callTool(name: name, arguments: input)
+            let result = try await client.callTool(name: name, arguments: MCPJSONValue.from(input))
 
             // Format the result
             var output = ""

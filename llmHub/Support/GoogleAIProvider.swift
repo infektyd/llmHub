@@ -1,8 +1,9 @@
 import Foundation
 
+@MainActor
 struct GoogleAIProvider: LLMProvider {
-    let id: String = "google"
-    let name: String = "Google AI (Gemini)"
+    nonisolated let id: String = "google"
+    nonisolated let name: String = "Google AI (Gemini)"
 
     private let keychain: KeychainStore
     private let config: ProvidersConfig.GoogleAI
@@ -21,37 +22,31 @@ struct GoogleAIProvider: LLMProvider {
 
     var availableModels: [LLMModel] { config.models }
 
-    var defaultHeaders: [String : String] { ["Content-Type": "application/json"] }
+    var defaultHeaders: [String: String] { ["Content-Type": "application/json"] }
 
     var pricing: PricingMetadata {
         config.pricing ?? PricingMetadata(inputPer1KUSD: 0, outputPer1KUSD: 0, currency: "USD")
     }
-    
+
     var isConfigured: Bool {
         keychain.apiKey(for: .google) != nil
     }
-    
+
     func fetchModels() async throws -> [LLMModel] {
 
-        guard let apiKey = keychain.apiKey(for: .google) else { throw LLMProviderError.authenticationMissing }
-
-        
+        guard let apiKey = keychain.apiKey(for: .google) else {
+            throw LLMProviderError.authenticationMissing
+        }
 
         let urlString = "https://generativelanguage.googleapis.com/v1beta/models?key=\(apiKey)"
 
         guard let url = URL(string: urlString) else { throw LLMProviderError.invalidRequest }
 
-        
-
         var request = URLRequest(url: url)
 
         request.httpMethod = "GET"
 
-        
-
         let (data, response) = try await URLSession.shared.data(for: request)
-
-        
 
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
 
@@ -59,13 +54,9 @@ struct GoogleAIProvider: LLMProvider {
 
         }
 
-        
-
         struct GoogleModelsResponse: Decodable {
 
             let models: [GoogleModel]
-
-            
 
             struct GoogleModel: Decodable {
 
@@ -81,11 +72,7 @@ struct GoogleAIProvider: LLMProvider {
 
         }
 
-        
-
         let decoded = try JSONDecoder().decode(GoogleModelsResponse.self, from: data)
-
-        
 
         return decoded.models.map { model in
 
@@ -106,7 +93,7 @@ struct GoogleAIProvider: LLMProvider {
         }
 
     }
-    
+
     func buildRequest(messages: [ChatMessage], model: String) throws -> URLRequest {
         try buildRequest(messages: messages, model: model, jsonMode: false)
     }
@@ -115,62 +102,62 @@ struct GoogleAIProvider: LLMProvider {
         guard let apiKey = keychain.apiKey(for: .google) else {
             throw LLMProviderError.authenticationMissing
         }
-        
+
         let manager = GeminiManager(apiKey: apiKey)
-        
+
         var prompt = ""
         var history: [Content] = []
-        
+
         // Filter out empty messages just in case
         let validMessages = messages.filter { !$0.content.isEmpty }
-        
+
         if let last = validMessages.last {
             prompt = last.content
-            
+
             if validMessages.count > 1 {
                 let historyMessages = validMessages.dropLast()
                 history = historyMessages.map { msg in
                     let role: String
                     switch msg.role {
-                    case .user, .system: role = "user" // Gemini 1.5 usually treats system prompts via config or user role
+                    case .user, .system: role = "user"  // Gemini 1.5 usually treats system prompts via config or user role
                     case .assistant: role = "model"
-                    case .tool: role = "user" // tool responses feed as user content
+                    case .tool: role = "user"  // tool responses feed as user content
                     }
                     return Content(role: role, parts: [.text(msg.content)])
                 }
             }
         }
-        
+
         // Note: For now we default to no media files and thinking level off.
         // These could be exposed via options if LLMProvider protocol supported them.
-        
+
         // Extract media from parts
         var mediaFiles: [MediaFile] = []
-        
+
         // Only the LAST user message usually carries new attachments in a typical chat flow,
         // but if history has images, Gemini expects them inline in the history.
         // We'll map all history.
-        
+
         if let last = validMessages.last {
-            prompt = last.content // Text content
-            
+            prompt = last.content  // Text content
+
             // Add attachments from last message
             for part in last.parts {
                 if case .image(let data, let mime) = part {
                     mediaFiles.append(MediaFile(data: data, mimeType: mime))
                 }
             }
-            
+
             if validMessages.count > 1 {
                 let historyMessages = validMessages.dropLast()
                 history = historyMessages.map { msg in
                     let role: String
                     switch msg.role {
-                    case .user, .system: role = "user" 
+                    case .user, .system: role = "user"
                     case .assistant: role = "model"
                     case .tool: role = "user"
                     }
-                    
+
                     var parts: [Part] = []
                     // Text
                     if !msg.content.isEmpty {
@@ -183,20 +170,20 @@ struct GoogleAIProvider: LLMProvider {
                             parts.append(.inlineData(InlineData(mimeType: mime, data: base64)))
                         }
                     }
-                    
+
                     // Fallback if empty (shouldn't happen with filter)
                     if parts.isEmpty { parts.append(.text("...")) }
-                    
+
                     return Content(role: role, parts: parts)
                 }
             }
         }
-        
-        // We build a non-streaming request by default. 
+
+        // We build a non-streaming request by default.
         // streamResponse will convert it to a streaming request if needed.
         return try manager.makeGenerateContentRequest(
             prompt: prompt,
-            files: mediaFiles, // Only new files attached to the current prompt
+            files: mediaFiles,  // Only new files attached to the current prompt
             model: model,
             history: history,
             stream: false
@@ -210,47 +197,57 @@ struct GoogleAIProvider: LLMProvider {
                     // Convert to streaming request
                     var streamRequest = request
                     if let url = request.url, url.absoluteString.contains(":generateContent") {
-                        let newString = url.absoluteString
-                            .replacingOccurrences(of: ":generateContent", with: ":streamGenerateContent")
+                        let newString =
+                            url.absoluteString
+                            .replacingOccurrences(
+                                of: ":generateContent", with: ":streamGenerateContent")
                             + "&alt=sse"
                         streamRequest.url = URL(string: newString)
                     }
-                    
+
                     let (result, response) = try await URLSession.shared.bytes(for: streamRequest)
-                    
-                    guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+
+                    guard let httpResponse = response as? HTTPURLResponse,
+                        (200...299).contains(httpResponse.statusCode)
+                    else {
                         // Attempt to read error
                         var errorText = ""
                         for try await line in result.lines { errorText += line }
-                        continuation.yield(.error(.server(reason: errorText.isEmpty ? "Unknown streaming error" : errorText)))
+                        continuation.yield(
+                            .error(
+                                .server(
+                                    reason: errorText.isEmpty
+                                        ? "Unknown streaming error" : errorText)))
                         continuation.finish()
                         return
                     }
-                    
+
                     var fullText = ""
-                    
+
                     for try await line in result.lines {
                         let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-                        
+
                         if trimmed.hasPrefix("data: ") {
                             let json = String(trimmed.dropFirst(6))
                             if json == "[DONE]" { break }
-                            
+
                             if let data = json.data(using: .utf8),
-                               let chunk = try? JSONDecoder().decode(GenerationResponse.self, from: data),
-                               let text = chunk.text {
+                                let chunk = try? JSONDecoder().decode(
+                                    GenerationResponse.self, from: data),
+                                let text = chunk.text
+                            {
                                 fullText += text
                                 continuation.yield(.token(text: text))
                             }
                         }
                     }
-                    
+
                     // Final completion event with full message
                     let message = ChatMessage(
                         id: UUID(),
                         role: .assistant,
                         content: fullText,
-                        parts: [], // Initialize with empty parts
+                        parts: [],  // Initialize with empty parts
                         createdAt: Date(),
                         codeBlocks: [],
                         tokenUsage: nil,
@@ -258,7 +255,7 @@ struct GoogleAIProvider: LLMProvider {
                     )
                     continuation.yield(.completion(message: message))
                     continuation.finish()
-                    
+
                 } catch {
                     continuation.yield(.error(.network(error as? URLError ?? URLError(.unknown))))
                     continuation.finish()
