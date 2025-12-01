@@ -5,20 +5,20 @@
 //  Created by AI Assistant on 11/27/25.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 @main
 struct llmHubApp: App {
     var body: some Scene {
         WindowGroup {
-            RootContainerView()
+            ContentView()
         }
         .modelContainer(for: [
             ChatSessionEntity.self,
             ChatMessageEntity.self,
             ChatFolderEntity.self,
-            ChatTagEntity.self
+            ChatTagEntity.self,
         ])
     }
 }

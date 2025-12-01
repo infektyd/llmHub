@@ -1,64 +1,81 @@
-# Agent Architecture
+# Agent Context Injection: llmHub
 
-This document defines the "Brain" (LLM) and "Hand" (Tool) interaction model for LLMHub, following the "Valon/Modi/Core" principles.
+> **SYSTEM NOTE**: This file contains the authoritative architectural state of the `llmHub` project. Use this context to ground all future code generation and reasoning.
 
-## Core Concepts
+## 1. Project Summary
+**llmHub** is a native macOS IDE for interacting with LLMs. It moves beyond simple chat by implementing a "Brain/Hand" architecture where the LLM (Brain) can deterministically invoke Tools (Hand) to perform actions like code execution, file manipulation, and web search.
 
-### 1. The Brain (LLMProvider)
-The **Brain** is responsible for:
-- Processing user intent.
-- Determining if a **Tool** is needed.
-- Generating arguments for the tool.
-- Synthesizing the final response after tool execution.
+## 2. Architecture: "Valon/Modi/Core"
+The system follows a strict separation of concerns:
 
-### 2. The Hand (Tool)
-The **Hand** is a deterministic function that:
-- Takes structured input (JSON).
-- Performs a specific action (e.g., Calculator, Web Search, File Access).
-- Returns a structured string result (or JSON).
+### The Brain (Providers)
+- **Role**: Intent processing and response generation.
+- **Protocol**: `LLMProvider` (`LLMProviderProtocol.swift`)
+- **Implementations**:
+  - `OpenAIManager` (GPT-4o, o1)
+  - `AnthropicManager` (Claude 3.5 Sonnet)
+  - `GeminiManager` (Google AI)
+  - `MistralManager` (Mistral AI)
+  - `XAIManager` (Grok)
+  - `OpenRouterManager` (Aggregator)
 
-### 3. The Loop (ChatService)
-The **Loop** coordinates the Brain and Hand:
-1.  **User Turn**: User sends message.
-2.  **Brain Turn**: LLM generates response (Text OR Tool Call).
-3.  **Hand Turn** (if needed):
-    *   Service detects Tool Call.
-    *   Service executes Tool.
-    *   Service appends `ToolResult` to history.
-    *   Service triggers **Brain Turn** again (Recursion).
-4.  **Completion**: LLM generates final text response.
+### The Hand (Tools)
+- **Role**: Deterministic execution of capabilities.
+- **Protocol**: `Tool` (`ToolRegistry.swift`)
+- **Core Tools**:
+  - `CodeInterpreterTool`: Swift/Python execution via Sandboxed XPC.
+  - `FileEditorTool` / `FileReaderTool`: Local filesystem access.
+  - `MCPToolBridge`: Bridges external Model Context Protocol servers.
 
-## Protocol Definitions
+### The Loop (Orchestrator)
+- **Role**: Coordinates the recursive Brain/Hand interaction.
+- **Component**: `ChatService` (`ChatService.swift`)
+- **Flow**:
+  1. User Input -> `ChatService`
+  2. `ChatService` -> `LLMProvider` (Request)
+  3. `LLMProvider` -> `ToolCall` (Response)
+  4. `ChatService` -> `ToolRegistry` -> `Tool.execute()`
+  5. Tool Result -> `ChatService` -> `LLMProvider` (Recursive Call)
+  6. `LLMProvider` -> Final Text Response
 
-### Tool Protocol
-```swift
-protocol Tool: Sendable {
-    var id: String { get }
-    var name: String { get }
-    var description: String { get }
-    var inputSchema: JSONSchema { get }
-    
-    func execute(input: [String: Any]) async throws -> String
-}
-```
+### The Sandbox (Execution)
+- **Role**: Securely execute generated code.
+- **Mechanism**: XPC Service (`llmHubHelper`)
+- **Protocol**: `CodeExecutionXPCProtocol` (`CodeExecutionXPCProtocol.swift`)
+- **Structure**:
+  - `llmHub` (Main App) sends code -> `XPCConnection`
+  - `llmHubHelper` (XPC Service) receives code -> Spawns Process (`swift`, `python3`) -> Captures `stdout`/`stderr` -> Returns Result.
 
-### Tool Registry
-The `ToolRegistry` maintains the list of available tools for the current context.
+## 3. Key File Map
 
-## Data Flow
+| Component | Path | Description |
+|-----------|------|-------------|
+| **Loop** | `llmHub/Services/ChatService.swift` | Main orchestration loop. Handles state, persistence, and recursion. |
+| **Brain** | `llmHub/Providers/LLMProviderProtocol.swift` | Base protocol for all LLM providers. |
+| **Hand** | `llmHub/Services/ToolRegistry.swift` | Manages available tools and routing. |
+| **Execution** | `llmHub/Services/CodeExecutionEngine.swift` | Main app side of code execution. |
+| **XPC** | `llmHubHelper/CodeExecutionHandler.swift` | Helper side implementation of execution logic. |
+| **UI** | `llmHub/Views/Main/NeonWorkbenchWindow.swift` | Primary UI container. |
+| **MCP** | `llmHub/Services/MCPClient.swift` | Model Context Protocol client implementation. |
 
-1.  **User**: "What is 5 * 5?"
-2.  **LLM**: `ToolCall(id: "call_1", name: "calculator", input: { "expression": "5 * 5" })`
-3.  **Service**:
-    *   Parses `ToolCall`.
-    *   Finds `CalculatorTool`.
-    *   Executes `CalculatorTool.execute(input: ...)` -> "25".
-    *   Appends `ChatMessage(role: .tool, content: "25", toolCallID: "call_1")`.
-4.  **LLM**: "The answer is 25."
-5.  **UI**: Displays "The answer is 25."
+## 4. Current State
+- **MCP**: Implemented. App can connect to MCP servers and expose their tools to the LLM.
+- **Sandbox**: Implemented. `llmHubHelper` is a separate XPC target.
+- **Persistence**: `SwiftData` is used for storing `ChatSession`, `ChatMessage`, etc.
+- **Streaming**: Fully supported via `AsyncThrowingStream` in `LLMProvider`.
 
-## Future Expansions
-- **MCP Support**: Integration with Model Context Protocol for external tools.
-- **Sandbox**: Running tools in isolated environments.
-- **Human-in-the-Loop**: UI prompts for tool approval.
-
+## 5. Coding Conventions
+- **Swift 6**: Use `Task`, `await`, `Sendable` everywhere.
+- **SwiftData**: Use `@Model` for persistence. Context is passed to `ChatService`.
+- **Reference IDs**: Use `ReferenceFormatter.newReferenceID()` for user-facing IDs (e.g., `#A1B2`).
+- **XPC**: Always use `CodeExecutionXPCProtocol` for communicating with the helper. Do not run `Process` directly in the main app (Sandbox violation).
+- **Tool Protocol**:
+  ```swift
+  protocol Tool: Sendable {
+      var id: String { get }
+      var name: String { get }
+      var description: String { get }
+      var inputSchema: [String: Any] { get }
+      func execute(input: [String: Any]) async throws -> String
+  }
+  ```

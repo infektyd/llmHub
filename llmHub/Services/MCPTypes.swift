@@ -171,7 +171,7 @@ struct MCPResponse: Decodable, Sendable {
 
 /// Thread-safe wrapper for Any values
 struct AnySendable: @unchecked Sendable {
-    nonisolated let value: Any
+    nonisolated(unsafe) let value: Any
 
     nonisolated init(_ value: Any) {
         self.value = value
@@ -347,8 +347,8 @@ enum MCPError: LocalizedError {
 
 // MARK: - AnyCodable Helper
 
-struct AnyCodable: Codable {
-    let value: Any
+struct AnyCodable: Codable, @unchecked Sendable {
+    nonisolated(unsafe) let value: Any
 
     init(_ value: Any) {
         self.value = value
