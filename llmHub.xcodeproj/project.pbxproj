@@ -23,6 +23,21 @@
 		A3AB9BF62EDE381700D7FA92 /* NeonToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3AB9BDB2EDE381700D7FA92 /* NeonToolbar.swift */; };
 		A3AB9BF72EDE381700D7FA92 /* FileOperationApprovalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3AB9BE62EDE381700D7FA92 /* FileOperationApprovalView.swift */; };
 		A3AB9BF82EDE381700D7FA92 /* NeonMessageBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3AB9BDA2EDE381700D7FA92 /* NeonMessageBubble.swift */; };
+		A3AB9C062EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-40-49.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9C022EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-40-49.txt */; };
+		A3AB9C072EDE4FC400D7FA92 /* Build llmHub_2025-11-30T12-02-46.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9C032EDE4FC400D7FA92 /* Build llmHub_2025-11-30T12-02-46.txt */; };
+		A3AB9C082EDE4FC400D7FA92 /* Build llmHub_2025-11-29T15-55-56.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9BFB2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T15-55-56.txt */; };
+		A3AB9C092EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-25-39.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9BFD2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-25-39.txt */; };
+		A3AB9C0A2EDE4FC400D7FA92 /* Build llmHub_2025-11.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9BF92EDE4FC400D7FA92 /* Build llmHub_2025-11.txt */; };
+		A3AB9C0B2EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-21-13.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9C002EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-21-13.txt */; };
+		A3AB9C0C2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T22-21-20.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9BFF2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T22-21-20.txt */; };
+		A3AB9C0D2EDE4FC400D7FA92 /* Build llmHub_2025-12-01T17-34-19.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9C042EDE4FC400D7FA92 /* Build llmHub_2025-12-01T17-34-19.txt */; };
+		A3AB9C0E2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-52-29.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9BFE2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-52-29.txt */; };
+		A3AB9C0F2EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-30-07.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9C012EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-30-07.txt */; };
+		A3AB9C102EDE4FC400D7FA92 /* Build llmHub_2025-11-29T10-59-52.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9BFA2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T10-59-52.txt */; };
+		A3AB9C112EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-15-13.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9BFC2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-15-13.txt */; };
+		A3AB9C132EDE505300D7FA92 /* FIXES_NEEDED.md in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9C122EDE505300D7FA92 /* FIXES_NEEDED.md */; };
+		A3AB9C1F2EDE50BE00D7FA92 /* BUILD_FIX_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9C1E2EDE50BE00D7FA92 /* BUILD_FIX_SUMMARY.md */; };
+		A3AB9C212EDE50D000D7FA92 /* QUICK_FIX_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9C202EDE50D000D7FA92 /* QUICK_FIX_GUIDE.md */; };
 		B3000001303030300001 /* CodeExecutionXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000010303030300001 /* CodeExecutionXPCProtocol.swift */; };
 		B3000002303030300001 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000011303030300001 /* main.swift */; };
 		B3000003303030300001 /* CodeExecutionServiceDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000012303030300001 /* CodeExecutionServiceDelegate.swift */; };
@@ -87,6 +102,21 @@
 		A3AB9BE42EDE381700D7FA92 /* SidebarComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarComponents.swift; sourceTree = "<group>"; };
 		A3AB9BE62EDE381700D7FA92 /* FileOperationApprovalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileOperationApprovalView.swift; sourceTree = "<group>"; };
 		A3AB9BE72EDE381700D7FA92 /* TerminalOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalOutputView.swift; sourceTree = "<group>"; };
+		A3AB9BF92EDE4FC400D7FA92 /* Build llmHub_2025-11.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11.txt"; sourceTree = "<group>"; };
+		A3AB9BFA2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T10-59-52.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11-29T10-59-52.txt"; sourceTree = "<group>"; };
+		A3AB9BFB2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T15-55-56.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11-29T15-55-56.txt"; sourceTree = "<group>"; };
+		A3AB9BFC2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-15-13.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11-29T16-15-13.txt"; sourceTree = "<group>"; };
+		A3AB9BFD2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-25-39.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11-29T16-25-39.txt"; sourceTree = "<group>"; };
+		A3AB9BFE2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-52-29.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11-29T16-52-29.txt"; sourceTree = "<group>"; };
+		A3AB9BFF2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T22-21-20.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11-29T22-21-20.txt"; sourceTree = "<group>"; };
+		A3AB9C002EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-21-13.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11-30T11-21-13.txt"; sourceTree = "<group>"; };
+		A3AB9C012EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-30-07.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11-30T11-30-07.txt"; sourceTree = "<group>"; };
+		A3AB9C022EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-40-49.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11-30T11-40-49.txt"; sourceTree = "<group>"; };
+		A3AB9C032EDE4FC400D7FA92 /* Build llmHub_2025-11-30T12-02-46.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11-30T12-02-46.txt"; sourceTree = "<group>"; };
+		A3AB9C042EDE4FC400D7FA92 /* Build llmHub_2025-12-01T17-34-19.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-12-01T17-34-19.txt"; sourceTree = "<group>"; };
+		A3AB9C122EDE505300D7FA92 /* FIXES_NEEDED.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = FIXES_NEEDED.md; sourceTree = "<group>"; };
+		A3AB9C1E2EDE50BE00D7FA92 /* BUILD_FIX_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = BUILD_FIX_SUMMARY.md; sourceTree = "<group>"; };
+		A3AB9C202EDE50D000D7FA92 /* QUICK_FIX_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = QUICK_FIX_GUIDE.md; sourceTree = "<group>"; };
 		A3C71F262ED9389A0088DF32 /* llmHub.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = llmHub.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3C71F372ED9389B0088DF32 /* llmHubTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = llmHubTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3C71F412ED9389B0088DF32 /* llmHubUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = llmHubUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -284,9 +314,32 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
+		A3AB9C052EDE4FC400D7FA92 /* error reports */ = {
+			isa = PBXGroup;
+			children = (
+				A3AB9BF92EDE4FC400D7FA92 /* Build llmHub_2025-11.txt */,
+				A3AB9BFA2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T10-59-52.txt */,
+				A3AB9BFB2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T15-55-56.txt */,
+				A3AB9BFC2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-15-13.txt */,
+				A3AB9BFD2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-25-39.txt */,
+				A3AB9BFE2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-52-29.txt */,
+				A3AB9BFF2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T22-21-20.txt */,
+				A3AB9C002EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-21-13.txt */,
+				A3AB9C012EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-30-07.txt */,
+				A3AB9C022EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-40-49.txt */,
+				A3AB9C032EDE4FC400D7FA92 /* Build llmHub_2025-11-30T12-02-46.txt */,
+				A3AB9C042EDE4FC400D7FA92 /* Build llmHub_2025-12-01T17-34-19.txt */,
+				A3AB9C122EDE505300D7FA92 /* FIXES_NEEDED.md */,
+				A3AB9C1E2EDE50BE00D7FA92 /* BUILD_FIX_SUMMARY.md */,
+				A3AB9C202EDE50D000D7FA92 /* QUICK_FIX_GUIDE.md */,
+			);
+			path = "error reports";
+			sourceTree = "<group>";
+		};
 		A3C71F1D2ED9389A0088DF32 = {
 			isa = PBXGroup;
 			children = (
+				A3AB9C052EDE4FC400D7FA92 /* error reports */,
 				A3C71F282ED9389A0088DF32 /* llmHub */,
 				B3000021303030300001 /* llmHubHelper */,
 				A3C71F272ED9389A0088DF32 /* Products */,
@@ -465,6 +518,21 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A3AB9C062EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-40-49.txt in Resources */,
+				A3AB9C072EDE4FC400D7FA92 /* Build llmHub_2025-11-30T12-02-46.txt in Resources */,
+				A3AB9C082EDE4FC400D7FA92 /* Build llmHub_2025-11-29T15-55-56.txt in Resources */,
+				A3AB9C092EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-25-39.txt in Resources */,
+				A3AB9C212EDE50D000D7FA92 /* QUICK_FIX_GUIDE.md in Resources */,
+				A3AB9C132EDE505300D7FA92 /* FIXES_NEEDED.md in Resources */,
+				A3AB9C1F2EDE50BE00D7FA92 /* BUILD_FIX_SUMMARY.md in Resources */,
+				A3AB9C0A2EDE4FC400D7FA92 /* Build llmHub_2025-11.txt in Resources */,
+				A3AB9C0B2EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-21-13.txt in Resources */,
+				A3AB9C0C2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T22-21-20.txt in Resources */,
+				A3AB9C0D2EDE4FC400D7FA92 /* Build llmHub_2025-12-01T17-34-19.txt in Resources */,
+				A3AB9C0E2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-52-29.txt in Resources */,
+				A3AB9C0F2EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-30-07.txt in Resources */,
+				A3AB9C102EDE4FC400D7FA92 /* Build llmHub_2025-11-29T10-59-52.txt in Resources */,
+				A3AB9C112EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-15-13.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

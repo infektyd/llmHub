@@ -7,6 +7,7 @@
 
 import Foundation
 
+@MainActor
 protocol LLMProvider: Identifiable {
     var id: String { get }
     var name: String { get }
