@@ -1,0 +1,92 @@
+
+Showing Recent Issues
+
+Build target llmHub of project llmHub with configuration Debug
+
+SwiftCompile normal arm64 Compiling\ ContentView.swift,\ OpenAIProvider.swift /Users/hansaxelsson/llmHub/llmHub/ContentView.swift /Users/hansaxelsson/llmHub/llmHub/Services/OpenAIProvider.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/OpenAIProvider.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+/Users/hansaxelsson/llmHub/llmHub/Services/OpenAIProvider.swift:37:37: warning: call to main actor-isolated instance method 'apiKey(for:)' in a synchronous nonisolated context
+        guard let apiKey = keychain.apiKey(for: .openAI) else {
+                                    ^
+/Users/hansaxelsson/llmHub/llmHub/Support/KeychainStore.swift:49:10: note: calls to instance method 'apiKey(for:)' from outside of its actor context are implicitly asynchronous
+    func apiKey(for provider: ProviderKey) -> String? {
+         ^
+/Users/hansaxelsson/llmHub/llmHub/Services/OpenAIProvider.swift:49:36: warning: converting function value of type '@MainActor @Sendable (ChatMessage) -> OpenAIMessage' to '(ChatMessage) -> OpenAIMessage' loses global actor 'MainActor'; this is an error in the Swift 6 language mode
+            messages: messages.map(OpenAIMessage.init),
+                                   ^
+/Users/hansaxelsson/llmHub/llmHub/Services/OpenAIProvider.swift:52:46: warning: main actor-isolated conformance of 'OpenAIPayload' to 'Encodable' cannot be used in nonisolated context; this is an error in the Swift 6 language mode
+        request.httpBody = try JSONEncoder().encode(payload)
+                                             ^
+/Users/hansaxelsson/llmHub/llmHub/Services/OpenAIProvider.swift:73:61: warning: main actor-isolated conformance of 'OpenAIStreamResponse' to 'Decodable' cannot be used in nonisolated context; this is an error in the Swift 6 language mode
+                            let decoded = try JSONDecoder().decode(OpenAIStreamResponse.self, from: data)
+                                                            ^
+/Users/hansaxelsson/llmHub/llmHub/Services/OpenAIProvider.swift:99:41: warning: main actor-isolated conformance of 'OpenAICompletionResponse' to 'Decodable' cannot be used in nonisolated context; this is an error in the Swift 6 language mode
+        let decoded = try JSONDecoder().decode(OpenAICompletionResponse.self, from: response)
+                                        ^
+
+/Users/hansaxelsson/llmHub/llmHub/Services/OpenAIProvider.swift:37:37: Call to main actor-isolated instance method 'apiKey(for:)' in a synchronous nonisolated context
+
+/Users/hansaxelsson/llmHub/llmHub/Services/OpenAIProvider.swift:49:36: Converting function value of type '@MainActor @Sendable (ChatMessage) -> OpenAIMessage' to '(ChatMessage) -> OpenAIMessage' loses global actor 'MainActor'; this is an error in the Swift 6 language mode
+
+/Users/hansaxelsson/llmHub/llmHub/Services/OpenAIProvider.swift:52:46: Main actor-isolated conformance of 'OpenAIPayload' to 'Encodable' cannot be used in nonisolated context; this is an error in the Swift 6 language mode
+
+/Users/hansaxelsson/llmHub/llmHub/Services/OpenAIProvider.swift:73:61: Main actor-isolated conformance of 'OpenAIStreamResponse' to 'Decodable' cannot be used in nonisolated context; this is an error in the Swift 6 language mode
+
+/Users/hansaxelsson/llmHub/llmHub/Services/OpenAIProvider.swift:99:41: Main actor-isolated conformance of 'OpenAICompletionResponse' to 'Decodable' cannot be used in nonisolated context; this is an error in the Swift 6 language mode
+
+SwiftCompile normal arm64 Compiling\ EnvironmentValues+Keychain.swift,\ ChatViewModel.swift /Users/hansaxelsson/llmHub/llmHub/Support/EnvironmentValues+Keychain.swift /Users/hansaxelsson/llmHub/llmHub/ViewModels/ChatViewModel.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/ViewModels/ChatViewModel.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+/Users/hansaxelsson/llmHub/llmHub/ViewModels/ChatViewModel.swift:53:33: warning: immutable value 'text' was never used; consider replacing with '_' or removing it
+                case .token(let text):
+                            ~~~~^~~~
+                            _
+/Users/hansaxelsson/llmHub/llmHub/ViewModels/ChatViewModel.swift:56:38: warning: immutable value 'message' was never used; consider replacing with '_' or removing it
+                case .completion(let message):
+                                 ~~~~^~~~~~~
+                                 _
+/Users/hansaxelsson/llmHub/llmHub/ViewModels/ChatViewModel.swift:59:33: warning: immutable value 'usage' was never used; consider replacing with '_' or removing it
+                case .usage(let usage):
+                            ~~~~^~~~~
+                            _
+/Users/hansaxelsson/llmHub/llmHub/ViewModels/ChatViewModel.swift:62:37: warning: immutable value 'ref' was never used; consider replacing with '_' or removing it
+                case .reference(let ref):
+                                ~~~~^~~
+                                _
+/Users/hansaxelsson/llmHub/llmHub/ViewModels/ChatViewModel.swift:65:33: warning: immutable value 'error' was never used; consider replacing with '_' or removing it
+                case .error(let error):
+                            ~~~~^~~~~
+                            _
+
+/Users/hansaxelsson/llmHub/llmHub/ViewModels/ChatViewModel.swift:53:33: Immutable value 'text' was never used; consider replacing with '_' or removing it
+
+/Users/hansaxelsson/llmHub/llmHub/ViewModels/ChatViewModel.swift:56:38: Immutable value 'message' was never used; consider replacing with '_' or removing it
+
+/Users/hansaxelsson/llmHub/llmHub/ViewModels/ChatViewModel.swift:59:33: Immutable value 'usage' was never used; consider replacing with '_' or removing it
+
+/Users/hansaxelsson/llmHub/llmHub/ViewModels/ChatViewModel.swift:62:37: Immutable value 'ref' was never used; consider replacing with '_' or removing it
+
+/Users/hansaxelsson/llmHub/llmHub/ViewModels/ChatViewModel.swift:65:33: Immutable value 'error' was never used; consider replacing with '_' or removing it
+
+SwiftCompile normal arm64 Compiling\ RootContainerView.swift,\ ChatDetailView.swift /Users/hansaxelsson/llmHub/llmHub/Views/RootContainerView.swift /Users/hansaxelsson/llmHub/llmHub/Views/ChatDetailView.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/ChatDetailView.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+/Users/hansaxelsson/llmHub/llmHub/Views/ChatDetailView.swift:27:18: warning: 'onChange(of:perform:)' was deprecated in macOS 14.0: Use `onChange` with a two or zero parameter action closure instead.
+                .onChange(of: viewModel.selectedSession?.messages.count ?? 0) { _ in
+                 ^
+
+/Users/hansaxelsson/llmHub/llmHub/Views/ChatDetailView.swift:27:18: 'onChange(of:perform:)' was deprecated in macOS 14.0: Use `onChange` with a two or zero parameter action closure instead.
+
+
+
+Build succeeded    11/29/25, 10:59 AM    1.3 seconds

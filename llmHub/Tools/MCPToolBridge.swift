@@ -191,7 +191,7 @@ final class MCPBridgedTool: Tool, @unchecked Sendable {
     nonisolated let id: String
     nonisolated let name: String
     nonisolated let description: String
-    nonisolated let inputSchema: [String: Any]
+    nonisolated(unsafe) let inputSchema: [String: Any]
 
     nonisolated let serverID: UUID
     private let client: MCPClient

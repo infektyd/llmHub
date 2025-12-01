@@ -102,7 +102,7 @@ struct FileOperationRequest: Sendable {
     let destination: String?
     let timestamp: Date
     
-    init(
+    nonisolated init(
         id: UUID = UUID(),
         operation: FileOperation,
         path: String,

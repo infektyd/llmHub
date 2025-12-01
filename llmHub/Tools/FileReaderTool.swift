@@ -115,7 +115,7 @@ struct FileReaderTool: Tool {
 
     // MARK: - File Readers
 
-    private func readText(url: URL, encoding: String.Encoding, maxLength: Int) throws -> String {
+    private nonisolated func readText(url: URL, encoding: String.Encoding, maxLength: Int) throws -> String {
         let content = try String(contentsOf: url, encoding: encoding)
         if content.count > maxLength {
             return String(content.prefix(maxLength))
@@ -124,7 +124,7 @@ struct FileReaderTool: Tool {
         return content
     }
 
-    private func readJSON(url: URL, maxLength: Int) throws -> String {
+    private nonisolated func readJSON(url: URL, maxLength: Int) throws -> String {
         let data = try Data(contentsOf: url)
 
         // Pretty-print JSON
@@ -145,7 +145,7 @@ struct FileReaderTool: Tool {
         return try readText(url: url, encoding: .utf8, maxLength: maxLength)
     }
 
-    private func readCSV(url: URL, maxLength: Int) throws -> String {
+    private nonisolated func readCSV(url: URL, maxLength: Int) throws -> String {
         let content = try String(contentsOf: url, encoding: .utf8)
         let lines = content.components(separatedBy: .newlines)
 
@@ -178,7 +178,7 @@ struct FileReaderTool: Tool {
         return output
     }
 
-    private func readPDF(url: URL, maxLength: Int) throws -> String {
+    private nonisolated func readPDF(url: URL, maxLength: Int) throws -> String {
         guard let document = PDFDocument(url: url) else {
             throw FileReaderError.invalidFormat("Could not open PDF document")
         }
@@ -223,7 +223,7 @@ struct FileReaderTool: Tool {
         return output
     }
 
-    private func readRTF(url: URL, maxLength: Int) throws -> String {
+    private nonisolated func readRTF(url: URL, maxLength: Int) throws -> String {
         let data = try Data(contentsOf: url)
 
         let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
@@ -242,7 +242,7 @@ struct FileReaderTool: Tool {
         return content
     }
 
-    private func describeImage(url: URL) throws -> String {
+    private nonisolated func describeImage(url: URL) throws -> String {
         let data = try Data(contentsOf: url)
         let fileSize = ByteCountFormatter.string(
             fromByteCount: Int64(data.count), countStyle: .file)
@@ -280,7 +280,7 @@ struct FileReaderTool: Tool {
 
     // MARK: - Formatting
 
-    private func formatFileContent(path: String, content: String, truncated: Bool) -> String {
+    private nonisolated func formatFileContent(path: String, content: String, truncated: Bool) -> String {
         var output = "File: \(path)\n"
         output += String(repeating: "=", count: 50) + "\n\n"
         output += content

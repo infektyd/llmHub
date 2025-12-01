@@ -69,7 +69,7 @@ struct WebSearchTool: Tool {
 
     // MARK: - DuckDuckGo Search
 
-    private func searchDuckDuckGo(query: String, maxResults: Int) async throws -> [SearchResult] {
+    private nonisolated func searchDuckDuckGo(query: String, maxResults: Int) async throws -> [SearchResult] {
         // Use DuckDuckGo HTML search (no API key required)
         guard
             let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
@@ -102,7 +102,7 @@ struct WebSearchTool: Tool {
 
     // MARK: - HTML Parsing
 
-    private func parseSearchResults(html: String, maxResults: Int) -> [SearchResult] {
+    private nonisolated func parseSearchResults(html: String, maxResults: Int) -> [SearchResult] {
         var results: [SearchResult] = []
 
         // Parse DuckDuckGo HTML results
@@ -175,7 +175,7 @@ struct WebSearchTool: Tool {
 
     // MARK: - Formatting
 
-    private func formatResults(_ results: [SearchResult], query: String) -> String {
+    private nonisolated func formatResults(_ results: [SearchResult], query: String) -> String {
         var output = "Web Search Results for: \"\(query)\"\n"
         output += String(repeating: "=", count: 50) + "\n\n"
 
