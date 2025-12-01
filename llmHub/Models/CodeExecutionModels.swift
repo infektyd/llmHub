@@ -26,6 +26,17 @@ enum SupportedLanguage: String, CaseIterable, Codable, Sendable {
         }
     }
     
+    /// Nonisolated accessor for display name (safe for use in error descriptions)
+    nonisolated var displayNameValue: String {
+        switch self {
+        case .swift: return "Swift"
+        case .python: return "Python"
+        case .typescript: return "TypeScript"
+        case .javascript: return "JavaScript"
+        case .dart: return "Dart"
+        }
+    }
+    
     var fileExtension: String {
         switch self {
         case .swift: return ".swift"
@@ -48,6 +59,17 @@ enum SupportedLanguage: String, CaseIterable, Codable, Sendable {
     }
     
     var interpreterName: String {
+        switch self {
+        case .swift: return "swift"
+        case .python: return "python3"
+        case .typescript: return "ts-node"
+        case .javascript: return "node"
+        case .dart: return "dart"
+        }
+    }
+    
+    /// Nonisolated accessor for interpreter name (safe for use in error descriptions)
+    nonisolated var interpreterNameValue: String {
         switch self {
         case .swift: return "swift"
         case .python: return "python3"
@@ -201,7 +223,7 @@ enum CodeExecutionError: LocalizedError, Sendable {
     var errorDescription: String? {
         switch self {
         case .interpreterNotFound(let lang):
-            return "Interpreter for \(lang.displayName) not found. Please install \(lang.interpreterName)."
+            return "Interpreter for \(lang.displayNameValue) not found. Please install \(lang.interpreterNameValue)."
         case .timeout(let seconds):
             return "Execution timed out after \(seconds) seconds"
         case .sandboxCreationFailed(let reason):
