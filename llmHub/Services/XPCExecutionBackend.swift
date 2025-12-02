@@ -10,19 +10,23 @@
     import Foundation
     import OSLog
 
-    /// XPC-based code execution backend for macOS
-    /// Connects to the llmHubHelper XPC service for code execution outside the sandbox
+    /// XPC-based code execution backend for macOS.
+    /// Connects to the llmHubHelper XPC service for code execution outside the sandbox.
     final class XPCExecutionBackend: ExecutionBackend, @unchecked Sendable {
 
+        /// Logger instance.
         private let logger = Logger(subsystem: "com.llmhub", category: "XPCExecutionBackend")
+        /// Queue for XPC connections.
         private let connectionQueue = DispatchQueue(label: "com.llmhub.xpc.connection")
 
+        /// The underlying XPC connection.
         nonisolated(unsafe) private var _connection: NSXPCConnection?
+        /// Lock to ensure thread-safe access to the connection.
         private let connectionLock = NSLock()
 
         // MARK: - Connection Management
 
-        /// Get or create the XPC connection
+        /// Get or create the XPC connection.
         private var connection: NSXPCConnection {
             connectionLock.lock()
             defer { connectionLock.unlock() }
@@ -54,7 +58,7 @@
             return newConnection
         }
 
-        /// Get the remote proxy object
+        /// Get the remote proxy object.
         private func remoteProxy() throws -> CodeExecutionXPCProtocol {
             guard
                 let proxy = connection.remoteObjectProxyWithErrorHandler({ [weak self] error in
@@ -68,6 +72,7 @@
 
         // MARK: - ExecutionBackend
 
+        /// Checks if the XPC service is available.
         var isAvailable: Bool {
             get async {
                 do {
@@ -84,6 +89,7 @@
             }
         }
 
+        /// Executes code via the XPC service.
         func execute(
             code: String,
             language: SupportedLanguage,
@@ -150,6 +156,7 @@
             }
         }
 
+        /// Checks availability of an interpreter for a language.
         func checkInterpreter(for language: SupportedLanguage) async -> InterpreterInfo {
             do {
                 let proxy = try remoteProxy()
@@ -176,6 +183,7 @@
             }
         }
 
+        /// Checks availability of all supported interpreters.
         func checkAllInterpreters() async -> [InterpreterInfo] {
             var results: [InterpreterInfo] = []
 

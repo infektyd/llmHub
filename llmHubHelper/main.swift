@@ -20,4 +20,3 @@ listener.resume()
 
 // Run the main run loop (required for XPC service)
 RunLoop.main.run()
-

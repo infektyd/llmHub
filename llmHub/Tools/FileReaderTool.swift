@@ -10,8 +10,8 @@ import OSLog
 import PDFKit
 import UniformTypeIdentifiers
 
-/// File Reader Tool conforming to the Tool protocol
-/// Reads and extracts content from various file types
+/// File Reader Tool conforming to the Tool protocol.
+/// Reads and extracts content from various file types.
 struct FileReaderTool: Tool {
     nonisolated let id = "read_file"
     nonisolated let name = "read_file"
@@ -115,6 +115,7 @@ struct FileReaderTool: Tool {
 
     // MARK: - File Readers
 
+    /// Reads plain text files.
     private nonisolated func readText(url: URL, encoding: String.Encoding, maxLength: Int) throws -> String {
         let content = try String(contentsOf: url, encoding: encoding)
         if content.count > maxLength {
@@ -124,6 +125,7 @@ struct FileReaderTool: Tool {
         return content
     }
 
+    /// Reads and pretty-prints JSON files.
     private nonisolated func readJSON(url: URL, maxLength: Int) throws -> String {
         let data = try Data(contentsOf: url)
 
@@ -145,6 +147,7 @@ struct FileReaderTool: Tool {
         return try readText(url: url, encoding: .utf8, maxLength: maxLength)
     }
 
+    /// Reads CSV files and provides a summary.
     private nonisolated func readCSV(url: URL, maxLength: Int) throws -> String {
         let content = try String(contentsOf: url, encoding: .utf8)
         let lines = content.components(separatedBy: .newlines)
@@ -178,6 +181,7 @@ struct FileReaderTool: Tool {
         return output
     }
 
+    /// Extracts text from PDF files.
     private nonisolated func readPDF(url: URL, maxLength: Int) throws -> String {
         guard let document = PDFDocument(url: url) else {
             throw FileReaderError.invalidFormat("Could not open PDF document")
@@ -223,6 +227,7 @@ struct FileReaderTool: Tool {
         return output
     }
 
+    /// Reads RTF files.
     private nonisolated func readRTF(url: URL, maxLength: Int) throws -> String {
         let data = try Data(contentsOf: url)
 
@@ -242,6 +247,7 @@ struct FileReaderTool: Tool {
         return content
     }
 
+    /// Describes basic image metadata.
     private nonisolated func describeImage(url: URL) throws -> String {
         let data = try Data(contentsOf: url)
         let fileSize = ByteCountFormatter.string(
@@ -280,6 +286,7 @@ struct FileReaderTool: Tool {
 
     // MARK: - Formatting
 
+    /// Formats the file content for output.
     private nonisolated func formatFileContent(path: String, content: String, truncated: Bool) -> String {
         var output = "File: \(path)\n"
         output += String(repeating: "=", count: 50) + "\n\n"
@@ -290,12 +297,18 @@ struct FileReaderTool: Tool {
 
 // MARK: - Errors
 
+/// Errors related to file reading operations.
 enum FileReaderError: LocalizedError {
+    /// The file could not be found.
     case fileNotFound(String)
+    /// The file format is invalid or unsupported.
     case invalidFormat(String)
+    /// Access to the file was denied.
     case accessDenied(String)
+    /// A general read error occurred.
     case readError(String)
 
+    /// A localized description of the error.
     var errorDescription: String? {
         switch self {
         case .fileNotFound(let path): return "File not found: \(path)"

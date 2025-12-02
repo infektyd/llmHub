@@ -8,11 +8,16 @@
 import Foundation
 import OSLog
 
+/// Manages isolated sandbox directories for safe code execution.
 actor SandboxManager {
+    /// Logger instance.
     private let logger = Logger(subsystem: "com.llmhub", category: "SandboxManager")
+    /// The base directory for all sandboxes.
     private let baseDirectory: URL
+    /// Dictionary of active sandboxes keyed by execution ID.
     private var activeSandboxes: [UUID: URL] = [:]
     
+    /// Initializes a new `SandboxManager`.
     init() {
         self.baseDirectory = FileManager.default.temporaryDirectory
             .appendingPathComponent("llmHub-sandbox", isDirectory: true)
@@ -27,7 +32,9 @@ actor SandboxManager {
     
     // MARK: - Sandbox Lifecycle
     
-    /// Create a new isolated sandbox directory for code execution
+    /// Create a new isolated sandbox directory for code execution.
+    /// - Parameter executionID: The unique ID of the execution.
+    /// - Returns: The URL of the created sandbox.
     func createSandbox(for executionID: UUID) throws -> URL {
         let sandboxPath = baseDirectory
             .appendingPathComponent(executionID.uuidString, isDirectory: true)
@@ -49,7 +56,12 @@ actor SandboxManager {
         }
     }
     
-    /// Write code to a file within the sandbox
+    /// Write code to a file within the sandbox.
+    /// - Parameters:
+    ///   - sandboxPath: The sandbox directory URL.
+    ///   - code: The code content.
+    ///   - language: The programming language.
+    /// - Returns: The URL of the written file.
     func writeCodeFile(
         in sandboxPath: URL,
         code: String,
@@ -76,7 +88,8 @@ actor SandboxManager {
         }
     }
     
-    /// Clean up a specific sandbox after execution
+    /// Clean up a specific sandbox after execution.
+    /// - Parameter executionID: The execution ID to cleanup.
     func cleanupSandbox(for executionID: UUID) {
         guard let sandboxPath = activeSandboxes.removeValue(forKey: executionID) else {
             return
@@ -90,7 +103,7 @@ actor SandboxManager {
         }
     }
     
-    /// Clean up all sandboxes (call on app termination or periodically)
+    /// Clean up all sandboxes (call on app termination or periodically).
     func cleanupAllSandboxes() {
         for (id, _) in activeSandboxes {
             cleanupSandbox(for: id)
@@ -100,7 +113,8 @@ actor SandboxManager {
         cleanupOrphanedSandboxes()
     }
     
-    /// Remove sandboxes older than the specified age
+    /// Remove sandboxes older than the specified age.
+    /// - Parameter age: Maximum age in seconds (default: 3600).
     func cleanupOrphanedSandboxes(olderThan age: TimeInterval = 3600) {
         let fileManager = FileManager.default
         
@@ -138,12 +152,18 @@ actor SandboxManager {
     
     // MARK: - Sandbox Utilities
     
-    /// Get the path to a sandbox
+    /// Get the path to a sandbox for a given execution ID.
+    /// - Parameter executionID: The execution ID.
+    /// - Returns: The sandbox URL if active.
     func sandboxPath(for executionID: UUID) -> URL? {
         activeSandboxes[executionID]
     }
     
-    /// Check if a path is within a sandbox
+    /// Check if a path is within a sandbox.
+    /// - Parameters:
+    ///   - path: The path to check.
+    ///   - executionID: The execution ID of the sandbox.
+    /// - Returns: True if the path is inside the sandbox.
     func isPathInSandbox(_ path: URL, for executionID: UUID) -> Bool {
         guard let sandboxPath = activeSandboxes[executionID] else {
             return false
@@ -155,7 +175,9 @@ actor SandboxManager {
         return resolvedPath.hasPrefix(resolvedSandbox)
     }
     
-    /// List files created during execution
+    /// List files created during execution within a sandbox.
+    /// - Parameter executionID: The execution ID.
+    /// - Returns: A list of file URLs.
     func listSandboxContents(for executionID: UUID) -> [URL] {
         guard let sandboxPath = activeSandboxes[executionID] else {
             return []
@@ -181,7 +203,11 @@ actor SandboxManager {
         return files
     }
     
-    /// Read output files from sandbox (e.g., generated images)
+    /// Read output files from sandbox (e.g., generated images).
+    /// - Parameters:
+    ///   - executionID: The execution ID.
+    ///   - extensions: Set of file extensions to read.
+    /// - Returns: An array of tuples containing filename and data.
     func readOutputFiles(
         for executionID: UUID,
         matching extensions: Set<String> = ["png", "jpg", "jpeg", "gif", "svg", "json", "txt"]
@@ -211,7 +237,9 @@ actor SandboxManager {
 // MARK: - Sandbox Environment
 
 extension SandboxManager {
-    /// Get environment variables for sandboxed execution
+    /// Get environment variables configured for sandboxed execution.
+    /// - Parameter executionID: The execution ID.
+    /// - Returns: A dictionary of environment variables.
     func sandboxEnvironment(for executionID: UUID) -> [String: String] {
         var env = ProcessInfo.processInfo.environment
         
@@ -229,4 +257,3 @@ extension SandboxManager {
         return env
     }
 }
-

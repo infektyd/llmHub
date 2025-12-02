@@ -9,16 +9,19 @@
 import Foundation
 import OSLog
 
-/// Code execution engine that delegates to platform-specific backends
-/// On macOS: Uses XPC service for local execution outside sandbox
-/// On iOS/iPadOS: Will use remote API (future implementation)
+/// Code execution engine that delegates to platform-specific backends.
+/// On macOS: Uses XPC service for local execution outside sandbox.
+/// On iOS/iPadOS: Will use remote API (future implementation).
 actor CodeExecutionEngine {
     private let logger = Logger(subsystem: "com.llmhub", category: "CodeExecutionEngine")
     private let backend: any ExecutionBackend
     private let sandboxManager: SandboxManager
     private var interpreterCache: [SupportedLanguage: InterpreterInfo] = [:]
     
-    /// Initialize with a specific backend
+    /// Initialize with a specific backend.
+    /// - Parameters:
+    ///   - backend: The backend to use.
+    ///   - sandboxManager: The sandbox manager (default: new instance).
     init(
         backend: any ExecutionBackend,
         sandboxManager: SandboxManager = SandboxManager()
@@ -27,8 +30,9 @@ actor CodeExecutionEngine {
         self.sandboxManager = sandboxManager
     }
     
-    /// Initialize with the default backend for the current platform
-    /// This initializer must be called from MainActor context
+    /// Initialize with the default backend for the current platform.
+    /// This initializer must be called from MainActor context.
+    /// - Parameter sandboxManager: The sandbox manager.
     @MainActor
     init(sandboxManager: SandboxManager = SandboxManager()) {
         self.backend = ExecutionBackendFactory.createDefault()
@@ -37,7 +41,7 @@ actor CodeExecutionEngine {
     
     // MARK: - Backend Status
     
-    /// Check if the execution backend is available
+    /// Check if the execution backend is available.
     var isBackendAvailable: Bool {
         get async {
             await backend.isAvailable
@@ -46,7 +50,9 @@ actor CodeExecutionEngine {
     
     // MARK: - Interpreter Discovery
     
-    /// Find the interpreter for a language
+    /// Find the interpreter for a language.
+    /// - Parameter language: The language to find.
+    /// - Returns: `InterpreterInfo` containing availability and path.
     func findInterpreter(for language: SupportedLanguage) async -> InterpreterInfo {
         // Check cache first
         if let cached = interpreterCache[language] {
@@ -58,7 +64,8 @@ actor CodeExecutionEngine {
         return info
     }
     
-    /// Check availability of all interpreters
+    /// Check availability of all interpreters.
+    /// - Returns: A list of `InterpreterInfo` for all supported languages.
     func checkAllInterpreters() async -> [InterpreterInfo] {
         let results = await backend.checkAllInterpreters()
         
@@ -72,7 +79,11 @@ actor CodeExecutionEngine {
     
     // MARK: - Code Execution
     
-    /// Execute code with the given request
+    /// Execute code with the given request.
+    /// - Parameters:
+    ///   - request: The execution request.
+    ///   - securityMode: The security mode to enforce.
+    /// - Returns: A `CodeExecutionResult` object.
     func execute(
         request: CodeExecutionRequest,
         securityMode: CodeSecurityMode
@@ -134,7 +145,11 @@ actor CodeExecutionEngine {
     
     // MARK: - Quick Execution
     
-    /// Quick execution for trusted code snippets
+    /// Quick execution for trusted code snippets.
+    /// - Parameters:
+    ///   - code: The code to execute.
+    ///   - language: The programming language.
+    /// - Returns: The combined stdout and stderr output.
     nonisolated func quickExecute(code: String, language: SupportedLanguage) async throws -> String {
         let request = CodeExecutionRequest(
             id: UUID(),
@@ -152,7 +167,9 @@ actor CodeExecutionEngine {
 // MARK: - REPL Support (Future)
 
 extension CodeExecutionEngine {
-    /// Start an interactive REPL session (placeholder for future implementation)
+    /// Start an interactive REPL session (placeholder for future implementation).
+    /// - Parameter language: The language for the REPL.
+    /// - Returns: The session ID.
     func startREPL(for language: SupportedLanguage) async throws -> UUID {
         throw CodeExecutionError.processLaunchFailed("REPL not yet implemented")
     }

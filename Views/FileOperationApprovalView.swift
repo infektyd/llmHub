@@ -7,10 +7,13 @@
 
 import SwiftUI
 
-/// View for approving file operations with a diff preview
+/// View for approving file operations with a diff preview.
 struct FileOperationApprovalView: View {
+    /// The preview of the file operation to approve.
     let preview: FileOperationPreview
+    /// Action to perform when approved.
     let onApprove: () -> Void
+    /// Action to perform when rejected.
     let onReject: () -> Void
     
     @State private var showFullDiff = true
@@ -240,7 +243,9 @@ struct FileOperationApprovalView: View {
 
 // MARK: - Diff Line View
 
+/// View for displaying a single line in a diff.
 struct DiffLineView: View {
+    /// The diff line data.
     let line: DiffLine
     
     var body: some View {
@@ -300,7 +305,12 @@ struct DiffLineView: View {
 // MARK: - Approval Sheet Presenter
 
 extension View {
-    /// Present file operation approval as a sheet
+    /// Present file operation approval as a sheet.
+    /// - Parameters:
+    ///   - preview: Binding to the operation preview.
+    ///   - onApprove: Action on approval.
+    ///   - onReject: Action on rejection.
+    /// - Returns: A view modified with the sheet.
     func fileOperationApproval(
         preview: Binding<FileOperationPreview?>,
         onApprove: @escaping () -> Void,
@@ -370,4 +380,3 @@ extension View {
         onReject: {}
     )
 }
-

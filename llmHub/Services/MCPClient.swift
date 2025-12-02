@@ -9,7 +9,7 @@
 import Foundation
 import OSLog
 
-/// MCP Client for communicating with Model Context Protocol servers
+/// MCP Client for communicating with Model Context Protocol servers.
 actor MCPClient {
     private let logger = Logger(subsystem: "com.llmhub", category: "MCPClient")
 
@@ -24,6 +24,8 @@ actor MCPClient {
 
     let serverConfig: MCPServerConfig
 
+    /// Initializes a new `MCPClient` with the given configuration.
+    /// - Parameter config: The configuration for the MCP server.
     init(config: MCPServerConfig) {
         self.serverConfig = config
     }
@@ -44,7 +46,7 @@ actor MCPClient {
 
     // MARK: - Connection Management
 
-    /// Connect to the MCP server
+    /// Connect to the MCP server.
     func connect() async throws {
         guard !isConnected else { return }
 
@@ -84,7 +86,7 @@ actor MCPClient {
         logger.info("MCP server initialized: \(initResult.serverInfo?.name ?? "unknown")")
     }
 
-    /// Disconnect from the MCP server
+    /// Disconnect from the MCP server.
     func disconnect() {
         guard isConnected else { return }
 
@@ -108,7 +110,7 @@ actor MCPClient {
 
     // MARK: - MCP Protocol Methods
 
-    /// Initialize the MCP session
+    /// Initialize the MCP session.
     private func initialize() async throws -> MCPInitializeResult {
         let params = MCPInitializeParams(
             protocolVersion: "2024-11-05",
@@ -132,7 +134,8 @@ actor MCPClient {
         return initResult
     }
 
-    /// List available tools from the server
+    /// List available tools from the server.
+    /// - Returns: A list of `MCPToolInfo`.
     func listTools() async throws -> [MCPToolInfo] {
         let response = try await sendRequest(method: "tools/list", params: EmptyParams())
 
@@ -146,7 +149,11 @@ actor MCPClient {
         return try JSONDecoder().decode([MCPToolInfo].self, from: data)
     }
 
-    /// Call a tool on the server
+    /// Call a tool on the server.
+    /// - Parameters:
+    ///   - name: The name of the tool to call.
+    ///   - arguments: The arguments for the tool.
+    /// - Returns: The result of the tool execution.
     func callTool(name: String, arguments: MCPJSONValue) async throws -> MCPToolResult {
         let params = MCPToolCallParams(name: name, arguments: arguments)
 
@@ -164,7 +171,8 @@ actor MCPClient {
         return try JSONDecoder().decode(MCPToolResult.self, from: data)
     }
 
-    /// List available resources from the server
+    /// List available resources from the server.
+    /// - Returns: A list of `MCPResource`.
     func listResources() async throws -> [MCPResource] {
         let response = try await sendRequest(method: "resources/list", params: EmptyParams())
 
@@ -178,7 +186,9 @@ actor MCPClient {
         return try JSONDecoder().decode([MCPResource].self, from: data)
     }
 
-    /// Read a resource from the server
+    /// Read a resource from the server.
+    /// - Parameter uri: The URI of the resource to read.
+    /// - Returns: The content of the resource.
     func readResource(uri: String) async throws -> MCPResourceContent {
         let params = MCPResourceReadParams(uri: uri)
         let response = try await sendRequest(method: "resources/read", params: params)
@@ -193,6 +203,11 @@ actor MCPClient {
 
     // MARK: - JSON-RPC Communication
 
+    /// Sends a JSON-RPC request to the server.
+    /// - Parameters:
+    ///   - method: The method name.
+    ///   - params: The method parameters.
+    /// - Returns: The server's response.
     private func sendRequest<T: Encodable & Sendable>(method: String, params: T) async throws
         -> MCPResponse
     {
@@ -223,6 +238,10 @@ actor MCPClient {
         }
     }
 
+    /// Sends a JSON-RPC notification to the server.
+    /// - Parameters:
+    ///   - method: The notification method name.
+    ///   - params: The notification parameters.
     private func sendNotification<T: Encodable & Sendable>(method: String, params: T) async throws {
         guard isConnected, let stdin = stdin else {
             throw MCPError.notConnected
@@ -241,6 +260,7 @@ actor MCPClient {
         try stdin.write(contentsOf: data)
     }
 
+    /// Continuously reads responses from the server's stdout.
     private func readResponses() async {
         guard let stdout = stdout else { return }
 
@@ -276,6 +296,8 @@ actor MCPClient {
         }
     }
 
+    /// Handles a received response, matching it to a pending request.
+    /// - Parameter response: The received MCP response.
     private func handleResponse(_ response: MCPResponse) {
         guard let id = response.id,
             let continuation = pendingRequests.removeValue(forKey: id)

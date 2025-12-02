@@ -12,7 +12,7 @@
   - xAI (Grok)
   - OpenRouter (Aggregator)
 - **Sandboxed Code Execution**: 
-  - Runs generated code (Swift/Python) in a secure, isolated XPC service (`llmHubHelper`).
+  - Runs generated code (Swift/Python/JS) in a secure, isolated XPC service (`llmHubHelper`).
   - Protects the host system while allowing complex data analysis and logic execution.
 - **Model Context Protocol (MCP)**:
   - First-class support for the MCP standard.
@@ -55,15 +55,30 @@ llmHub follows the **Valon/Modi/Core** principles:
 - **Tools**: The agent will automatically invoke tools (like Code Execution) when asked to perform tasks requiring computation or file access.
 - **Execution**: Code runs in the workbench panel, showing real-time logs and output.
 
+### Code Execution
+llmHub supports executing code in multiple languages within a secure sandbox:
+- **Python**: Full support for data analysis and scripting.
+- **Swift**: Native execution for macOS-specific tasks.
+- **JavaScript/TypeScript**: Supported via Node.js integration.
+
+### File Operations
+The agent can read and modify files with your explicit permission. A diff preview is shown before any modification, ensuring you have full control over the changes.
+
 ## 🤝 Contributing
 
 This project uses **Swift 6** and **SwiftData**. Please adhere to the architecture defined in `Docs/AGENTS.md` when contributing.
 
 ### Key Directories
-- `llmHub/Providers`: LLM API implementations.
-- `llmHub/Tools`: Tool definitions.
-- `llmHub/Services`: Core logic (Chat, Execution, MCP).
-- `llmHubHelper`: The sandboxed XPC service.
+- `llmHub/Models`: Data models for chat, tools, and execution.
+- `llmHub/Providers`: LLM API implementations (OpenAI, Anthropic, etc.).
+- `llmHub/Services`: Core business logic (Chat, Execution, MCP).
+- `llmHub/Tools`: Tool definitions and implementations.
+- `llmHub/ViewModels`: UI state management.
+- `llmHub/Views`: SwiftUI views.
+- `llmHubHelper`: The sandboxed XPC service for code execution.
+
+### Documentation
+All public APIs are fully documented. Please ensure new code includes comprehensive docstrings following the Swift documentation standards.
 
 ## 📄 License
 
