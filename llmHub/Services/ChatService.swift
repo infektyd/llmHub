@@ -9,17 +9,29 @@ import Foundation
 import SwiftData
 import OSLog
 
+/// Service responsible for managing chat sessions, messages, and interactions with LLM providers.
 final class ChatService {
+    /// The SwiftData model context.
     let modelContext: ModelContext
+    /// Registry of available LLM providers.
     let providerRegistry: ProviderRegistry
+    /// Calculator for session costs.
     private let costCalculator: CostCalculator
+    /// Registry of available tools.
     private let toolRegistry: ToolRegistry
 
+    /// Logger instance.
     private let logger = Logger(subsystem: "com.llmhub", category: "ChatService")
     
-    /// Maximum number of tool execution loops to prevent infinite recursion
+    /// Maximum number of tool execution loops to prevent infinite recursion.
     private let maxToolIterations = 10
 
+    /// Initializes a new `ChatService`.
+    /// - Parameters:
+    ///   - modelContext: The SwiftData context.
+    ///   - providerRegistry: The provider registry.
+    ///   - costCalculator: The cost calculator (default: new instance).
+    ///   - toolRegistry: The tool registry (default: nil, creates default).
     init(
         modelContext: ModelContext,
         providerRegistry: ProviderRegistry,
@@ -34,11 +46,19 @@ final class ChatService {
     }
 
     // MARK: - Sessions
+
+    /// Loads all chat sessions from storage, sorted by update time.
+    /// - Returns: An array of `ChatSession`.
     func loadSessions() throws -> [ChatSession] {
         let descriptor = FetchDescriptor<ChatSessionEntity>(sortBy: [SortDescriptor(\.updatedAt, order: .reverse)])
         return try modelContext.fetch(descriptor).map { $0.asDomain() }
     }
 
+    /// Creates a new chat session.
+    /// - Parameters:
+    ///   - providerID: The ID of the LLM provider.
+    ///   - model: The model identifier.
+    /// - Returns: The created `ChatSession`.
     func createSession(providerID: String, model: String) throws -> ChatSession {
         let referenceID = ReferenceFormatter.newReferenceID()
         let session = ChatSession(
@@ -57,6 +77,10 @@ final class ChatService {
         return session
     }
 
+    /// Appends a message to an existing session.
+    /// - Parameters:
+    ///   - message: The message to append.
+    ///   - sessionID: The ID of the session.
     func appendMessage(_ message: ChatMessage, to sessionID: UUID) throws {
         guard let entity = try modelContext.fetch(FetchDescriptor<ChatSessionEntity>(predicate: #Predicate { $0.id == sessionID })).first else {
             throw ChatServiceError.sessionMissing
@@ -68,6 +92,12 @@ final class ChatService {
         try modelContext.save()
     }
 
+    /// Streams a completion response from the LLM for a given session.
+    /// - Parameters:
+    ///   - session: The chat session.
+    ///   - userMessage: The user's input message.
+    ///   - images: Optional images to include in the request.
+    /// - Returns: An async throwing stream of `ProviderEvent`.
     func streamCompletion(for session: ChatSession, userMessage: String, images: [Data] = []) async throws -> AsyncThrowingStream<ProviderEvent, Error> {
         
         var parts: [ChatContentPart] = [.text(userMessage)]
@@ -223,6 +253,7 @@ final class ChatService {
     }
     
     // Helper to load single session
+    /// Loads a specific session by ID.
     func loadSession(id: UUID) throws -> ChatSession {
         guard let entity = try modelContext.fetch(FetchDescriptor<ChatSessionEntity>(predicate: #Predicate { $0.id == id })).first else {
             throw ChatServiceError.sessionMissing
@@ -230,6 +261,7 @@ final class ChatService {
         return entity.asDomain()
     }
 
+    /// Updates the token usage and cost for a specific message.
     func updateMessageTokenUsage(messageID: UUID, tokenUsage: TokenUsage, costBreakdown: CostBreakdown) throws {
         guard let entity = try modelContext.fetch(FetchDescriptor<ChatMessageEntity>(predicate: #Predicate { $0.id == messageID })).first else {
             throw ChatServiceError.messageMissing
@@ -244,6 +276,7 @@ final class ChatService {
         try modelContext.save()
     }
 
+    /// Updates the session metadata (last usage, total cost).
     func updateSessionMetadata(sessionID: UUID, lastTokenUsage: TokenUsage, additionalCost: Decimal) throws {
         guard let entity = try modelContext.fetch(FetchDescriptor<ChatSessionEntity>(predicate: #Predicate { $0.id == sessionID })).first else {
             throw ChatServiceError.sessionMissing
@@ -257,11 +290,13 @@ final class ChatService {
 
     // MARK: - Folders
 
+    /// Loads all chat folders.
     func loadFolders() throws -> [ChatFolder] {
         let descriptor = FetchDescriptor<ChatFolderEntity>(sortBy: [SortDescriptor(\.orderIndex)])
         return try modelContext.fetch(descriptor).map { $0.asDomain() }
     }
 
+    /// Creates a new chat folder.
     func createFolder(name: String, icon: String, color: String) throws -> ChatFolder {
         let folder = ChatFolder(
             id: UUID(),
@@ -278,6 +313,7 @@ final class ChatService {
         return folder
     }
 
+    /// Updates an existing chat folder.
     func updateFolder(_ folder: ChatFolder) throws {
         let folderID = folder.id
         guard let entity = try modelContext.fetch(FetchDescriptor<ChatFolderEntity>(predicate: #Predicate { $0.id == folderID })).first else {
@@ -290,6 +326,7 @@ final class ChatService {
         try modelContext.save()
     }
 
+    /// Deletes a chat folder.
     func deleteFolder(id: UUID) throws {
         guard let entity = try modelContext.fetch(FetchDescriptor<ChatFolderEntity>(predicate: #Predicate { $0.id == id })).first else {
             throw ChatServiceError.folderMissing
@@ -299,6 +336,7 @@ final class ChatService {
         try modelContext.save()
     }
 
+    /// Moves a session to a specific folder.
     func moveSession(_ sessionID: UUID, to folderID: UUID?) throws {
         guard let sessionEntity = try modelContext.fetch(FetchDescriptor<ChatSessionEntity>(predicate: #Predicate { $0.id == sessionID })).first else {
             throw ChatServiceError.sessionMissing
@@ -317,11 +355,13 @@ final class ChatService {
 
     // MARK: - Tags
 
+    /// Loads all chat tags.
     func loadTags() throws -> [ChatTag] {
         let descriptor = FetchDescriptor<ChatTagEntity>(sortBy: [SortDescriptor(\.name)])
         return try modelContext.fetch(descriptor).map { $0.asDomain() }
     }
 
+    /// Creates a new tag.
     func createTag(name: String, color: String) throws -> ChatTag {
         let tag = ChatTag(id: UUID(), name: name, color: color)
         let entity = ChatTagEntity(tag: tag)
@@ -330,6 +370,7 @@ final class ChatService {
         return tag
     }
 
+    /// Deletes a tag.
     func deleteTag(id: UUID) throws {
         guard let entity = try modelContext.fetch(FetchDescriptor<ChatTagEntity>(predicate: #Predicate { $0.id == id })).first else {
             throw ChatServiceError.tagMissing
@@ -338,6 +379,7 @@ final class ChatService {
         try modelContext.save()
     }
 
+    /// Adds a tag to a session.
     func addTag(tagID: UUID, to sessionID: UUID) throws {
         guard let sessionEntity = try modelContext.fetch(FetchDescriptor<ChatSessionEntity>(predicate: #Predicate { $0.id == sessionID })).first else {
             throw ChatServiceError.sessionMissing
@@ -352,6 +394,7 @@ final class ChatService {
         }
     }
 
+    /// Removes a tag from a session.
     func removeTag(tagID: UUID, from sessionID: UUID) throws {
         guard let sessionEntity = try modelContext.fetch(FetchDescriptor<ChatSessionEntity>(predicate: #Predicate { $0.id == sessionID })).first else {
             throw ChatServiceError.sessionMissing
@@ -362,6 +405,7 @@ final class ChatService {
 
     // MARK: - Pinning
 
+    /// Toggles the pinned state of a session.
     func togglePin(sessionID: UUID) throws {
         guard let sessionEntity = try modelContext.fetch(FetchDescriptor<ChatSessionEntity>(predicate: #Predicate { $0.id == sessionID })).first else {
             throw ChatServiceError.sessionMissing
@@ -372,7 +416,7 @@ final class ChatService {
     
     // MARK: - Image Helpers
     
-    /// Detects the image MIME type from the file's magic bytes
+    /// Detects the image MIME type from the file's magic bytes.
     private func detectImageMimeType(from data: Data) -> String {
         guard data.count >= 12 else { return "image/jpeg" }
         
@@ -415,12 +459,18 @@ final class ChatService {
     }
 }
 
+/// Errors thrown by the ChatService.
 enum ChatServiceError: LocalizedError {
+    /// The session could not be found.
     case sessionMissing
+    /// The message could not be found.
     case messageMissing
+    /// The folder could not be found.
     case folderMissing
+    /// The tag could not be found.
     case tagMissing
 
+    /// A localized description of the error.
     var errorDescription: String? {
         switch self {
         case .sessionMissing:
@@ -434,4 +484,3 @@ enum ChatServiceError: LocalizedError {
         }
     }
 }
-

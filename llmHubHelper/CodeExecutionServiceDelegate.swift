@@ -8,11 +8,16 @@
 import Foundation
 import OSLog
 
-/// Delegate for the XPC listener that creates connection handlers
+/// Delegate for the XPC listener that creates connection handlers.
 final class CodeExecutionServiceDelegate: NSObject, NSXPCListenerDelegate {
     
     private let logger = Logger(subsystem: "Syntra.llmHub.CodeExecutionHelper", category: "ServiceDelegate")
     
+    /// Called when a new connection is received.
+    /// - Parameters:
+    ///   - listener: The listener receiving the connection.
+    ///   - newConnection: The new XPC connection.
+    /// - Returns: True if the connection should be accepted.
     func listener(_ listener: NSXPCListener, shouldAcceptNewConnection newConnection: NSXPCConnection) -> Bool {
         logger.info("Accepting new XPC connection")
         
@@ -40,4 +45,3 @@ final class CodeExecutionServiceDelegate: NSObject, NSXPCListenerDelegate {
         return true
     }
 }
-

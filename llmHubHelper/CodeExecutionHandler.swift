@@ -9,8 +9,8 @@
 import Foundation
 import OSLog
 
-/// Handler that implements the XPC protocol for code execution
-/// Runs in the non-sandboxed XPC helper process
+/// Handler that implements the XPC protocol for code execution.
+/// Runs in the non-sandboxed XPC helper process.
 final class CodeExecutionHandler: NSObject, CodeExecutionXPCProtocol {
     
     private let logger = Logger(subsystem: "Syntra.llmHub.CodeExecutionHelper", category: "Handler")
@@ -18,6 +18,13 @@ final class CodeExecutionHandler: NSObject, CodeExecutionXPCProtocol {
     
     // MARK: - CodeExecutionXPCProtocol
     
+    /// Executes code in the specified language.
+    /// - Parameters:
+    ///   - code: The source code to execute.
+    ///   - language: The language identifier.
+    ///   - timeout: The timeout in seconds.
+    ///   - workingDirectory: The working directory path.
+    ///   - reply: The completion handler with result data or error.
     func executeCode(
         _ code: String,
         language: String,
@@ -49,6 +56,10 @@ final class CodeExecutionHandler: NSObject, CodeExecutionXPCProtocol {
         }
     }
     
+    /// Checks for the availability of an interpreter.
+    /// - Parameters:
+    ///   - language: The language identifier.
+    ///   - reply: The completion handler with interpreter info.
     func checkInterpreter(
         _ language: String,
         reply: @escaping (String?, String?, Error?) -> Void
@@ -68,15 +79,18 @@ final class CodeExecutionHandler: NSObject, CodeExecutionXPCProtocol {
         }
     }
     
+    /// Retrieves the version of the helper service.
+    /// - Parameter reply: The completion handler with the version string.
     func getVersion(reply: @escaping (String) -> Void) {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
         reply("\(version) (\(build))")
     }
     
+    /// Pings the service to check connectivity.
+    /// - Parameter reply: The completion handler with success status.
     func ping(reply: @escaping (Bool) -> Void) {
         logger.debug("Ping received")
         reply(true)
     }
 }
-

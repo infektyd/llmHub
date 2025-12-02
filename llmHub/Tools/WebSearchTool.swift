@@ -8,8 +8,8 @@
 import Foundation
 import OSLog
 
-/// Web Search Tool conforming to the Tool protocol
-/// Searches the web using DuckDuckGo and returns results
+/// Web Search Tool conforming to the Tool protocol.
+/// Searches the web using DuckDuckGo and returns results.
 struct WebSearchTool: Tool {
     nonisolated let id = "web_search"
     nonisolated let name = "web_search"
@@ -40,6 +40,8 @@ struct WebSearchTool: Tool {
     private let logger = Logger(subsystem: "com.llmhub", category: "WebSearchTool")
     private let session: URLSession
 
+    /// Initializes a new `WebSearchTool`.
+    /// - Parameter session: The URLSession to use (default: `.shared`).
     init(session: URLSession = .shared) {
         self.session = session
     }
@@ -69,6 +71,11 @@ struct WebSearchTool: Tool {
 
     // MARK: - DuckDuckGo Search
 
+    /// Performs a search using DuckDuckGo.
+    /// - Parameters:
+    ///   - query: The search query.
+    ///   - maxResults: The maximum number of results to return.
+    /// - Returns: An array of `SearchResult`.
     private nonisolated func searchDuckDuckGo(query: String, maxResults: Int) async throws -> [SearchResult] {
         // Use DuckDuckGo HTML search (no API key required)
         guard
@@ -102,6 +109,11 @@ struct WebSearchTool: Tool {
 
     // MARK: - HTML Parsing
 
+    /// Parses search results from HTML.
+    /// - Parameters:
+    ///   - html: The HTML string.
+    ///   - maxResults: Maximum results to parse.
+    /// - Returns: An array of `SearchResult`.
     private nonisolated func parseSearchResults(html: String, maxResults: Int) -> [SearchResult] {
         var results: [SearchResult] = []
 
@@ -175,6 +187,11 @@ struct WebSearchTool: Tool {
 
     // MARK: - Formatting
 
+    /// Formats the search results into a readable string.
+    /// - Parameters:
+    ///   - results: The search results.
+    ///   - query: The search query.
+    /// - Returns: A formatted string.
     private nonisolated func formatResults(_ results: [SearchResult], query: String) -> String {
         var output = "Web Search Results for: \"\(query)\"\n"
         output += String(repeating: "=", count: 50) + "\n\n"
@@ -197,18 +214,28 @@ struct WebSearchTool: Tool {
 
 // MARK: - Supporting Types
 
+/// Represents a single search result.
 struct SearchResult {
+    /// The title of the result.
     let title: String
+    /// The URL of the result.
     let url: String
+    /// The snippet or description of the result.
     let snippet: String
 }
 
+/// Errors related to search operations.
 enum SearchError: LocalizedError {
+    /// The query provided was invalid.
     case invalidQuery
+    /// The search request failed.
     case requestFailed
+    /// The search engine returned an invalid response.
     case invalidResponse
+    /// Failed to parse the search results.
     case parsingFailed
 
+    /// A localized description of the error.
     var errorDescription: String? {
         switch self {
         case .invalidQuery: return "Invalid search query"

@@ -9,8 +9,8 @@
 import Foundation
 import OSLog
 
-/// File Editor Tool conforming to the Tool protocol
-/// Provides comprehensive file manipulation capabilities with configurable security
+/// File Editor Tool conforming to the Tool protocol.
+/// Provides comprehensive file manipulation capabilities with configurable security.
 final class FileEditorTool: Tool, @unchecked Sendable {
     nonisolated let id = "file_editor"
     nonisolated let name = "file_editor"
@@ -99,7 +99,9 @@ final class FileEditorTool: Tool, @unchecked Sendable {
 
     // MARK: - Operation Execution
 
-    /// Execute a file operation with security checks
+    /// Execute a file operation with security checks.
+    /// - Parameter request: The file operation request.
+    /// - Returns: A summary of the operation result.
     func executeOperation(_ request: FileOperationRequest) async throws -> String {
         logger.info("Executing \(request.operation.rawValue) on \(request.path)")
 
@@ -177,6 +179,8 @@ final class FileEditorTool: Tool, @unchecked Sendable {
 
     // MARK: - Validation
 
+    /// Validates the file operation request.
+    /// - Parameter request: The request to validate.
     private func validateRequest(_ request: FileOperationRequest) throws {
         let fm = FileManager.default
         let url = request.resolvedURL
@@ -223,6 +227,9 @@ final class FileEditorTool: Tool, @unchecked Sendable {
 
     // MARK: - Preview Generation
 
+    /// Generates a preview of the operation for user approval.
+    /// - Parameter request: The file operation request.
+    /// - Returns: A `FileOperationPreview` object.
     private func generatePreview(for request: FileOperationRequest) throws -> FileOperationPreview {
         let fm = FileManager.default
         let url = request.resolvedURL
@@ -294,6 +301,7 @@ final class FileEditorTool: Tool, @unchecked Sendable {
         )
     }
 
+    /// Generates a simple diff between two strings.
     private func generateDiff(original: String, proposed: String) -> [DiffLine] {
         let originalLines = original.components(separatedBy: .newlines)
         let proposedLines = proposed.components(separatedBy: .newlines)
@@ -604,6 +612,7 @@ final class FileEditorTool: Tool, @unchecked Sendable {
 
     // MARK: - History Management
 
+    /// Adds an entry to the operation history.
     private func addToHistory(_ entry: FileOperationHistoryEntry) {
         history.append(entry)
 
@@ -613,12 +622,13 @@ final class FileEditorTool: Tool, @unchecked Sendable {
         }
     }
 
-    /// Get operation history
+    /// Get operation history.
+    /// - Returns: An array of history entries.
     func getHistory() -> [FileOperationHistoryEntry] {
         history
     }
 
-    /// Clear operation history
+    /// Clear operation history.
     func clearHistory() {
         history.removeAll()
     }

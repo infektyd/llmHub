@@ -10,20 +10,20 @@ import Foundation
 
 // MARK: - Execution Backend Protocol
 
-/// Protocol for code execution backends
-/// Abstracts the actual execution mechanism (XPC, remote API, etc.)
+/// Protocol for code execution backends.
+/// Abstracts the actual execution mechanism (XPC, remote API, etc.).
 protocol ExecutionBackend: Sendable {
     
-    /// Check if the backend is available and ready
+    /// Check if the backend is available and ready.
     var isAvailable: Bool { get async }
     
-    /// Execute code and return the result
+    /// Execute code and return the result.
     /// - Parameters:
-    ///   - code: Source code to execute
-    ///   - language: Programming language
-    ///   - timeout: Maximum execution time in seconds
-    ///   - workingDirectory: Optional working directory
-    /// - Returns: Execution result
+    ///   - code: Source code to execute.
+    ///   - language: Programming language.
+    ///   - timeout: Maximum execution time in seconds.
+    ///   - workingDirectory: Optional working directory.
+    /// - Returns: A `CodeExecutionResult`.
     func execute(
         code: String,
         language: SupportedLanguage,
@@ -31,22 +31,23 @@ protocol ExecutionBackend: Sendable {
         workingDirectory: URL?
     ) async throws -> CodeExecutionResult
     
-    /// Check if an interpreter is available for the language
-    /// - Parameter language: The language to check
-    /// - Returns: Interpreter info if available
+    /// Check if an interpreter is available for the language.
+    /// - Parameter language: The language to check.
+    /// - Returns: `InterpreterInfo` indicating availability and path.
     func checkInterpreter(for language: SupportedLanguage) async -> InterpreterInfo
     
-    /// Get all available interpreters
-    /// - Returns: Array of interpreter info for all languages
+    /// Get all available interpreters.
+    /// - Returns: Array of `InterpreterInfo` for all languages.
     func checkAllInterpreters() async -> [InterpreterInfo]
 }
 
 // MARK: - Backend Factory
 
-/// Factory for creating the appropriate execution backend for the current platform
+/// Factory for creating the appropriate execution backend for the current platform.
 enum ExecutionBackendFactory: Sendable {
     
-    /// Create the default backend for the current platform
+    /// Create the default backend for the current platform.
+    /// - Returns: An instance conforming to `ExecutionBackend`.
     @MainActor
     static func createDefault() -> any ExecutionBackend {
         #if os(macOS)
@@ -61,14 +62,16 @@ enum ExecutionBackendFactory: Sendable {
 
 // MARK: - Unavailable Backend (iOS Stub)
 
-/// Placeholder backend for platforms without local execution
-/// Will be replaced with RemoteExecutionBackend in the future
+/// Placeholder backend for platforms without local execution.
+/// Will be replaced with RemoteExecutionBackend in the future.
 struct UnavailableExecutionBackend: ExecutionBackend {
     
+    /// Always returns false as this backend represents unavailability.
     var isAvailable: Bool {
         get async { false }
     }
     
+    /// Throws an error indicating execution is not available.
     func execute(
         code: String,
         language: SupportedLanguage,
@@ -81,12 +84,13 @@ struct UnavailableExecutionBackend: ExecutionBackend {
         )
     }
     
+    /// Returns unavailable interpreter info.
     func checkInterpreter(for language: SupportedLanguage) async -> InterpreterInfo {
         InterpreterInfo.unavailable(language)
     }
     
+    /// Returns unavailable info for all interpreters.
     func checkAllInterpreters() async -> [InterpreterInfo] {
         SupportedLanguage.allCases.map { InterpreterInfo.unavailable($0) }
     }
 }
-
