@@ -4,9 +4,13 @@ import Foundation
 /// A clean, unified manager for Google's Gemini API (Text, Vision, Thinking, Imagen, Veo).
 @available(iOS 26.1, macOS 26.1, *)
 public class GeminiManager {
+    /// The API key for authentication.
     private let apiKey: String
+    /// The base URL for the Gemini API.
     private let baseURL = "https://generativelanguage.googleapis.com/v1beta"
     
+    /// Initializes a new `GeminiManager`.
+    /// - Parameter apiKey: The API key for Gemini.
     public init(apiKey: String) {
         self.apiKey = apiKey
     }
@@ -17,9 +21,10 @@ public class GeminiManager {
     /// - Parameters:
     ///   - prompt: The user's text input.
     ///   - files: Optional array of media data (images/video) with mime types.
-    ///   - model: e.g., "gemini-1.5-pro", "gemini-2.0-flash-exp"
-    ///   - thinkingLevel: Set to .high for Gemini 3 reasoning capabilities.
+    ///   - model: e.g., "gemini-1.5-pro", "gemini-2.0-flash-exp" (default: "gemini-1.5-pro").
+    ///   - thinkingLevel: Set to .high for Gemini 3 reasoning capabilities (default: .off).
     ///   - history: Previous chat history for context.
+    /// - Returns: A `GenerationResponse` containing the model's output.
     public func generateContent(
         prompt: String,
         files: [MediaFile] = [],
@@ -49,6 +54,13 @@ public class GeminiManager {
     }
 
     /// Generates content with streaming response.
+    /// - Parameters:
+    ///   - prompt: The user's text input.
+    ///   - files: Optional array of media data (images/video) with mime types.
+    ///   - model: e.g., "gemini-1.5-pro" (default: "gemini-1.5-pro").
+    ///   - thinkingLevel: Set to .high for Gemini 3 reasoning capabilities (default: .off).
+    ///   - history: Previous chat history for context.
+    /// - Returns: An async throwing stream of `GenerationResponse` chunks.
     public func streamGenerateContent(
         prompt: String,
         files: [MediaFile] = [],
@@ -116,6 +128,14 @@ public class GeminiManager {
     }
 
     /// Creates a URLRequest for generating content.
+    /// - Parameters:
+    ///   - prompt: The user input.
+    ///   - files: Attached media files.
+    ///   - model: The model identifier.
+    ///   - thinkingLevel: The reasoning level.
+    ///   - history: Chat history.
+    ///   - stream: Whether to request streaming.
+    /// - Returns: A configured `URLRequest`.
     public func makeGenerateContentRequest(
         prompt: String,
         files: [MediaFile] = [],
@@ -164,6 +184,11 @@ public class GeminiManager {
     // MARK: - 2. Image Generation (Imagen 3)
     
     /// Generates images using Imagen 3.
+    /// - Parameters:
+    ///   - prompt: The image description.
+    ///   - aspectRatio: The aspect ratio (e.g., "1:1").
+    ///   - model: The model identifier (default: "imagen-3.0-generate-001").
+    /// - Returns: The raw image data (PNG/JPEG).
     public func generateImage(
         prompt: String,
         aspectRatio: String = "1:1",
@@ -199,6 +224,10 @@ public class GeminiManager {
     
     /// Generates video using Veo models.
     /// Note: This endpoint is subject to availability/preview status.
+    /// - Parameters:
+    ///   - prompt: The video description.
+    ///   - model: The model identifier (default: "veo-2.0-generate-001").
+    /// - Returns: The URI of the generated video.
     public func generateVideo(
         prompt: String,
         model: String = "veo-2.0-generate-001"
@@ -237,6 +266,9 @@ public class GeminiManager {
         throw GeminiError.custom("Video generation response could not be parsed or requires implementation update.")
     }
 
+    /// Polls a long-running operation until completion.
+    /// - Parameter name: The operation name.
+    /// - Returns: The result URI.
     private func pollOperation(name: String) async throws -> String {
         let pollEndpoint = "\(baseURL)/\(name)?key=\(apiKey)"
         
@@ -280,6 +312,7 @@ public class GeminiManager {
 
     // MARK: - Helpers
     
+    /// Performs a strongly-typed API request.
     private func performRequest<T: Encodable, U: Decodable>(endpoint: String, payload: T) async throws -> U {
         guard let url = URL(string: endpoint) else { throw GeminiError.invalidURL }
         
@@ -321,6 +354,7 @@ public class GeminiManager {
         return try JSONDecoder().decode(U.self, from: data)
     }
     
+    /// Performs a raw API request.
     private func performRawRequest(endpoint: String, payload: [String: Any]) async throws -> Data {
         guard let url = URL(string: endpoint) else { throw GeminiError.invalidURL }
         
@@ -353,44 +387,65 @@ public class GeminiManager {
 
 // MARK: - Data Models
 
+/// Represents a media file to be sent to Gemini.
 public struct MediaFile {
+    /// The raw data of the file.
     public let data: Data
+    /// The MIME type of the file.
     public let mimeType: String
     
+    /// Initializes a new `MediaFile`.
     public init(data: Data, mimeType: String) {
         self.data = data
         self.mimeType = mimeType
     }
 }
 
+/// Defines the reasoning level for the model.
 public enum ThinkingLevel: String {
+    /// No thinking/reasoning.
     case off = "OFF" // Not sent in config
+    /// Low level reasoning.
     case low = "LOW"
+    /// High level reasoning (for complex tasks).
     case high = "HIGH"
 }
 
 // MARK: - API Structs (Codable)
 
+/// The request payload for content generation.
 struct GenerateContentRequest: Codable {
+    /// The content history and new message.
     let contents: [Content]
+    /// Configuration for generation.
     let generationConfig: GenerationConfig?
 }
 
+/// Represents a message content.
 public struct Content: Codable {
+    /// The role of the message sender.
     public let role: String
+    /// The parts of the message.
     public let parts: [Part]
     
+    /// Initializes a new `Content` object.
     public init(role: String, parts: [Part]) {
         self.role = role
         self.parts = parts
     }
 }
 
+/// A part of the message content.
 public enum Part: Codable {
+    /// Text content.
     case text(String)
+    /// Inline media data.
     case inlineData(InlineData)
+    /// Function call request.
     case functionCall(FunctionCall)
+    /// Function response.
     case functionResponse(FunctionResponse)
+    /// Thought signature (internal reasoning).
     case thoughtSignature(String) // Important for Gemini 3 reasoning chains
     
     enum CodingKeys: String, CodingKey {
@@ -418,20 +473,30 @@ public enum Part: Codable {
     }
 }
 
+/// Inline media data structure.
 public struct InlineData: Codable {
+    /// The MIME type.
     public let mimeType: String
+    /// The base64 encoded data.
     public let data: String // Base64 encoded
 }
 
+/// Configuration for generation parameters.
 struct GenerationConfig: Codable {
+    /// Sampling temperature (0.0 - 2.0).
     var temperature: Float? = nil // Default 1.0 is best for Gemini 3
+    /// Thinking level setting.
     var thinkingLevel: String?
+    /// Response modalities (e.g., TEXT, IMAGE).
     var responseModalities: [String]? // ["TEXT", "IMAGE"]
 }
 
+/// The response from a generation request.
 public struct GenerationResponse: Codable {
+    /// The generated candidates.
     public let candidates: [Candidate]?
     
+    /// Convenience property to get the text from the first candidate.
     public var text: String? {
         candidates?.first?.content.parts.compactMap { part -> String? in
             if case .text(let t) = part { return t }
@@ -440,6 +505,7 @@ public struct GenerationResponse: Codable {
     }
     
     // Extracts thought signature to pass back for reasoning continuity
+    /// The thought signature from the model's reasoning process.
     public var thoughtSignature: String? {
         candidates?.first?.content.parts.compactMap { part -> String? in
             if case .thoughtSignature(let s) = part { return s }
@@ -448,64 +514,34 @@ public struct GenerationResponse: Codable {
     }
 }
 
+/// A generation candidate.
 public struct Candidate: Codable {
+    /// The content of the candidate.
     public let content: Content
+    /// The reason why generation finished.
     public let finishReason: String?
 }
 
 // Placeholders for Tool Use (optional expansion)
+/// Represents a function call.
 public struct FunctionCall: Codable {}
+/// Represents a function response.
 public struct FunctionResponse: Codable {}
 
+/// Errors specific to the Gemini API.
 enum GeminiError: Error {
+    /// The URL was invalid.
     case invalidURL
+    /// A general API error.
     case apiError
+    /// Failed to parse the response.
     case parsingError
+    /// A custom error message.
     case custom(String)
+    /// Rate limit exceeded.
     case rateLimited
+    /// Quota exceeded.
     case quotaExceeded
+    /// Server error with status code.
     case serverError(Int)
 }
-
-// ... (in helpers)
-
-    private func performRequest<T: Encodable, U: Decodable>(endpoint: String, payload: T) async throws -> U {
-        guard let url = URL(string: endpoint) else { throw GeminiError.invalidURL }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONEncoder().encode(payload)
-        
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse else {
-             throw GeminiError.apiError
-        }
-        
-        if !(200...299).contains(httpResponse.statusCode) {
-            // Try to parse detailed error
-            if let errorJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let errorObj = errorJson["error"] as? [String: Any],
-               let message = errorObj["message"] as? String {
-                
-                print("Gemini API Error: \(message)")
-                
-                if httpResponse.statusCode == 429 {
-                    throw GeminiError.rateLimited
-                }
-                if message.contains("quota") {
-                    throw GeminiError.quotaExceeded
-                }
-                
-                throw GeminiError.custom(message)
-            }
-            
-            if httpResponse.statusCode == 429 { throw GeminiError.rateLimited }
-            if httpResponse.statusCode >= 500 { throw GeminiError.serverError(httpResponse.statusCode) }
-            
-            throw GeminiError.apiError
-        }
-        
-        return try JSONDecoder().decode(U.self, from: data)
-    }

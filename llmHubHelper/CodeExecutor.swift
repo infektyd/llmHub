@@ -9,8 +9,8 @@
 import Foundation
 import OSLog
 
-/// Executes code in various languages using system interpreters
-/// Runs in the XPC helper process, outside the app sandbox
+/// Executes code in various languages using system interpreters.
+/// Runs in the XPC helper process, outside the app sandbox.
 actor CodeExecutor {
     
     private let logger = Logger(subsystem: "Syntra.llmHub.CodeExecutionHelper", category: "Executor")
@@ -32,7 +32,13 @@ actor CodeExecutor {
     
     // MARK: - Execution
     
-    /// Execute code and return the result
+    /// Execute code and return the result.
+    /// - Parameters:
+    ///   - code: The code to execute.
+    ///   - language: The programming language.
+    ///   - timeout: The timeout in seconds.
+    ///   - workingDirectory: The working directory path.
+    /// - Returns: An `XPCExecutionResult`.
     func execute(
         code: String,
         language: String,
@@ -95,7 +101,9 @@ actor CodeExecutor {
     
     // MARK: - Interpreter Discovery
     
-    /// Find the interpreter path and version for a language
+    /// Find the interpreter path and version for a language.
+    /// - Parameter language: The language identifier.
+    /// - Returns: A tuple containing the path and version.
     func findInterpreter(for language: String) async -> (path: String?, version: String?) {
         // Check cache
         if let cached = interpreterCache[language] {
@@ -115,7 +123,7 @@ actor CodeExecutor {
         return (nil, nil)
     }
     
-    /// Get possible interpreter commands for a language
+    /// Get possible interpreter commands for a language.
     private func interpreterCommands(for language: String) -> [String] {
         switch language {
         case "swift":
@@ -133,7 +141,7 @@ actor CodeExecutor {
         }
     }
     
-    /// Get file extension for a language
+    /// Get file extension for a language.
     private static func fileExtension(for language: String) -> String {
         switch language {
         case "swift": return ".swift"
@@ -145,7 +153,7 @@ actor CodeExecutor {
         }
     }
     
-    /// Run `which` to find binary path
+    /// Run `which` to find binary path.
     private func which(_ command: String) async -> String? {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/which")
@@ -172,7 +180,7 @@ actor CodeExecutor {
         return nil
     }
     
-    /// Get interpreter version
+    /// Get interpreter version.
     private func getVersion(path: String, language: String) async -> String? {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: path)
@@ -196,6 +204,7 @@ actor CodeExecutor {
     
     // MARK: - Process Execution
     
+    /// Runs the process for the given language and code file.
     private func runProcess(
         interpreterPath: String,
         codeFile: URL,
@@ -281,4 +290,3 @@ actor CodeExecutor {
         return (stdout, stderr, process.terminationStatus)
     }
 }
-

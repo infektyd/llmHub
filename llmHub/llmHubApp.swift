@@ -8,6 +8,7 @@
 import SwiftData
 import SwiftUI
 
+/// The main application entry point.
 @main
 struct llmHubApp: App {
     var body: some Scene {

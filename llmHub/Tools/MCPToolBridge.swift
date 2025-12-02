@@ -9,7 +9,7 @@
 import Foundation
 import OSLog
 
-/// Manages MCP server connections and bridges their tools to the native Tool protocol
+/// Manages MCP server connections and bridges their tools to the native Tool protocol.
 actor MCPToolBridge {
     private let logger = Logger(subsystem: "com.llmhub", category: "MCPToolBridge")
 
@@ -21,7 +21,8 @@ actor MCPToolBridge {
 
     // MARK: - Server Management
 
-    /// Load saved server configurations
+    /// Load saved server configurations from UserDefaults.
+    /// - Returns: An array of `MCPServerConfig`.
     func loadConfigurations() -> [MCPServerConfig] {
         guard let data = UserDefaults.standard.data(forKey: configKey),
             let configs = try? JSONDecoder().decode([MCPServerConfig].self, from: data)
@@ -31,21 +32,24 @@ actor MCPToolBridge {
         return configs
     }
 
-    /// Save server configurations
+    /// Save server configurations to UserDefaults.
+    /// - Parameter configs: The configurations to save.
     func saveConfigurations(_ configs: [MCPServerConfig]) {
         if let data = try? JSONEncoder().encode(configs) {
             UserDefaults.standard.set(data, forKey: configKey)
         }
     }
 
-    /// Add a new MCP server configuration
+    /// Add a new MCP server configuration.
+    /// - Parameter config: The configuration to add.
     func addServer(_ config: MCPServerConfig) {
         var configs = loadConfigurations()
         configs.append(config)
         saveConfigurations(configs)
     }
 
-    /// Remove an MCP server configuration
+    /// Remove an MCP server configuration by ID.
+    /// - Parameter id: The ID of the server configuration to remove.
     func removeServer(id: UUID) {
         var configs = loadConfigurations()
         configs.removeAll { $0.id == id }
@@ -57,7 +61,8 @@ actor MCPToolBridge {
         }
     }
 
-    /// Update an MCP server configuration
+    /// Update an MCP server configuration.
+    /// - Parameter config: The updated configuration.
     func updateServer(_ config: MCPServerConfig) {
         var configs = loadConfigurations()
         if let index = configs.firstIndex(where: { $0.id == config.id }) {
@@ -68,7 +73,7 @@ actor MCPToolBridge {
 
     // MARK: - Connection Management
 
-    /// Connect to all enabled MCP servers
+    /// Connect to all enabled MCP servers.
     func connectAll() async {
         let configs = loadConfigurations().filter { $0.isEnabled }
 
@@ -77,7 +82,8 @@ actor MCPToolBridge {
         }
     }
 
-    /// Connect to a specific MCP server
+    /// Connect to a specific MCP server.
+    /// - Parameter config: The configuration of the server to connect to.
     func connect(to config: MCPServerConfig) async {
         guard clients[config.id] == nil else {
             logger.debug("Already connected to: \(config.name)")
@@ -99,7 +105,8 @@ actor MCPToolBridge {
         }
     }
 
-    /// Disconnect from a specific MCP server
+    /// Disconnect from a specific MCP server.
+    /// - Parameter serverID: The ID of the server to disconnect from.
     func disconnect(serverID: UUID) async {
         guard let client = clients.removeValue(forKey: serverID) else { return }
 
@@ -111,7 +118,7 @@ actor MCPToolBridge {
         logger.info("Disconnected from MCP server: \(serverID)")
     }
 
-    /// Disconnect from all MCP servers
+    /// Disconnect from all MCP servers.
     func disconnectAll() async {
         for (_, client) in clients {
             await client.disconnect()
@@ -122,7 +129,10 @@ actor MCPToolBridge {
 
     // MARK: - Tool Discovery
 
-    /// Discover tools from a connected MCP server
+    /// Discover tools from a connected MCP server.
+    /// - Parameters:
+    ///   - client: The MCP client.
+    ///   - serverID: The server ID.
     private func discoverTools(from client: MCPClient, serverID: UUID) async {
         do {
             let tools = try await client.listTools()
@@ -148,30 +158,35 @@ actor MCPToolBridge {
 
     // MARK: - Tool Access
 
-    /// Get all bridged tools as an array
+    /// Get all bridged tools as an array.
+    /// - Returns: An array of tools.
     var allTools: [any Tool] {
         Array(discoveredTools.values)
     }
 
-    /// Get a specific bridged tool
+    /// Get a specific bridged tool by name.
+    /// - Parameter name: The name of the tool.
+    /// - Returns: The tool if found.
     func tool(named name: String) -> (any Tool)? {
         discoveredTools[name]
     }
 
-    /// Register all MCP tools into a ToolRegistry
-    /// Returns the tools to be registered externally
+    /// Register all MCP tools into a ToolRegistry.
+    /// Returns the tools to be registered externally.
+    /// - Returns: An array of tools.
     func getToolsForRegistration() -> [any Tool] {
         Array(discoveredTools.values)
     }
 
     // MARK: - Status
 
-    /// Check if connected to any MCP servers
+    /// Check if connected to any MCP servers.
     var isConnected: Bool {
         !clients.isEmpty
     }
 
-    /// Get connection status for all configured servers
+    /// Get connection status for all configured servers.
+    /// - Returns: An array of tuples containing config and connection status.
     func connectionStatus() -> [(config: MCPServerConfig, isConnected: Bool)] {
         let configs = loadConfigurations()
         return configs.map { config in
@@ -182,9 +197,7 @@ actor MCPToolBridge {
 
 // MARK: - MCPBridgedTool
 
-/// A Tool implementation that bridges to an MCP server tool
-/// Uses nonisolated(unsafe) to opt out of actor isolation since this is a thread-safe value type wrapper
-/// A Tool implementation that bridges to an MCP server tool
+/// A Tool implementation that bridges to an MCP server tool.
 /// Uses @unchecked Sendable because inputSchema is [String: Any] which is not Sendable,
 /// but we know it's immutable and thread-safe in this context.
 final class MCPBridgedTool: Tool, @unchecked Sendable {
@@ -197,6 +210,11 @@ final class MCPBridgedTool: Tool, @unchecked Sendable {
     private let client: MCPClient
     private let logger = Logger(subsystem: "com.llmhub", category: "MCPBridgedTool")
 
+    /// Initializes a new bridged tool.
+    /// - Parameters:
+    ///   - serverID: The ID of the MCP server.
+    ///   - client: The MCP client.
+    ///   - toolInfo: Information about the tool from the server.
     nonisolated init(serverID: UUID, client: MCPClient, toolInfo: MCPToolInfo) {
         self.serverID = serverID
         self.client = client
@@ -227,6 +245,9 @@ final class MCPBridgedTool: Tool, @unchecked Sendable {
         }
     }
 
+    /// Executes the tool via the MCP client.
+    /// - Parameter input: The input arguments.
+    /// - Returns: The tool output string.
     nonisolated func execute(input: [String: Any]) async throws -> String {
         logger.info("Calling MCP tool: \(self.name)")
 
@@ -266,7 +287,7 @@ final class MCPBridgedTool: Tool, @unchecked Sendable {
 // MARK: - Default Server Configurations
 
 extension MCPToolBridge {
-    /// Get some example MCP server configurations
+    /// Get some example MCP server configurations.
     static var exampleConfigurations: [MCPServerConfig] {
         [
             // Filesystem MCP server (Node.js)
@@ -299,9 +320,10 @@ extension MCPToolBridge {
 
 // MARK: - MCPToolManager (Singleton)
 
-/// Global manager for MCP tool bridge
-/// Use this to access MCP tools throughout the app
+/// Global manager for MCP tool bridge.
+/// Use this to access MCP tools throughout the app.
 final class MCPToolManager: @unchecked Sendable {
+    /// Shared singleton instance.
     static let shared = MCPToolManager()
 
     private let bridge = MCPToolBridge()
@@ -309,20 +331,21 @@ final class MCPToolManager: @unchecked Sendable {
 
     private init() {}
 
-    /// Initialize and connect to all enabled MCP servers
+    /// Initialize and connect to all enabled MCP servers.
     func initialize() async {
         await bridge.connectAll()
         logger.info("MCP Tool Manager initialized")
     }
 
-    /// Get all available MCP tools
+    /// Get all available MCP tools.
     var tools: [any Tool] {
         get async {
             await bridge.allTools
         }
     }
 
-    /// Register all MCP tools into a registry
+    /// Register all MCP tools into a registry.
+    /// - Parameter registry: The registry to register tools into.
     func registerTools(into registry: inout ToolRegistry) async {
         let tools = await bridge.getToolsForRegistration()
         for tool in tools {
@@ -330,7 +353,8 @@ final class MCPToolManager: @unchecked Sendable {
         }
     }
 
-    /// Add a new MCP server
+    /// Add a new MCP server.
+    /// - Parameter config: The server configuration.
     func addServer(_ config: MCPServerConfig) async {
         await bridge.addServer(config)
         if config.isEnabled {
@@ -338,17 +362,19 @@ final class MCPToolManager: @unchecked Sendable {
         }
     }
 
-    /// Remove an MCP server
+    /// Remove an MCP server.
+    /// - Parameter id: The server ID.
     func removeServer(id: UUID) async {
         await bridge.removeServer(id: id)
     }
 
-    /// Get connection status
+    /// Get connection status.
+    /// - Returns: Array of configuration and connection status.
     func connectionStatus() async -> [(config: MCPServerConfig, isConnected: Bool)] {
         await bridge.connectionStatus()
     }
 
-    /// Disconnect from all servers
+    /// Disconnect from all servers.
     func shutdown() async {
         await bridge.disconnectAll()
     }
