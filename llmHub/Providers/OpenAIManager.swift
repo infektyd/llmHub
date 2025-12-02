@@ -4,12 +4,21 @@ import Foundation
 /// Designed for maximum flexibility and feature parity.
 @available(iOS 26.1, macOS 26.1, *)
 public class OpenAIManager {
+    /// The API key for authentication.
     private let apiKey: String
+    /// The organization ID (optional).
     private let organizationID: String?
+    /// The URLSession used for network requests.
     private let session: URLSession
     
+    /// The base URL for the OpenAI API.
     private let baseURL = URL(string: "https://api.openai.com/v1")!
     
+    /// Initializes a new `OpenAIManager`.
+    /// - Parameters:
+    ///   - apiKey: The API key.
+    ///   - organizationID: The organization ID (optional).
+    ///   - session: The URLSession (default: `.shared`).
     public init(apiKey: String, organizationID: String? = nil, session: URLSession = .shared) {
         self.apiKey = apiKey
         self.organizationID = organizationID
@@ -18,6 +27,18 @@ public class OpenAIManager {
     
     // MARK: - Chat Completions
     
+    /// Sends a chat completion request.
+    /// - Parameters:
+    ///   - messages: Conversation history.
+    ///   - model: Model ID.
+    ///   - temperature: Sampling temperature (optional).
+    ///   - maxTokens: Max tokens to generate (optional).
+    ///   - stream: Whether to stream responses (default: false).
+    ///   - tools: Available tools (optional).
+    ///   - toolChoice: Tool choice strategy (optional).
+    ///   - responseFormat: The desired response format (optional).
+    ///   - reasoningEffort: Reasoning effort for o-series models (optional).
+    /// - Returns: An `OpenAIChatResponse`.
     public func chatCompletion(
         messages: [OpenAIChatMessage],
         model: String,
@@ -45,6 +66,15 @@ public class OpenAIManager {
         return try JSONDecoder().decode(OpenAIChatResponse.self, from: data)
     }
     
+    /// Streams chat completion chunks.
+    /// - Parameters:
+    ///   - messages: Conversation history.
+    ///   - model: Model ID.
+    ///   - temperature: Sampling temperature (optional).
+    ///   - maxTokens: Max tokens to generate (optional).
+    ///   - tools: Available tools (optional).
+    ///   - toolChoice: Tool choice strategy (optional).
+    /// - Returns: An async throwing stream of `OpenAIStreamChunk`.
     public func streamChatCompletion(
         messages: [OpenAIChatMessage],
         model: String,
@@ -101,6 +131,8 @@ public class OpenAIManager {
     
     // MARK: - Models
     
+    /// Lists available OpenAI models.
+    /// - Returns: An array of `OpenAIModel`.
     public func listModels() async throws -> [OpenAIModel] {
         let url = baseURL.appendingPathComponent("models")
         var request = URLRequest(url: url)
@@ -117,6 +149,15 @@ public class OpenAIManager {
     
     // MARK: - Request Helper
     
+    /// Creates a chat request.
+    /// - Parameters:
+    ///   - messages: Conversation history.
+    ///   - model: Model ID.
+    ///   - stream: Streaming flag.
+    ///   - tools: Available tools.
+    ///   - toolChoice: Tool choice strategy.
+    ///   - responseFormat: Response format.
+    /// - Returns: A configured `URLRequest`.
     public func makeChatRequest(
         messages: [OpenAIChatMessage],
         model: String,
@@ -139,6 +180,14 @@ public class OpenAIManager {
     
     // MARK: - Images
     
+    /// Generates images with DALL-E.
+    /// - Parameters:
+    ///   - prompt: The image description.
+    ///   - model: Model ID (default: "dall-e-3").
+    ///   - n: Number of images (default: 1).
+    ///   - size: Image size (default: "1024x1024").
+    ///   - responseFormat: Response format (default: "url").
+    /// - Returns: An `OpenAIImageResponse`.
     public func generateImage(
         prompt: String,
         model: String = "dall-e-3",
@@ -160,6 +209,13 @@ public class OpenAIManager {
     
     // MARK: - Audio
     
+    /// Generates speech from text.
+    /// - Parameters:
+    ///   - model: Model ID (default: "tts-1").
+    ///   - input: Text to speak.
+    ///   - voice: Voice ID (default: "alloy").
+    ///   - responseFormat: Audio format (default: "mp3").
+    /// - Returns: The raw audio data.
     public func createSpeech(
         model: String = "tts-1",
         input: String,
@@ -176,6 +232,13 @@ public class OpenAIManager {
         return try await performRequest(url: url, payload: payload)
     }
     
+    /// Transcribes audio to text.
+    /// - Parameters:
+    ///   - fileData: Audio file data.
+    ///   - fileName: Audio file name.
+    ///   - model: Model ID (default: "whisper-1").
+    ///   - language: Language code (optional).
+    /// - Returns: An `OpenAITranscriptionResponse`.
     public func transcribeAudio(
         fileData: Data,
         fileName: String,
@@ -219,6 +282,12 @@ public class OpenAIManager {
     
     // MARK: - Embeddings
     
+    /// Creates embeddings for text input.
+    /// - Parameters:
+    ///   - input: Array of text strings.
+    ///   - model: Model ID (default: "text-embedding-3-small").
+    ///   - dimensions: Embedding dimensions (optional).
+    /// - Returns: An `OpenAIEmbeddingsResponse`.
     public func createEmbeddings(
         input: [String],
         model: String = "text-embedding-3-small",
@@ -236,6 +305,7 @@ public class OpenAIManager {
     
     // MARK: - Private Helpers
     
+    /// Adds authentication and organization headers to the request.
     private func addHeaders(to request: inout URLRequest) {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         if let org = organizationID {
@@ -243,6 +313,7 @@ public class OpenAIManager {
         }
     }
     
+    /// Creates a generic JSON request.
     private func makeRequest<T: Encodable>(url: URL, payload: T) throws -> URLRequest {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -252,6 +323,7 @@ public class OpenAIManager {
         return request
     }
     
+    /// Performs a request and returns data, handling errors.
     private func performRequest<T: Encodable>(url: URL, payload: T) async throws -> Data {
         let request = try makeRequest(url: url, payload: payload)
         let (data, response) = try await session.data(for: request)
@@ -277,14 +349,21 @@ public class OpenAIManager {
 
 // --- Models ---
 
+/// A list of OpenAI models.
 public struct OpenAIModelList: Decodable {
+    /// The array of models.
     public let data: [OpenAIModel]
 }
 
+/// Represents an OpenAI model.
 public struct OpenAIModel: Decodable, Identifiable {
+    /// The model ID.
     public let id: String
+    /// The object type (e.g., "model").
     public let object: String
+    /// The creation timestamp.
     public let created: Int
+    /// The owner of the model.
     public let ownedBy: String
     
     enum CodingKeys: String, CodingKey {
@@ -293,23 +372,37 @@ public struct OpenAIModel: Decodable, Identifiable {
     }
 }
 
+/// Errors specific to OpenAI API.
 public enum OpenAIError: Error {
+    /// API returned an error message.
     case apiError(message: String)
+    /// Network connectivity error.
     case networkError
+    /// Server returned a status code error.
     case serverError(statusCode: Int)
 }
 
 // --- Chat ---
 
+/// Request payload for chat completions.
 public struct OpenAIChatRequest: Encodable {
+    /// The model ID.
     let model: String
+    /// The conversation messages.
     let messages: [OpenAIChatMessage]
+    /// Sampling temperature.
     var temperature: Double? = nil
+    /// Maximum tokens to generate.
     var maxTokens: Int? = nil
+    /// Whether to stream the response.
     var stream: Bool? = nil
+    /// Available tools.
     var tools: [OpenAITool]? = nil
+    /// Tool choice configuration.
     var toolChoice: OpenAIToolChoice? = nil
+    /// Response format configuration.
     var responseFormat: OpenAIResponseFormat? = nil
+    /// Reasoning effort for o-series models.
     var reasoningEffort: String? = nil
     
     enum CodingKeys: String, CodingKey {
@@ -321,10 +414,15 @@ public struct OpenAIChatRequest: Encodable {
     }
 }
 
+/// Represents a chat message.
 public struct OpenAIChatMessage: Encodable {
+    /// The role of the sender.
     public let role: String
+    /// The content of the message.
     public let content: OpenAIContent
+    /// Tool calls made by the model.
     public let toolCalls: [OpenAIToolCall]?
+    /// The ID of the tool call this message responds to.
     public let toolCallId: String?
     
     enum CodingKeys: String, CodingKey {
@@ -333,6 +431,7 @@ public struct OpenAIChatMessage: Encodable {
         case toolCallId = "tool_call_id"
     }
     
+    /// Initializes a new message.
     public init(role: String, content: OpenAIContent, toolCalls: [OpenAIToolCall]? = nil, toolCallId: String? = nil) {
         self.role = role
         self.content = content
@@ -341,8 +440,11 @@ public struct OpenAIChatMessage: Encodable {
     }
 }
 
+/// The content of a chat message.
 public enum OpenAIContent: Encodable {
+    /// Text content.
     case text(String)
+    /// Multipart content (text + images).
     case parts([OpenAIContentPart])
     
     public func encode(to encoder: Encoder) throws {
@@ -354,9 +456,13 @@ public enum OpenAIContent: Encodable {
     }
 }
 
+/// A part of a chat message content.
 public struct OpenAIContentPart: Encodable {
+    /// The type of part (e.g., "text", "image_url").
     public let type: String
+    /// The text content.
     public let text: String?
+    /// The image URL information.
     public let imageUrl: OpenAIImageURL?
     
     enum CodingKeys: String, CodingKey {
@@ -364,49 +470,72 @@ public struct OpenAIContentPart: Encodable {
         case imageUrl = "image_url"
     }
     
+    /// Creates a text part.
     public static func text(_ s: String) -> OpenAIContentPart {
         OpenAIContentPart(type: "text", text: s, imageUrl: nil)
     }
     
+    /// Creates an image part from a URL.
     public static func image(url: String, detail: String? = "auto") -> OpenAIContentPart {
         OpenAIContentPart(type: "image_url", text: nil, imageUrl: OpenAIImageURL(url: url, detail: detail))
     }
     
+    /// Creates an image part from base64 data.
     public static func image(base64: String, detail: String? = "auto") -> OpenAIContentPart {
         OpenAIContentPart(type: "image_url", text: nil, imageUrl: OpenAIImageURL(url: "data:image/jpeg;base64,\(base64)", detail: detail))
     }
     
+    /// Creates an image part from base64 data with specific mime type.
     public static func image(base64: String, mimeType: String, detail: String? = "auto") -> OpenAIContentPart {
         OpenAIContentPart(type: "image_url", text: nil, imageUrl: OpenAIImageURL(url: "data:\(mimeType);base64,\(base64)", detail: detail))
     }
 }
 
+/// Represents an image URL.
 public struct OpenAIImageURL: Encodable {
+    /// The URL string.
     let url: String
+    /// Detail level (e.g., "auto", "low", "high").
     var detail: String? = "auto"
 }
 
+/// Represents a tool available to the model.
 public struct OpenAITool: Encodable {
+    /// The type of tool (e.g., "function").
     let type: String
+    /// The function definition.
     let function: OpenAIFunction
 }
 
+/// Defines a function for tool use.
 public struct OpenAIFunction: Encodable {
+    /// The name of the function.
     let name: String
+    /// The description of the function.
     let description: String?
+    /// The parameters schema.
     let parameters: [String: OpenAIJSONValue]?
 }
 
 // JSON value wrapper for OpenAI API (handles Any -> Encodable conversion)
+/// A wrapper enum to handle untyped JSON values in a strongly typed way for Encodable conformance.
 public enum OpenAIJSONValue: Encodable, Sendable {
+    /// Null value.
     case null
+    /// Boolean value.
     case bool(Bool)
+    /// Integer value.
     case int(Int)
+    /// Double value.
     case double(Double)
+    /// String value.
     case string(String)
+    /// Array of values.
     case array([OpenAIJSONValue])
+    /// Object (dictionary) of values.
     case object([String: OpenAIJSONValue])
     
+    /// Converts an `Any` value to `OpenAIJSONValue`.
     public static func from(_ value: Any) -> OpenAIJSONValue {
         switch value {
         case is NSNull:
@@ -449,9 +578,13 @@ public enum OpenAIJSONValue: Encodable, Sendable {
     }
 }
 
+/// Specifies how tools should be chosen.
 public enum OpenAIToolChoice: Encodable {
+    /// Automatically choose tools.
     case auto
+    /// Do not use any tools.
     case none
+    /// Force tool use.
     case required
     
     public func encode(to encoder: Encoder) throws {
@@ -464,17 +597,26 @@ public enum OpenAIToolChoice: Encodable {
     }
 }
 
+/// Specifies the format of the response.
 public struct OpenAIResponseFormat: Encodable {
+    /// The response format type (e.g., "text", "json_object").
     let type: String // "text" or "json_object"
 }
 
+/// The response from a chat completion request.
 public struct OpenAIChatResponse: Decodable {
+    /// The response ID.
     public let id: String
+    /// The generated choices.
     public let choices: [Choice]
+    /// Token usage statistics.
     public let usage: Usage?
     
+    /// A choice in the response.
     public struct Choice: Decodable {
+        /// The generated message.
         public let message: Message
+        /// The reason for finishing.
         public let finishReason: String?
         
         enum CodingKeys: String, CodingKey {
@@ -483,9 +625,13 @@ public struct OpenAIChatResponse: Decodable {
         }
     }
     
+    /// The message in a choice.
     public struct Message: Decodable {
+        /// The role of the sender.
         public let role: String?
+        /// The content of the message.
         public let content: String?
+        /// Tool calls made by the model.
         public let toolCalls: [OpenAIToolCall]?
         
         enum CodingKeys: String, CodingKey {
@@ -494,9 +640,13 @@ public struct OpenAIChatResponse: Decodable {
         }
     }
     
+    /// Token usage statistics.
     public struct Usage: Decodable {
+        /// Prompt tokens used.
         public let promptTokens: Int
+        /// Completion tokens used.
         public let completionTokens: Int
+        /// Total tokens used.
         public let totalTokens: Int
         
         enum CodingKeys: String, CodingKey {
@@ -507,26 +657,40 @@ public struct OpenAIChatResponse: Decodable {
     }
 }
 
+/// A tool call within a response.
 public struct OpenAIToolCall: Codable {
+    /// The tool call ID.
     public let id: String
+    /// The type of tool.
     public let type: String
+    /// The function call details.
     public let function: FunctionCall
     
+    /// The function call details.
     public struct FunctionCall: Codable {
+        /// The function name.
         public let name: String
+        /// The arguments string.
         public let arguments: String
     }
 }
 
 // --- Streaming ---
 
+/// A chunk of a streamed response.
 public struct OpenAIStreamChunk: Decodable {
+    /// The chunk ID.
     public let id: String?
+    /// The choices in this chunk.
     public let choices: [Choice]
+    /// Usage statistics (optional, usually in last chunk).
     public let usage: OpenAIChatResponse.Usage? // Sometimes in final chunk
     
+    /// A choice in the stream chunk.
     public struct Choice: Decodable {
+        /// The delta update for the message.
         public let delta: Delta
+        /// The finish reason (if finished).
         public let finishReason: String?
         
         enum CodingKeys: String, CodingKey {
@@ -535,9 +699,13 @@ public struct OpenAIStreamChunk: Decodable {
         }
     }
     
+    /// The delta update.
     public struct Delta: Decodable {
+        /// The role update.
         public let role: String?
+        /// The content update.
         public let content: String?
+        /// The tool calls update.
         public let toolCalls: [StreamToolCall]?
         
         enum CodingKeys: String, CodingKey {
@@ -546,25 +714,38 @@ public struct OpenAIStreamChunk: Decodable {
         }
     }
     
+    /// A tool call update in a stream.
     public struct StreamToolCall: Decodable {
+        /// The index of the tool call.
         public let index: Int
+        /// The ID of the tool call.
         public let id: String?
+        /// The function update.
         public let function: StreamFunction?
     }
     
+    /// A function update in a stream.
     public struct StreamFunction: Decodable {
+        /// The name update.
         public let name: String?
+        /// The arguments update.
         public let arguments: String?
     }
 }
 
 // --- Images ---
 
+/// Request payload for image generation.
 public struct OpenAIImageRequest: Encodable {
+    /// The model ID.
     let model: String
+    /// The image description.
     let prompt: String
+    /// Number of images.
     let n: Int
+    /// Image size.
     let size: String
+    /// Response format.
     let responseFormat: String
     
     enum CodingKeys: String, CodingKey {
@@ -573,22 +754,33 @@ public struct OpenAIImageRequest: Encodable {
     }
 }
 
+/// Response for image generation.
 public struct OpenAIImageResponse: Decodable {
+    /// Creation timestamp.
     public let created: Int
+    /// Array of generated data.
     public let data: [DataItem]
     
+    /// Generated data item.
     public struct DataItem: Decodable {
+        /// Image URL.
         public let url: String?
+        /// Base64 JSON string.
         public let b64_json: String?
     }
 }
 
 // --- Audio ---
 
+/// Request payload for speech generation.
 public struct OpenAISpeechRequest: Encodable {
+    /// The model ID.
     let model: String
+    /// Text input.
     let input: String
+    /// Voice ID.
     let voice: String
+    /// Response format.
     let responseFormat: String
     
     enum CodingKeys: String, CodingKey {
@@ -597,25 +789,36 @@ public struct OpenAISpeechRequest: Encodable {
     }
 }
 
+/// Response for audio transcription.
 public struct OpenAITranscriptionResponse: Decodable {
+    /// Transcribed text.
     public let text: String
 }
 
 // --- Embeddings ---
 
+/// Request payload for embeddings.
 public struct OpenAIEmbeddingsRequest: Encodable {
+    /// Input text array.
     let input: [String]
+    /// Model ID.
     let model: String
+    /// Embedding dimensions.
     let dimensions: Int?
 }
 
+/// Response for embeddings.
 public struct OpenAIEmbeddingsResponse: Decodable {
+    /// The embedding data.
     public let data: [Embedding]
+    /// Usage statistics.
     public let usage: OpenAIChatResponse.Usage
     
+    /// An embedding object.
     public struct Embedding: Decodable {
+        /// The embedding vector.
         public let embedding: [Double]
+        /// The index of the embedding.
         public let index: Int
     }
 }
-

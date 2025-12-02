@@ -9,16 +9,24 @@ import Foundation
 
 // MARK: - File Operation Types
 
-/// Types of file operations the editor can perform
+/// Types of file operations the editor can perform.
 enum FileOperation: String, CaseIterable, Codable, Sendable {
-    case create     // Create a new file
-    case edit       // Search and replace within a file
-    case append     // Append content to end of file
-    case delete     // Delete a file
-    case rename     // Rename a file
-    case move       // Move a file to a different location
-    case copy       // Copy a file
+    /// Create a new file.
+    case create
+    /// Search and replace text within a file.
+    case edit
+    /// Append content to the end of a file.
+    case append
+    /// Delete a file.
+    case delete
+    /// Rename a file.
+    case rename
+    /// Move a file to a different location.
+    case move
+    /// Copy a file.
+    case copy
     
+    /// The display name of the operation.
     var displayName: String {
         switch self {
         case .create: return "Create"
@@ -31,6 +39,7 @@ enum FileOperation: String, CaseIterable, Codable, Sendable {
         }
     }
     
+    /// The system image name for the operation's icon.
     var systemImage: String {
         switch self {
         case .create: return "doc.badge.plus"
@@ -43,6 +52,7 @@ enum FileOperation: String, CaseIterable, Codable, Sendable {
         }
     }
     
+    /// Indicates if the operation requires content input.
     var requiresContent: Bool {
         switch self {
         case .create, .append: return true
@@ -50,6 +60,7 @@ enum FileOperation: String, CaseIterable, Codable, Sendable {
         }
     }
     
+    /// Indicates if the operation requires a destination path.
     var requiresDestination: Bool {
         switch self {
         case .rename, .move, .copy: return true
@@ -60,11 +71,14 @@ enum FileOperation: String, CaseIterable, Codable, Sendable {
 
 // MARK: - Security Mode
 
-/// Security mode for file operations
+/// Security mode for file operations.
 enum FileSecurityMode: String, CaseIterable, Codable, Sendable {
-    case approval      // Require user approval before each operation
-    case unrestricted  // Execute immediately without confirmation
+    /// Require user approval before each operation.
+    case approval
+    /// Execute immediately without confirmation.
+    case unrestricted
     
+    /// The display name of the security mode.
     var displayName: String {
         switch self {
         case .approval: return "Require Approval"
@@ -72,6 +86,7 @@ enum FileSecurityMode: String, CaseIterable, Codable, Sendable {
         }
     }
     
+    /// A description of the security mode.
     var description: String {
         switch self {
         case .approval:
@@ -81,6 +96,7 @@ enum FileSecurityMode: String, CaseIterable, Codable, Sendable {
         }
     }
     
+    /// The system image name for the security mode icon.
     var systemImage: String {
         switch self {
         case .approval: return "checkmark.shield"
@@ -91,17 +107,34 @@ enum FileSecurityMode: String, CaseIterable, Codable, Sendable {
 
 // MARK: - Operation Request
 
-/// Request for a file operation
+/// Request for a file operation.
 struct FileOperationRequest: Sendable {
+    /// The unique identifier of the request.
     let id: UUID
+    /// The type of file operation.
     let operation: FileOperation
+    /// The path to the file.
     let path: String
+    /// The content associated with the operation (e.g., new file content).
     let content: String?
+    /// The string to replace in an edit operation.
     let oldString: String?
+    /// The string to replace with in an edit operation.
     let newString: String?
+    /// The destination path for move/copy/rename operations.
     let destination: String?
+    /// The timestamp of the request.
     let timestamp: Date
     
+    /// Initializes a new `FileOperationRequest`.
+    /// - Parameters:
+    ///   - id: The unique identifier (default: UUID()).
+    ///   - operation: The type of operation.
+    ///   - path: The file path.
+    ///   - content: The content (optional).
+    ///   - oldString: The string to replace (optional).
+    ///   - newString: The replacement string (optional).
+    ///   - destination: The destination path (optional).
     nonisolated init(
         id: UUID = UUID(),
         operation: FileOperation,
@@ -121,7 +154,7 @@ struct FileOperationRequest: Sendable {
         self.timestamp = Date()
     }
     
-    /// Resolve the file path to an absolute URL
+    /// Resolves the file path to an absolute URL.
     var resolvedURL: URL {
         let expandedPath = (path as NSString).expandingTildeInPath
         if expandedPath.hasPrefix("/") {
@@ -132,7 +165,7 @@ struct FileOperationRequest: Sendable {
         }
     }
     
-    /// Resolve the destination path to an absolute URL
+    /// Resolves the destination path to an absolute URL, if applicable.
     var resolvedDestinationURL: URL? {
         guard let dest = destination else { return nil }
         let expandedPath = (dest as NSString).expandingTildeInPath
@@ -147,17 +180,24 @@ struct FileOperationRequest: Sendable {
 
 // MARK: - Operation Result
 
-/// Result of a file operation
+/// Result of a file operation.
 struct FileOperationResult: Codable, Sendable {
+    /// The unique identifier of the operation.
     let id: UUID
+    /// The type of operation performed.
     let operation: FileOperation
+    /// The path of the affected file.
     let path: String
+    /// Indicates if the operation was successful.
     let success: Bool
+    /// A message describing the outcome.
     let message: String
+    /// The number of bytes written, if applicable.
     let bytesWritten: Int?
+    /// The timestamp of the result.
     let timestamp: Date
     
-    /// Format for LLM context
+    /// Formats the result for inclusion in LLM context.
     var llmSummary: String {
         if success {
             var summary = "✅ \(operation.displayName) succeeded: \(path)"
@@ -173,14 +213,18 @@ struct FileOperationResult: Codable, Sendable {
 
 // MARK: - Diff Preview
 
-/// Preview of changes for approval
+/// Preview of changes for user approval.
 struct FileOperationPreview: Sendable {
+    /// The original request causing the change.
     let request: FileOperationRequest
+    /// The original content of the file.
     let originalContent: String?
+    /// The proposed content after the operation.
     let proposedContent: String?
+    /// A list of diff lines showing the changes.
     let diffLines: [DiffLine]
     
-    /// Generate a text diff for display
+    /// Generates a text representation of the diff for display.
     var textDiff: String {
         guard originalContent != nil, proposedContent != nil else {
             if let proposed = proposedContent {
@@ -204,32 +248,48 @@ struct FileOperationPreview: Sendable {
     }
 }
 
-/// A single line in a diff
+/// Represents a single line in a diff.
 struct DiffLine: Sendable {
+    /// The type of change for the line.
     enum LineType {
+        /// The line is unchanged.
         case unchanged
+        /// The line was removed.
         case removed
+        /// The line was added.
         case added
     }
     
+    /// The type of the line change.
     let type: LineType
+    /// The content of the line.
     let content: String
+    /// The line number in the original file, if applicable.
     let lineNumber: Int?
 }
 
 // MARK: - Errors
 
-/// Errors that can occur during file operations
+/// Errors that can occur during file operations.
 enum FileOperationError: LocalizedError, Sendable {
+    /// The file was not found.
     case fileNotFound(String)
+    /// The file already exists.
     case fileAlreadyExists(String)
+    /// Access to the file was denied.
     case accessDenied(String)
+    /// The operation is invalid.
     case invalidOperation(String)
+    /// The search string for an edit was not found.
     case searchStringNotFound(String)
+    /// Writing to the file failed.
     case writeFailed(String)
+    /// The operation was denied by the user.
     case operationDenied
+    /// The path is invalid.
     case invalidPath(String)
     
+    /// A localized description of the error.
     var errorDescription: String? {
         switch self {
         case .fileNotFound(let path):
@@ -254,15 +314,22 @@ enum FileOperationError: LocalizedError, Sendable {
 
 // MARK: - Operation History
 
-/// Tracks file operations for potential undo
+/// Tracks file operations for potential undo functionality.
 struct FileOperationHistoryEntry: Codable, Sendable {
+    /// The unique identifier of the entry.
     let id: UUID
+    /// The type of operation performed.
     let operation: FileOperation
+    /// The path of the affected file.
     let path: String
+    /// The original content of the file before the operation.
     let originalContent: String?
+    /// The new content of the file after the operation.
     let newContent: String?
+    /// The destination path for move/copy/rename operations.
     let destination: String?
+    /// The timestamp of the operation.
     let timestamp: Date
+    /// Indicates if the operation can be undone.
     let canUndo: Bool
 }
-

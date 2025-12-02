@@ -8,8 +8,8 @@
 import Foundation
 import OSLog
 
-/// Code Interpreter Tool conforming to the Tool protocol
-/// Executes code in Swift, Python, TypeScript, JavaScript, and Dart
+/// Code Interpreter Tool conforming to the Tool protocol.
+/// Executes code in Swift, Python, TypeScript, JavaScript, and Dart.
 final class CodeInterpreterTool: Tool, @unchecked Sendable {
     nonisolated let id = "code_interpreter"
     nonisolated let name = "code_interpreter"
@@ -52,12 +52,13 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
     var onExecutionStart: ((CodeExecutionRequest) -> Void)?
     var onExecutionComplete: ((CodeExecutionResult) -> Void)?
 
-    /// Initialize with a specific engine
+    /// Initialize with a specific engine.
+    /// - Parameter engine: The `CodeExecutionEngine` instance.
     init(engine: CodeExecutionEngine) {
         self.engine = engine
     }
 
-    /// Initialize with the default engine (must be called from MainActor)
+    /// Initialize with the default engine (must be called from MainActor).
     @MainActor
     init() {
         self.engine = CodeExecutionEngine()
@@ -77,7 +78,11 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
         return try await executeCode(code: code, language: language)
     }
 
-    /// Execute code and return formatted result
+    /// Execute code and return formatted result.
+    /// - Parameters:
+    ///   - code: The code to execute.
+    ///   - language: The programming language.
+    /// - Returns: A summary string of the execution result.
     func executeCode(code: String, language: SupportedLanguage) async throws -> String {
         logger.info("Executing \(language.displayName) code (\(code.count) chars)")
 
@@ -122,7 +127,11 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
         }
     }
 
-    /// Get detailed result object (for UI display)
+    /// Get detailed result object (for UI display).
+    /// - Parameters:
+    ///   - code: The code to execute.
+    ///   - language: The programming language.
+    /// - Returns: A `CodeExecutionResult` object.
     func executeWithResult(code: String, language: SupportedLanguage) async throws
         -> CodeExecutionResult
     {
@@ -156,7 +165,8 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
         return result
     }
 
-    /// Check which interpreters are available
+    /// Check which interpreters are available.
+    /// - Returns: An array of `InterpreterInfo`.
     func checkAvailability() async -> [InterpreterInfo] {
         await engine.checkAllInterpreters()
     }
@@ -165,17 +175,21 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
 // MARK: - Quick Execution Helper
 
 extension CodeInterpreterTool {
-    /// Quick Python calculation
+    /// Quick Python calculation.
+    /// - Parameter code: Python code to run.
+    /// - Returns: Execution output.
     static func quickPython(_ code: String) async throws -> String {
-        let tool = CodeInterpreterTool()
+        let tool = await CodeInterpreterTool()
         tool.securityMode = .unrestricted
         tool.timeoutSeconds = 10
         return try await tool.executeCode(code: code, language: .python)
     }
 
-    /// Quick Swift calculation
+    /// Quick Swift calculation.
+    /// - Parameter code: Swift code to run.
+    /// - Returns: Execution output.
     static func quickSwift(_ code: String) async throws -> String {
-        let tool = CodeInterpreterTool()
+        let tool = await CodeInterpreterTool()
         tool.securityMode = .unrestricted
         tool.timeoutSeconds = 10
         return try await tool.executeCode(code: code, language: .swift)
@@ -185,7 +199,11 @@ extension CodeInterpreterTool {
 // MARK: - Code Validation (Optional Pre-check)
 
 extension CodeInterpreterTool {
-    /// Basic syntax validation hints
+    /// Basic syntax validation hints.
+    /// - Parameters:
+    ///   - code: The code to validate.
+    ///   - language: The programming language.
+    /// - Returns: A list of warning messages.
     func validateCode(_ code: String, language: SupportedLanguage) -> [String] {
         var warnings: [String] = []
 

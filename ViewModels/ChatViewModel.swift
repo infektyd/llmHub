@@ -9,15 +9,23 @@ import Foundation
 import SwiftData
 import SwiftUI
 
+/// ViewModel managing the chat interface and interaction logic.
 @Observable
 class ChatViewModel {
+    /// The current text in the message input field.
     var messageText: String = ""
+    /// Indicates whether tools are enabled for the current session.
     var toolsEnabled: Bool = true
+    /// The list of tools available to the user.
     var availableTools: [UIToolDefinition] = UIToolDefinition.sampleTools
 
     // This would be initialized with a specific session entity in a real app
     // For now, it manages the transient state of the chat view
 
+    /// Sends a message in the given session.
+    /// - Parameters:
+    ///   - session: The chat session to append the message to.
+    ///   - modelContext: The SwiftData context for persistence.
     func sendMessage(session: ChatSessionEntity, modelContext: ModelContext) {
         guard !messageText.isEmpty else { return }
 
@@ -54,6 +62,10 @@ class ChatViewModel {
         }
     }
 
+    /// Triggers a tool execution from the UI.
+    /// - Parameters:
+    ///   - tool: The tool definition to execute.
+    ///   - workbenchVM: The workbench view model to handle the execution display.
     func triggerTool(_ tool: UIToolDefinition, workbenchVM: WorkbenchViewModel) {
         let execution = ToolExecution(
             id: UUID(),

@@ -9,8 +9,11 @@ import SwiftUI
 
 // MARK: - ANSI Parser
 
+/// Parses strings containing ANSI escape codes into `AttributedString`s.
 struct ANSIParser {
-    /// Parse ANSI escape sequences and return an AttributedString
+    /// Parse ANSI escape sequences and return an AttributedString.
+    /// - Parameter text: The text containing ANSI codes.
+    /// - Returns: An `AttributedString` with styles applied.
     static func parse(_ text: String) -> AttributedString {
         var result = AttributedString()
         var currentAttributes = ANSIAttributes()
@@ -63,6 +66,7 @@ struct ANSIParser {
 
 // MARK: - ANSI Attributes
 
+/// Represents the current state of ANSI text attributes.
 struct ANSIAttributes {
     var foregroundColor: Color = .primary
     var backgroundColor: Color = .clear
@@ -71,6 +75,8 @@ struct ANSIAttributes {
     var isUnderline = false
     var isDim = false
     
+    /// Updates attributes based on ANSI escape codes.
+    /// - Parameter codes: The ANSI code string (e.g., "1;31").
     mutating func parse(codes: String) {
         let codeList = codes.split(separator: ";").compactMap { Int($0) }
         
@@ -132,6 +138,7 @@ struct ANSIAttributes {
         }
     }
     
+    /// Resets all attributes to default.
     mutating func reset() {
         foregroundColor = .primary
         backgroundColor = .clear
@@ -141,6 +148,8 @@ struct ANSIAttributes {
         isDim = false
     }
     
+    /// Applies the current attributes to an AttributedString.
+    /// - Parameter attributedString: The string to modify.
     func apply(to attributedString: inout AttributedString) {
         attributedString.foregroundColor = isDim ? foregroundColor.opacity(0.6) : foregroundColor
         
@@ -164,7 +173,9 @@ struct ANSIAttributes {
 
 // MARK: - Terminal Output View
 
+/// A view that displays code execution results with syntax highlighting and ANSI color support.
 struct TerminalOutputView: View {
+    /// The result of the code execution.
     let result: CodeExecutionResult
     @State private var showRawOutput = false
     
@@ -291,7 +302,9 @@ struct TerminalOutputView: View {
 
 // MARK: - Compact Terminal View
 
+/// A compact version of the terminal output view, expandable on click.
 struct CompactTerminalView: View {
+    /// The result of the code execution.
     let result: CodeExecutionResult
     @State private var isExpanded = false
     
@@ -364,10 +377,15 @@ struct CompactTerminalView: View {
 
 // MARK: - Code Preview with Execution Button
 
+/// A view showing code with an option to execute it.
 struct CodeExecutionPreview: View {
+    /// The code content.
     let code: String
+    /// The programming language.
     let language: SupportedLanguage
+    /// Action to trigger execution.
     let onExecute: () -> Void
+    /// Action to cancel execution.
     let onCancel: () -> Void
     
     @State private var showFullCode = false
@@ -457,7 +475,9 @@ struct CodeExecutionPreview: View {
 
 // MARK: - Interpreter Status View
 
+/// A view showing the availability status of code interpreters.
 struct InterpreterStatusView: View {
+    /// List of interpreter information.
     let interpreters: [InterpreterInfo]
     
     var body: some View {
@@ -526,4 +546,3 @@ struct InterpreterStatusView: View {
     .padding()
     .frame(width: 500)
 }
-
