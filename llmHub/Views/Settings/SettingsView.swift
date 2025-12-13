@@ -1,0 +1,1123 @@
+//
+//  SettingsView.swift
+//  llmHub
+//
+//  Created by AI Assistant on 12/07/25.
+//
+
+import SwiftUI
+
+/// Settings view for managing API keys and provider configuration.
+struct SettingsView: View {
+    @StateObject private var viewModel = SettingsViewModel()
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var modelRegistry: ModelRegistry
+
+    // Global Appearance State for Live Preview
+    @AppStorage("windowBackgroundOpacity") private var windowBackgroundOpacity: Double = 1.0
+
+    var body: some View {
+        TabView {
+            // MARK: - API Keys Tab
+            APIKeysSettingsView(viewModel: viewModel)
+                .tabItem {
+                    Label("API Keys", systemImage: "key.fill")
+                }
+                .tag(0)
+
+            // MARK: - Appearance Tab
+            AppearanceSettingsView()
+                .tabItem {
+                    Label("Appearance", systemImage: "paintbrush.fill")
+                }
+                .tag(1)
+
+            // MARK: - General Tab
+            GeneralSettingsView(viewModel: viewModel)
+                .tabItem {
+                    Label("General", systemImage: "gearshape.fill")
+                }
+                .tag(2)
+        }
+        #if os(macOS)
+            .frame(width: 700, height: 550)  // Slightly larger for modern feel
+            // Ensure settings window remains visible (min 0.8) while previewing lower opacities
+            .windowAppearance(opacity: 0.0, alpha: max(0.8, windowBackgroundOpacity))
+        #endif
+        .background(Color.neonMidnight.opacity(0.5))  // Semi-transparent backing
+        .onAppear {
+            viewModel.modelRegistry = modelRegistry
+        }
+    }
+}
+
+// MARK: - Appearance Settings (Redesigned)
+
+struct AppearanceSettingsView: View {
+    @State private var themeManager = ThemeManager.shared
+
+    // Live Preview Bindings
+    @AppStorage("windowBackgroundOpacity") private var windowBackgroundOpacity: Double = 1.0
+    @AppStorage("glassIntensity.sidebar") private var sidebarGlassIntensity: Double = 95
+    @AppStorage("glassIntensity.chatArea") private var chatAreaGlassIntensity: Double = 10
+    @AppStorage("glassIntensity.inputBar") private var inputBarGlassIntensity: Double = 10
+    @AppStorage("glassIntensity.toolInspector") private var toolInspectorGlassIntensity: Double = 65
+    @AppStorage("glassIntensity.messages") private var messagesGlassIntensity: Double = 95
+    @AppStorage("glassIntensity.modelPicker") private var modelPickerGlassIntensity: Double = 100
+
+    // Animations
+    @State private var orbPulse: Bool = false
+
+    // Validated Binding for Slider
+    private var opacityBinding: Binding<Double> {
+        Binding(
+            get: { windowBackgroundOpacity },
+            set: { newValue in
+                // Validate and clamp bounds
+                windowBackgroundOpacity = max(0.0, min(1.0, newValue))
+            }
+        )
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 32) {
+                // Header & Orb
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Appearance")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [.white, Color.neonElectricBlue],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+
+                        Text("Craft your workspace environment.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    // Live Preview Orb
+                    OrbPreview(intensity: (sidebarGlassIntensity + chatAreaGlassIntensity) / 200.0)
+                        .frame(width: 50, height: 50)
+                }
+                .padding(.horizontal)
+                .padding(.top, 20)
+
+                // Theme Selection (Liquid Cards)
+                VStack(alignment: .leading, spacing: 16) {
+                    Label("Theme Engine", systemImage: "swatchpalette.fill")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal)
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 16) {
+                            ForEach(ThemeManager.available, id: \.name) { theme in
+                                LiquidThemeCard(
+                                    theme: theme,
+                                    isSelected: themeManager.current.name == theme.name
+                                )
+                                .onTapGesture {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                                        themeManager.setTheme(theme)
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                }
+
+                // Transcript Style (Pill Segmented Control)
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("Transcript Style", systemImage: "text.bubble.fill")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal)
+
+                    HStack(spacing: 0) {
+                        ForEach(ThemeManager.TranscriptStyle.allCases) { style in
+                            let isSelected = themeManager.transcriptStyle == style
+                            Button {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    themeManager.setTranscriptStyle(style)
+                                }
+                            } label: {
+                                Text(style.rawValue)
+                                    .font(.subheadline)
+                                    .fontWeight(isSelected ? .semibold : .medium)
+                                    .foregroundStyle(isSelected ? .white : .secondary)
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 16)
+                                    .frame(maxWidth: .infinity)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(
+                                                isSelected
+                                                    ? Color.neonElectricBlue.opacity(0.3)
+                                                    : Color.clear
+                                            )
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .stroke(
+                                                        isSelected
+                                                            ? Color.neonElectricBlue.opacity(0.6)
+                                                            : .clear, lineWidth: 1)
+                                            )
+                                    )
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(.ultraThinMaterial)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(.white.opacity(0.05), lineWidth: 1)
+                            )
+                    )
+                    .padding(.horizontal)
+                }
+
+                // MARK: - Floating Islands
+                VStack(alignment: .leading, spacing: 24) {
+                    // Window Opacity (Floating Island)
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Label("Window Opacity", systemImage: "macwindow")
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                            Spacer()
+                            Text("\(Int(windowBackgroundOpacity * 100))%")
+                                .font(.system(.subheadline, design: .monospaced))
+                                .foregroundStyle(Color.neonElectricBlue)
+                        }
+
+                        LiquidSlider(value: opacityBinding, range: 0.0...1.0)
+                            .frame(height: 24)
+
+                        Text("Controls the global transparency of the app window.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(16)
+                    .glassEffect(GlassEffect.regular)
+
+                    // Glass Refraction (Floating Island)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label("Glass Refraction", systemImage: "drop.fill")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+
+                        LazyVGrid(
+                            columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 20
+                        ) {
+                            GlassIntensityControl(label: "Sidebar", value: $sidebarGlassIntensity)
+                            GlassIntensityControl(
+                                label: "Input Bar", value: $inputBarGlassIntensity)
+                            GlassIntensityControl(
+                                label: "Chat Area", value: $chatAreaGlassIntensity)
+                            GlassIntensityControl(
+                                label: "Inspector", value: $toolInspectorGlassIntensity)
+                            GlassIntensityControl(label: "Messages", value: $messagesGlassIntensity)
+                            GlassIntensityControl(
+                                label: "Picker", value: $modelPickerGlassIntensity)
+                        }
+                    }
+                    .padding(16)
+                    .glassEffect(GlassEffect.regular)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+
+                // Reset Action
+                HStack {
+                    Spacer()
+                    Button(action: resetToDefaults) {
+                        Text("Reset to Neon Defaults")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundStyle(Color.neonElectricBlue)
+                            .padding(8)
+                            .background(
+                                Capsule()
+                                    .strokeBorder(Color.neonElectricBlue.opacity(0.3), lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    Spacer()
+                }
+                .padding(.bottom, 24)
+            }
+        }
+        .background(Color.clear)  // Let window background handle it
+    }
+
+    private func resetToDefaults() {
+        withAnimation(.bouncy) {
+            windowBackgroundOpacity = 1.0
+            sidebarGlassIntensity = 95
+            chatAreaGlassIntensity = 10
+            inputBarGlassIntensity = 10
+            toolInspectorGlassIntensity = 65
+            messagesGlassIntensity = 95
+            modelPickerGlassIntensity = 100
+        }
+    }
+}
+
+// MARK: - 2025 UI Components
+
+/// A slider with a liquid glass aesthetic.
+struct LiquidSlider: View {
+    @Binding var value: Double
+    var range: ClosedRange<Double> = 0...100
+
+    @State private var isDragging: Bool = false
+
+    var body: some View {
+        GeometryReader { geo in
+            let width = geo.size.width
+            let height = geo.size.height
+            let progress = (value - range.lowerBound) / (range.upperBound - range.lowerBound)
+
+            ZStack(alignment: .leading) {
+                // Track (Glass)
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        Capsule()
+                            .strokeBorder(
+                                LinearGradient(
+                                    colors: [.white.opacity(0.1), .white.opacity(0.05)],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                ),
+                                lineWidth: 1
+                            )
+                    )
+                    .frame(height: height * 0.6)
+
+                // Fill (Neon)
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.neonElectricBlue.opacity(0.6), Color.neonFuchsia.opacity(0.6),
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(width: width * CGFloat(progress), height: height * 0.6)
+                    .blur(radius: 4)  // Glow effect
+
+                // Thumb (Refractive Orb)
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [.white, .white.opacity(0.5)],
+                            center: .topLeading,
+                            startRadius: 0,
+                            endRadius: height
+                        )
+                    )
+                    .overlay(
+                        Circle().stroke(.white.opacity(0.8), lineWidth: 1)
+                    )
+                    .shadow(
+                        color: Color.neonElectricBlue.opacity(isDragging ? 0.8 : 0.4),
+                        radius: isDragging ? 10 : 5
+                    )
+                    .frame(width: height, height: height)
+                    .offset(x: (width - height) * CGFloat(progress))
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { drag in
+                                isDragging = true
+                                let newProgress = min(max(0, drag.location.x / width), 1)
+                                value =
+                                    range.lowerBound
+                                    + (newProgress * (range.upperBound - range.lowerBound))
+                            }
+                            .onEnded { _ in
+                                withAnimation(.spring) {
+                                    isDragging = false
+                                }
+                            }
+                    )
+            }
+        }
+    }
+}
+
+/// A mini control for glass intensity.
+struct GlassIntensityControl: View {
+    let label: String
+    @Binding var value: Double
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(label)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.8))
+                Spacer()
+                Text("\(Int(value))")
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(Color.neonElectricBlue)
+            }
+            LiquidSlider(value: $value, range: 0...100)
+                .frame(height: 16)
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(.white.opacity(0.05), lineWidth: 1)
+                )
+        )
+    }
+}
+
+/// A specialized card for theme selection.
+struct LiquidThemeCard: View {
+    let theme: AppTheme
+    let isSelected: Bool
+
+    var body: some View {
+        VStack(spacing: 8) {
+            ZStack {
+                // Background Preview
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(theme.backgroundPrimary)
+                    .frame(width: 100, height: 70)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .strokeBorder(isSelected ? theme.accent : .clear, lineWidth: 2)
+                    )
+                    .shadow(color: isSelected ? theme.accent.opacity(0.5) : .clear, radius: 10)
+
+                // UI Elements Preview
+                VStack(spacing: 4) {
+                    Capsule().fill(theme.surface).frame(width: 70, height: 8)
+                    HStack(spacing: 4) {
+                        Circle().fill(theme.accent).frame(width: 16, height: 16)
+                        Capsule().fill(theme.textSecondary.opacity(0.3)).frame(width: 40, height: 8)
+                    }
+                }
+            }
+
+            Text(theme.name)
+                .font(.caption)
+                .fontWeight(isSelected ? .bold : .medium)
+                .foregroundStyle(isSelected ? .white : .secondary)
+        }
+        .scaleEffect(isSelected ? 1.05 : 1.0)
+    }
+}
+
+/// An animated orb that reacts to intensity.
+struct OrbPreview: View {
+    let intensity: Double  // 0.0 to 1.0 (ish)
+
+    @State private var phase: Double = 0
+
+    var body: some View {
+        ZStack {
+            // Core
+            Circle()
+                .fill(
+                    AngularGradient(
+                        colors: [
+                            Color.neonElectricBlue, Color.neonFuchsia, Color.neonElectricBlue,
+                        ],
+                        center: .center,
+                        startAngle: .degrees(phase),
+                        endAngle: .degrees(phase + 360)
+                    )
+                )
+                .blur(radius: 10 - (intensity * 5))
+                .opacity(0.8)
+
+            // Glint
+            Circle()
+                .strokeBorder(
+                    LinearGradient(
+                        colors: [.white.opacity(0.8), .clear],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 2
+                )
+        }
+        .onAppear {
+            withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) {
+                phase = 360
+            }
+        }
+        // React to intensity changes
+        .scaleEffect(0.8 + (intensity * 0.2))
+        .animation(.spring, value: intensity)
+    }
+}
+
+// MARK: - Legacy Components (Preserved for compatibility)
+
+struct APIKeysSettingsView: View {
+    @ObservedObject var viewModel: SettingsViewModel
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                // Header
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("API Keys")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.white)
+
+                    Text(
+                        "Configure API keys for each LLM provider. Keys are securely stored in the system Keychain."
+                    )
+                    .font(.system(size: 13))
+                    .foregroundColor(Color.neonGray)
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, 8)
+
+                Divider()
+                    .background(Color.neonGray.opacity(0.3))
+
+                // Provider Key Rows
+                ForEach(SettingsViewModel.ProviderInfo.allProviders, id: \.provider) { info in
+                    ProviderKeyRow(
+                        info: info,
+                        apiKey: viewModel.binding(for: info.provider),
+                        hasKey: viewModel.hasKey(for: info.provider),
+                        isSaving: viewModel.savingProvider == info.provider,
+                        onSave: { viewModel.saveKey(for: info.provider) },
+                        onDelete: { viewModel.deleteKey(for: info.provider) }
+                    )
+                }
+
+                // Status Message
+                if let message = viewModel.statusMessage {
+                    HStack(spacing: 8) {
+                        Image(
+                            systemName: viewModel.isError
+                                ? "exclamationmark.triangle.fill" : "checkmark.circle.fill"
+                        )
+                        .foregroundColor(viewModel.isError ? Color.neonFuchsia : .green)
+
+                        Text(message)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(viewModel.isError ? Color.neonFuchsia : .green)
+                    }
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(
+                                viewModel.isError
+                                    ? Color.neonFuchsia.opacity(0.1) : Color.green.opacity(0.1))
+                    )
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+            }
+            .padding(24)
+        }
+        .background(Color.neonMidnight)
+        .onAppear {
+            viewModel.loadKeys()
+        }
+    }
+}
+
+struct ProviderKeyRow: View {
+    let info: SettingsViewModel.ProviderInfo
+    @Binding var apiKey: String
+    let hasKey: Bool
+    let isSaving: Bool
+    let onSave: () -> Void
+    let onDelete: () -> Void
+
+    @State private var isSecure: Bool = true
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Provider Header
+            HStack(spacing: 12) {
+                Image(systemName: info.icon)
+                    .font(.system(size: 18))
+                    .foregroundColor(Color.neonElectricBlue)
+                    .frame(width: 24, height: 24)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(info.name)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.white)
+
+                    if let description = info.description {
+                        Text(description)
+                            .font(.system(size: 11))
+                            .foregroundColor(Color.neonGray)
+                    }
+                }
+
+                Spacer()
+
+                // Status Indicator
+                if hasKey {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 12))
+                        Text("Configured")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(.green)
+                }
+            }
+
+            // API Key Input
+            HStack(spacing: 8) {
+                ZStack(alignment: .leading) {
+                    if isSecure && !apiKey.isEmpty {
+                        SecureField("Enter API key", text: $apiKey)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 12, design: .monospaced))
+                            .focused($isFocused)
+                    } else {
+                        TextField("Enter API key", text: $apiKey)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 12, design: .monospaced))
+                            .focused($isFocused)
+                    }
+                }
+                .padding(10)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.black.opacity(0.3))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(
+                                    isFocused
+                                        ? Color.neonElectricBlue : Color.neonGray.opacity(0.3),
+                                    lineWidth: 1)
+                        )
+                )
+
+                // Toggle Visibility
+                Button(action: { isSecure.toggle() }) {
+                    Image(systemName: isSecure ? "eye.slash.fill" : "eye.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(Color.neonGray)
+                        .frame(width: 32, height: 32)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.black.opacity(0.3))
+                        )
+                }
+                .buttonStyle(.plain)
+
+                // Save Button
+                Button(action: onSave) {
+                    HStack(spacing: 4) {
+                        if isSaving {
+                            ProgressView()
+                                .scaleEffect(0.7)
+                                .frame(width: 12, height: 12)
+                        } else {
+                            Image(systemName: "arrow.down.circle.fill")
+                                .font(.system(size: 12))
+                        }
+                        Text("Save")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(
+                                apiKey.isEmpty
+                                    ? Color.neonGray.opacity(0.3) : Color.neonElectricBlue)
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(apiKey.isEmpty || isSaving)
+
+                // Delete Button
+                if hasKey {
+                    Button(action: onDelete) {
+                        Image(systemName: "trash.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(Color.neonFuchsia)
+                            .frame(width: 32, height: 32)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.neonFuchsia.opacity(0.1))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            // Documentation Link
+            if let docsURL = info.docsURL {
+                Link(destination: docsURL) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.up.right.square")
+                            .font(.system(size: 10))
+                        Text("Get API key from \(info.name)")
+                            .font(.system(size: 11))
+                    }
+                    .foregroundColor(Color.neonElectricBlue)
+                }
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.black.opacity(0.2))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(
+                            hasKey ? Color.green.opacity(0.3) : Color.neonGray.opacity(0.2),
+                            lineWidth: 1)
+                )
+        )
+    }
+}
+
+struct GeneralSettingsView: View {
+    @ObservedObject var viewModel: SettingsViewModel
+    @State private var contextConfig = UserDefaults.standard.loadContextConfig()
+    @State private var showSaveConfirmation = false
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                // Header
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("General Settings")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.white)
+
+                    Text("Configure app behavior, tools, and performance optimizations.")
+                        .font(.system(size: 13))
+                        .foregroundColor(Color.neonGray)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, 8)
+
+                Divider()
+                    .background(Color.neonGray.opacity(0.3))
+
+                // Tool Selection Section
+                toolSelectionSection
+
+                // Text Selection Section (Auto-Copy)
+                textSelectionSection
+
+                // Context Management Section
+                contextManagementSection
+
+                // Save Confirmation
+                if showSaveConfirmation {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+
+                        Text("Settings saved successfully")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.green)
+                    }
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.green.opacity(0.1))
+                    )
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+            }
+            .padding(24)
+        }
+        .background(Color.neonMidnight)
+        .onAppear {
+            Task {
+                await viewModel.loadTools()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var toolSelectionSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 8) {
+                Image(systemName: "hammer.fill")
+                    .font(.system(size: 18))
+                    .foregroundColor(Color.neonElectricBlue)
+
+                Text("Available Tools")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+
+            VStack(spacing: 0) {
+                ForEach(Array(viewModel.toolToggles.enumerated()), id: \.element.id) {
+                    index, tool in
+                    SettingsToolToggleRow(tool: tool) { isEnabled in
+                        viewModel.toggleTool(tool.id, enabled: isEnabled)
+                    }
+
+                    if index < viewModel.toolToggles.count - 1 {
+                        Divider()
+                            .background(Color.white.opacity(0.1))
+                    }
+                }
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.black.opacity(0.2))
+                    .glassEffect(GlassEffect.regular, in: .rect(cornerRadius: 12))
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var textSelectionSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 8) {
+                Image(systemName: "cursorarrow.click.2")
+                    .font(.system(size: 18))
+                    .foregroundColor(Color.neonElectricBlue)
+
+                Text("Text Selection")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+
+            #if os(macOS)
+                VStack(alignment: .leading, spacing: 4) {
+                    Toggle(
+                        "Auto-copy selected text",
+                        isOn: Binding(
+                            get: { UserDefaults.standard.bool(forKey: "chatAutoCopyEnabled") },
+                            set: { UserDefaults.standard.set($0, forKey: "chatAutoCopyEnabled") }
+                        )
+                    )
+                    .toggleStyle(SwitchToggleStyle(tint: Color.neonElectricBlue))
+
+                    Text(
+                        "Automatically copy text to clipboard when selecting (Assistant/Tool messages only)."
+                    )
+                    .font(.caption)
+                    .foregroundColor(Color.neonGray)
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.black.opacity(0.2))
+                        .glassEffect(GlassEffect.regular, in: .rect(cornerRadius: 12))
+                )
+            #else
+                Text("Text selection settings are available on macOS.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            #endif
+        }
+    }
+
+    @ViewBuilder
+    private var contextManagementSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Section Header
+            HStack(spacing: 8) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 18))
+                    .foregroundColor(Color.neonElectricBlue)
+
+                Text("Context Management")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+
+            Text("Automatically optimize conversation history to reduce token usage and costs.")
+                .font(.system(size: 12))
+                .foregroundColor(Color.neonGray)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.bottom, 4)
+
+            // Enable/Disable Toggle
+            Toggle(
+                isOn: Binding(
+                    get: { contextConfig.enabled },
+                    set: { newValue in
+                        contextConfig = ContextConfig(
+                            enabled: newValue,
+                            defaultMaxTokens: contextConfig.defaultMaxTokens,
+                            preserveSystemPrompt: contextConfig.preserveSystemPrompt,
+                            preserveRecentMessages: contextConfig.preserveRecentMessages,
+                            providerOverrides: contextConfig.providerOverrides
+                        )
+                        saveConfig()
+                    }
+                )
+            ) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Enable Context Compaction")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.white)
+
+                    Text("Automatically removes old messages when context limit is reached")
+                        .font(.system(size: 11))
+                        .foregroundColor(Color.neonGray)
+                }
+            }
+            .toggleStyle(SwitchToggleStyle(tint: Color.neonElectricBlue))
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.black.opacity(0.2))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.neonGray.opacity(0.2), lineWidth: 1)
+                    )
+            )
+
+            if contextConfig.enabled {
+                // Configuration Options
+                VStack(spacing: 16) {
+                    // Max Tokens Slider
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Default Token Limit")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.white)
+                            Spacer()
+                            Text("\(contextConfig.defaultMaxTokens.formatted()) tokens")
+                                .font(.system(size: 12, design: .monospaced))
+                                .foregroundColor(Color.neonElectricBlue)
+                        }
+
+                        Slider(
+                            value: Binding(
+                                get: { Double(contextConfig.defaultMaxTokens) },
+                                set: { newValue in
+                                    contextConfig = ContextConfig(
+                                        enabled: contextConfig.enabled,
+                                        defaultMaxTokens: Int(newValue),
+                                        preserveSystemPrompt: contextConfig.preserveSystemPrompt,
+                                        preserveRecentMessages: contextConfig
+                                            .preserveRecentMessages,
+                                        providerOverrides: contextConfig.providerOverrides
+                                    )
+                                }
+                            ),
+                            in: 50_000...200_000,
+                            step: 10_000,
+                            onEditingChanged: { editing in
+                                if !editing {
+                                    saveConfig()
+                                }
+                            }
+                        )
+                        .tint(Color.neonElectricBlue)
+
+                        Text("Conversations exceeding this limit will be automatically compacted")
+                            .font(.system(size: 10))
+                            .foregroundColor(Color.neonGray)
+                    }
+
+                    // Recent Messages Slider
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Recent Messages to Preserve")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.white)
+                            Spacer()
+                            Text("\(contextConfig.preserveRecentMessages) messages")
+                                .font(.system(size: 12, design: .monospaced))
+                                .foregroundColor(Color.neonElectricBlue)
+                        }
+
+                        Slider(
+                            value: Binding(
+                                get: { Double(contextConfig.preserveRecentMessages) },
+                                set: { newValue in
+                                    contextConfig = ContextConfig(
+                                        enabled: contextConfig.enabled,
+                                        defaultMaxTokens: contextConfig.defaultMaxTokens,
+                                        preserveSystemPrompt: contextConfig.preserveSystemPrompt,
+                                        preserveRecentMessages: Int(newValue),
+                                        providerOverrides: contextConfig.providerOverrides
+                                    )
+                                }
+                            ),
+                            in: 5...50,
+                            step: 1,
+                            onEditingChanged: { editing in
+                                if !editing {
+                                    saveConfig()
+                                }
+                            }
+                        )
+                        .tint(Color.neonElectricBlue)
+
+                        Text("The most recent messages will always be kept in the context")
+                            .font(.system(size: 10))
+                            .foregroundColor(Color.neonGray)
+                    }
+
+                    // Preserve System Prompt Toggle
+                    Toggle(
+                        isOn: Binding(
+                            get: { contextConfig.preserveSystemPrompt },
+                            set: { newValue in
+                                contextConfig = ContextConfig(
+                                    enabled: contextConfig.enabled,
+                                    defaultMaxTokens: contextConfig.defaultMaxTokens,
+                                    preserveSystemPrompt: newValue,
+                                    preserveRecentMessages: contextConfig.preserveRecentMessages,
+                                    providerOverrides: contextConfig.providerOverrides
+                                )
+                                saveConfig()
+                            }
+                        )
+                    ) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Always Preserve System Prompt")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.white)
+
+                            Text("Keep the system instructions even when compacting context")
+                                .font(.system(size: 11))
+                                .foregroundColor(Color.neonGray)
+                        }
+                    }
+                    .toggleStyle(SwitchToggleStyle(tint: Color.neonElectricBlue))
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.black.opacity(0.2))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.neonGray.opacity(0.2), lineWidth: 1)
+                        )
+                )
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
+            // Info Box
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "info.circle.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(Color.neonElectricBlue.opacity(0.8))
+                    .frame(width: 20, height: 20)
+
+                Text(
+                    "Context compaction can reduce token costs by 40-70% in long conversations by intelligently removing older messages while preserving important context."
+                )
+                .font(.system(size: 11))
+                .foregroundColor(Color.neonGray)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.neonElectricBlue.opacity(0.05))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.neonElectricBlue.opacity(0.2), lineWidth: 1)
+                    )
+            )
+        }
+    }
+
+    private func saveConfig() {
+        UserDefaults.standard.saveContextConfig(contextConfig)
+
+        withAnimation {
+            showSaveConfirmation = true
+        }
+
+        // Auto-hide confirmation after 2 seconds
+        Task {
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            await MainActor.run {
+                withAnimation {
+                    showSaveConfirmation = false
+                }
+            }
+        }
+    }
+}
+
+struct SettingsToolToggleRow: View {
+    let tool: UIToolToggleItem
+    let onToggle: (Bool) -> Void
+    @State private var isHovering = false
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Icon
+            Image(systemName: tool.icon)
+                .font(.system(size: 16))
+                .foregroundStyle(tool.isEnabled ? Color.cyan : Color.secondary)
+                .frame(width: 24, height: 24)
+
+            // Name
+            Text(tool.name)
+                .font(.system(size: 13, weight: tool.isEnabled ? .bold : .regular))
+                .foregroundStyle(.white)
+
+            Spacer()
+
+            // Toggle
+            Toggle(
+                "",
+                isOn: Binding(
+                    get: { tool.isEnabled },
+                    set: { onToggle($0) }
+                )
+            )
+            .toggleStyle(.switch)
+            .tint(.blue)
+            .glassEffect()
+            .disabled(!tool.isAvailable)
+        }
+        .padding(12)
+        .contentShape(Rectangle())
+        .onHover { hover in
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                isHovering = hover
+            }
+        }
+        .scaleEffect(isHovering ? 1.01 : 1.0)
+        .background(
+            isHovering ? Color.white.opacity(0.05) : Color.clear
+        )
+        .help("\(tool.name)\n\(tool.description)")
+    }
+}
+
+#Preview {
+    SettingsView()
+        .preferredColorScheme(.dark)
+}

@@ -8,240 +8,201 @@
 import Foundation
 import OSLog
 
-/// Web Search Tool conforming to the Tool protocol.
-/// Searches the web using DuckDuckGo and returns results.
-struct WebSearchTool: Tool {
-    nonisolated let id = "web_search"
-    nonisolated let name = "web_search"
-    nonisolated let description = """
+/// Web Search Tool conforming to the unified Tool protocol.
+nonisolated struct WebSearchTool: Tool {
+    let name = "web_search"
+    let description = """
         Search the web for current information on any topic. \
         Use this tool when you need up-to-date information, \
         need to verify facts, or when the user asks about current events, \
         news, or anything that requires recent information.
         """
 
-    nonisolated var inputSchema: [String: Any] {
-        [
-            "type": "object",
-            "properties": [
-                "query": [
-                    "type": "string",
-                    "description": "The search query to look up on the web",
-                ],
-                "num_results": [
-                    "type": "integer",
-                    "description": "Number of results to return (default: 5, max: 10)",
-                ],
+    var parameters: ToolParametersSchema {
+        ToolParametersSchema(
+            properties: [
+                "query": ToolProperty(
+                    type: .string, description: "The search query to look up on the web"),
+                "num_results": ToolProperty(
+                    type: .integer, description: "Number of results to return (default: 5, max: 10)"
+                ),
+                "time_range": ToolProperty(
+                    type: .string,
+                    description: "Recency filter: d=day, w=week, m=month, y=year",
+                    enumValues: ["d", "w", "m", "y"]
+                ),
+                "region": ToolProperty(
+                    type: .string, description: "Region code (e.g., us-en, uk-en)"),
+                "safe_search": ToolProperty(
+                    type: .boolean, description: "Enable safe search (default: true)"),
             ],
-            "required": ["query"],
-        ]
+            required: ["query"]
+        )
     }
+
+    let permissionLevel: ToolPermissionLevel = .sensitive
+    let requiredCapabilities: [ToolCapability] = [.networkIO]  // Approximating webAccess -> networkIO
+    let weight: ToolWeight = .heavy
+    let isCacheable = true
 
     private let logger = Logger(subsystem: "com.llmhub", category: "WebSearchTool")
     private let session: URLSession
 
-    /// Initializes a new `WebSearchTool`.
-    /// - Parameter session: The URLSession to use (default: `.shared`).
-    init(session: URLSession = .shared) {
+    init(session: URLSession = .shared) {  // Using .shared if LLMURLSession not available
         self.session = session
     }
 
-    nonisolated func execute(input: [String: Any]) async throws -> String {
-        guard let query = input["query"] as? String, !query.isEmpty else {
-            throw ToolError.invalidInput
+    func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
+        guard let query = arguments.string("query"), !query.isEmpty else {
+            throw ToolError.invalidArguments("query is required")
         }
 
-        let numResults = min(input["num_results"] as? Int ?? 5, 10)
+        let numResults = min(arguments.int("num_results") ?? 5, 10)
+        let timeRange = arguments.string("time_range")
+        let region = arguments.string("region")
+        let safeSearch = arguments.bool("safe_search") ?? true
 
-        logger.info("Searching web for: \(query)")
+        context.logger.info("Searching web for: \(query)")  // Use context logger
 
         do {
-            let results = try await searchDuckDuckGo(query: query, maxResults: numResults)
+            let results = try await searchDuckDuckGo(
+                query: query,
+                maxResults: numResults,
+                timeRange: timeRange,
+                region: region,
+                safeSearch: safeSearch
+            )
 
             if results.isEmpty {
-                return "No results found for: \(query)"
+                return ToolResult.success("No results found for: \(query)")
             }
 
-            return formatResults(results, query: query)
+            return ToolResult.success(formatResults(results, query: query))
+
         } catch {
-            logger.error("Web search failed: \(error)")
-            throw ToolError.executionFailed("Search failed: \(error.localizedDescription)")
+            context.logger.error("Web search failed: \(error.localizedDescription)")
+            throw ToolError.executionFailed(
+                "Search failed: \(error.localizedDescription)", retryable: true)
         }
     }
 
     // MARK: - DuckDuckGo Search
 
-    /// Performs a search using DuckDuckGo.
-    /// - Parameters:
-    ///   - query: The search query.
-    ///   - maxResults: The maximum number of results to return.
-    /// - Returns: An array of `SearchResult`.
-    private nonisolated func searchDuckDuckGo(query: String, maxResults: Int) async throws -> [SearchResult] {
-        // Use DuckDuckGo HTML search (no API key required)
-        guard
-            let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-            let url = URL(string: "https://html.duckduckgo.com/html/?q=\(encodedQuery)")
-        else {
+    private func searchDuckDuckGo(
+        query: String,
+        maxResults: Int,
+        timeRange: String?,
+        region: String?,
+        safeSearch: Bool
+    ) async throws -> [SearchResult] {
+        guard var components = URLComponents(string: "https://html.duckduckgo.com/html/") else {
             throw SearchError.invalidQuery
         }
+
+        var queryItems = [URLQueryItem(name: "q", value: query)]
+        if let df = timeRange, ["d", "w", "m", "y"].contains(df) {
+            queryItems.append(URLQueryItem(name: "df", value: df))
+        }
+        if let kl = region, !kl.isEmpty {
+            queryItems.append(URLQueryItem(name: "kl", value: kl))
+        }
+        if !safeSearch {
+            queryItems.append(URLQueryItem(name: "kp", value: "-2"))
+        }
+        components.queryItems = queryItems
+        guard let url = components.url else { throw SearchError.invalidQuery }
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue(
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
             forHTTPHeaderField: "User-Agent")
-        request.setValue("text/html", forHTTPHeaderField: "Accept")
 
         let (data, response) = try await session.data(for: request)
-
         guard let httpResponse = response as? HTTPURLResponse,
             (200...299).contains(httpResponse.statusCode)
         else {
             throw SearchError.requestFailed
         }
-
         guard let html = String(data: data, encoding: .utf8) else {
             throw SearchError.invalidResponse
         }
-
         return parseSearchResults(html: html, maxResults: maxResults)
     }
 
-    // MARK: - HTML Parsing
-
-    /// Parses search results from HTML.
-    /// - Parameters:
-    ///   - html: The HTML string.
-    ///   - maxResults: Maximum results to parse.
-    /// - Returns: An array of `SearchResult`.
-    private nonisolated func parseSearchResults(html: String, maxResults: Int) -> [SearchResult] {
+    private func parseSearchResults(html: String, maxResults: Int) -> [SearchResult] {
         var results: [SearchResult] = []
-
-        // Parse DuckDuckGo HTML results
-        // Results are in <div class="result"> blocks
-        // Parse DuckDuckGo HTML results
-        // Results are in <div class="result"> blocks
-
-        // Alternative simpler patterns for DuckDuckGo's structure
         let linkPattern = #"<a rel="nofollow" class="result__a" href="([^"]+)">([^<]+)</a>"#
         let descPattern = #"class="result__snippet"[^>]*>([^<]+)"#
 
-        // Try to extract using simpler regex
         let linkRegex = try? NSRegularExpression(pattern: linkPattern, options: [])
         let descRegex = try? NSRegularExpression(pattern: descPattern, options: [])
-
         let nsHtml = html as NSString
         let range = NSRange(location: 0, length: nsHtml.length)
 
-        // Find all links
         let linkMatches = linkRegex?.matches(in: html, options: [], range: range) ?? []
         let descMatches = descRegex?.matches(in: html, options: [], range: range) ?? []
 
         for (index, linkMatch) in linkMatches.prefix(maxResults).enumerated() {
             guard linkMatch.numberOfRanges >= 3 else { continue }
-
-            let urlRange = linkMatch.range(at: 1)
-            let titleRange = linkMatch.range(at: 2)
-
-            let url = nsHtml.substring(with: urlRange)
-            let title = nsHtml.substring(with: titleRange)
+            let url = nsHtml.substring(with: linkMatch.range(at: 1))
+            let title = nsHtml.substring(with: linkMatch.range(at: 2))
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-                .replacingOccurrences(of: "&amp;", with: "&")
-                .replacingOccurrences(of: "&quot;", with: "\"")
-                .replacingOccurrences(of: "&#x27;", with: "'")
+                .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
 
-            // Try to get corresponding snippet
             var snippet = ""
             if index < descMatches.count {
                 let descMatch = descMatches[index]
                 if descMatch.numberOfRanges >= 2 {
                     snippet = nsHtml.substring(with: descMatch.range(at: 1))
                         .trimmingCharacters(in: .whitespacesAndNewlines)
-                        .replacingOccurrences(of: "&amp;", with: "&")
-                        .replacingOccurrences(of: "&quot;", with: "\"")
-                        .replacingOccurrences(of: "&#x27;", with: "'")
                         .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
                 }
             }
 
-            // Clean up the URL (DuckDuckGo sometimes uses redirect URLs)
+            // Basic URL cleaning
             var cleanUrl = url
-            if url.contains("uddg=") {
-                if let range = url.range(of: "uddg="),
-                    let decoded = url[range.upperBound...].removingPercentEncoding
-                {
-                    cleanUrl = decoded.components(separatedBy: "&").first ?? decoded
+            if let decoded = url.removingPercentEncoding, decoded.contains("uddg=") {
+                if let range = decoded.range(of: "uddg=") {
+                    cleanUrl =
+                        String(decoded[range.upperBound...]).components(separatedBy: "&").first
+                        ?? decoded
                 }
             }
 
-            results.append(
-                SearchResult(
-                    title: title,
-                    url: cleanUrl,
-                    snippet: snippet
-                ))
+            results.append(SearchResult(title: title, url: cleanUrl, snippet: snippet))
         }
-
         return results
     }
 
-    // MARK: - Formatting
-
-    /// Formats the search results into a readable string.
-    /// - Parameters:
-    ///   - results: The search results.
-    ///   - query: The search query.
-    /// - Returns: A formatted string.
-    private nonisolated func formatResults(_ results: [SearchResult], query: String) -> String {
-        var output = "Web Search Results for: \"\(query)\"\n"
-        output += String(repeating: "=", count: 50) + "\n\n"
-
+    private func formatResults(_ results: [SearchResult], query: String) -> String {
+        var output =
+            "Web Search Results for: \"\(query)\"\n" + String(repeating: "=", count: 50) + "\n\n"
         for (index, result) in results.enumerated() {
-            output += "[\(index + 1)] \(result.title)\n"
-            output += "    URL: \(result.url)\n"
-            if !result.snippet.isEmpty {
-                output += "    \(result.snippet)\n"
-            }
+            output += "[\(index + 1)] \(result.title)\n    URL: \(result.url)\n"
+            if !result.snippet.isEmpty { output += "    \(result.snippet)\n" }
             output += "\n"
         }
-
-        output += "---\n"
-        output += "Found \(results.count) result(s)"
-
+        output += "---\nFound \(results.count) result(s)"
         return output
     }
 }
 
-// MARK: - Supporting Types
-
-/// Represents a single search result.
-struct SearchResult {
-    /// The title of the result.
+// Supporting Types
+struct SearchResult: Sendable {
     let title: String
-    /// The URL of the result.
     let url: String
-    /// The snippet or description of the result.
     let snippet: String
 }
 
-/// Errors related to search operations.
 enum SearchError: LocalizedError {
-    /// The query provided was invalid.
-    case invalidQuery
-    /// The search request failed.
-    case requestFailed
-    /// The search engine returned an invalid response.
-    case invalidResponse
-    /// Failed to parse the search results.
-    case parsingFailed
-
-    /// A localized description of the error.
+    case invalidQuery, requestFailed, invalidResponse, parsingFailed
     var errorDescription: String? {
         switch self {
         case .invalidQuery: return "Invalid search query"
         case .requestFailed: return "Search request failed"
-        case .invalidResponse: return "Invalid response from search engine"
-        case .parsingFailed: return "Failed to parse search results"
+        case .invalidResponse: return "Invalid response"
+        case .parsingFailed: return "Failed to parse results"
         }
     }
 }

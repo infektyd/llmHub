@@ -1,0 +1,81 @@
+{
+  "object" : {
+    "artifacts" : [
+
+    ],
+    "dependencies" : [
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "networkimage",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/gonzalezreal/NetworkImage",
+          "name" : "NetworkImage"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "2849f5323265386e200484b0d0f896e73c3411b9",
+            "version" : "6.0.1"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "NetworkImage"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "splash",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/JohnSundell/Splash.git",
+          "name" : "Splash"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "7f4df436eb78fe64fe2c32c58006e9949fa28ad8",
+            "version" : "0.16.0"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "Splash"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "swift-markdown-ui",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/gonzalezreal/swift-markdown-ui.git",
+          "name" : "swift-markdown-ui"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "55441810c0f678c78ed7e2ebd46dde89228e02fc",
+            "version" : "2.4.0"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "swift-markdown-ui"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "swift-numerics",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/apple/swift-numerics.git",
+          "name" : "swift-numerics"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "0c0290ff6b24942dadb83a929ffaaa1481df04a2",
+            "version" : "1.1.1"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "swift-numerics"
+      }
+    ],
+    "prebuilts" : [
+
+    ]
+  },
+  "version" : 7
+}

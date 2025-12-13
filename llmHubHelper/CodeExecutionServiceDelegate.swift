@@ -5,6 +5,7 @@
 //  XPC Service delegate that handles incoming connections
 //
 
+#if os(macOS)
 import Foundation
 import OSLog
 
@@ -45,3 +46,4 @@ final class CodeExecutionServiceDelegate: NSObject, NSXPCListenerDelegate {
         return true
     }
 }
+#endif

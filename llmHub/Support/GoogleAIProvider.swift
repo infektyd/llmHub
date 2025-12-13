@@ -22,19 +22,25 @@ struct GoogleAIProvider: LLMProvider {
 
     var availableModels: [LLMModel] { config.models }
 
-    var defaultHeaders: [String: String] { ["Content-Type": "application/json"] }
+    var defaultHeaders: [String: String] { 
+        get async {
+            ["Content-Type": "application/json"] 
+        }
+    }
 
     var pricing: PricingMetadata {
         config.pricing ?? PricingMetadata(inputPer1KUSD: 0, outputPer1KUSD: 0, currency: "USD")
     }
 
     var isConfigured: Bool {
-        keychain.apiKey(for: .google) != nil
+        get async {
+            await keychain.apiKey(for: .google) != nil
+        }
     }
 
     func fetchModels() async throws -> [LLMModel] {
 
-        guard let apiKey = keychain.apiKey(for: .google) else {
+        guard let apiKey = await keychain.apiKey(for: .google) else {
             throw LLMProviderError.authenticationMissing
         }
 
@@ -46,7 +52,7 @@ struct GoogleAIProvider: LLMProvider {
 
         request.httpMethod = "GET"
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await LLMURLSession.shared.data(for: request)
 
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
 
@@ -94,12 +100,12 @@ struct GoogleAIProvider: LLMProvider {
 
     }
 
-    func buildRequest(messages: [ChatMessage], model: String) throws -> URLRequest {
-        try buildRequest(messages: messages, model: model, jsonMode: false)
+    func buildRequest(messages: [ChatMessage], model: String) async throws -> URLRequest {
+        try await buildRequest(messages: messages, model: model, jsonMode: false)
     }
 
-    func buildRequest(messages: [ChatMessage], model: String, jsonMode: Bool) throws -> URLRequest {
-        guard let apiKey = keychain.apiKey(for: .google) else {
+    func buildRequest(messages: [ChatMessage], model: String, jsonMode: Bool) async throws -> URLRequest {
+        guard let apiKey = await keychain.apiKey(for: .google) else {
             throw LLMProviderError.authenticationMissing
         }
 
@@ -191,7 +197,7 @@ struct GoogleAIProvider: LLMProvider {
     }
 
     func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {
-        AsyncThrowingStream { continuation in
+        AsyncThrowingStream(ProviderEvent.self) { continuation in
             Task {
                 do {
                     // Convert to streaming request
@@ -205,7 +211,7 @@ struct GoogleAIProvider: LLMProvider {
                         streamRequest.url = URL(string: newString)
                     }
 
-                    let (result, response) = try await URLSession.shared.bytes(for: streamRequest)
+                    let (result, response) = try await LLMURLSession.shared.bytes(for: streamRequest)
 
                     guard let httpResponse = response as? HTTPURLResponse,
                         (200...299).contains(httpResponse.statusCode)
@@ -222,39 +228,65 @@ struct GoogleAIProvider: LLMProvider {
                         return
                     }
 
-                    var fullText = ""
+	                    var fullText = ""
+	                    var accumulatedToolCalls: [ToolCall] = []
 
-                    for try await line in result.lines {
-                        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+	                    for try await line in result.lines {
+	                        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
 
-                        if trimmed.hasPrefix("data: ") {
-                            let json = String(trimmed.dropFirst(6))
-                            if json == "[DONE]" { break }
+	                        if trimmed.hasPrefix("data: ") {
+	                            let json = String(trimmed.dropFirst(6))
+	                            if json == "[DONE]" { break }
 
-                            if let data = json.data(using: .utf8),
-                                let chunk = try? JSONDecoder().decode(
-                                    GenerationResponse.self, from: data),
-                                let text = chunk.text
-                            {
-                                fullText += text
-                                continuation.yield(.token(text: text))
-                            }
-                        }
-                    }
+	                            if let data = json.data(using: .utf8),
+	                                let chunk = try? JSONDecoder().decode(
+	                                    GenerationResponse.self, from: data)
+	                            {
+	                                if let text = chunk.text, !text.isEmpty {
+	                                    fullText += text
+	                                    continuation.yield(.token(text: text))
+	                                }
+	                                
+	                                // Handle Function Calls even when text is nil/empty.
+	                                if let candidates = chunk.candidates, let first = candidates.first {
+	                                    for part in first.content.parts {
+	                                        if case .functionCall(let fc) = part {
+	                                            let encoder = JSONEncoder()
+	                                            if let argsData = try? encoder.encode(fc.args),
+	                                               let argsStr = String(data: argsData, encoding: .utf8) {
+	                                                let callId = "call_\(UUID().uuidString.prefix(8))"
+	                                                let toolCall = ToolCall(id: callId, name: fc.name, input: argsStr)
+	                                                accumulatedToolCalls.append(toolCall)
+	                                                continuation.yield(.toolUse(id: callId, name: fc.name, input: argsStr))
+	                                            }
+	                                        }
+	                                    }
+	                                }
+	                            } else {
+	#if DEBUG
+	                                if !json.isEmpty {
+	                                    print("GoogleAIProvider: Failed to decode stream chunk: \(json.prefix(200))")
+	                                }
+	#endif
+	                            }
+	                        }
+	                    }
 
-                    // Final completion event with full message
-                    let message = ChatMessage(
-                        id: UUID(),
-                        role: .assistant,
-                        content: fullText,
-                        parts: [],  // Initialize with empty parts
-                        createdAt: Date(),
-                        codeBlocks: [],
-                        tokenUsage: nil,
-                        costBreakdown: nil
-                    )
-                    continuation.yield(.completion(message: message))
-                    continuation.finish()
+	                    // Final completion event with full message
+	                    let message = ChatMessage(
+	                        id: UUID(),
+	                        role: .assistant,
+	                        content: fullText,
+	                        parts: fullText.isEmpty ? [] : [.text(fullText)],
+	                        createdAt: Date(),
+	                        codeBlocks: [],
+	                        tokenUsage: nil,
+	                        costBreakdown: nil,
+	                        toolCallID: nil,
+	                        toolCalls: accumulatedToolCalls.isEmpty ? nil : accumulatedToolCalls
+	                    )
+	                    continuation.yield(.completion(message: message))
+	                    continuation.finish()
 
                 } catch {
                     continuation.yield(.error(.network(error as? URLError ?? URLError(.unknown))))

@@ -23,11 +23,13 @@ struct OpenRouterProvider: LLMProvider {
     var availableModels: [LLMModel] { config.models }
 
     var defaultHeaders: [String: String] {
-        guard let key = keychain.apiKey(for: .openRouter) else { return [:] }
-        return [
-            "Authorization": "Bearer \(key)",
-            "Content-Type": "application/json",
-        ]
+        get async {
+            guard let key = await keychain.apiKey(for: .openRouter) else { return [:] }
+            return [
+                "Authorization": "Bearer \(key)",
+                "Content-Type": "application/json",
+            ]
+        }
     }
 
     var pricing: PricingMetadata {
@@ -35,11 +37,13 @@ struct OpenRouterProvider: LLMProvider {
     }
 
     var isConfigured: Bool {
-        keychain.apiKey(for: .openRouter) != nil
+        get async {
+            await keychain.apiKey(for: .openRouter) != nil
+        }
     }
 
     func fetchModels() async throws -> [LLMModel] {
-        guard let apiKey = keychain.apiKey(for: .openRouter) else { return [] }
+        guard let apiKey = await keychain.apiKey(for: .openRouter) else { return [] }
         let manager = OpenRouterManager(apiKey: apiKey)
         let models = try await manager.listModels()
         return models.map {
@@ -52,12 +56,14 @@ struct OpenRouterProvider: LLMProvider {
         }
     }
 
-    func buildRequest(messages: [ChatMessage], model: String) throws -> URLRequest {
-        try buildRequest(messages: messages, model: model, jsonMode: false)
+    func buildRequest(messages: [ChatMessage], model: String) async throws -> URLRequest {
+        try await buildRequest(messages: messages, model: model, jsonMode: false)
     }
 
-    func buildRequest(messages: [ChatMessage], model: String, jsonMode: Bool) throws -> URLRequest {
-        guard let apiKey = keychain.apiKey(for: .openRouter) else {
+    func buildRequest(messages: [ChatMessage], model: String, jsonMode: Bool) async throws
+        -> URLRequest
+    {
+        guard let apiKey = await keychain.apiKey(for: .openRouter) else {
             throw LLMProviderError.authenticationMissing
         }
 
@@ -102,7 +108,7 @@ struct OpenRouterProvider: LLMProvider {
     }
 
     func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {
-        AsyncThrowingStream { continuation in
+        AsyncThrowingStream(ProviderEvent.self) { continuation in
             Task {
                 do {
                     // 1. Modify request to enable streaming if not already
@@ -118,7 +124,8 @@ struct OpenRouterProvider: LLMProvider {
                     streamRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
 
                     // 2. Execute
-                    let (result, response) = try await URLSession.shared.bytes(for: streamRequest)
+                    let (result, response) = try await LLMURLSession.shared.bytes(
+                        for: streamRequest)
 
                     guard let http = response as? HTTPURLResponse,
                         (200...299).contains(http.statusCode)
@@ -135,6 +142,8 @@ struct OpenRouterProvider: LLMProvider {
                     }
 
                     var fullText = ""
+                    var toolCallsInProgress: [Int: PendingToolCall] = [:]
+                    var lastFinishReason: String? = nil
 
                     for try await line in result.lines {
                         let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -142,28 +151,60 @@ struct OpenRouterProvider: LLMProvider {
                             let jsonStr = String(trimmed.dropFirst(6))
                             if jsonStr == "[DONE]" { break }
 
-                            if let data = jsonStr.data(using: .utf8),
+                            guard let data = jsonStr.data(using: .utf8),
                                 let chunk = try? JSONDecoder().decode(
-                                    ORStreamChunk.self, from: data)
-                            {
+                                    ORStreamChunk.self, from: data),
+                                let choice = chunk.choices.first
+                            else { continue }
 
-                                if let choice = chunk.choices.first,
-                                    let content = choice.delta.content
-                                {
-                                    fullText += content
-                                    continuation.yield(.token(text: content))
-                                }
+                            if let content = choice.delta.content {
+                                fullText += content
+                                continuation.yield(.token(text: content))
+                            }
 
-                                // Usage in stream (OpenRouter often sends this in the last chunk or separate event)
-                                if let usage = chunk.usage {
-                                    continuation.yield(
-                                        .usage(
-                                            TokenUsage(
-                                                inputTokens: usage.promptTokens,
-                                                outputTokens: usage.completionTokens,
-                                                cachedTokens: 0
-                                            )))
+                            if let toolCalls = choice.delta.toolCalls {
+                                for tc in toolCalls {
+                                    let idx = tc.index
+                                    if toolCallsInProgress[idx] == nil {
+                                        toolCallsInProgress[idx] = PendingToolCall(
+                                            index: idx, id: nil, name: nil, arguments: "")
+                                    }
+
+                                    if let id = tc.id {
+                                        toolCallsInProgress[idx]?.id = id
+                                    }
+                                    if let name = tc.function?.name {
+                                        toolCallsInProgress[idx]?.name = name
+                                    }
+                                    if let args = tc.function?.arguments {
+                                        toolCallsInProgress[idx]?.arguments += args
+                                    }
                                 }
+                            }
+
+                            // Track the finish reason
+                            if let finishReason = choice.finishReason {
+                                lastFinishReason = finishReason
+                            }
+
+                            if choice.finishReason == "tool_calls" {
+                                for (_, tc) in toolCallsInProgress.sorted(by: { $0.key < $1.key }) {
+                                    if let id = tc.id, let name = tc.name {
+                                        continuation.yield(
+                                            .toolUse(id: id, name: name, input: tc.arguments))
+                                    }
+                                }
+                            }
+
+                            // Usage in stream (OpenRouter often sends this in the last chunk or separate event)
+                            if let usage = chunk.usage {
+                                continuation.yield(
+                                    .usage(
+                                        TokenUsage(
+                                            inputTokens: usage.promptTokens,
+                                            outputTokens: usage.completionTokens,
+                                            cachedTokens: 0
+                                        )))
                             }
                         }
                     }
@@ -179,7 +220,13 @@ struct OpenRouterProvider: LLMProvider {
                         tokenUsage: nil,
                         costBreakdown: nil
                     )
-                    continuation.yield(.completion(message: message))
+
+                    // Check if response was truncated due to max_tokens
+                    if lastFinishReason == "length" {
+                        continuation.yield(.truncated(message: message))
+                    } else {
+                        continuation.yield(.completion(message: message))
+                    }
                     continuation.finish()
 
                 } catch {

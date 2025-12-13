@@ -30,9 +30,15 @@ struct UILLMProvider: Identifiable, Hashable {
             name: "Anthropic",
             icon: "brain.head.profile",
             models: [
-                UILLMModel(id: UUID(), name: "Claude 3.5 Sonnet", contextWindow: 200000),
-                UILLMModel(id: UUID(), name: "Claude 3 Opus", contextWindow: 200000),
-                UILLMModel(id: UUID(), name: "Claude 3 Haiku", contextWindow: 200000),
+                UILLMModel(
+                    id: UUID(), modelID: "claude-sonnet-4-20250514", name: "Claude Sonnet 4",
+                    contextWindow: 200000),
+                UILLMModel(
+                    id: UUID(), modelID: "claude-opus-4-20250514", name: "Claude Opus 4",
+                    contextWindow: 200000),
+                UILLMModel(
+                    id: UUID(), modelID: "claude-3-5-haiku-20241022", name: "Claude 3.5 Haiku",
+                    contextWindow: 200000),
             ],
             isActive: true
         ),
@@ -41,9 +47,12 @@ struct UILLMProvider: Identifiable, Hashable {
             name: "OpenAI",
             icon: "sparkles",
             models: [
-                UILLMModel(id: UUID(), name: "GPT-4 Turbo", contextWindow: 128000),
-                UILLMModel(id: UUID(), name: "GPT-4", contextWindow: 8192),
-                UILLMModel(id: UUID(), name: "GPT-3.5 Turbo", contextWindow: 16385),
+                UILLMModel(
+                    id: UUID(), modelID: "gpt-4-turbo", name: "GPT-4 Turbo", contextWindow: 128000),
+                UILLMModel(id: UUID(), modelID: "gpt-4", name: "GPT-4", contextWindow: 8192),
+                UILLMModel(
+                    id: UUID(), modelID: "gpt-3.5-turbo", name: "GPT-3.5 Turbo",
+                    contextWindow: 16385),
             ],
             isActive: false
         ),
@@ -52,8 +61,11 @@ struct UILLMProvider: Identifiable, Hashable {
             name: "Google",
             icon: "cloud.fill",
             models: [
-                UILLMModel(id: UUID(), name: "Gemini Pro", contextWindow: 32000),
-                UILLMModel(id: UUID(), name: "Gemini Ultra", contextWindow: 32000),
+                UILLMModel(
+                    id: UUID(), modelID: "gemini-1.5-pro", name: "Gemini Pro", contextWindow: 32000),
+                UILLMModel(
+                    id: UUID(), modelID: "gemini-1.0-ultra", name: "Gemini Ultra",
+                    contextWindow: 32000),
             ],
             isActive: false
         ),
@@ -64,10 +76,83 @@ struct UILLMProvider: Identifiable, Hashable {
 struct UILLMModel: Identifiable, Hashable {
     /// The unique identifier of the model.
     let id: UUID
+    /// The actual model ID used for API calls (e.g., "claude-opus-4-20250514").
+    let modelID: String
     /// The display name of the model (e.g., "GPT-4").
     let name: String
     /// The context window size of the model in tokens.
     let contextWindow: Int
+}
+
+extension UILLMModel {
+    /// Represents the pricing tier of a model.
+    enum PricingTier {
+        case free
+        case budget
+        case standard
+        case premium
+        case enterprise
+
+        var displayName: String {
+            switch self {
+            case .free: return "Free"
+            case .budget: return "Budget"
+            case .standard: return "Standard"
+            case .premium: return "Premium"
+            case .enterprise: return "Enterprise"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .free: return "gift"
+            case .budget: return "dollarsign.circle"
+            case .standard: return "banknote"
+            case .premium: return "crown"
+            case .enterprise: return "building.2"
+            }
+        }
+
+        var color: Color {
+            switch self {
+            case .free: return .green
+            case .budget: return .cyan
+            case .standard: return .neonElectricBlue
+            case .premium: return .neonFuchsia
+            case .enterprise: return .purple
+            }
+        }
+    }
+
+    /// Infers pricing tier based on context window and model name.
+    var pricingTier: PricingTier? {
+        let nameLower = name.lowercased()
+
+        // Free models
+        if nameLower.contains("free") || nameLower.contains("trial") {
+            return .free
+        }
+
+        // Budget models (small models, haiku, mini, nano)
+        if nameLower.contains("haiku") || nameLower.contains("mini") || nameLower.contains("nano")
+            || nameLower.contains("3.5")
+        {
+            return .budget
+        }
+
+        // Premium models (opus, pro, ultra, large context)
+        if nameLower.contains("opus") || nameLower.contains("ultra") || contextWindow >= 200_000 {
+            return .premium
+        }
+
+        // Enterprise models
+        if nameLower.contains("enterprise") || nameLower.contains("turbo") {
+            return .enterprise
+        }
+
+        // Default to standard
+        return .standard
+    }
 }
 
 // MARK: - Tool Models
@@ -84,74 +169,34 @@ struct UIToolDefinition: Identifiable {
     let description: String
 
     /// A list of sample tools for previews and testing.
-    static let sampleTools: [UIToolDefinition] = [
-        UIToolDefinition(
-            id: UUID(),
-            name: "Code Interpreter",
-            icon: "curlybraces",
-            description: "Execute code snippets"
-        ),
-        UIToolDefinition(
-            id: UUID(),
-            name: "Web Search",
-            icon: "magnifyingglass.circle.fill",
-            description: "Search the web"
-        ),
-        UIToolDefinition(
-            id: UUID(),
-            name: "File Reader",
-            icon: "doc.text.fill",
-            description: "Read file contents"
-        ),
-        UIToolDefinition(
-            id: UUID(),
-            name: "File Editor",
-            icon: "pencil.circle.fill",
-            description: "Edit files"
-        ),
-        UIToolDefinition(
-            id: UUID(),
-            name: "Terminal",
-            icon: "terminal.fill",
-            description: "Execute shell commands"
-        ),
-    ]
-}
+    static let sampleTools: [UIToolDefinition] = defaultTools(for: ToolEnvironment.current)
 
-/// Represents the execution state of a tool.
-struct ToolExecution: Identifiable {
-    /// The unique identifier of the execution.
-    let id: UUID
-    /// The name of the tool being executed.
-    let name: String
-    /// The icon name of the tool.
-    let icon: String
-    /// The current status of the execution.
-    let status: ExecutionStatus
-    /// The output or logs from the execution.
-    let output: String
-    /// The timestamp when the execution started.
-    let timestamp: Date
+    /// Builds tool definitions filtered by environment availability.
+    /// - Parameter environment: The current tool environment.
+    /// - Returns: Supported tool definitions.
+    static func defaultTools(for environment: ToolEnvironment) -> [UIToolDefinition] {
+        let baseTools: [(String, String, String, [ToolCapability])] = [
+            ("Calculator", "function", "Evaluate quick expressions", []),
+            (
+                "Code Interpreter", "curlybraces", "Execute multi-language code snippets",
+                [.codeExecution]
+            ),
+            ("Web Search", "magnifyingglass.circle.fill", "Search the web", [.webAccess]),
+            ("File Reader", "doc.text.fill", "Read file contents", [.fileRead]),
+            ("File Editor", "pencil.circle.fill", "Edit files on disk", [.fileWrite]),
+        ]
 
-    /// The possible states of a tool execution.
-    enum ExecutionStatus {
-        /// The execution is waiting to start.
-        case pending
-        /// The execution is currently running.
-        case running
-        /// The execution completed successfully.
-        case success
-        /// The execution failed.
-        case error
-
-        /// The color associated with the status.
-        var color: Color {
-            switch self {
-            case .pending: return .neonGray
-            case .running: return .neonElectricBlue
-            case .success: return .green
-            case .error: return .neonFuchsia
-            }
+        return baseTools.compactMap { name, icon, description, capabilities in
+            let availability = environment.availability(for: capabilities)
+            guard availability.isSupported else { return nil }
+            return UIToolDefinition(
+                id: UUID(),
+                name: name,
+                icon: icon,
+                description: description
+            )
         }
     }
 }
+
+// UIToolToggleItem and ToolExecution are now defined in SharedTypes.swift

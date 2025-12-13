@@ -46,7 +46,7 @@ public class XAIManager {
             tools: tools
         )
         
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await LLMURLSession.shared.data(for: request)
         
         guard let http = response as? HTTPURLResponse else {
             throw XAIError.networkError
@@ -135,7 +135,7 @@ public class XAIManager {
                         tools: nil
                     )
                     
-                    let (result, response) = try await URLSession.shared.bytes(for: request)
+                    let (result, response) = try await LLMURLSession.shared.bytes(for: request)
                     
                     guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
                         var errorText = ""
@@ -174,7 +174,7 @@ public class XAIManager {
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(payload)
         
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await LLMURLSession.shared.data(for: request)
         
         guard let http = response as? HTTPURLResponse else {
             throw XAIError.networkError
@@ -385,6 +385,19 @@ public struct XAIChatStreamChunk: Decodable {
         public let content: String?
         /// The role update.
         public let role: String?
+        /// The tool calls update.
+        public let tool_calls: [ToolCall]?
+        
+        public struct ToolCall: Decodable {
+            public let index: Int
+            public let id: String?
+            public let function: FunctionCall?
+        }
+        
+        public struct FunctionCall: Decodable {
+            public let name: String?
+            public let arguments: String?
+        }
     }
 }
 

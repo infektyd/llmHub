@@ -7,43 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A3AB9BE92EDE381700D7FA92 /* NeonSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3AB9BE32EDE381700D7FA92 /* NeonSidebar.swift */; };
-		A3AB9BEA2EDE381700D7FA92 /* NeonToolInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3AB9BDE2EDE381700D7FA92 /* NeonToolInspector.swift */; };
-		A3AB9BEB2EDE381700D7FA92 /* NeonChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3AB9BD92EDE381700D7FA92 /* NeonChatView.swift */; };
-		A3AB9BEC2EDE381700D7FA92 /* NeonWelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3AB9BDF2EDE381700D7FA92 /* NeonWelcomeView.swift */; };
-		A3AB9BED2EDE381700D7FA92 /* NeonPreviewAssets.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3AB9BD22EDE381700D7FA92 /* NeonPreviewAssets.swift */; };
-		A3AB9BEE2EDE381700D7FA92 /* NeonModelPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3AB9BDD2EDE381700D7FA92 /* NeonModelPicker.swift */; };
-		A3AB9BEF2EDE381700D7FA92 /* TerminalOutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3AB9BE72EDE381700D7FA92 /* TerminalOutputView.swift */; };
-		A3AB9BF02EDE381700D7FA92 /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3AB9BD52EDE381700D7FA92 /* ChatViewModel.swift */; };
-		A3AB9BF12EDE381700D7FA92 /* SidebarComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3AB9BE42EDE381700D7FA92 /* SidebarComponents.swift */; };
-		A3AB9BF22EDE381700D7FA92 /* NeonWorkbenchWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3AB9BE12EDE381700D7FA92 /* NeonWorkbenchWindow.swift */; };
-		A3AB9BF32EDE381700D7FA92 /* NeonTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3AB9BD32EDE381700D7FA92 /* NeonTheme.swift */; };
-		A3AB9BF42EDE381700D7FA92 /* NeonChatInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3AB9BD82EDE381700D7FA92 /* NeonChatInput.swift */; };
-		A3AB9BF52EDE381700D7FA92 /* WorkbenchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3AB9BD62EDE381700D7FA92 /* WorkbenchViewModel.swift */; };
-		A3AB9BF62EDE381700D7FA92 /* NeonToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3AB9BDB2EDE381700D7FA92 /* NeonToolbar.swift */; };
-		A3AB9BF72EDE381700D7FA92 /* FileOperationApprovalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3AB9BE62EDE381700D7FA92 /* FileOperationApprovalView.swift */; };
-		A3AB9BF82EDE381700D7FA92 /* NeonMessageBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3AB9BDA2EDE381700D7FA92 /* NeonMessageBubble.swift */; };
-		A3AB9C062EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-40-49.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9C022EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-40-49.txt */; };
-		A3AB9C072EDE4FC400D7FA92 /* Build llmHub_2025-11-30T12-02-46.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9C032EDE4FC400D7FA92 /* Build llmHub_2025-11-30T12-02-46.txt */; };
-		A3AB9C082EDE4FC400D7FA92 /* Build llmHub_2025-11-29T15-55-56.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9BFB2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T15-55-56.txt */; };
-		A3AB9C092EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-25-39.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9BFD2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-25-39.txt */; };
-		A3AB9C0A2EDE4FC400D7FA92 /* Build llmHub_2025-11.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9BF92EDE4FC400D7FA92 /* Build llmHub_2025-11.txt */; };
-		A3AB9C0B2EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-21-13.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9C002EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-21-13.txt */; };
-		A3AB9C0C2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T22-21-20.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9BFF2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T22-21-20.txt */; };
-		A3AB9C0D2EDE4FC400D7FA92 /* Build llmHub_2025-12-01T17-34-19.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9C042EDE4FC400D7FA92 /* Build llmHub_2025-12-01T17-34-19.txt */; };
-		A3AB9C0E2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-52-29.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9BFE2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-52-29.txt */; };
-		A3AB9C0F2EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-30-07.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9C012EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-30-07.txt */; };
-		A3AB9C102EDE4FC400D7FA92 /* Build llmHub_2025-11-29T10-59-52.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9BFA2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T10-59-52.txt */; };
-		A3AB9C112EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-15-13.txt in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9BFC2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-15-13.txt */; };
-		A3AB9C132EDE505300D7FA92 /* FIXES_NEEDED.md in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9C122EDE505300D7FA92 /* FIXES_NEEDED.md */; };
-		A3AB9C1F2EDE50BE00D7FA92 /* BUILD_FIX_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9C1E2EDE50BE00D7FA92 /* BUILD_FIX_SUMMARY.md */; };
-		A3AB9C212EDE50D000D7FA92 /* QUICK_FIX_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = A3AB9C202EDE50D000D7FA92 /* QUICK_FIX_GUIDE.md */; };
+		A3A5357D2EEB7F1B0075FBC4 /* llmHub_v1.icon in Resources */ = {isa = PBXBuildFile; fileRef = A3A5357C2EEB7F1B0075FBC4 /* llmHub_v1.icon */; };
 		B3000001303030300001 /* CodeExecutionXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000010303030300001 /* CodeExecutionXPCProtocol.swift */; };
 		B3000002303030300001 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000011303030300001 /* main.swift */; };
 		B3000003303030300001 /* CodeExecutionServiceDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000012303030300001 /* CodeExecutionServiceDelegate.swift */; };
 		B3000004303030300001 /* CodeExecutionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000013303030300001 /* CodeExecutionHandler.swift */; };
 		B3000005303030300001 /* CodeExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000014303030300001 /* CodeExecutor.swift */; };
 		B3000006303030300001 /* llmHubHelper.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = B3000020303030300001 /* llmHubHelper.xpc */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B3MARKDOWNBLD0000001 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = B3MARKDOWNPROD000001 /* MarkdownUI */; };
+		B3NUMBLD000000000001 /* Numerics in Frameworks */ = {isa = PBXBuildFile; productRef = B3NUMPROD000000000001 /* Numerics */; };
+		B3SPLASHBLD000000001 /* Splash in Frameworks */ = {isa = PBXBuildFile; productRef = B3SPLASHPROD00000001 /* Splash */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -85,42 +58,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		A3AB9BB02EDE31B900D7FA92 /* UI_FIXES_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = UI_FIXES_SUMMARY.md; sourceTree = "<group>"; };
-		A3AB9BD22EDE381700D7FA92 /* NeonPreviewAssets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeonPreviewAssets.swift; sourceTree = "<group>"; };
-		A3AB9BD32EDE381700D7FA92 /* NeonTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeonTheme.swift; sourceTree = "<group>"; };
-		A3AB9BD52EDE381700D7FA92 /* ChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewModel.swift; sourceTree = "<group>"; };
-		A3AB9BD62EDE381700D7FA92 /* WorkbenchViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkbenchViewModel.swift; sourceTree = "<group>"; };
-		A3AB9BD82EDE381700D7FA92 /* NeonChatInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeonChatInput.swift; sourceTree = "<group>"; };
-		A3AB9BD92EDE381700D7FA92 /* NeonChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeonChatView.swift; sourceTree = "<group>"; };
-		A3AB9BDA2EDE381700D7FA92 /* NeonMessageBubble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeonMessageBubble.swift; sourceTree = "<group>"; };
-		A3AB9BDB2EDE381700D7FA92 /* NeonToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeonToolbar.swift; sourceTree = "<group>"; };
-		A3AB9BDD2EDE381700D7FA92 /* NeonModelPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeonModelPicker.swift; sourceTree = "<group>"; };
-		A3AB9BDE2EDE381700D7FA92 /* NeonToolInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeonToolInspector.swift; sourceTree = "<group>"; };
-		A3AB9BDF2EDE381700D7FA92 /* NeonWelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeonWelcomeView.swift; sourceTree = "<group>"; };
-		A3AB9BE12EDE381700D7FA92 /* NeonWorkbenchWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeonWorkbenchWindow.swift; sourceTree = "<group>"; };
-		A3AB9BE32EDE381700D7FA92 /* NeonSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeonSidebar.swift; sourceTree = "<group>"; };
-		A3AB9BE42EDE381700D7FA92 /* SidebarComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarComponents.swift; sourceTree = "<group>"; };
-		A3AB9BE62EDE381700D7FA92 /* FileOperationApprovalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileOperationApprovalView.swift; sourceTree = "<group>"; };
-		A3AB9BE72EDE381700D7FA92 /* TerminalOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalOutputView.swift; sourceTree = "<group>"; };
-		A3AB9BF92EDE4FC400D7FA92 /* Build llmHub_2025-11.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11.txt"; sourceTree = "<group>"; };
-		A3AB9BFA2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T10-59-52.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11-29T10-59-52.txt"; sourceTree = "<group>"; };
-		A3AB9BFB2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T15-55-56.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11-29T15-55-56.txt"; sourceTree = "<group>"; };
-		A3AB9BFC2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-15-13.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11-29T16-15-13.txt"; sourceTree = "<group>"; };
-		A3AB9BFD2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-25-39.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11-29T16-25-39.txt"; sourceTree = "<group>"; };
-		A3AB9BFE2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-52-29.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11-29T16-52-29.txt"; sourceTree = "<group>"; };
-		A3AB9BFF2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T22-21-20.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11-29T22-21-20.txt"; sourceTree = "<group>"; };
-		A3AB9C002EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-21-13.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11-30T11-21-13.txt"; sourceTree = "<group>"; };
-		A3AB9C012EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-30-07.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11-30T11-30-07.txt"; sourceTree = "<group>"; };
-		A3AB9C022EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-40-49.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11-30T11-40-49.txt"; sourceTree = "<group>"; };
-		A3AB9C032EDE4FC400D7FA92 /* Build llmHub_2025-11-30T12-02-46.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-11-30T12-02-46.txt"; sourceTree = "<group>"; };
-		A3AB9C042EDE4FC400D7FA92 /* Build llmHub_2025-12-01T17-34-19.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Build llmHub_2025-12-01T17-34-19.txt"; sourceTree = "<group>"; };
-		A3AB9C122EDE505300D7FA92 /* FIXES_NEEDED.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = FIXES_NEEDED.md; sourceTree = "<group>"; };
-		A3AB9C1E2EDE50BE00D7FA92 /* BUILD_FIX_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = BUILD_FIX_SUMMARY.md; sourceTree = "<group>"; };
-		A3AB9C202EDE50D000D7FA92 /* QUICK_FIX_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = QUICK_FIX_GUIDE.md; sourceTree = "<group>"; };
+		A3A5357C2EEB7F1B0075FBC4 /* llmHub_v1.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = llmHub_v1.icon; sourceTree = "<group>"; };
 		A3C71F262ED9389A0088DF32 /* llmHub.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = llmHub.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3C71F372ED9389B0088DF32 /* llmHubTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = llmHubTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3C71F412ED9389B0088DF32 /* llmHubUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = llmHubUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		A3C71F9B2EDB57F60088DF32 /* Untitled.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Untitled.swift; sourceTree = "<group>"; };
 		B3000010303030300001 /* CodeExecutionXPCProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeExecutionXPCProtocol.swift; sourceTree = "<group>"; };
 		B3000011303030300001 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		B3000012303030300001 /* CodeExecutionServiceDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeExecutionServiceDelegate.swift; sourceTree = "<group>"; };
@@ -132,10 +73,22 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A35358492EE678DA00E9B943 /* Exceptions for "Docs" folder in "llmHub" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Architecture/CODEBASE_ANALYSIS.md,
+				Architecture/COST_EFFICIENT_AI_DEV.md,
+				iOS_Quick_Reference.md,
+				iOS_Test_Plan.md,
+				iOS_UI_Map.md,
+			);
+			target = A3C71F252ED9389A0088DF32 /* llmHub */;
+		};
 		A3C71F492ED9389B0088DF32 /* Exceptions for "llmHub" folder in "llmHub" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				Support/ModelRouterTests.swift,
 			);
 			target = A3C71F252ED9389A0088DF32 /* llmHub */;
 		};
@@ -143,6 +96,8 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				llmHubTests/llmHubTests.swift,
+				llmHubTests/OpenAIToolsInjectionIntegrationTests.swift,
+				llmHubTests/ToolSchemaValidationTests.swift,
 				llmHubUITests/llmHubUITests.swift,
 				llmHubUITests/llmHubUITestsLaunchTests.swift,
 			);
@@ -152,6 +107,8 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				llmHubTests/llmHubTests.swift,
+				llmHubTests/OpenAIToolsInjectionIntegrationTests.swift,
+				llmHubTests/ToolSchemaValidationTests.swift,
 			);
 			target = A3C71F362ED9389B0088DF32 /* llmHubTests */;
 		};
@@ -162,25 +119,6 @@
 				llmHubUITests/llmHubUITestsLaunchTests.swift,
 			);
 			target = A3C71F402ED9389B0088DF32 /* llmHubUITests */;
-		};
-		A3C71FE82EDB64FC0088DF32 /* Exceptions for "Docs" folder in "llmHub" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"client integration/additional_mistral_information.md",
-				"client integration/anthropic_integration.md",
-				"client integration/gemini_integration.md",
-				"client integration/Mistral_Integration.md",
-				"client integration/openai_integration.md",
-				"client integration/openrouter_integration.md",
-				"client integration/xAiGrok_integration.md",
-				TODO/anthropic_TODO.md,
-				TODO/gemini_TODO.md,
-				TODO/mistral_TODO.md,
-				TODO/openai_TODO.md,
-				TODO/openrouter_TODO.md,
-				TODO/xai_TODO.md,
-			);
-			target = A3C71F252ED9389A0088DF32 /* llmHub */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -206,7 +144,7 @@
 		A3C71FCB2EDB64F50088DF32 /* Docs */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				A3C71FE82EDB64FC0088DF32 /* Exceptions for "Docs" folder in "llmHub" target */,
+				A35358492EE678DA00E9B943 /* Exceptions for "Docs" folder in "llmHub" target */,
 			);
 			path = Docs;
 			sourceTree = "<group>";
@@ -218,6 +156,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B3NUMBLD000000000001 /* Numerics in Frameworks */,
+				B3MARKDOWNBLD0000001 /* MarkdownUI in Frameworks */,
+				B3SPLASHBLD000000001 /* Splash in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -245,117 +186,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		A3AB9BD42EDE381700D7FA92 /* Utilities */ = {
-			isa = PBXGroup;
-			children = (
-				A3AB9BD22EDE381700D7FA92 /* NeonPreviewAssets.swift */,
-				A3AB9BD32EDE381700D7FA92 /* NeonTheme.swift */,
-			);
-			path = Utilities;
-			sourceTree = "<group>";
-		};
-		A3AB9BD72EDE381700D7FA92 /* ViewModels */ = {
-			isa = PBXGroup;
-			children = (
-				A3AB9BD52EDE381700D7FA92 /* ChatViewModel.swift */,
-				A3AB9BD62EDE381700D7FA92 /* WorkbenchViewModel.swift */,
-			);
-			path = ViewModels;
-			sourceTree = "<group>";
-		};
-		A3AB9BDC2EDE381700D7FA92 /* Chat */ = {
-			isa = PBXGroup;
-			children = (
-				A3AB9BD82EDE381700D7FA92 /* NeonChatInput.swift */,
-				A3AB9BD92EDE381700D7FA92 /* NeonChatView.swift */,
-				A3AB9BDA2EDE381700D7FA92 /* NeonMessageBubble.swift */,
-				A3AB9BDB2EDE381700D7FA92 /* NeonToolbar.swift */,
-			);
-			path = Chat;
-			sourceTree = "<group>";
-		};
-		A3AB9BE02EDE381700D7FA92 /* Components */ = {
-			isa = PBXGroup;
-			children = (
-				A3AB9BDD2EDE381700D7FA92 /* NeonModelPicker.swift */,
-				A3AB9BDE2EDE381700D7FA92 /* NeonToolInspector.swift */,
-				A3AB9BDF2EDE381700D7FA92 /* NeonWelcomeView.swift */,
-			);
-			path = Components;
-			sourceTree = "<group>";
-		};
-		A3AB9BE22EDE381700D7FA92 /* Main */ = {
-			isa = PBXGroup;
-			children = (
-				A3AB9BE12EDE381700D7FA92 /* NeonWorkbenchWindow.swift */,
-			);
-			path = Main;
-			sourceTree = "<group>";
-		};
-		A3AB9BE52EDE381700D7FA92 /* Sidebar */ = {
-			isa = PBXGroup;
-			children = (
-				A3AB9BE32EDE381700D7FA92 /* NeonSidebar.swift */,
-				A3AB9BE42EDE381700D7FA92 /* SidebarComponents.swift */,
-			);
-			path = Sidebar;
-			sourceTree = "<group>";
-		};
-		A3AB9BE82EDE381700D7FA92 /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				A3AB9BDC2EDE381700D7FA92 /* Chat */,
-				A3AB9BE02EDE381700D7FA92 /* Components */,
-				A3AB9BE22EDE381700D7FA92 /* Main */,
-				A3AB9BE52EDE381700D7FA92 /* Sidebar */,
-				A3AB9BE62EDE381700D7FA92 /* FileOperationApprovalView.swift */,
-				A3AB9BE72EDE381700D7FA92 /* TerminalOutputView.swift */,
-			);
-			path = Views;
-			sourceTree = "<group>";
-		};
-		A3AB9C052EDE4FC400D7FA92 /* error reports */ = {
-			isa = PBXGroup;
-			children = (
-				A3AB9BF92EDE4FC400D7FA92 /* Build llmHub_2025-11.txt */,
-				A3AB9BFA2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T10-59-52.txt */,
-				A3AB9BFB2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T15-55-56.txt */,
-				A3AB9BFC2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-15-13.txt */,
-				A3AB9BFD2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-25-39.txt */,
-				A3AB9BFE2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-52-29.txt */,
-				A3AB9BFF2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T22-21-20.txt */,
-				A3AB9C002EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-21-13.txt */,
-				A3AB9C012EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-30-07.txt */,
-				A3AB9C022EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-40-49.txt */,
-				A3AB9C032EDE4FC400D7FA92 /* Build llmHub_2025-11-30T12-02-46.txt */,
-				A3AB9C042EDE4FC400D7FA92 /* Build llmHub_2025-12-01T17-34-19.txt */,
-				A3AB9C122EDE505300D7FA92 /* FIXES_NEEDED.md */,
-				A3AB9C1E2EDE50BE00D7FA92 /* BUILD_FIX_SUMMARY.md */,
-				A3AB9C202EDE50D000D7FA92 /* QUICK_FIX_GUIDE.md */,
-			);
-			path = "error reports";
-			sourceTree = "<group>";
-		};
 		A3C71F1D2ED9389A0088DF32 = {
 			isa = PBXGroup;
 			children = (
-				A3AB9C052EDE4FC400D7FA92 /* error reports */,
+				A3A5357C2EEB7F1B0075FBC4 /* llmHub_v1.icon */,
 				A3C71F282ED9389A0088DF32 /* llmHub */,
 				B3000021303030300001 /* llmHubHelper */,
 				A3C71F272ED9389A0088DF32 /* Products */,
 				A3C71FBF2EDB64DD0088DF32 /* Tests */,
 				A3C71FCB2EDB64F50088DF32 /* Docs */,
-				A3AB9BB02EDE31B900D7FA92 /* UI_FIXES_SUMMARY.md */,
-				A3AB9BD42EDE381700D7FA92 /* Utilities */,
-				A3AB9BD72EDE381700D7FA92 /* ViewModels */,
-				A3AB9BE82EDE381700D7FA92 /* Views */,
 			);
 			sourceTree = "<group>";
 		};
 		A3C71F272ED9389A0088DF32 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A3C71F9B2EDB57F60088DF32 /* Untitled.swift */,
 				A3C71F262ED9389A0088DF32 /* llmHub.app */,
 				A3C71F372ED9389B0088DF32 /* llmHubTests.xctest */,
 				A3C71F412ED9389B0088DF32 /* llmHubUITests.xctest */,
@@ -402,6 +247,9 @@
 			);
 			name = llmHub;
 			packageProductDependencies = (
+				B3NUMPROD000000000001 /* Numerics */,
+				B3MARKDOWNPROD000001 /* MarkdownUI */,
+				B3SPLASHPROD00000001 /* Splash */,
 			);
 			productName = llmHub;
 			productReference = A3C71F262ED9389A0088DF32 /* llmHub.app */;
@@ -500,6 +348,11 @@
 			);
 			mainGroup = A3C71F1D2ED9389A0088DF32;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				B3NUMPKG000000000001 /* XCRemoteSwiftPackageReference "swift-numerics" */,
+				B3MARKDOWNPKG0000001 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
+				B3SPLASHPKG000000001 /* XCRemoteSwiftPackageReference "Splash" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A3C71F272ED9389A0088DF32 /* Products */;
 			projectDirPath = "";
@@ -518,21 +371,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A3AB9C062EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-40-49.txt in Resources */,
-				A3AB9C072EDE4FC400D7FA92 /* Build llmHub_2025-11-30T12-02-46.txt in Resources */,
-				A3AB9C082EDE4FC400D7FA92 /* Build llmHub_2025-11-29T15-55-56.txt in Resources */,
-				A3AB9C092EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-25-39.txt in Resources */,
-				A3AB9C212EDE50D000D7FA92 /* QUICK_FIX_GUIDE.md in Resources */,
-				A3AB9C132EDE505300D7FA92 /* FIXES_NEEDED.md in Resources */,
-				A3AB9C1F2EDE50BE00D7FA92 /* BUILD_FIX_SUMMARY.md in Resources */,
-				A3AB9C0A2EDE4FC400D7FA92 /* Build llmHub_2025-11.txt in Resources */,
-				A3AB9C0B2EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-21-13.txt in Resources */,
-				A3AB9C0C2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T22-21-20.txt in Resources */,
-				A3AB9C0D2EDE4FC400D7FA92 /* Build llmHub_2025-12-01T17-34-19.txt in Resources */,
-				A3AB9C0E2EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-52-29.txt in Resources */,
-				A3AB9C0F2EDE4FC400D7FA92 /* Build llmHub_2025-11-30T11-30-07.txt in Resources */,
-				A3AB9C102EDE4FC400D7FA92 /* Build llmHub_2025-11-29T10-59-52.txt in Resources */,
-				A3AB9C112EDE4FC400D7FA92 /* Build llmHub_2025-11-29T16-15-13.txt in Resources */,
+				A3A5357D2EEB7F1B0075FBC4 /* llmHub_v1.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -557,22 +396,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A3AB9BE92EDE381700D7FA92 /* NeonSidebar.swift in Sources */,
-				A3AB9BEA2EDE381700D7FA92 /* NeonToolInspector.swift in Sources */,
-				A3AB9BEB2EDE381700D7FA92 /* NeonChatView.swift in Sources */,
-				A3AB9BEC2EDE381700D7FA92 /* NeonWelcomeView.swift in Sources */,
-				A3AB9BED2EDE381700D7FA92 /* NeonPreviewAssets.swift in Sources */,
-				A3AB9BEE2EDE381700D7FA92 /* NeonModelPicker.swift in Sources */,
-				A3AB9BEF2EDE381700D7FA92 /* TerminalOutputView.swift in Sources */,
-				A3AB9BF02EDE381700D7FA92 /* ChatViewModel.swift in Sources */,
-				A3AB9BF12EDE381700D7FA92 /* SidebarComponents.swift in Sources */,
-				A3AB9BF22EDE381700D7FA92 /* NeonWorkbenchWindow.swift in Sources */,
-				A3AB9BF32EDE381700D7FA92 /* NeonTheme.swift in Sources */,
-				A3AB9BF42EDE381700D7FA92 /* NeonChatInput.swift in Sources */,
-				A3AB9BF52EDE381700D7FA92 /* WorkbenchViewModel.swift in Sources */,
-				A3AB9BF62EDE381700D7FA92 /* NeonToolbar.swift in Sources */,
-				A3AB9BF72EDE381700D7FA92 /* FileOperationApprovalView.swift in Sources */,
-				A3AB9BF82EDE381700D7FA92 /* NeonMessageBubble.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -628,6 +451,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				AUTOMATION_APPLE_EVENTS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -653,6 +477,7 @@
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = llmHub/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = llmHub;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -660,6 +485,7 @@
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = "";
 				INFOPLIST_KEY_UIStatusBarStyle = "";
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
@@ -697,6 +523,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				AUTOMATION_APPLE_EVENTS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -722,6 +549,7 @@
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = llmHub/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = llmHub;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -729,6 +557,7 @@
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = "";
 				INFOPLIST_KEY_UIStatusBarStyle = "";
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
@@ -1078,6 +907,51 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		B3MARKDOWNPKG0000001 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.4.0;
+			};
+		};
+		B3NUMPKG000000000001 /* XCRemoteSwiftPackageReference "swift-numerics" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-numerics.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
+		B3SPLASHPKG000000001 /* XCRemoteSwiftPackageReference "Splash" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/JohnSundell/Splash.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.16.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B3MARKDOWNPROD000001 /* MarkdownUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B3MARKDOWNPKG0000001 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
+			productName = MarkdownUI;
+		};
+		B3NUMPROD000000000001 /* Numerics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B3NUMPKG000000000001 /* XCRemoteSwiftPackageReference "swift-numerics" */;
+			productName = Numerics;
+		};
+		B3SPLASHPROD00000001 /* Splash */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B3SPLASHPKG000000001 /* XCRemoteSwiftPackageReference "Splash" */;
+			productName = Splash;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A3C71F1E2ED9389A0088DF32 /* Project object */;
 }

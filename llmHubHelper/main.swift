@@ -7,6 +7,7 @@
 
 import Foundation
 
+#if os(macOS)
 // Create the delegate for the XPC service
 let delegate = CodeExecutionServiceDelegate()
 
@@ -20,3 +21,8 @@ listener.resume()
 
 // Run the main run loop (required for XPC service)
 RunLoop.main.run()
+#else
+// XPC services are macOS-only
+// iOS builds should not use this target
+fatalError("llmHubHelper is macOS-only and should not be executed on other platforms")
+#endif

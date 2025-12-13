@@ -9,7 +9,7 @@ import Foundation
 import SwiftData
 
 /// Represents a chat session in the application, containing all messages and metadata.
-struct ChatSession: Identifiable {
+struct ChatSession: Identifiable, Sendable {
     /// The unique identifier of the chat session.
     let id: UUID
     /// The title of the chat session, usually displayed in the sidebar.
@@ -37,7 +37,7 @@ struct ChatSession: Identifiable {
 }
 
 /// Represents a folder used to organize chat sessions.
-struct ChatFolder: Identifiable, Hashable {
+struct ChatFolder: Identifiable, Hashable, Sendable {
     /// The unique identifier of the folder.
     let id: UUID
     /// The name of the folder.
@@ -55,7 +55,7 @@ struct ChatFolder: Identifiable, Hashable {
 }
 
 /// Represents a tag used to categorize chat sessions.
-struct ChatTag: Identifiable, Hashable, Codable {
+struct ChatTag: Identifiable, Hashable, Codable, Sendable {
     /// The unique identifier of the tag.
     let id: UUID
     /// The name of the tag.
@@ -64,8 +64,46 @@ struct ChatTag: Identifiable, Hashable, Codable {
     var color: String // Hex string
 }
 
+// MARK: - Attachments
+
+/// Defines the type of an attachment.
+enum AttachmentType: String, Codable, Equatable, Sendable {
+    case image
+    case text
+    case code
+    case pdf
+    case other
+    
+    var icon: String {
+        switch self {
+        case .image: return "photo"
+        case .text: return "doc.text"
+        case .code: return "curlybraces"
+        case .pdf: return "doc.richtext"
+        case .other: return "doc"
+        }
+    }
+}
+
+/// Represents a file attachment in a message.
+struct Attachment: Identifiable, Codable, Equatable, Sendable {
+    let id: UUID
+    let filename: String
+    let url: URL
+    let type: AttachmentType
+    let previewText: String? // First ~200 chars for text/code
+    
+    init(id: UUID = UUID(), filename: String, url: URL, type: AttachmentType, previewText: String? = nil) {
+        self.id = id
+        self.filename = filename
+        self.url = url
+        self.type = type
+        self.previewText = previewText
+    }
+}
+
 /// Represents a single message within a chat session.
-struct ChatMessage: Identifiable {
+struct ChatMessage: Identifiable, Equatable, Sendable {
     /// The unique identifier of the message.
     let id: UUID
     /// The role of the message sender (e.g., user, assistant).
@@ -76,6 +114,8 @@ struct ChatMessage: Identifiable {
     var thoughtProcess: String?
     /// The content parts of the message, allowing for multimodal content like images.
     let parts: [ChatContentPart]
+    /// The list of attachments associated with the message.
+    var attachments: [Attachment] = []
     /// The date when the message was created.
     let createdAt: Date
     /// A list of code blocks extracted from the message content.
@@ -90,12 +130,27 @@ struct ChatMessage: Identifiable {
     var toolCallID: String? = nil
     /// The list of tool calls requested by the assistant (only for assistant role).
     var toolCalls: [ToolCall]? = nil
+    
+    static func == (lhs: ChatMessage, rhs: ChatMessage) -> Bool {
+        lhs.id == rhs.id &&
+        lhs.role == rhs.role &&
+        lhs.content == rhs.content &&
+        lhs.thoughtProcess == rhs.thoughtProcess &&
+        lhs.parts == rhs.parts &&
+        lhs.attachments == rhs.attachments &&
+        lhs.createdAt == rhs.createdAt &&
+        lhs.codeBlocks == rhs.codeBlocks &&
+        lhs.tokenUsage == rhs.tokenUsage &&
+        lhs.costBreakdown == rhs.costBreakdown &&
+        lhs.toolCallID == rhs.toolCallID &&
+        lhs.toolCalls == rhs.toolCalls
+    }
 }
 
 // MARK: - Tool Calling
 
 /// Represents a request for a tool execution.
-struct ToolCall: Codable, Sendable {
+struct ToolCall: Codable, Sendable, Equatable {
     /// The unique identifier for the tool call.
     let id: String
     /// The name of the tool to be called.
@@ -105,7 +160,7 @@ struct ToolCall: Codable, Sendable {
 }
 
 /// Defines the role of the message sender.
-enum MessageRole: String, Codable {
+enum MessageRole: String, Codable, Equatable {
     /// The user interacting with the model.
     case user
     /// The AI model responding to the user.
@@ -116,8 +171,23 @@ enum MessageRole: String, Codable {
     case tool
 }
 
+/// A reference captured from a message selection, used to quote earlier output into a new prompt.
+struct ChatReference: Identifiable, Codable, Equatable, Sendable {
+    let id: UUID
+    let text: String
+    let sourceMessageID: UUID
+    let role: MessageRole
+
+    init(id: UUID = UUID(), text: String, sourceMessageID: UUID, role: MessageRole) {
+        self.id = id
+        self.text = text
+        self.sourceMessageID = sourceMessageID
+        self.role = role
+    }
+}
+
 /// Represents a part of the message content, supporting text and images.
-enum ChatContentPart: Codable, Sendable {
+enum ChatContentPart: Codable, Sendable, Equatable {
     /// A text part.
     case text(String)
     /// An image part containing raw data and a mime type.
@@ -127,7 +197,7 @@ enum ChatContentPart: Codable, Sendable {
 }
 
 /// Metadata associated with a chat session.
-struct ChatSessionMetadata {
+struct ChatSessionMetadata: Sendable {
     /// The token usage for the last interaction.
     var lastTokenUsage: TokenUsage?
     /// The total cost in USD for the session.
@@ -137,7 +207,7 @@ struct ChatSessionMetadata {
 }
 
 /// Represents token usage statistics.
-struct TokenUsage {
+struct TokenUsage: Equatable, Sendable {
     /// The number of input tokens used.
     let inputTokens: Int
     /// The number of output tokens generated.
@@ -147,7 +217,7 @@ struct TokenUsage {
 }
 
 /// Represents the cost breakdown for a request.
-struct CostBreakdown: Codable {
+struct CostBreakdown: Codable, Equatable, Sendable {
     /// The cost associated with input tokens.
     let inputCost: Decimal
     /// The cost associated with output tokens.
@@ -159,7 +229,7 @@ struct CostBreakdown: Codable {
 }
 
 /// Represents a block of code within a message.
-struct CodeBlock: Codable {
+struct CodeBlock: Codable, Equatable, Sendable {
     /// The programming language of the code block.
     let language: String?
     /// The code content.
@@ -324,6 +394,22 @@ final class ChatSessionEntity {
     }
 }
 
+// MARK: - Token Estimation Extensions
+
+extension ChatMessage {
+    /// The estimated token count for this message, including protocol overhead.
+    var estimatedTokens: Int {
+        TokenEstimator.estimate(content) + 4 // content + overhead
+    }
+}
+
+extension Array where Element == ChatMessage {
+    /// The total estimated token count for all messages in the array.
+    var estimatedTokens: Int {
+        reduce(0) { $0 + $1.estimatedTokens }
+    }
+}
+
 /// A SwiftData entity representing a chat message for persistence.
 @Model
 final class ChatMessageEntity {
@@ -337,6 +423,8 @@ final class ChatMessageEntity {
     var thoughtProcess: String?
     /// The JSON encoded data for message parts.
     var partsData: Data? // JSON encoded [ChatContentPart]
+    /// The JSON encoded data for attachments.
+    var attachmentsData: Data? // JSON encoded [Attachment]
     /// The creation date of the message.
     var createdAt: Date
     /// The JSON encoded data for code blocks.
@@ -372,6 +460,7 @@ final class ChatMessageEntity {
         content = message.content
         thoughtProcess = message.thoughtProcess
         partsData = try? JSONEncoder().encode(message.parts)
+        attachmentsData = try? JSONEncoder().encode(message.attachments)
         createdAt = message.createdAt
         codeBlocksData = try? JSONEncoder().encode(message.codeBlocks)
         tokenUsageInputTokens = message.tokenUsage?.inputTokens
@@ -393,6 +482,7 @@ final class ChatMessageEntity {
             role: MessageRole(rawValue: role)!,
             content: content,
             parts: (try? JSONDecoder().decode([ChatContentPart].self, from: partsData ?? Data())) ?? [],
+            attachments: (try? JSONDecoder().decode([Attachment].self, from: attachmentsData ?? Data())) ?? [],
             createdAt: createdAt,
             codeBlocks: (try? JSONDecoder().decode([CodeBlock].self, from: codeBlocksData ?? Data())) ?? [],
             tokenUsage: tokenUsageInputTokens.map { TokenUsage(inputTokens: $0, outputTokens: tokenUsageOutputTokens!, cachedTokens: tokenUsageCachedTokens!) },

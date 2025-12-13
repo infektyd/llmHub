@@ -6,6 +6,7 @@
 //  This runs outside the app sandbox, allowing access to xcrun and interpreters
 //
 
+#if os(macOS)
 import Foundation
 import OSLog
 
@@ -94,3 +95,4 @@ final class CodeExecutionHandler: NSObject, CodeExecutionXPCProtocol {
         reply(true)
     }
 }
+#endif

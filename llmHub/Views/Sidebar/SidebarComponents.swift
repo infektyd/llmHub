@@ -1,0 +1,182 @@
+//
+//  SidebarComponents.swift
+//  llmHub
+//
+//  Created by Hans Axelsson on 12/01/25.
+//
+
+import SwiftUI
+
+// MARK: - Sidebar Section Header
+
+struct SectionHeader: View {
+    let title: String
+    let icon: String
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 11))
+                .foregroundColor(theme.textSecondary)
+
+            Text(title.uppercased())
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(theme.textSecondary)
+
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 6)
+    }
+}
+
+// MARK: - Conversation Row
+
+struct ConversationRow: View {
+    let session: ChatSessionEntity
+    let isSelected: Bool
+    var isMultiSelected: Bool = false
+    @State private var isHovered = false
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Multi-select checkbox (shown when multi-selecting)
+            if isMultiSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(theme.accent)
+            } else {
+                // Conversation icon/indicator
+                Circle()
+                    .fill(isSelected ? theme.accentSecondary : theme.accent.opacity(0.3))
+                    .frame(width: 8, height: 8)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(session.title)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(isSelected ? theme.textPrimary : theme.textSecondary)
+                        .lineLimit(1)
+
+                    if session.isPinned {
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 9))
+                            .foregroundColor(theme.accent)
+                    }
+
+                    Spacer()
+
+                    Text(timeAgo(from: session.updatedAt))
+                        .font(.system(size: 10))
+                        .foregroundColor(theme.textSecondary.opacity(0.7))
+                }
+
+                // Tags
+                if !session.tags.isEmpty {
+                    HStack(spacing: 4) {
+                        ForEach(session.tags) { tag in
+                            TagPill(tag: tag)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(rowBackground)
+        .padding(.horizontal, 12)
+        .onHover { hovering in
+            isHovered = hovering
+        }
+    }
+
+    // MARK: - Subviews
+
+    private var rowBackground: some View {
+        Group {
+            if theme.usesGlassEffect {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(
+                        isMultiSelected
+                            ? theme.accent.opacity(0.16)
+                            : (isSelected
+                                ? theme.accent.opacity(0.10)
+                                : (isHovered ? theme.textPrimary.opacity(0.04) : Color.clear))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .stroke(
+                                isMultiSelected
+                                    ? theme.accent.opacity(0.35)
+                                    : (isSelected ? theme.accent.opacity(0.22) : Color.clear),
+                                lineWidth: 1
+                            )
+                    )
+            } else {
+                RoundedRectangle(cornerRadius: theme.cornerRadius)
+                    .fill(
+                        isMultiSelected
+                            ? theme.accent.opacity(0.25)
+                            : (isSelected
+                                ? theme.accent.opacity(0.15)
+                                : (isHovered ? theme.textSecondary.opacity(0.08) : Color.clear))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: theme.cornerRadius)
+                            .stroke(
+                                isMultiSelected || isSelected
+                                    ? theme.accent.opacity(0.3)
+                                    : Color.clear,
+                                lineWidth: 1
+                            )
+                    )
+            }
+        }
+    }
+
+    private func timeAgo(from date: Date) -> String {
+        let seconds = Date().timeIntervalSince(date)
+
+        if seconds < 60 {
+            return "Just now"
+        } else if seconds < 3600 {
+            let minutes = Int(seconds / 60)
+            return "\(minutes)m ago"
+        } else if seconds < 86400 {
+            let hours = Int(seconds / 3600)
+            return "\(hours)h ago"
+        } else {
+            let days = Int(seconds / 86400)
+            return "\(days)d ago"
+        }
+    }
+}
+
+// MARK: - Tag Pill
+
+struct TagPill: View {
+    let tag: ChatTagEntity
+
+    var tagColor: Color {
+        Color(hex: tag.color)
+    }
+
+    var body: some View {
+        Text(tag.name)
+            .font(.system(size: 9, weight: .medium))
+            .foregroundColor(tagColor)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(
+                Capsule()
+                    .fill(tagColor.opacity(0.2))
+                    .overlay(
+                        Capsule()
+                            .stroke(tagColor.opacity(0.5), lineWidth: 0.5)
+                    )
+            )
+    }
+}

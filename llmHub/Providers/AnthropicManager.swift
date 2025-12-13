@@ -11,7 +11,7 @@ public class AnthropicManager {
     private let baseURL = URL(string: "https://api.anthropic.com/v1")!
     /// The API version string.
     private let version = "2023-06-01"
-    
+
     /// Initializes a new `AnthropicManager`.
     /// - Parameters:
     ///   - apiKey: The API key for Anthropic.
@@ -20,9 +20,9 @@ public class AnthropicManager {
         self.apiKey = apiKey
         self.session = session
     }
-    
+
     // MARK: - Chat
-    
+
     /// Sends a chat completion request to the Anthropic API.
     /// - Parameters:
     ///   - messages: The conversation history.
@@ -53,7 +53,7 @@ public class AnthropicManager {
         let data = try await performRequest(url: url, payload: payload)
         return try JSONDecoder().decode(AnthropicMessageResponse.self, from: data)
     }
-    
+
     /// Streams a chat completion response from the Anthropic API.
     /// - Parameters:
     ///   - messages: The conversation history.
@@ -81,23 +81,25 @@ public class AnthropicManager {
             thinking: nil
         )
         let url = baseURL.appendingPathComponent("messages")
-        
+
         return AsyncThrowingStream { continuation in
             Task {
                 do {
                     var request = try makeRequest(url: url, payload: payload)
                     request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
-                    
+
                     let (bytes, response) = try await session.bytes(for: request)
-                    guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+                    guard let http = response as? HTTPURLResponse,
+                        (200...299).contains(http.statusCode)
+                    else {
                         var errorText = ""
                         for try await line in bytes.lines { errorText += line }
                         throw AnthropicError.apiError(message: errorText)
                     }
-                    
+
                     let decoder = JSONDecoder()
                     var buffer = ""
-                    
+
                     for try await byte in bytes {
                         buffer.append(Character(UnicodeScalar(byte)))
                         while let range = buffer.range(of: "\n\n") {
@@ -106,9 +108,11 @@ public class AnthropicManager {
                             guard chunk.hasPrefix("data: ") else { continue }
                             let jsonStr = String(chunk.dropFirst(6))
                             if jsonStr == "[DONE]" { break }
-                            
+
                             guard let data = jsonStr.data(using: .utf8) else { continue }
-                            if let event = try? decoder.decode(AnthropicStreamEvent.self, from: data) {
+                            if let event = try? decoder.decode(
+                                AnthropicStreamEvent.self, from: data)
+                            {
                                 continuation.yield(event)
                             }
                         }
@@ -120,9 +124,9 @@ public class AnthropicManager {
             }
         }
     }
-    
+
     // MARK: - Files & Analysis
-    
+
     /// Uploads a file to Anthropic for use in requests.
     /// - Parameters:
     ///   - data: The raw file data.
@@ -132,39 +136,43 @@ public class AnthropicManager {
     public func uploadFile(data: Data, filename: String, mimeType: String) async throws -> String {
         // Typically POST /v1/files (Beta)
         // Note: Check if endpoint is strictly /v1/files for beta.
-        let url = baseURL.appendingPathComponent("files") // Verify endpoint
-        
+        let url = baseURL.appendingPathComponent("files")  // Verify endpoint
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
-        
+
         let boundary = "Boundary-\(UUID().uuidString)"
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.setValue(
+            "multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         request.setValue(version, forHTTPHeaderField: "anthropic-version")
         // Beta headers
-        request.setValue("files-2025-04-14", forHTTPHeaderField: "anthropic-beta") // Hypothetical beta header from previous code
-        
+        request.setValue("files-2025-04-14", forHTTPHeaderField: "anthropic-beta")  // Hypothetical beta header from previous code
+
         var body = Data()
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+        body.append(
+            "Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(
+                using: .utf8)!)
         body.append("Content-Type: \(mimeType)\r\n\r\n".data(using: .utf8)!)
         body.append(data)
         body.append("\r\n".data(using: .utf8)!)
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
-        
+
         request.httpBody = body
-        
+
         let (responseData, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-             throw AnthropicError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500)
+            throw AnthropicError.serverError(
+                statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500)
         }
-        
+
         struct FileResp: Decodable { let id: String }
         return try JSONDecoder().decode(FileResp.self, from: responseData).id
     }
-    
+
     // MARK: - Helpers
-    
+
     /// Creates a URLRequest for a chat message.
     /// - Parameters:
     ///   - messages: The conversation history.
@@ -191,7 +199,7 @@ public class AnthropicManager {
         )
         return try makeRequest(url: baseURL.appendingPathComponent("messages"), payload: payload)
     }
-    
+
     /// Helper to create a generic request with standard headers.
     private func makeRequest<T: Encodable>(url: URL, payload: T) throws -> URLRequest {
         var request = URLRequest(url: url)
@@ -199,39 +207,40 @@ public class AnthropicManager {
         request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
         request.setValue(version, forHTTPHeaderField: "anthropic-version")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
+
         // Add beta headers
         let betas = [
             "files-api-2025-04-14",
             "interleaved-thinking-2025-05-14",
             "structured-outputs-2025-11-13",
             "effort-2025-11-24",
-            "prompt-caching-2024-07-31"
+            "prompt-caching-2024-07-31",
         ]
         request.setValue(betas.joined(separator: ","), forHTTPHeaderField: "anthropic-beta")
-        
+
         request.httpBody = try JSONEncoder().encode(payload)
         return request
     }
-    
+
     /// Helper to perform a request and return data, handling errors.
     private func performRequest<T: Encodable>(url: URL, payload: T) async throws -> Data {
         let request = try makeRequest(url: url, payload: payload)
         let (data, response) = try await session.data(for: request)
-        
+
         guard let http = response as? HTTPURLResponse else {
             throw AnthropicError.networkError
         }
-        
+
         if !(200...299).contains(http.statusCode) {
-             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let errorObj = json["error"] as? [String: Any],
-               let message = errorObj["message"] as? String {
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                let errorObj = json["error"] as? [String: Any],
+                let message = errorObj["message"] as? String
+            {
                 throw AnthropicError.apiError(message: message)
             }
             throw AnthropicError.serverError(statusCode: http.statusCode)
         }
-        
+
         return data
     }
 }
@@ -282,7 +291,7 @@ public struct AnthropicTool: Encodable {
     public let description: String?
     /// The input schema for the tool.
     public let input_schema: AnthropicJSONValue?
-    
+
     /// Initializes a new `AnthropicTool`.
     /// - Parameters:
     ///   - name: The tool name.
@@ -312,7 +321,7 @@ public enum AnthropicJSONValue: Encodable {
     case array([AnthropicJSONValue])
     /// Object (dictionary) of values.
     case object([String: AnthropicJSONValue])
-    
+
     /// Converts an `Any` value to `AnthropicJSONValue`.
     public static func from(_ value: Any) -> AnthropicJSONValue {
         switch value {
@@ -334,7 +343,7 @@ public enum AnthropicJSONValue: Encodable {
             return .null
         }
     }
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
@@ -345,7 +354,8 @@ public enum AnthropicJSONValue: Encodable {
         case .int(let i):
             try container.encode(i)
         case .double(let d):
-            try container.encode(d)
+            // Guard against non-finite values (NaN, Infinity) which are not valid JSON
+            try container.encode(d.isFinite ? d : 0.0)
         case .string(let s):
             try container.encode(s)
         case .array(let arr):
@@ -362,7 +372,7 @@ public struct AnthropicMessage: Encodable {
     public let role: String
     /// The content of the message.
     public let content: [AnthropicContentBlock]
-    
+
     /// Initializes a new `AnthropicMessage`.
     public init(role: String, content: [AnthropicContentBlock]) {
         self.role = role
@@ -380,7 +390,7 @@ public enum AnthropicContentBlock: Encodable {
     case toolUse(AnthropicToolUse)
     /// Tool result.
     case toolResult(AnthropicToolResult)
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         switch self {
@@ -397,7 +407,7 @@ public enum AnthropicContentBlock: Encodable {
             try container.encode(tr.content, forKey: .content)
         }
     }
-    
+
     enum CodingKeys: String, CodingKey { case type, source, id, name, input, tool_use_id, content }
 }
 
@@ -411,7 +421,7 @@ public struct AnthropicToolUse: Encodable {
     public let name: String
     /// The input arguments for the tool.
     public let input: AnthropicJSONValue
-    
+
     /// Initializes a new `AnthropicToolUse`.
     public init(id: String, name: String, input: [String: Any]) {
         self.id = id
@@ -426,7 +436,7 @@ public struct AnthropicToolResult: Encodable {
     public let tool_use_id: String
     /// The result content.
     public let content: String
-    
+
     /// Initializes a new `AnthropicToolResult`.
     public init(tool_use_id: String, content: String) {
         self.tool_use_id = tool_use_id
@@ -442,7 +452,7 @@ public struct AnthropicTextBlock: Encodable {
     public let text: String
     /// Cache control settings.
     public let cache_control: AnthropicCacheControl?
-    
+
     /// Initializes a new `AnthropicTextBlock`.
     public init(text: String, cacheControl: AnthropicCacheControl? = nil) {
         self.text = text
@@ -461,12 +471,12 @@ public struct AnthropicCacheControl: Encodable {
 /// Represents an image source for multimodal input.
 public struct AnthropicImageSource: Encodable {
     /// The encoding type (e.g., "base64").
-    public let type: String // "base64"
+    public let type: String  // "base64"
     /// The media type (e.g., "image/jpeg").
     public let media_type: String
     /// The encoded data.
     public let data: String
-    
+
     /// Initializes a new `AnthropicImageSource`.
     public init(type: String = "base64", media_type: String, data: String) {
         self.type = type
@@ -483,7 +493,7 @@ public struct AnthropicMessageResponse: Decodable {
     public let content: [AnthropicResponseContent]
     /// Token usage statistics.
     public let usage: Usage
-    
+
     /// Token usage statistics structure.
     public struct Usage: Decodable {
         /// Input tokens used.
@@ -497,7 +507,7 @@ public struct AnthropicMessageResponse: Decodable {
 public enum AnthropicResponseContent: Decodable {
     /// Text content.
     case text(AnthropicResponseText)
-    
+
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let type = try c.decode(String.self, forKey: .type)
@@ -505,10 +515,10 @@ public enum AnthropicResponseContent: Decodable {
             self = .text(try AnthropicResponseText(from: decoder))
         } else {
             // Fallback for tools etc.
-             self = .text(AnthropicResponseText(type: "text", text: ""))
+            self = .text(AnthropicResponseText(type: "text", text: ""))
         }
     }
-    
+
     enum CodingKeys: String, CodingKey { case type }
 }
 
@@ -522,6 +532,7 @@ public struct AnthropicResponseText: Decodable {
 
 // SSE Events
 /// An event received during a streaming response.
+/// An event received during a streaming response.
 public struct AnthropicStreamEvent: Decodable {
     /// The type of event.
     public let type: String
@@ -533,6 +544,8 @@ public struct AnthropicStreamEvent: Decodable {
     public let content_block: AnthropicStreamContentBlock?
     /// The index of the content block.
     public let index: Int?
+    /// Message information (for message_start/delta).
+    public let message: AnthropicMessageResponse?
 }
 
 /// Content block information in a stream event.
@@ -543,6 +556,8 @@ public struct AnthropicStreamContentBlock: Decodable {
     public let id: String?
     /// The name of the content block.
     public let name: String?
+    /// The text content (for text blocks in start event).
+    public let text: String?
 }
 
 /// The delta data in a stream event.
@@ -555,4 +570,8 @@ public struct AnthropicStreamDelta: Decodable {
     public let thinking: String?
     /// Partial JSON delta (for tool calls).
     public let partial_json: String?
+    /// Stop reason for message delta.
+    public let stop_reason: String?
+    /// Stop sequence for message delta.
+    public let stop_sequence: String?
 }

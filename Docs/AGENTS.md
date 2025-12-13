@@ -1,81 +1,122 @@
-# Agent Context Injection: llmHub
+# llmHub Architecture
 
-> **SYSTEM NOTE**: This file contains the authoritative architectural state of the `llmHub` project. Use this context to ground all future code generation and reasoning.
+> **SYSTEM NOTE**: This file serves as the authoritative architectural reference for the `llmHub` project. It consolidates previous documentation from `AGENTS.md`.
 
-## 1. Project Summary
-**llmHub** is a native macOS IDE for interacting with LLMs. It moves beyond simple chat by implementing a "Brain/Hand" architecture where the LLM (Brain) can deterministically invoke Tools (Hand) to perform actions like code execution, file manipulation, and web search.
+---
 
-## 2. Architecture: "Valon/Modi/Core"
-The system follows a strict separation of concerns:
+## 🎯 Vision Statement
 
-### The Brain (Providers)
-- **Role**: Intent processing and response generation.
-- **Protocol**: `LLMProvider` (`LLMProviderProtocol.swift`)
-- **Implementations**:
-  - `OpenAIManager` (GPT-4o, o1)
-  - `AnthropicManager` (Claude 3.5 Sonnet)
-  - `GeminiManager` (Google AI)
-  - `MistralManager` (Mistral AI)
-  - `XAIManager` (Grok)
-  - `OpenRouterManager` (Aggregator)
+**llmHub** is a native macOS and iOS IDE designed to bridge chat interfaces with powerful agentic workflows. It prioritizes:
 
-### The Hand (Tools)
+1.  **Frontier Model Integration**: Support for all major providers (OpenAI, Anthropic, Gemini, Mistral, xAI).
+2.  **Liquid Glass UI**: A state-of-the-art translucent interface using modern SwiftUI and `GlassEffect` APIs.
+3.  **Brain/Hand/Loop Architecture**: Strict separation between reasoning (Brain), execution (Hand), and orchestration (Loop).
+4.  **Secure Execution**: Sandboxed code execution on macOS via XPC.
+
+---
+
+## 🏗 System Architecture: "Brain/Hand/Loop"
+
+### 1. The Brain (Providers)
+
+- **Role**: Intent processing and text generation.
+- **Protocol**: `LLMProvider`
+- **Implementations**: `OpenAIManager`, `AnthropicManager`, `GeminiManager`, `MistralManager`, `XAIManager`, `OpenRouterManager`.
+- **Pattern**: Providers are stateless wrappers around APIs; state is managed by `ChatService`.
+
+### 2. The Hand (Tools)
+
 - **Role**: Deterministic execution of capabilities.
-- **Protocol**: `Tool` (`ToolRegistry.swift`)
-- **Core Tools**:
-  - `CodeInterpreterTool`: Swift/Python execution via Sandboxed XPC.
-  - `FileEditorTool` / `FileReaderTool`: Local filesystem access.
-  - `MCPToolBridge`: Bridges external Model Context Protocol servers.
+- **Protocol**: `Tool` (and `LegacyTool` for migration).
+- **Pattern**: Tools are `Sendable` and deterministically execute via `ToolRegistry`.
+- **Capabilities**:
+  - **Core**: Calculator, File Parsing, Web Search.
+  - **System**: Shell (macOS), Code Execution (Swift/Python via XPC).
+  - **Cloud**: HTTP Requests, MCP Bridge.
 
-### The Loop (Orchestrator)
-- **Role**: Coordinates the recursive Brain/Hand interaction.
-- **Component**: `ChatService` (`ChatService.swift`)
-- **Flow**:
-  1. User Input -> `ChatService`
-  2. `ChatService` -> `LLMProvider` (Request)
-  3. `LLMProvider` -> `ToolCall` (Response)
-  4. `ChatService` -> `ToolRegistry` -> `Tool.execute()`
-  5. Tool Result -> `ChatService` -> `LLMProvider` (Recursive Call)
-  6. `LLMProvider` -> Final Text Response
+### 3. The Loop (Orchestrator)
 
-### The Sandbox (Execution)
-- **Role**: Securely execute generated code.
-- **Mechanism**: XPC Service (`llmHubHelper`)
-- **Protocol**: `CodeExecutionXPCProtocol` (`CodeExecutionXPCProtocol.swift`)
-- **Structure**:
-  - `llmHub` (Main App) sends code -> `XPCConnection`
-  - `llmHubHelper` (XPC Service) receives code -> Spawns Process (`swift`, `python3`) -> Captures `stdout`/`stderr` -> Returns Result.
+- **Role**: Coordinates the recursive interaction.
+- **Component**: `ChatService`.
+- **Flow**: `User Input` → `Brain` → `tool_calls` → `Hand` → `Tool Result` → `Brain` → `Final Response`.
+- **Persistence**: Handled via `SwiftData` (`ChatSession`, `ChatMessage` entities) and "Brain Swapping" logic (persistence of model choice per session).
 
-## 3. Key File Map
+### 4. The Sandbox (Execution)
 
-| Component | Path | Description |
-|-----------|------|-------------|
-| **Loop** | `llmHub/Services/ChatService.swift` | Main orchestration loop. Handles state, persistence, and recursion. |
-| **Brain** | `llmHub/Providers/LLMProviderProtocol.swift` | Base protocol for all LLM providers. |
-| **Hand** | `llmHub/Services/ToolRegistry.swift` | Manages available tools and routing. |
-| **Execution** | `llmHub/Services/CodeExecutionEngine.swift` | Main app side of code execution. |
-| **XPC** | `llmHubHelper/CodeExecutionHandler.swift` | Helper side implementation of execution logic. |
-| **UI** | `llmHub/Views/Main/NeonWorkbenchWindow.swift` | Primary UI container. |
-| **MCP** | `llmHub/Services/MCPClient.swift` | Model Context Protocol client implementation. |
+- **Role**: Securely execute user-generated code.
+- **Component**: `llmHubHelper` (XPC Service).
+- **Mechanism**: Main App sends code → XPC connection → Helper Process spawns secure child process → Returns stdout/stderr.
+- **Platform**: macOS only.
 
-## 4. Current State
-- **MCP**: Implemented. App can connect to MCP servers and expose their tools to the LLM.
-- **Sandbox**: Implemented. `llmHubHelper` is a separate XPC target.
-- **Persistence**: `SwiftData` is used for storing `ChatSession`, `ChatMessage`, etc.
-- **Streaming**: Fully supported via `AsyncThrowingStream` in `LLMProvider`.
+---
 
-## 5. Coding Conventions
-- **Swift 6**: Use `Task`, `await`, `Sendable` everywhere.
-- **SwiftData**: Use `@Model` for persistence. Context is passed to `ChatService`.
-- **Reference IDs**: Use `ReferenceFormatter.newReferenceID()` for user-facing IDs (e.g., `#A1B2`).
-- **XPC**: Always use `CodeExecutionXPCProtocol` for communicating with the helper. Do not run `Process` directly in the main app (Sandbox violation).
-- **Tool Protocol**:
-  ```swift
-  protocol Tool: Sendable {
-      var id: String { get }
-      var name: String { get }
-      var description: String { get }
-      var inputSchema: [String: Any] { get }
-      func execute(input: [String: Any]) async throws -> String
-  }
-  ```
+## 🎨 Liquid Glass UI
+
+The UI follows the "Liquid Glass" design language, characterized by translucent materials, vibrant semantic tinting, and fluid animations.
+
+### Core Primitives
+
+- **`GlassEffect`**: Custom SwiftUI modifier replacing standard `.background(.ultraThinMaterial)`.
+- **`GlassEffectContainer`**: Groups adjacent glass elements for specialized merging/rendering (future-proofing).
+- **`LiquidGlassTokens`**: Central source of truth for spacing, radius, and colors (`NeonTheme.swift`).
+
+### Key Components
+
+- **`NeonChatView`**: The main chat interface.
+- **`ChatInputPanel`**: A glass capsule input bar with `AttachmentChip` and `ToolIconToggle`.
+- **`TokenUsageCapsule`**: Displays live token counts (Input/Output) and cost.
+- **`AttachmentChip`**: Represents file attachments (Images, Text, PDF) with preview capabilities.
+
+---
+
+## 💾 Persistence & State Management
+
+### SwiftData
+
+- **Entities**: `ChatSessionEntity`, `ChatMessageEntity`, `ChatFolderEntity`, `ChatTagEntity`.
+- **Migration**: Automatic schema migration enabled.
+
+### "Brain Swapping"
+
+- **Concept**: Each chat session remembers its last used Model and Provider.
+- **Mechanism**:
+  - `ChatViewModel` observes model/provider changes.
+  - Updates `ChatSessionEntity.providerID` and `.model` immediately.
+  - On session load (`hydrateState`), the view model restores the specific provider configuration for that session context.
+
+---
+
+## 🛠 Build & Environment
+
+### Platforms
+
+- **macOS**: Target 15.0+ (Liquid Glass APIs shimmied for backward compatibility where needed).
+- **iOS**: Target iOS 18.0+.
+
+### Dependencies
+
+- **MarkdownUI**: For rendering chat messages.
+- **Splash**: For syntax highlighting.
+- **SwiftCollections**: For efficient data structures.
+
+### Known Build Configurations
+
+- **DerivedData**: Ignored in `.gitignore`.
+- **Build Fixes**: Recently resolved `lstat` errors by ensuring clean dependency copying and correct `AttachmentType` definitions in `ChatModels.swift`.
+
+---
+
+## 📂 File Structure Highlights
+
+- **`App/`**: Entry points (`llmHubApp`).
+- **`Models/`**: SwiftData entities and shared types (`ChatModels.swift`, `SharedTypes.swift`).
+- **`ViewModels/`**: State management (`ChatViewModel`, `WorkbenchViewModel`).
+- **`Views/`**: SwiftUI interfaces (`Chat/`, `Main/`).
+- **`Services/`**: Business logic (`ChatService`, `ToolRegistry`, `ModelRegistry`).
+- **`Providers/`**: LLM API integrations.
+- **`Tools/`**: Tool implementations.
+- **`Docs/`**: Project documentation.
+
+---
+
+_Last Updated: December 2025_

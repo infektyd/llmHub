@@ -116,7 +116,8 @@ enum MCPJSONValue: Encodable, Sendable {
         case .int(let i):
             try container.encode(i)
         case .double(let d):
-            try container.encode(d)
+            // Guard against non-finite values (NaN, Infinity) which are not valid JSON
+            try container.encode(d.isFinite ? d : 0.0)
         case .string(let s):
             try container.encode(s)
         case .array(let arr):

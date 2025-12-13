@@ -23,11 +23,13 @@ struct OpenAIProvider: LLMProvider {
     var availableModels: [LLMModel] { config.models }
 
     var defaultHeaders: [String: String] {
-        guard let key = keychain.apiKey(for: .openAI) else { return [:] }
-        return [
-            "Authorization": "Bearer \(key)",
-            "Content-Type": "application/json",
-        ]
+        get async {
+            guard let key = await keychain.apiKey(for: .openAI) else { return [:] }
+            return [
+                "Authorization": "Bearer \(key)",
+                "Content-Type": "application/json",
+            ]
+        }
     }
 
     var pricing: PricingMetadata {
@@ -36,11 +38,13 @@ struct OpenAIProvider: LLMProvider {
     }
 
     var isConfigured: Bool {
-        keychain.apiKey(for: .openAI) != nil
+        get async {
+            await keychain.apiKey(for: .openAI) != nil
+        }
     }
 
     func fetchModels() async throws -> [LLMModel] {
-        guard let apiKey = keychain.apiKey(for: .openAI) else { return [] }
+        guard let apiKey = await keychain.apiKey(for: .openAI) else { return [] }
         let manager = OpenAIManager(apiKey: apiKey)
 
         do {
@@ -57,24 +61,25 @@ struct OpenAIProvider: LLMProvider {
         }
     }
 
-    func buildRequest(messages: [ChatMessage], model: String) throws -> URLRequest {
-        try buildRequest(messages: messages, model: model, tools: nil, jsonMode: false)
+    func buildRequest(messages: [ChatMessage], model: String) async throws -> URLRequest {
+        try await buildRequest(messages: messages, model: model, tools: nil, jsonMode: false)
     }
 
-    func buildRequest(messages: [ChatMessage], model: String, tools: [ToolDefinition]?) throws
+    func buildRequest(messages: [ChatMessage], model: String, tools: [ToolDefinition]?) async throws
         -> URLRequest
     {
-        try buildRequest(messages: messages, model: model, tools: tools, jsonMode: false)
+        try await buildRequest(messages: messages, model: model, tools: tools, jsonMode: false)
     }
 
     func buildRequest(
         messages: [ChatMessage], model: String, tools: [ToolDefinition]?, jsonMode: Bool
-    ) throws -> URLRequest {
-        guard let apiKey = keychain.apiKey(for: .openAI) else {
+    ) async throws -> URLRequest {
+        guard let apiKey = await keychain.apiKey(for: .openAI) else {
             throw LLMProviderError.authenticationMissing
         }
 
         let manager = OpenAIManager(apiKey: apiKey)
+        let endpoint = ModelRouter.endpoint(for: model)
 
         // Map messages
         let openAIMessages = messages.map { msg -> OpenAIChatMessage in
@@ -143,37 +148,87 @@ struct OpenAIProvider: LLMProvider {
             )
         }
 
-        // Build request with tools
-        return try manager.makeChatRequest(
-            messages: openAIMessages,
-            model: model,
-            stream: false,
-            tools: openAITools,
-            responseFormat: jsonMode ? OpenAIResponseFormat(type: "json_object") : nil
-        )
+        // Build request based on endpoint
+        switch endpoint {
+        case .responses:
+            return try manager.makeResponsesRequest(
+                messages: openAIMessages,
+                model: model,
+                tools: openAITools,
+                jsonMode: jsonMode
+            )
+        case .chatCompletions:
+            return try manager.makeChatRequest(
+                messages: openAIMessages,
+                model: model,
+                stream: false,
+                tools: openAITools,
+                responseFormat: jsonMode ? OpenAIResponseFormat(type: "json_object") : nil
+            )
+        }
     }
 
     func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {
-        AsyncThrowingStream { continuation in
+        AsyncThrowingStream(ProviderEvent.self) { continuation in
             Task {
                 do {
-                    // 1. Modify request to enable streaming if not already
+                    // Non-streaming responses endpoint
+                    if request.url?.path.contains("/responses") == true {
+                        var req = request
+                        if let bodyData = req.httpBody,
+                            var json = try? JSONSerialization.jsonObject(with: bodyData)
+                                as? [String: Any]
+                        {
+                            json["stream"] = false
+                            req.httpBody = try JSONSerialization.data(withJSONObject: json)
+                        }
+                        let (data, response) = try await LLMURLSession.shared.data(for: req)
+                        guard let http = response as? HTTPURLResponse,
+                            (200...299).contains(http.statusCode)
+                        else {
+                            let errorText = String(data: data, encoding: .utf8) ?? "Unknown error"
+                            continuation.yield(.error(.server(reason: errorText)))
+                            continuation.finish()
+                            return
+                        }
+                        let decoded = try JSONDecoder().decode(
+                            OpenAIResponseEnvelope.self, from: data)
+                        let text =
+                            decoded.output?
+                            .compactMap { $0.text }
+                            .joined(separator: "\n")
+                            .nilIfEmpty
+                            ?? decoded.output?
+                            .compactMap { $0.contentText }
+                            .joined(separator: "\n")
+                            .nilIfEmpty
+                            ?? ""
+                        let message = ChatMessage(
+                            id: UUID(),
+                            role: .assistant,
+                            content: text,
+                            parts: [.text(text)],
+                            createdAt: Date(),
+                            codeBlocks: []
+                        )
+                        continuation.yield(.completion(message: message))
+                        continuation.finish()
+                        return
+                    }
+
                     var streamRequest = request
-                    // Ensure stream=true in body
                     if let bodyData = request.httpBody,
                         var json = try? JSONSerialization.jsonObject(with: bodyData)
                             as? [String: Any]
                     {
                         json["stream"] = true
-                        // Enable stream options for usage in final chunk
                         json["stream_options"] = ["include_usage": true]
                         streamRequest.httpBody = try JSONSerialization.data(withJSONObject: json)
                     }
                     streamRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
 
-                    // 2. Execute
-                    let (result, response) = try await URLSession.shared.bytes(for: streamRequest)
-
+                    let (result, response) = try await LLMURLSession.shared.bytes(
+                        for: streamRequest)
                     guard let http = response as? HTTPURLResponse,
                         (200...299).contains(http.statusCode)
                     else {
@@ -189,89 +244,73 @@ struct OpenAIProvider: LLMProvider {
                     }
 
                     var fullText = ""
-                    // Track tool calls being accumulated (streaming tool calls come in chunks)
-                    var toolCallsInProgress: [Int: (id: String, name: String, arguments: String)] =
-                        [:]
+                    var toolCallsInProgress: [Int: PendingToolCall] = [:]
+                    var lastFinishReason: String? = nil
 
                     for try await line in result.lines {
                         let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if trimmed.hasPrefix("data: ") {
-                            let jsonStr = String(trimmed.dropFirst(6))
-                            if jsonStr == "[DONE]" { break }
+                        guard trimmed.hasPrefix("data: ") else { continue }
 
-                            if let data = jsonStr.data(using: .utf8),
-                                let chunk = try? JSONDecoder().decode(
-                                    OpenAIStreamChunk.self, from: data)
-                            {
+                        let jsonStr = String(trimmed.dropFirst(6))
+                        if jsonStr == "[DONE]" { break }
 
-                                if let choice = chunk.choices.first {
-                                    // Handle text content
-                                    if let content = choice.delta.content {
-                                        fullText += content
-                                        continuation.yield(.token(text: content))
-                                    }
+                        guard
+                            let data = jsonStr.data(using: .utf8),
+                            let chunk = try? JSONDecoder().decode(
+                                OpenAIStreamChunk.self, from: data),
+                            let choice = chunk.choices.first
+                        else { continue }
 
-                                    // Handle tool calls (streamed in chunks)
-                                    if let toolCalls = choice.delta.toolCalls {
-                                        for tc in toolCalls {
-                                            let idx = tc.index
+                        if let content = choice.delta.content {
+                            fullText += content
+                            continuation.yield(.token(text: content))
+                        }
 
-                                            // Initialize new tool call
-                                            if let id = tc.id {
-                                                toolCallsInProgress[idx] = (
-                                                    id: id, name: tc.function?.name ?? "",
-                                                    arguments: ""
-                                                )
-                                            }
-
-                                            // Accumulate function name
-                                            if let name = tc.function?.name, !name.isEmpty {
-                                                if var existing = toolCallsInProgress[idx] {
-                                                    existing.name += name
-                                                    toolCallsInProgress[idx] = existing
-                                                }
-                                            }
-
-                                            // Accumulate arguments
-                                            if let args = tc.function?.arguments, !args.isEmpty {
-                                                if var existing = toolCallsInProgress[idx] {
-                                                    existing.arguments += args
-                                                    toolCallsInProgress[idx] = existing
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    // Check for finish_reason to emit completed tool calls
-                                    if choice.finishReason == "tool_calls" {
-                                        for (_, toolCall) in toolCallsInProgress.sorted(by: {
-                                            $0.key < $1.key
-                                        }) {
-                                            continuation.yield(
-                                                .toolUse(
-                                                    id: toolCall.id,
-                                                    name: toolCall.name,
-                                                    input: toolCall.arguments
-                                                ))
-                                        }
-                                    }
+                        if let toolCalls = choice.delta.toolCalls {
+                            for tc in toolCalls {
+                                let idx = tc.index
+                                if toolCallsInProgress[idx] == nil {
+                                    toolCallsInProgress[idx] = PendingToolCall(
+                                        index: idx, id: nil, name: nil, arguments: "")
                                 }
 
-                                // Usage in final chunk (sometimes provided by OpenAI)
-                                if let usage = chunk.usage {
-                                    continuation.yield(
-                                        .usage(
-                                            TokenUsage(
-                                                inputTokens: usage.promptTokens,
-                                                outputTokens: usage.completionTokens,
-                                                cachedTokens: 0
-                                            )))
+                                if let id = tc.id {
+                                    toolCallsInProgress[idx]?.id = id
+                                }
+                                if let name = tc.function?.name {
+                                    toolCallsInProgress[idx]?.name = name
+                                }
+                                if let args = tc.function?.arguments {
+                                    toolCallsInProgress[idx]?.arguments += args
                                 }
                             }
                         }
+
+                        // Track the finish reason
+                        if let finishReason = choice.finishReason {
+                            lastFinishReason = finishReason
+                        }
+
+                        if choice.finishReason == "tool_calls" {
+                            for (_, tc) in toolCallsInProgress.sorted(by: { $0.key < $1.key }) {
+                                if let id = tc.id, let name = tc.name {
+                                    continuation.yield(
+                                        .toolUse(id: id, name: name, input: tc.arguments))
+                                }
+                            }
+                        }
+
+                        if let usage = chunk.usage {
+                            continuation.yield(
+                                .usage(
+                                    TokenUsage(
+                                        inputTokens: usage.promptTokens,
+                                        outputTokens: usage.completionTokens,
+                                        cachedTokens: 0
+                                    )))
+                        }
                     }
 
-                    // Final completion
                     var message = ChatMessage(
                         id: UUID(),
                         role: .assistant,
@@ -283,14 +322,20 @@ struct OpenAIProvider: LLMProvider {
                         costBreakdown: nil
                     )
 
-                    // Add tool calls to message if any
                     if !toolCallsInProgress.isEmpty {
-                        message.toolCalls = toolCallsInProgress.values.map { tc in
-                            ToolCall(id: tc.id, name: tc.name, input: tc.arguments)
-                        }
+                        message.toolCalls = toolCallsInProgress.sorted(by: { $0.key < $1.key })
+                            .compactMap { (_, tc) in
+                                guard let id = tc.id, let name = tc.name else { return nil }
+                                return ToolCall(id: id, name: name, input: tc.arguments)
+                            }
                     }
 
-                    continuation.yield(.completion(message: message))
+                    // Check if response was truncated due to max_tokens
+                    if lastFinishReason == "length" {
+                        continuation.yield(.truncated(message: message))
+                    } else {
+                        continuation.yield(.completion(message: message))
+                    }
                     continuation.finish()
 
                 } catch {
@@ -300,7 +345,6 @@ struct OpenAIProvider: LLMProvider {
             }
         }
     }
-
     func parseTokenUsage(from response: Data) throws -> TokenUsage? {
         let decoded = try? JSONDecoder().decode(OpenAIChatResponse.self, from: response)
         if let usage = decoded?.usage {
@@ -312,4 +356,8 @@ struct OpenAIProvider: LLMProvider {
         }
         return nil
     }
+}
+
+extension String {
+    fileprivate var nilIfEmpty: String? { isEmpty ? nil : self }
 }

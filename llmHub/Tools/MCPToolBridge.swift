@@ -198,17 +198,18 @@ actor MCPToolBridge {
 // MARK: - MCPBridgedTool
 
 /// A Tool implementation that bridges to an MCP server tool.
-/// Uses @unchecked Sendable because inputSchema is [String: Any] which is not Sendable,
-/// but we know it's immutable and thread-safe in this context.
-final class MCPBridgedTool: Tool, @unchecked Sendable {
-    nonisolated let id: String
-    nonisolated let name: String
-    nonisolated let description: String
-    nonisolated(unsafe) let inputSchema: [String: Any]
+/// Uses @unchecked Sendable because it manages its state carefully.
+nonisolated final class MCPBridgedTool: Tool, @unchecked Sendable {
+    let id: String
+    let name: String
+    let description: String
 
-    nonisolated let serverID: UUID
+    let serverID: UUID
     private let client: MCPClient
     private let logger = Logger(subsystem: "com.llmhub", category: "MCPBridgedTool")
+
+    // Cached schema
+    let parameters: ToolParametersSchema
 
     /// Initializes a new bridged tool.
     /// - Parameters:
@@ -222,37 +223,46 @@ final class MCPBridgedTool: Tool, @unchecked Sendable {
         self.name = toolInfo.name
         self.description = toolInfo.description ?? "MCP tool: \(toolInfo.name)"
 
-        // Convert MCP input schema to our format
-        if let schema = toolInfo.inputSchema {
-            var props: [String: Any] = [:]
-            for (key, prop) in schema.properties ?? [:] {
-                props[key] = [
-                    "type": prop.type,
-                    "description": prop.description ?? "",
-                ]
+        // Convert MCP input schema to key-value properties
+        if let schema = toolInfo.inputSchema, let props = schema.properties {
+            var properties: [String: ToolProperty] = [:]
+            for (key, prop) in props {
+                // Map type string to JSONSchemaType
+                let schemaType = JSONSchemaType(rawValue: prop.type) ?? .string
+                properties[key] = ToolProperty(
+                    type: schemaType,
+                    description: prop.description ?? ""
+                )
             }
-            self.inputSchema = [
-                "type": schema.type,
-                "properties": props,
-                "required": schema.required ?? [],
-            ]
+
+            self.parameters = ToolParametersSchema(
+                properties: properties,
+                required: schema.required ?? []
+            )
         } else {
-            self.inputSchema = [
-                "type": "object",
-                "properties": [:],
-                "required": [],
-            ]
+            self.parameters = ToolParametersSchema(properties: [:], required: [])
         }
     }
 
+    // Tool Protocol Default Properties
+    var permissionLevel: ToolPermissionLevel { .dangerous }  // Treat external tools as dangerous by default
+    var requiredCapabilities: [ToolCapability] { [.networkIO] }  // Needs network to talk to MCP server
+    var weight: ToolWeight { .heavy }
+    var isCacheable: Bool { false }
+
     /// Executes the tool via the MCP client.
-    /// - Parameter input: The input arguments.
-    /// - Returns: The tool output string.
-    nonisolated func execute(input: [String: Any]) async throws -> String {
+    /// - Parameter arguments: The input arguments.
+    /// - Returns: The tool output as a structured result.
+    func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
         logger.info("Calling MCP tool: \(self.name)")
 
         do {
-            let result = try await client.callTool(name: name, arguments: MCPJSONValue.from(input))
+            // Convert ToolArguments back to MCPJSONValue for the client
+            // This is a simplified conversion, might need robust serialization
+            let argsDict = arguments.dictionary
+            let mcpArgs = MCPJSONValue.object(argsDict.mapValues { MCPJSONValue.from($0) })
+
+            let result = try await client.callTool(name: name, arguments: mcpArgs)
 
             // Format the result
             var output = ""
@@ -272,14 +282,17 @@ final class MCPBridgedTool: Tool, @unchecked Sendable {
             }
 
             if result.isError == true {
-                throw ToolError.executionFailed(output)
+                throw ToolError.executionFailed(output, retryable: false)
             }
 
-            return output.isEmpty ? "(No output)" : output
+            let finalOutput = output.isEmpty ? "(No output)" : output
+            return await MainActor.run {
+                ToolResult.success(finalOutput)
+            }
 
         } catch let error as MCPError {
             logger.error("MCP tool call failed: \(error)")
-            throw ToolError.executionFailed(error.localizedDescription)
+            throw ToolError.executionFailed(error.localizedDescription, retryable: false)
         }
     }
 }
@@ -346,11 +359,9 @@ final class MCPToolManager: @unchecked Sendable {
 
     /// Register all MCP tools into a registry.
     /// - Parameter registry: The registry to register tools into.
-    func registerTools(into registry: inout ToolRegistry) async {
+    func registerTools(into registry: ToolRegistry) async {
         let tools = await bridge.getToolsForRegistration()
-        for tool in tools {
-            registry.register(tool)
-        }
+        await registry.register(tools)
     }
 
     /// Add a new MCP server.
