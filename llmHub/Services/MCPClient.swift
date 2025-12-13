@@ -13,7 +13,9 @@ import OSLog
 actor MCPClient {
     private let logger = Logger(subsystem: "com.llmhub", category: "MCPClient")
 
+    #if os(macOS)
     private var process: Process?
+    #endif
     private var stdin: FileHandle?
     private var stdout: FileHandle?
     private var stderr: FileHandle?
@@ -36,7 +38,9 @@ actor MCPClient {
         // The process termination and file handle closure are safe synchronous operations.
         // Pending requests will fail naturally when the connection is closed.
         stdin?.closeFile()
+        #if os(macOS)
         process?.terminate()
+        #endif
 
         // Cancel pending requests synchronously
         for (_, continuation) in pendingRequests {
@@ -52,6 +56,7 @@ actor MCPClient {
 
         logger.info("Connecting to MCP server: \(self.serverConfig.name)")
 
+        #if os(macOS)
         let process = Process()
         process.executableURL = URL(fileURLWithPath: serverConfig.command)
         process.arguments = serverConfig.args
@@ -84,6 +89,9 @@ actor MCPClient {
         // Send initialize request
         let initResult = try await initialize()
         logger.info("MCP server initialized: \(initResult.serverInfo?.name ?? "unknown")")
+        #else
+        throw MCPError.connectionFailed("MCP Local Process execution is not supported on iOS")
+        #endif
     }
 
     /// Disconnect from the MCP server.
@@ -93,9 +101,11 @@ actor MCPClient {
         logger.info("Disconnecting from MCP server: \(self.serverConfig.name)")
 
         stdin?.closeFile()
+        #if os(macOS)
         process?.terminate()
-
         process = nil
+        #endif
+
         stdin = nil
         stdout = nil
         stderr = nil

@@ -1,0 +1,268 @@
+//
+//  ShellSession.swift
+//  llmHub
+//
+//  Persistent shell session actor that maintains cwd across calls.
+//  Used by ShellTool to provide stateful command execution.
+//
+
+import Foundation
+import OSLog
+
+#if os(macOS)
+
+    /// Output from a shell command execution.
+    struct ShellOutput: Sendable {
+        let exitCode: Int32
+        let stdout: String
+        let stderr: String
+        let duration: TimeInterval
+
+        var combined: String {
+            """
+            exit_code: \(exitCode)
+            stdout:
+            \(stdout)
+            stderr:
+            \(stderr)
+            """
+        }
+
+        var succeeded: Bool { exitCode == 0 }
+    }
+
+    /// Persistent shell session that maintains working directory and environment across calls.
+    actor ShellSession {
+        /// Unique identifier for this shell session.
+        let id: String
+
+        /// Current working directory, persisted between commands.
+        private(set) var currentWorkingDirectory: URL
+
+        /// Environment variables for this session.
+        private var environment: [String: String]
+
+        /// Command history for this session.
+        private var commandHistory: [String] = []
+
+        /// Logger for shell operations.
+        private let logger = Logger(subsystem: "com.llmhub", category: "ShellSession")
+
+        /// Maximum history entries to retain.
+        private let maxHistorySize = 100
+
+        init(id: String, initialCwd: URL, environment: [String: String]? = nil) {
+            self.id = id
+            self.currentWorkingDirectory = initialCwd.standardizedFileURL
+            self.environment = environment ?? ProcessInfo.processInfo.environment
+        }
+
+        // MARK: - Directory Management
+
+        /// Changes the current working directory.
+        /// - Parameter path: Absolute or relative path to change to.
+        /// - Throws: If the path doesn't exist or isn't a directory.
+        func cd(_ path: String) throws {
+            let targetURL: URL
+
+            if path.hasPrefix("/") {
+                // Absolute path
+                targetURL = URL(fileURLWithPath: path).standardizedFileURL
+            } else if path.hasPrefix("~") {
+                // Home directory expansion
+                let expandedPath = (path as NSString).expandingTildeInPath
+                targetURL = URL(fileURLWithPath: expandedPath).standardizedFileURL
+            } else {
+                // Relative path
+                targetURL = currentWorkingDirectory.appendingPathComponent(path).standardizedFileURL
+            }
+
+            // Verify it exists and is a directory
+            var isDirectory: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: targetURL.path, isDirectory: &isDirectory),
+                isDirectory.boolValue
+            else {
+                throw ShellSessionError.directoryNotFound(targetURL.path)
+            }
+
+            currentWorkingDirectory = targetURL
+            logger.info("Changed directory to: \(targetURL.path)")
+        }
+
+        /// Returns the current working directory path.
+        func pwd() -> String {
+            currentWorkingDirectory.path
+        }
+
+        // MARK: - Environment Management
+
+        /// Sets an environment variable for this session.
+        func setEnv(_ key: String, value: String) {
+            environment[key] = value
+        }
+
+        /// Gets an environment variable.
+        func getEnv(_ key: String) -> String? {
+            environment[key]
+        }
+
+        /// Removes an environment variable.
+        func unsetEnv(_ key: String) {
+            environment.removeValue(forKey: key)
+        }
+
+        // MARK: - Command Execution
+
+        /// Executes a shell command in the current working directory.
+        /// - Parameters:
+        ///   - command: The shell command to execute.
+        ///   - timeout: Maximum execution time in seconds.
+        ///   - stdin: Optional data to send to stdin.
+        /// - Returns: The command output including exit code, stdout, and stderr.
+        func execute(
+            command: String,
+            timeout: TimeInterval = 30,
+            stdin: Data? = nil
+        ) async throws -> ShellOutput {
+            let startTime = Date()
+
+            // Record in history
+            addToHistory(command)
+
+            let process = Process()
+            process.launchPath = "/bin/zsh"
+            process.arguments = ["-lc", command]
+            process.currentDirectoryURL = currentWorkingDirectory
+            process.environment = environment
+
+            let stdoutPipe = Pipe()
+            let stderrPipe = Pipe()
+            process.standardOutput = stdoutPipe
+            process.standardError = stderrPipe
+
+            if let stdinData = stdin {
+                let stdinPipe = Pipe()
+                stdinPipe.fileHandleForWriting.write(stdinData)
+                try? stdinPipe.fileHandleForWriting.close()
+                process.standardInput = stdinPipe
+            }
+
+            // Create termination stream
+            let terminationStream = AsyncStream<Void> { continuation in
+                process.terminationHandler = { _ in
+                    continuation.yield(())
+                    continuation.finish()
+                }
+            }
+
+            try process.run()
+            logger.debug("Executing: \(command)")
+
+            // Wait for completion or timeout
+            let didTimeout = await withTaskGroup(of: Bool.self) { group in
+                group.addTask {
+                    for await _ in terminationStream {
+                        break
+                    }
+                    return false
+                }
+                group.addTask {
+                    try? await Task.sleep(nanoseconds: UInt64(timeout) * 1_000_000_000)
+                    return true
+                }
+                return await group.next() ?? true
+            }
+
+            if didTimeout {
+                process.terminate()
+                throw ShellSessionError.timeout(command: command, seconds: timeout)
+            }
+
+            let stdoutData = (try? stdoutPipe.fileHandleForReading.readToEnd()) ?? Data()
+            let stderrData = (try? stderrPipe.fileHandleForReading.readToEnd()) ?? Data()
+
+            let duration = Date().timeIntervalSince(startTime)
+
+            return ShellOutput(
+                exitCode: process.terminationStatus,
+                stdout: String(data: stdoutData, encoding: .utf8) ?? "",
+                stderr: String(data: stderrData, encoding: .utf8) ?? "",
+                duration: duration
+            )
+        }
+
+        // MARK: - History
+
+        /// Returns recent command history.
+        func history(limit: Int = 10) -> [String] {
+            Array(commandHistory.suffix(limit))
+        }
+
+        private func addToHistory(_ command: String) {
+            commandHistory.append(command)
+            if commandHistory.count > maxHistorySize {
+                commandHistory.removeFirst(commandHistory.count - maxHistorySize)
+            }
+        }
+    }
+
+    // MARK: - Shell Session Errors
+
+    enum ShellSessionError: LocalizedError, Sendable {
+        case directoryNotFound(String)
+        case timeout(command: String, seconds: TimeInterval)
+        case executionFailed(String)
+
+        var errorDescription: String? {
+            switch self {
+            case .directoryNotFound(let path):
+                return "Directory not found: \(path)"
+            case .timeout(let command, let seconds):
+                return "Command timed out after \(Int(seconds))s: \(command)"
+            case .executionFailed(let reason):
+                return "Shell execution failed: \(reason)"
+            }
+        }
+    }
+
+#else
+
+    // Stub for non-macOS platforms
+    struct ShellOutput: Sendable {
+        let exitCode: Int32
+        let stdout: String
+        let stderr: String
+        let duration: TimeInterval
+
+        var combined: String { "Shell not available on this platform" }
+        var succeeded: Bool { false }
+    }
+
+    actor ShellSession {
+        let id: String
+        private(set) var currentWorkingDirectory: URL
+
+        init(id: String, initialCwd: URL, environment: [String: String]? = nil) {
+            self.id = id
+            self.currentWorkingDirectory = initialCwd
+        }
+
+        func cd(_ path: String) throws {
+            throw ToolError.platformNotSupported("Shell access")
+        }
+
+        func pwd() -> String { currentWorkingDirectory.path }
+
+        func execute(command: String, timeout: TimeInterval = 30, stdin: Data? = nil) async throws
+            -> ShellOutput
+        {
+            throw ToolError.platformNotSupported("Shell access")
+        }
+    }
+
+    enum ShellSessionError: LocalizedError, Sendable {
+        case platformNotSupported
+        var errorDescription: String? { "Shell sessions are only available on macOS" }
+    }
+
+#endif

@@ -15,4 +15,20 @@ enum ReferenceFormatter {
         let random = Int.random(in: 1...999).formatted(.number.precision(.fractionLength(3)))
         return "chat_\(dateString)_\(random)"
     }
+
+    static func formatForRequest(_ references: [ChatReference]) -> String {
+        guard !references.isEmpty else { return "" }
+
+        var lines: [String] = ["<references>"]
+        for ref in references {
+            lines.append("[\(ref.role.rawValue)]")
+            lines.append(ref.text)
+            lines.append("---")
+        }
+        if lines.last == "---" {
+            lines.removeLast()
+        }
+        lines.append("</references>")
+        return lines.joined(separator: "\n")
+    }
 }

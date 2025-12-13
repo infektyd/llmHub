@@ -567,6 +567,24 @@ public struct MistralStreamChunk: Decodable {
         public let role: String?
         /// The content update.
         public let content: String?
+        /// The tool calls update.
+        public let toolCalls: [ToolCall]?
+        
+        enum CodingKeys: String, CodingKey {
+            case role, content
+            case toolCalls = "tool_calls"
+        }
+        
+        public struct ToolCall: Decodable {
+            public let index: Int
+            public let id: String?
+            public let function: FunctionCall?
+        }
+        
+        public struct FunctionCall: Decodable {
+            public let name: String?
+            public let arguments: String?
+        }
     }
 }
 

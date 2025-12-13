@@ -21,7 +21,7 @@ enum SupportedLanguage: String, CaseIterable, Codable, Sendable {
     case javascript
     /// Dart language.
     case dart
-    
+
     /// The display name of the language (e.g., "Python").
     var displayName: String {
         switch self {
@@ -32,7 +32,7 @@ enum SupportedLanguage: String, CaseIterable, Codable, Sendable {
         case .dart: return "Dart"
         }
     }
-    
+
     /// Nonisolated accessor for display name (safe for use in error descriptions).
     nonisolated var displayNameValue: String {
         switch self {
@@ -43,7 +43,7 @@ enum SupportedLanguage: String, CaseIterable, Codable, Sendable {
         case .dart: return "Dart"
         }
     }
-    
+
     /// The standard file extension for the language (e.g., ".py").
     var fileExtension: String {
         switch self {
@@ -54,7 +54,7 @@ enum SupportedLanguage: String, CaseIterable, Codable, Sendable {
         case .dart: return ".dart"
         }
     }
-    
+
     /// Nonisolated version for use in actors.
     nonisolated var fileExtensionValue: String {
         switch self {
@@ -65,7 +65,7 @@ enum SupportedLanguage: String, CaseIterable, Codable, Sendable {
         case .dart: return ".dart"
         }
     }
-    
+
     /// The command-line name of the interpreter (e.g., "python3").
     var interpreterName: String {
         switch self {
@@ -76,7 +76,7 @@ enum SupportedLanguage: String, CaseIterable, Codable, Sendable {
         case .dart: return "dart"
         }
     }
-    
+
     /// Nonisolated accessor for interpreter name (safe for use in error descriptions).
     nonisolated var interpreterNameValue: String {
         switch self {
@@ -87,7 +87,7 @@ enum SupportedLanguage: String, CaseIterable, Codable, Sendable {
         case .dart: return "dart"
         }
     }
-    
+
     /// Detect language from file extension.
     /// - Parameter ext: The file extension (with or without dot).
     /// - Returns: The matching `SupportedLanguage` or nil if not found.
@@ -95,7 +95,7 @@ enum SupportedLanguage: String, CaseIterable, Codable, Sendable {
         let normalized = ext.lowercased().hasPrefix(".") ? ext.lowercased() : ".\(ext.lowercased())"
         return allCases.first { $0.fileExtension == normalized }
     }
-    
+
     /// Detect language from filename.
     /// - Parameter filename: The full filename.
     /// - Returns: The matching `SupportedLanguage` or nil if not found.
@@ -115,7 +115,7 @@ enum CodeSecurityMode: String, CaseIterable, Codable, Sendable {
     case approval
     /// Unrestricted mode: direct execution with full system access.
     case unrestricted
-    
+
     /// The display name for the security mode.
     var displayName: String {
         switch self {
@@ -124,7 +124,7 @@ enum CodeSecurityMode: String, CaseIterable, Codable, Sendable {
         case .unrestricted: return "Unrestricted"
         }
     }
-    
+
     /// A description of the security mode.
     var description: String {
         switch self {
@@ -136,7 +136,7 @@ enum CodeSecurityMode: String, CaseIterable, Codable, Sendable {
             return "Direct execution with full system access (power user)"
         }
     }
-    
+
     /// The system image name for the security mode icon.
     var systemImage: String {
         switch self {
@@ -169,12 +169,12 @@ struct CodeExecutionResult: Codable, Sendable {
     let timestamp: Date
     /// The path to the sandbox used, if any.
     let sandboxPath: String?
-    
+
     /// Indicates if the execution was successful (exit code 0).
-    var isSuccess: Bool {
+    nonisolated var isSuccess: Bool {
         exitCode == 0
     }
-    
+
     /// Combines stdout and stderr into a single string.
     var combinedOutput: String {
         var output = ""
@@ -187,17 +187,17 @@ struct CodeExecutionResult: Codable, Sendable {
         }
         return output.isEmpty ? "(No output)" : output
     }
-    
+
     /// Formats the result for inclusion in LLM context.
-    var llmSummary: String {
+    nonisolated var llmSummary: String {
         """
-        Language: \(language.displayName)
+        Language: \(language.displayNameValue)
         Exit Code: \(exitCode) (\(isSuccess ? "Success" : "Failed"))
         Execution Time: \(executionTimeMs)ms
-        
+
         --- STDOUT ---
         \(stdout.isEmpty ? "(empty)" : stdout)
-        
+
         --- STDERR ---
         \(stderr.isEmpty ? "(empty)" : stderr)
         """
@@ -216,7 +216,7 @@ struct InterpreterInfo: Sendable {
     let version: String?
     /// Indicates if the interpreter is available on the system.
     let isAvailable: Bool
-    
+
     /// Creates an `InterpreterInfo` instance representing an unavailable interpreter.
     /// - Parameter language: The language that is unavailable.
     /// - Returns: An `InterpreterInfo` instance.
@@ -239,7 +239,7 @@ struct CodeExecutionRequest: Sendable {
     let timeoutSeconds: Int
     /// The working directory for execution.
     let workingDirectory: URL?
-    
+
     /// Initializes a new `CodeExecutionRequest`.
     /// - Parameters:
     ///   - id: The unique identifier.
@@ -280,12 +280,13 @@ enum CodeExecutionError: LocalizedError, Sendable {
     case executionCancelled
     /// The user denied approval for execution.
     case approvalDenied
-    
+
     /// A localized description of the error.
     var errorDescription: String? {
         switch self {
         case .interpreterNotFound(let lang):
-            return "Interpreter for \(lang.displayNameValue) not found. Please install \(lang.interpreterNameValue)."
+            return
+                "Interpreter for \(lang.displayNameValue) not found. Please install \(lang.interpreterNameValue)."
         case .timeout(let seconds):
             return "Execution timed out after \(seconds) seconds"
         case .sandboxCreationFailed(let reason):
@@ -316,7 +317,7 @@ struct CodeFileAttachment: Identifiable, Sendable {
     let code: String
     /// The size of the code content in bytes.
     let fileSize: Int
-    
+
     /// Initializes a new `CodeFileAttachment`.
     /// - Parameters:
     ///   - id: The unique identifier.
@@ -330,7 +331,7 @@ struct CodeFileAttachment: Identifiable, Sendable {
         self.code = code
         self.fileSize = code.utf8.count
     }
-    
+
     /// Returns a human-readable string representation of the file size.
     var formattedSize: String {
         if fileSize < 1024 {

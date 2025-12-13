@@ -29,7 +29,9 @@ struct AnthropicProvider: LLMProvider {
     }
 
     var isConfigured: Bool {
-        keychain.apiKey(for: .anthropic) != nil
+        get async {
+            await keychain.apiKey(for: .anthropic) != nil
+        }
     }
 
     func fetchModels() async throws -> [LLMModel] {
@@ -41,17 +43,19 @@ struct AnthropicProvider: LLMProvider {
     }
 
     var defaultHeaders: [String: String] {
-        [:]  // Handled by Manager
+        get async {
+            [:]  // Handled by Manager
+        }
     }
 
-    func buildRequest(messages: [ChatMessage], model: String) throws -> URLRequest {
-        try buildRequest(messages: messages, model: model, tools: nil)
+    func buildRequest(messages: [ChatMessage], model: String) async throws -> URLRequest {
+        try await buildRequest(messages: messages, model: model, tools: nil)
     }
 
-    func buildRequest(messages: [ChatMessage], model: String, tools: [ToolDefinition]?) throws
+    func buildRequest(messages: [ChatMessage], model: String, tools: [ToolDefinition]?) async throws
         -> URLRequest
     {
-        guard let key = keychain.apiKey(for: .anthropic) else {
+        guard let key = await keychain.apiKey(for: .anthropic) else {
             throw LLMProviderError.authenticationMissing
         }
 
@@ -140,7 +144,7 @@ struct AnthropicProvider: LLMProvider {
     }
 
     func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {
-        AsyncThrowingStream { continuation in
+        AsyncThrowingStream(ProviderEvent.self) { continuation in
             Task {
                 do {
                     // 1. Modify for stream
@@ -162,7 +166,7 @@ struct AnthropicProvider: LLMProvider {
                             "Anthropic Request: \(bodyStr)")
                     }
 
-                    let (bytes, response) = try await URLSession.shared.bytes(for: streamRequest)
+                    let (bytes, response) = try await LLMURLSession.shared.bytes(for: streamRequest)
                     guard let http = response as? HTTPURLResponse else {
                         continuation.yield(.error(.server(reason: "No HTTP response")))
                         continuation.finish()

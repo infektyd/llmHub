@@ -10,35 +10,47 @@ import OSLog
 
 /// Code Interpreter Tool conforming to the Tool protocol.
 /// Executes code in Swift, Python, TypeScript, JavaScript, and Dart.
-final class CodeInterpreterTool: Tool, @unchecked Sendable {
-    nonisolated let id = "code_interpreter"
-    nonisolated let name = "code_interpreter"
-    nonisolated let description = """
+nonisolated final class CodeInterpreterTool: Tool, @unchecked Sendable {
+    let name = "code_interpreter"
+    let description = """
         Executes code in various programming languages and returns the output. \
         Supports Swift, Python, TypeScript, JavaScript, and Dart. \
         Use this tool when you need to run code to solve problems, \
         perform calculations, process data, or demonstrate programming concepts.
         """
 
-    nonisolated var inputSchema: [String: Any] {
-        [
-            "type": "object",
-            "properties": [
-                "code": [
-                    "type": "string",
-                    "description": "The code to execute",
-                ],
-                "language": [
-                    "type": "string",
-                    "enum": SupportedLanguage.allCases.map { $0.rawValue },
-                    "description": "The programming language of the code",
-                ],
+    var parameters: ToolParametersSchema {
+        ToolParametersSchema(
+            properties: [
+                "code": ToolProperty(
+                    type: .string,
+                    description: "The code to execute"
+                ),
+                "language": ToolProperty(
+                    type: .string,
+                    description: "The programming language of the code",
+                    enumValues: SupportedLanguage.allCases.map { $0.rawValue }
+                ),
             ],
-            "required": ["code", "language"],
-        ]
+            required: ["code", "language"]
+        )
     }
 
+    // Tool Protocol properties
+    var permissionLevel: ToolPermissionLevel {
+        switch securityMode {
+        case .approval: return .dangerous
+        case .sandbox: return .sensitive
+        case .unrestricted: return .safe
+        }
+    }
+
+    var requiredCapabilities: [ToolCapability] { [.codeExecution] }
+    var weight: ToolWeight { .heavy }
+    var isCacheable: Bool { false }
+
     private let engine: CodeExecutionEngine
+    private let environment: ToolEnvironment
     private let logger = Logger(subsystem: "com.llmhub", category: "CodeInterpreterTool")
 
     // Configuration
@@ -54,28 +66,40 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
 
     /// Initialize with a specific engine.
     /// - Parameter engine: The `CodeExecutionEngine` instance.
-    init(engine: CodeExecutionEngine) {
+    init(engine: CodeExecutionEngine, environment: ToolEnvironment = .current) {
         self.engine = engine
+        self.environment = environment
     }
 
     /// Initialize with the default engine (must be called from MainActor).
     @MainActor
-    init() {
+    init(environment: ToolEnvironment = .current) {
+        self.environment = environment
         self.engine = CodeExecutionEngine()
     }
 
-    nonisolated func execute(input: [String: Any]) async throws -> String {
-        guard let code = input["code"] as? String else {
-            throw ToolError.invalidInput
+    func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
+        guard environment.supports(.codeExecution) else {
+            logger.debug("Code interpreter unavailable on this platform")
+            throw ToolError.unavailable(reason: "Code execution unavailable on this platform")
         }
 
-        guard let languageStr = input["language"] as? String,
+        guard let code = arguments.string("code") else {
+            throw ToolError.invalidArguments("code is required")
+        }
+
+        guard let languageStr = arguments.string("language"),
             let language = SupportedLanguage(rawValue: languageStr)
         else {
-            throw ToolError.invalidInput
+            throw ToolError.invalidArguments(
+                "language must be one of \(SupportedLanguage.allCases.map { $0.rawValue }.joined(separator: ", "))"
+            )
         }
 
-        return try await executeCode(code: code, language: language)
+        let output = try await executeCode(code: code, language: language)
+        return await MainActor.run {
+            ToolResult.success(output)
+        }
     }
 
     /// Execute code and return formatted result.
@@ -84,7 +108,7 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
     ///   - language: The programming language.
     /// - Returns: A summary string of the execution result.
     func executeCode(code: String, language: SupportedLanguage) async throws -> String {
-        logger.info("Executing \(language.displayName) code (\(code.count) chars)")
+        logger.info("Executing \(language.rawValue) code (\(code.count) chars)")
 
         // Check for approval if required
         if securityMode == .approval {
@@ -123,7 +147,7 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
 
         } catch let error as CodeExecutionError {
             logger.error("Execution failed: \(error.localizedDescription)")
-            throw ToolError.executionFailed(error.localizedDescription)
+            throw ToolError.executionFailed(error.localizedDescription, retryable: false)
         }
     }
 
@@ -165,6 +189,9 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
         return result
     }
 
+    // MARK: - Availability
+    // Properties are defined in protocol conformance
+
     /// Check which interpreters are available.
     /// - Returns: An array of `InterpreterInfo`.
     func checkAvailability() async -> [InterpreterInfo] {
@@ -178,8 +205,9 @@ extension CodeInterpreterTool {
     /// Quick Python calculation.
     /// - Parameter code: Python code to run.
     /// - Returns: Execution output.
+    @MainActor
     static func quickPython(_ code: String) async throws -> String {
-        let tool = await CodeInterpreterTool()
+        let tool = CodeInterpreterTool()
         tool.securityMode = .unrestricted
         tool.timeoutSeconds = 10
         return try await tool.executeCode(code: code, language: .python)
@@ -188,8 +216,9 @@ extension CodeInterpreterTool {
     /// Quick Swift calculation.
     /// - Parameter code: Swift code to run.
     /// - Returns: Execution output.
+    @MainActor
     static func quickSwift(_ code: String) async throws -> String {
-        let tool = await CodeInterpreterTool()
+        let tool = CodeInterpreterTool()
         tool.securityMode = .unrestricted
         tool.timeoutSeconds = 10
         return try await tool.executeCode(code: code, language: .swift)

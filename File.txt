@@ -1,4 +1,0 @@
-
-Showing Recent Messages
-SwiftExplicitDependencyGeneratePcm arm64 /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/sys_types-J2PQ729UGMFUCBRQ331KTYQQ.pcm
-

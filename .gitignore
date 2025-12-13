@@ -1,0 +1,86 @@
+# Xcode
+#
+# gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore &amp; Swift.gitignore
+#
+
+## User settings
+xcuserdata/
+
+## Xcode 8 and earlier
+xcscmblueprint
+
+## Xcode 9
+.xccheckout
+
+## Xcode 10
+*.moved-aside
+**/DerivedData/
+
+## Xcode 11+
+Project.xcworkspace/
+xcuserdata/
+
+## Swift Package Manager
+# Packages/
+# Package.pins
+# Package.resolved
+# *.xcodeproj
+
+## Xcode Private
+*.xcsettings
+
+## Build
+build/
+llmHub.build/
+*.build/
+*.xcresult
+*.xccoverage
+*.xcbuilddata
+build_ios/
+build_macos/
+
+## Testing
+TestResults/
+
+## Logs
+error reports/
+errorExports/
+build_log*.txt
+Build llmHub_*.txt
+
+## OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+## IDE
+.vscode/
+.idea/
+
+## Generated docs & archives
+*.doccarchive/
+llmHub.doccarchive/
+Scaffold/*.zip
+
+## Local caches & indexes
+.cursor/
+.tmp.driveupload/
+.sandbox_home/
+DerivedData/
+DerivedDataLocal/
+DerivedDataLocaliOS/
+SourcePackagesLocal/
+
+## Error reports & backups
+error reports/
+*.pbxproj.backup
+*.pbxproj.bak
+
+## Private
+*.pem
+*.key
+.DS_Store

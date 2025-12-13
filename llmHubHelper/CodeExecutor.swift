@@ -6,6 +6,7 @@
 //  Handles interpreter discovery and process management
 //
 
+#if os(macOS)
 import Foundation
 import OSLog
 
@@ -290,3 +291,4 @@ actor CodeExecutor {
         return (stdout, stderr, process.terminationStatus)
     }
 }
+#endif

@@ -16,7 +16,10 @@ final class ProviderRegistry {
     /// - Parameter providerBuilders: Closures that create the provider instances.
     init(providerBuilders: [() -> any LLMProvider]) {
         let resolved = providerBuilders.map { $0() }
-        self.providers = Dictionary(uniqueKeysWithValues: resolved.map { ($0.id, $0) })
+        // ✅ Normalize provider IDs to lowercase to prevent case-sensitivity issues
+        self.providers = Dictionary(
+            uniqueKeysWithValues: resolved.map { ($0.id.lowercased(), $0) }
+        )
     }
 
     /// Retrieves a specific provider by its ID.
@@ -24,7 +27,9 @@ final class ProviderRegistry {
     /// - Returns: The requested `LLMProvider`.
     /// - Throws: `RegistryError.providerMissing` if the provider is not found.
     func provider(for id: String) throws -> any LLMProvider {
-        guard let provider = providers[id] else {
+        // ✅ Normalize lookup to lowercase
+        let normalizedID = id.lowercased()
+        guard let provider = providers[normalizedID] else {
             throw RegistryError.providerMissing
         }
         return provider
