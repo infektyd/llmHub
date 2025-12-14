@@ -265,7 +265,7 @@ final class SettingsViewModel: ObservableObject {
         for tool in availableTools {
             let availability = tool.availability(in: environment)
             // Use tool.name as the ID since it's unique
-            let permission = await authService.checkAccess(for: tool.name)
+            let permission = authService.checkAccess(for: tool.name)
 
             // Map ID or Name to icon key (using name lowercased)
             let key = tool.name.lowercased().replacingOccurrences(of: " ", with: "_")
@@ -303,9 +303,9 @@ final class SettingsViewModel: ObservableObject {
     func toggleTool(_ toolID: String, enabled: Bool) {
         Task { @MainActor in
             if enabled {
-                await authService.grantAccess(for: toolID)
+                authService.grantAccess(for: toolID)
             } else {
-                await authService.revokeAccess(for: toolID)
+                authService.revokeAccess(for: toolID)
             }
             // Reload to update state
             await loadTools()

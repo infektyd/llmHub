@@ -16,6 +16,7 @@ struct NeonChatView: View {
     @Environment(\.theme) private var theme
     @State private var chatVM = ChatViewModel()
     @StateObject private var interactionController = ChatInteractionController()
+    @StateObject private var authService = ToolAuthorizationService()
     @State private var inputText: String = ""  // Lifted state for InputPanel
 
     @State private var scrollOffset: CGFloat = 0
@@ -51,7 +52,20 @@ struct NeonChatView: View {
                     }
                 }
                 .overlay(alignment: .bottomTrailing) {
-                    if let inputTokens = session.lastTokenUsageInputTokens,
+                    // Show streaming stats during active generation
+                    if chatVM.isActivelyStreaming {
+                        StreamingStatsCapsule(
+                            inputTokens: session.lastTokenUsageInputTokens ?? 0,
+                            estimatedOutputTokens: chatVM.streamingTokenEstimate,
+                            estimatedCost: 0.00  // Stub cost - calculate from model rates if needed
+                        )
+                        .padding(.trailing, 14)
+                        .padding(.bottom, 120)
+                        .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                        .animation(.easeInOut(duration: 0.2), value: chatVM.isActivelyStreaming)
+                    }
+                    // Show static token usage after completion
+                    else if let inputTokens = session.lastTokenUsageInputTokens,
                         let outputTokens = session.lastTokenUsageOutputTokens
                     {
                         TokenUsageCapsule(
@@ -62,10 +76,11 @@ struct NeonChatView: View {
                             contextLimit: 128000
                         )
                         .padding(.trailing, 14)
-                        .padding(.bottom, 120)  // Above the composer inside the sheet
+                        .padding(.bottom, 120)
                         .transition(.move(edge: .trailing).combined(with: .opacity))
                     }
                 }
+
         }
         #if os(macOS)
             .sheet(isPresented: $showingSettings) {
@@ -110,11 +125,13 @@ struct NeonChatView: View {
             #else
                 print("🔴 LIFECYCLE: [macOS] NeonChatView.onDisappear - session: \(session.id)")
             #endif
+            // Break retain cycle by nilling the closure
+            interactionController.onAddReference = nil
         }
         .onAppear {
             // Wire up controller interactions
-            interactionController.onAddReference = { reference in
-                chatVM.addReference(reference)
+            interactionController.onAddReference = { [weak chatVM] reference in
+                chatVM?.addReference(reference)
             }
         }
         #if os(iOS)
@@ -200,7 +217,7 @@ extension NeonChatView {
             ScrollViewReader { proxy in
                 ScrollView {
                     messagesStack(messages)
-                        .padding(LiquidGlassTokens.Spacing.transcriptPadding)
+                        .padding(LiquidGlassTokens.Spacing.transcriptPadding)  // Now 0 for infinite scroll
                         .background(
                             GeometryReader { geo in
                                 Color.clear
@@ -271,7 +288,15 @@ extension NeonChatView {
                 },
                 tools: chatVM.toolToggles,
                 onToggleTool: { id, enabled in
-                    Task { await chatVM.setToolPermission(toolID: id, enabled: enabled) }
+                    Task {
+                        let status = authService.checkAccess(for: id)
+                        if status == .authorized {
+                            await chatVM.setToolPermission(toolID: id, enabled: enabled)
+                        } else {
+                            authService.grantAccess(for: id)  // Or prompt UI
+                            await chatVM.setToolPermission(toolID: id, enabled: enabled)
+                        }
+                    }
                 },
                 onToolsAppear: {
                     Task { await chatVM.refreshToolToggles(modelContext: modelContext) }
@@ -282,6 +307,7 @@ extension NeonChatView {
                 stagedReferences: chatVM.stagedReferences,
                 onRemoveReference: { chatVM.removeReference(at: $0) }
             )
+            .environmentObject(authService)  // Inject here
             .padding(.horizontal, LiquidGlassTokens.Spacing.sheetInset)
             .padding(.top, 10)
             .padding(.bottom, 12)
@@ -357,24 +383,12 @@ extension NeonChatView {
             ForEach(messages, id: \.id) { message in
                 let relatedTool = message.toolCallID.flatMap { toolCallMap[$0] }
 
-                switch ThemeManager.shared.transcriptStyle {
-                case .neonDark:
-                    NeonMessageRow(
-                        message: message,
-                        relatedToolCall: relatedTool,
-                        interactionController: interactionController
-                    )
-                    .id(message.id)
-                case .liquidGlassLight:
-                    NeonMessageBubble(
-                        message: message,
-                        relatedToolCall: relatedTool,
-                        interactionController: interactionController
-                    )
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .id(message.id)
-                }
+                NeonMessageRow(
+                    message: message,
+                    relatedToolCall: relatedTool,
+                    interactionController: interactionController
+                )
+                .id(message.id.description)
             }
 
             // Thinking indicator (before streaming starts)
@@ -395,35 +409,25 @@ extension NeonChatView {
             // Streaming message (actively streaming)
             if let streaming = chatVM.streamingDisplayMessage {
                 Group {
-                    switch ThemeManager.shared.transcriptStyle {
-                    case .neonDark:
-                        NeonMessageRow(
-                            message: ChatMessageEntity(message: streaming),
-                            relatedToolCall: nil,
-                            interactionController: interactionController
-                        )
-                        // Add "active streaming" affordance (cursor) overlay to the row
-                        .overlay(alignment: .bottomTrailing) {
-                            if chatVM.isActivelyStreaming {
-                                Circle()
-                                    .fill(theme.accent)
-                                    .frame(width: 8, height: 8)
-                                    .opacity(0.8)
-                                    .padding(16)
-                                    .offset(x: 4, y: -4)  // Approximate position near end of text
-                            }
+                    NeonMessageRow(
+                        message: ChatMessageEntity(message: streaming),
+                        relatedToolCall: nil,
+                        interactionController: interactionController,
+                        isStreaming: chatVM.isActivelyStreaming  // Enable typewriter animation
+                    )
+                    // Add "active streaming" affordance (cursor) overlay to the row
+                    .overlay(alignment: .bottomTrailing) {
+                        if chatVM.isActivelyStreaming {
+                            Circle()
+                                .fill(theme.accent)
+                                .frame(width: 8, height: 8)
+                                .opacity(0.8)
+                                .padding(16)
+                                .offset(x: 4, y: -4)  // Approximate position near end of text
                         }
-                    case .liquidGlassLight:
-                        NeonMessageBubble(
-                            message: ChatMessageEntity(message: streaming),
-                            relatedToolCall: nil,
-                            interactionController: interactionController
-                        )
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
                     }
                 }
-                .id(streaming.id)
+                .id(streaming.id.description)
             }
 
             // Continue Generating Button

@@ -224,6 +224,7 @@ struct OpenAIProvider: LLMProvider {
                         json["stream"] = true
                         json["stream_options"] = ["include_usage": true]
                         streamRequest.httpBody = try JSONSerialization.data(withJSONObject: json)
+                        print("OpenAIProvider: Helper stream request config applied (stream=true)")
                     }
                     streamRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
 

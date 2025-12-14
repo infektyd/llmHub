@@ -22,11 +22,11 @@ enum LiquidGlassTokens {
 
     enum Spacing {
         static let sheetInset: CGFloat = 16
-        static let transcriptPadding: CGFloat = 20
+        static let transcriptPadding: CGFloat = 0
         static let rowHorizontal: CGFloat = 18
-        static let rowVertical: CGFloat = 10
+        static let rowVertical: CGFloat = 8
         static let rowGutter: CGFloat = 12
-        static let markerWidth: CGFloat = 4  // Updated to 3-4px as per prompt
+        static let markerWidth: CGFloat = 3.5  // Updated to 3-4px as per prompt
         static let composerPadding: CGFloat = 14
     }
 
@@ -48,6 +48,14 @@ enum LiquidGlassTokens {
         static var toolCardBorder: Color {
             theme.textPrimary.opacity(theme is LiquidGlassLightTheme ? 0.08 : 0.12)
         }
+    }
+
+    // MARK: - Fonts (NEON: SF Mono; LIQUID: SF Pro; User Bold)
+    static func messageFont(role: MessageRole, theme: AppTheme) -> Font {
+        let baseFont: Font =
+            theme.name.contains("Neon")
+            ? .system(size: 16, design: .monospaced) : theme.responseFont
+        return role == .user ? baseFont.bold() : baseFont
     }
 
     enum Shadow {
@@ -75,15 +83,13 @@ enum LiquidGlassTokens {
     }
 
     static func roleTint(_ role: MessageRole, theme: AppTheme) -> Color {
+        let neonCyan = Color(hex: "00BFFF")
+        let baseTint = theme.name.contains("Neon") ? neonCyan : Color.teal.opacity(0.3)
         switch role {
-        case .user:
-            return theme.accent.opacity(0.85)
-        case .assistant:
-            return theme.textSecondary.opacity(0.75)
-        case .system:
-            return theme.textTertiary.opacity(0.7)
-        case .tool:
-            return theme.warning.opacity(0.85)
+        case .user: return theme.accent.opacity(0.65)
+        case .assistant: return baseTint.opacity(0.45)
+        case .system: return Color.indigo.opacity(0.4)
+        case .tool: return Color.mint.opacity(0.5)
         }
     }
 
