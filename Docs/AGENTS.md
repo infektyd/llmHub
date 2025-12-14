@@ -1,121 +1,252 @@
 # llmHub Architecture
 
-> **SYSTEM NOTE**: This file serves as the authoritative architectural reference for the `llmHub` project. It consolidates previous documentation from `AGENTS.md`.
+**Requirements:** macOS 26.2 SDK="25C57", Xcode 26.2 build="17C52", iOS 26.2 SDK="23C53" iPhone=17 pro, Swift 6.2
+
+> **Authoritative architectural reference for the llmHub project.**
 
 ---
 
 ## 🎯 Vision Statement
 
-**llmHub** is a native macOS AI Workspace designed to bridge chat interfaces with powerful agentic workflows. It prioritizes:
+**llmHub** is a native macOS/iOS AI Workbench that bridges conversational chat with powerful agentic workflows. Core priorities:
 
-1.  **Frontier Model Integration**: Support for all major providers (OpenAI, Anthropic, Gemini, Mistral, xAI).
-2.  **Liquid Glass UI**: A state-of-the-art translucent interface using modern SwiftUI and `GlassEffect` APIs.
-3.  **Brain/Hand/Loop Architecture**: Strict separation between reasoning (Brain), execution (Hand), and orchestration (Loop).
-4.  **Secure Execution**: Sandboxed code execution on macOS via XPC.
+1. **Frontier Model Integration**: All major providers (OpenAI, Anthropic, Gemini, Mistral, xAI, OpenRouter)
+2. **Liquid Glass UI**: Translucent SwiftUI interface using native `GlassEffect` APIs
+3. **Brain/Hand/Loop Architecture**: Strict separation of reasoning, execution, and orchestration
+4. **Secure Execution**: Sandboxed code execution on macOS via XPC
 
 ---
 
 ## 🏗 System Architecture: "Brain/Hand/Loop"
 
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         USER INPUT                          │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    🧠 BRAIN (Providers)                     │
+│  OpenAI · Anthropic · Gemini · Mistral · xAI · OpenRouter   │
+│                                                             │
+│  Protocol: LLMProvider                                      │
+│  Output: AsyncThrowingStream<ProviderEvent, Error>          │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                    ┌─────────┴─────────┐
+                    ▼                   ▼
+            [Text Response]      [Tool Calls]
+                    │                   │
+                    │                   ▼
+                    │   ┌─────────────────────────────────────┐
+                    │   │           ✋ HAND (Tools)           │
+                    │   │                                     │
+                    │   │  Calculator · CodeInterpreter       │
+                    │   │  FileReader · FileEditor · FilePatch│
+                    │   │  Shell · ShellSession · Workspace   │
+                    │   │  WebSearch · HTTPRequest · MCP      │
+                    │   │                                     │
+                    │   │  Protocol: Tool (Sendable)          │
+                    │   │  Registry: ToolRegistry             │
+                    │   └─────────────────────────────────────┘
+                    │                   │
+                    │                   ▼
+                    │           [Tool Results]
+                    │                   │
+                    └─────────┬─────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    🔄 LOOP (Orchestrator)                   │
+│                                                             │
+│  Component: ChatService                                     │
+│  Max Iterations: 10 tool calls per turn                     │
+│  Persistence: SwiftData (ChatSessionEntity)                 │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      FINAL RESPONSE                         │
+└─────────────────────────────────────────────────────────────┘
+```
+
 ### 1. The Brain (Providers)
 
-- **Role**: Intent processing and text generation.
-- **Protocol**: `LLMProvider`
-- **Implementations**: `OpenAIManager`, `AnthropicManager`, `GeminiManager`, `MistralManager`, `XAIManager`, `OpenRouterManager`.
-- **Pattern**: Providers are stateless wrappers around APIs; state is managed by `ChatService`.
+| Aspect              | Details                                                                                                   |
+| ------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Role**            | Intent processing and text generation                                                                     |
+| **Protocol**        | `LLMProvider` (`@MainActor`)                                                                              |
+| **Implementations** | `OpenAIManager`, `AnthropicManager`, `GeminiManager`, `MistralManager`, `XAIManager`, `OpenRouterManager` |
+| **Pattern**         | Stateless API wrappers; state managed by `ChatService`                                                    |
+| **Output**          | `AsyncThrowingStream<ProviderEvent, Error>`                                                               |
 
 ### 2. The Hand (Tools)
 
-- **Role**: Deterministic execution of capabilities.
-- **Protocol**: `Tool` (and `LegacyTool` for migration).
-- **Pattern**: Tools are `Sendable` and deterministically execute via `ToolRegistry`.
-- **Capabilities**:
-  - **Core**: Calculator, File Parsing, Web Search.
-  - **System**: Shell (macOS), Code Execution (Swift/Python via XPC).
-  - **Cloud**: HTTP Requests, MCP Bridge.
+| Aspect         | Details                                                              |
+| -------------- | -------------------------------------------------------------------- |
+| **Role**       | Deterministic execution of capabilities                              |
+| **Protocol**   | `Tool` (Sendable) — unified protocol for all tools                   |
+| **Registry**   | `ToolRegistry` — manages tool registration and lookup                |
+| **Categories** | Core (Calculator, FileReader), System (Shell, CodeExec), Cloud (MCP) |
+
+**Active Tools (17+):**
+
+| Tool                    | Platform | Purpose                            |
+| ----------------------- | -------- | ---------------------------------- |
+| `CalculatorTool`        | All      | Mathematical evaluation            |
+| `CodeInterpreterTool`   | macOS    | Swift/Python/JS execution via XPC  |
+| `FileReaderTool`        | All      | File content reading               |
+| `FileEditorTool`        | All      | File creation/modification         |
+| `FilePatchTool`         | All      | Unified diff patching              |
+| `ShellTool`             | macOS    | Terminal command execution         |
+| `ShellSession`          | macOS    | Persistent shell sessions          |
+| `WebSearchTool`         | All      | Web search integration             |
+| `HTTPRequestTool`       | All      | HTTP API calls                     |
+| `WorkspaceTool`         | All      | Workspace item management          |
+| `MCPToolBridge`         | All      | Model Context Protocol integration |
+| `DataVisualizationTool` | All      | Chart/graph generation             |
+| `ImageGenerationTool`   | All      | AI image generation                |
+
+> **Note**: Some tools report availability based on platform and sandbox status.
 
 ### 3. The Loop (Orchestrator)
 
-- **Role**: Coordinates the recursive interaction.
-- **Component**: `ChatService`.
-- **Flow**: `User Input` → `Brain` → `tool_calls` → `Hand` → `Tool Result` → `Brain` → `Final Response`.
-- **Persistence**: Handled via `SwiftData` (`ChatSession`, `ChatMessage` entities) and "Brain Swapping" logic (persistence of model choice per session).
+| Aspect             | Details                                                                  |
+| ------------------ | ------------------------------------------------------------------------ |
+| **Role**           | Coordinates recursive Brain↔Hand interaction                             |
+| **Component**      | `ChatService`                                                            |
+| **Flow**           | User Input → Brain → Tool Calls → Hand → Tool Results → Brain → Response |
+| **Max Iterations** | 10 tool calls per turn                                                   |
+| **Persistence**    | SwiftData entities with domain model conversion                          |
 
 ### 4. The Sandbox (Execution)
 
-- **Role**: Securely execute user-generated code.
-- **Component**: `llmHubHelper` (XPC Service).
-- **Mechanism**: Main App sends code → XPC connection → Helper Process spawns secure child process → Returns stdout/stderr.
-- **Platform**: macOS only.
+| Aspect        | Details                                                        |
+| ------------- | -------------------------------------------------------------- |
+| **Role**      | Securely execute user-generated code                           |
+| **Component** | `llmHubHelper` (XPC Service)                                   |
+| **Protocol**  | `CodeExecutionXPCProtocol`                                     |
+| **Platform**  | macOS only                                                     |
+| **Mechanism** | Main App → XPC → Helper Process → Secure child → stdout/stderr |
+
+### 5. Memory Management
+
+| Pattern              | Implementation                                                         |
+| -------------------- | ---------------------------------------------------------------------- |
+| **Weak Captures**    | Use `[weak self]` or `[weak viewModel]` in escaping closures           |
+| **Callback Cleanup** | Nil closure properties in `onDisappear` (e.g., `onAddReference = nil`) |
+| **Nested Tasks**     | Always use `[weak self]` in `Task { }` blocks inside view models       |
+| **Debug Logging**    | Add `deinit { print("🗑️ ClassName deallocated") }` during debugging    |
 
 ---
 
 ## 🎨 Liquid Glass UI
 
-The UI follows the "Liquid Glass" design language, characterized by translucent materials, vibrant semantic tinting, and fluid animations.
+The UI follows the "Liquid Glass" design language with translucent materials, semantic tinting, and fluid animations.
 
-### Core Primitives
+### Design Tokens
 
-- **`GlassEffect`**: Custom SwiftUI modifier replacing standard `.background(.ultraThinMaterial)`.
-- **Guidelines**: Use native SwiftUI `.glassEffect()` modifiers combined with `LiquidGlassTokens` for consistency.
-- **`LiquidGlassTokens`**: Central source of truth for spacing, radius, and colors (`NeonTheme.swift`).
+```swift
+LiquidGlassTokens.Spacing.rowGutter    // 12pt
+LiquidGlassTokens.Spacing.sheetInset   // 16pt
+LiquidGlassTokens.Radius.control       // 10pt
+LiquidGlassTokens.Radius.card          // 16pt
+```
 
-### Key Components
+### Glass Effect Usage
 
-- **`NeonChatView`**: The main chat interface.
-- **`ChatInputPanel`**: A glass capsule input bar with `AttachmentChip` and `ToolIconToggle`.
-- **`TokenUsageCapsule`**: Displays live token counts (Input/Output) and cost.
-- **`AttachmentChip`**: Represents file attachments (Images, Text, PDF) with preview capabilities.
+```swift
+// ✅ Correct - Use native modifier
+.glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+
+// ✅ Interactive elements
+.glassEffect(GlassEffect.clear.interactive(), in: .capsule)
+
+// ✅ Tinted glass
+.glassEffect(GlassEffect.regular.tint(theme.accent.opacity(0.2)), in: .rect)
+
+// ❌ Never use legacy materials
+.background(.ultraThinMaterial)  // DEPRECATED
+```
+
+### Key UI Components
+
+| Component           | Purpose                                           |
+| ------------------- | ------------------------------------------------- |
+| `NeonChatView`      | Main chat interface                               |
+| `ChatInputPanel`    | Glass input bar with attachments and tool toggles |
+| `NeonMessageBubble` | Message rendering with markdown                   |
+| `ToolResultCard`    | Tool execution result display                     |
+| `TokenUsageCapsule` | Live token/cost display                           |
+| `NeonSidebar`       | Session list and navigation                       |
 
 ---
 
-## 💾 Persistence & State Management
+## 💾 Persistence & State
 
-### SwiftData
+### SwiftData Entities
 
-- **Entities**: `ChatSessionEntity`, `ChatMessageEntity`, `ChatFolderEntity`, `ChatTagEntity`.
-- **Migration**: Automatic schema migration enabled.
+| Entity              | Purpose                                            |
+| ------------------- | -------------------------------------------------- |
+| `ChatSessionEntity` | Chat session with messages, folder, tags           |
+| `ChatMessageEntity` | Individual messages with role, content, tool calls |
+| `ChatFolderEntity`  | Folder organization                                |
+| `ChatTagEntity`     | Tagging system                                     |
 
-### "Brain Swapping"
+### Brain Swapping
 
-- **Concept**: Each chat session remembers its last used Model and Provider.
-- **Mechanism**:
-  - `ChatViewModel` observes model/provider changes.
-  - Updates `ChatSessionEntity.providerID` and `.model` immediately.
-  - On session load (`hydrateState`), the view model restores the specific provider configuration for that session context.
+Each session remembers its provider/model configuration:
+
+```swift
+// On model change
+session.providerID = newProvider.id
+session.model = newModel.id
+
+// On session load
+viewModel.hydrateState(from: session)
+```
 
 ---
 
-## 🛠 Build & Environment
+## 📂 Directory Structure
 
-### Platforms
+```
+llmHub/
+├── App/                    # Entry points
+├── Models/                 # Domain models & SwiftData entities
+├── Providers/              # LLM API integrations
+├── Services/               # Business logic
+│   ├── ContextManagement/  # Token estimation & compaction
+│   └── ModelFetch/         # Model registry & fetching
+├── Support/                # Provider adapters & utilities
+├── Theme/                  # Theme definitions
+├── Tools/                  # Tool implementations
+├── Utilities/              # Helper extensions
+├── ViewModels/             # State management
+└── Views/                  # SwiftUI interfaces
+    ├── Chat/               # Chat UI components
+    ├── Components/         # Reusable UI components
+    ├── Settings/           # Settings screens
+    ├── Sidebar/            # Navigation sidebar
+    └── Workbench/          # Workbench window
+```
 
-- **macOS**: Target 15.0+ (Liquid Glass APIs shimmied for backward compatibility where needed).
-- **iOS**: Target iOS 18.0+.
+---
+
+## 🛠 Build Requirements
+
+| Platform | Minimum Version                  |
+| -------- | -------------------------------- |
+| macOS    | 26.2+ SDK="25C57"                |
+| iOS      | 26.2+ SDK="23C53". iPhone 17 Pro |
+| Xcode    | 26.2+ build="17C52"              |
+| Swift    | 6.2+                             |
 
 ### Dependencies
 
-- **MarkdownUI**: For rendering chat messages.
-- **Splash**: For syntax highlighting.
-- **SwiftCollections**: For efficient data structures.
-
-### Known Build Configurations
-
-- **DerivedData**: Ignored in `.gitignore`.
-- **Build Fixes**: Recently resolved `lstat` errors by ensuring clean dependency copying and correct `AttachmentType` definitions in `ChatModels.swift`.
-
----
-
-## 📂 File Structure Highlights
-
-- **`App/`**: Entry points (`llmHubApp`).
-- **`Models/`**: SwiftData entities and shared types (`ChatModels.swift`, `SharedTypes.swift`).
-- **`ViewModels/`**: State management (`ChatViewModel`, `WorkbenchViewModel`).
-- **`Views/`**: SwiftUI interfaces (`Chat/`, `Main/`).
-- **`Services/`**: Business logic (`ChatService`, `ToolRegistry`, `ModelRegistry`).
-- **`Providers/`**: LLM API integrations.
-- **`Tools/`**: Tool implementations.
-- **`Docs/`**: Project documentation.
+- **MarkdownUI** — Chat message rendering
+- **Splash** — Syntax highlighting
+- **SwiftCollections** — Efficient data structures
 
 ---
 

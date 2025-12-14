@@ -116,6 +116,7 @@ struct ChatInputPanel: View {
         }
 
         onSend(trimmed)
+        text = ""  // Clear input field after send
     }
 
     private func handleFileImport(_ result: Result<[URL], Error>) {

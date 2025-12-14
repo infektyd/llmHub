@@ -1,0 +1,112 @@
+TOOLMETRICS & OBSERVABILITY - QUICK REFERENCE
+==============================================
+
+TOOLMETRICS FIELDS - STATUS MATRIX
+===================================
+
+Field Name          Type       Populated  Logged   Unused
+─────────────────────────────────────────────────────────
+startTime           Date?      ✓ YES      ✗ NO    ✗ NO
+endTime             Date?      ✓ YES      ✗ NO    ✗ NO
+durationMs (calc)   Int        ✓ YES      ✓ YES   ✗ NO
+bytesIn             Int?       ✗ NO       ✗ NO    ✓ YES
+bytesOut            Int?       ✗ NO       ✗ NO    ✓ YES
+cacheHit            Bool       ✓ YES      ✗ NO    ✓ UNUSED
+retryCount          Int        ✗ NO       ✗ NO    ✓ YES
+errorClass          Enum?      ✓ YES      ~ PARTIAL ✗ NO
+
+
+TRACKED METRICS (WORKING)
+==========================
+1. Tool Execution Duration (ms)
+   ├─ Captured: ToolExecutor.swift:54-189
+   ├─ Logged: ToolExecutor.swift:213
+   └─ Message: "✅ {tool} completed in {duration}ms"
+
+2. Error Classification (15 types)
+   ├─ Captured: ToolExecutor.swift:62, 83, 102, 120, 140, 218, 229
+   ├─ Types: timeout, networkUnreachable, dnsFailure, sslError, etc.
+   └─ Logged: Implicitly in error descriptions
+
+3. Cache Hit Detection
+   ├─ Captured: ToolExecutor.swift:160
+   ├─ Set When: Cached result found
+   └─ Logged: ✗ NEVER
+
+
+UNUSED FIELDS (WASTED CAPACITY)
+================================
+1. bytesIn - Network input bytes (structure ready, never populated)
+2. bytesOut - Network output bytes (structure ready, never populated)
+3. retryCount - Retry attempts (structure ready, never incremented)
+   └─ NOTE: HTTPRequestTool has retry logic but doesn't track it
+
+
+LOGGING INFRASTRUCTURE
+======================
+Framework: Apple OSLog
+Subsystem: "com.llmhub"
+Helper: AppLogger.swift
+
+Logging By Component:
+├─ ToolExecutor.swift (3 logs)
+├─ ChatService.swift (20+ logs)
+├─ CodeExecutionEngine.swift (2 logs with timing)
+├─ ModelRegistry.swift (20+ logs)
+└─ SandboxManager.swift (6 logs)
+
+
+WHERE METRICS ARE LOGGED
+========================
+ToolExecutor.swift, line 213:
+    logger.info("✅ \(call.name) completed in \(metrics.durationMs)ms")
+
+On error (lines 219, 230):
+    logger.error("❌ \(call.name) failed: \(error.localizedDescription)")
+
+That's it. No other logging of metrics data.
+
+
+ANALYTICS INFRASTRUCTURE
+========================
+OSLog Only (Native Apple Framework)
+- No dedicated analytics system
+- No aggregation/trending
+- No dashboards
+- No cost tracking
+- No performance insights
+
+Future-Ready Structure:
+- ToolMetrics captures timing
+- errorClass enum defined
+- cacheHit flag available
+- Infrastructure ready for expansion
+
+
+MISSING BUT EASY TO ADD
+=======================
+1. Log cache hit status (1 line change)
+2. Increment retryCount in HTTPRequestTool (3-5 lines)
+3. Populate bytesIn/bytesOut in network tools (5-10 lines)
+4. Add aggregated metrics logging (20-30 lines)
+5. Create metrics dashboard (future)
+
+
+RECOMMENDATIONS
+================
+QUICK WINS (1-2 hours):
+1. Log cache hit status alongside duration
+2. Track retryCount in HTTPRequestTool
+3. Log errorClass classification separately
+
+MEDIUM EFFORT (4-8 hours):
+1. Add bytesIn/bytesOut tracking to network tools
+2. Create aggregated metrics summary
+3. Add metrics export functionality
+
+MAJOR EFFORT (1-2 days):
+1. Build metrics dashboard in UI
+2. Add trend analysis
+3. Implement cost analysis per tool
+4. Create performance reports
+

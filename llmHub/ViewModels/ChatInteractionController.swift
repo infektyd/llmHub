@@ -11,6 +11,10 @@ import SwiftUI
 /// Manages chat-scoped interactions such as text selection, reference creation, and auto-copy.
 @MainActor
 class ChatInteractionController: ObservableObject {
+    deinit {
+        print("🗑️ ChatInteractionController deallocated")
+    }
+
     // MARK: - State
 
     /// The currently selected text in a valid chat message.

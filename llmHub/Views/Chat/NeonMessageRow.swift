@@ -12,6 +12,7 @@ struct NeonMessageRow: View {
     let message: ChatMessageEntity
     let relatedToolCall: ToolCall?
     var interactionController: ChatInteractionController? = nil
+    var isStreaming: Bool = false  // For typewriter animation during streaming
 
     @Environment(\.theme) private var theme
     @AppStorage("showTimestamps") private var showTimestamps: Bool = false
@@ -78,14 +79,21 @@ struct NeonMessageRow: View {
             if !message.content.isEmpty {
                 if role == .system {
                     Text(message.content)
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(LiquidGlassTokens.messageFont(role: role, theme: theme))
                         .foregroundColor(theme.textTertiary)
-                        .textSelection(.enabled)
+
                         .fixedSize(horizontal: false, vertical: true)
+                } else if role == .assistant && isStreaming {
+                    // Typewriter animation for streaming assistant messages
+                    Markdown(message.content)
+                        .markdownTheme(.llmHubLiquid(theme: theme))
+                        .font(LiquidGlassTokens.messageFont(role: role, theme: theme))
+                        .foregroundColor(theme.textPrimary)
                 } else {
                     Markdown(message.content)
                         .markdownTheme(.llmHubLiquid(theme: theme))
-                        .textSelection(.enabled)
+
+                        .font(LiquidGlassTokens.messageFont(role: role, theme: theme))
                 }
             }
 

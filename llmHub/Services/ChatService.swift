@@ -263,6 +263,7 @@ final class ChatService {
 
                             llmMessages[lastUserIndex] = updatedUserMessage
                         }
+
                         // Compact context if needed before sending to provider
                         let compactionResult = try await service.contextManager.compact(
                             messages: llmMessages,
@@ -286,10 +287,12 @@ final class ChatService {
 
                         // Build tool definitions for provider, filtered by user authorization.
                         let availableTools = await registry.availableTools(in: env)
+
                         var enabledTools: [any Tool] = []
                         if let auth = service.toolAuthorizationService {
                             for tool in availableTools {
-                                if await auth.checkAccess(for: tool.name) == .authorized {
+                                let status = await auth.checkAccess(for: tool.name)
+        if status == .authorized {
                                     enabledTools.append(tool)
                                 }
                             }
@@ -458,6 +461,12 @@ final class ChatService {
                                 authorization: service.toolAuthorizationService
                             )
 
+                            // Emit tool execution events *before* starting ToolExecutor work.
+                            // Rationale: ToolResultCard UI needs "executing" state to appear live.
+                            for call in accumulatedToolCalls {
+                                continuation.yield(.toolExecuting(name: call.name))
+                            }
+
                             // Streaming execution output from ToolExecutor if needed, or just await all
                             let executionStream = await executor.execute(
                                 calls: accumulatedToolCalls, context: context)
@@ -467,7 +476,6 @@ final class ChatService {
                                 let toolResultOutput = callResult.output
                                 let toolCallID = callResult.id  // Correlation ID
 
-                                continuation.yield(.toolExecuting(name: toolName))
                                 logger.info(
                                     "Executed tool: \(toolName), success: \(callResult.success)"
                                 )
@@ -673,7 +681,7 @@ final class ChatService {
         let entity = ChatTagEntity(tag: tag)
         modelContext.insert(entity)
         try modelContext.save()
-        return tag
+       	return tag
     }
 
     /// Deletes a tag.
@@ -812,3 +820,4 @@ enum ChatServiceError: LocalizedError {
         }
     }
 }
+

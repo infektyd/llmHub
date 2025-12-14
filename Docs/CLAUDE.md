@@ -19,7 +19,7 @@ open llmHub.xcodeproj
 log stream --predicate 'subsystem == "com.llmhub"'
 ```
 
-**Requirements:** macOS 26.2+, Xcode 26.0+, Swift 6.2
+**Requirements:** macOS 26.2 SDK="25C57", Xcode 26.2 build="17C52", iOS 26.2 SDK="23C53" iPhone=17 pro, Swift 6.2
 
 ## Architecture: Brain/Hand/Loop
 
@@ -35,8 +35,9 @@ llmHub is a native macOS AI Workbench for LLMs with a modular architecture:
 
 - Conform to `Tool` protocol with platform-aware availability
 - **Core Tools**: Calculator, CodeInterpreterTool (Swift/Python/JS via XPC), FileEditorTool, FileReaderTool, WebSearchTool
-- **Extended Tools**: Shell, HTTPRequest, DatabaseQuery, TaskScheduler, ImageGeneration, EmailNotification, BrowserAutomation, DataVisualization, FilePatch, Workspace, ShellSession, MCPToolBridge
+- **Extended Tools**: Shell, HTTPRequest, ImageGeneration, DataVisualization, FilePatch, Workspace, ShellSession, MCPToolBridge
 - **17+ tools total** with unified registration via `ToolRegistry`
+- **Legacy**: Original tools use `LegacyTool` protocol (renamed from `Tool` during architecture unification)
 
 **Loop (Orchestrator)** - `ChatService` in `llmHub/Services/ChatService.swift`
 
@@ -124,7 +125,7 @@ llmHub is a native macOS AI Workbench for LLMs with a modular architecture:
 
 ## Agent Tier Guidelines
 
-From `Docs/Architecture/AGENTS.md`:
+From `Docs/AGENTS.md`:
 
 - **Haiku:** Quick tasks, follow patterns exactly, single-file changes, syntax help
 - **Sonnet:** New features, UI components, provider integrations, multi-file changes. Liquid Glass mandatory for UI.
@@ -150,3 +151,4 @@ Escalate to Opus if uncertain about architecture or existing patterns seem wrong
 - XPC helper must build successfully and embed in main app bundle (macOS only)
 - Context compaction uses `.truncateOldest` strategy with emergency fallback
 - Tools self-report availability based on platform (iOS vs macOS) and sandbox status
+- **Memory**: Use `[weak self]` in closures, nil callbacks in `onDisappear`, add deinit logging during debugging

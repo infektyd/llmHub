@@ -47,21 +47,6 @@ actor LightweightWorkspace {
     private let fileManager = FileManager.default
     private let customStorageDirectory: URL?
 
-    private var storageDirectory: URL? {
-        if let custom = customStorageDirectory { return custom }
-        do {
-            let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
-            let dir = urls[0].appendingPathComponent("LLMWorkspace", isDirectory: true)
-            if !fileManager.fileExists(atPath: dir.path) {
-                try fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
-            }
-            return dir
-        } catch {
-            logger.error("Failed to resolve storage directory: \(error.localizedDescription)")
-            return nil
-        }
-    }
-    
     init(storageDirectory: URL? = nil) {
         self.customStorageDirectory = storageDirectory
     }
@@ -205,4 +190,47 @@ actor LightweightWorkspace {
             return nil
         }
     }
+    private var storageDirectory: URL? {
+        if let custom = customStorageDirectory { return custom }
+        do {
+            let urls = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)
+            let dir = urls[0].appendingPathComponent("llmhub/workspace", isDirectory: true)
+            if !fileManager.fileExists(atPath: dir.path) {
+                try fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
+            }
+            return dir
+        } catch {
+            logger.error("Failed to resolve storage directory: \(error.localizedDescription)")
+            return nil
+        }
+    }
+    /// Read file content as Data (sandboxed).
+    func readFile(path: String) async throws -> Data? {
+        guard let item = retrieve(id: UUID(uuidString: path) ?? UUID()) else { return nil }
+        return item.data
+    }
+
+    /// Write file content (returns WorkspaceItem ID).
+    func writeFile(path: String, data: Data, contentType: String = "application/octet-stream", metadata: [String: String] = [:]) async throws -> UUID {
+        let item = WorkspaceItem(
+            id: UUID(),
+            filename: (path as NSString).lastPathComponent,
+            data: data,
+            contentType: contentType,
+            createdAt: Date(),
+            metadata: metadata
+        )
+        try store(item)
+        return item.id
+    }
+
+    /// List files matching pattern.
+    func listFiles(matching pattern: String? = nil) async -> [WorkspaceItem] {
+        let all = listAll()
+        if let pattern {
+            return all.filter { $0.filename.range(of: pattern, options: .caseInsensitive) != nil }
+        }
+        return all
+    }
 }
+

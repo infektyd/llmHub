@@ -15,7 +15,7 @@ struct NeonGlassTheme: AppTheme {
 
     /// Deep midnight background
     var backgroundPrimary: Color {
-        Color(hex: "0C0C19")  // neonMidnight
+        Color(hex: "050505")  // neonMidnight
     }
 
     /// Charcoal for secondary surfaces
@@ -49,7 +49,7 @@ struct NeonGlassTheme: AppTheme {
 
     /// Electric blue accent
     var accent: Color {
-        Color(hex: "00B3FF")  // neonElectricBlue
+        Color(hex: "00BFFF")  // neonElectricBlue
     }
 
     /// Fuchsia secondary accent
@@ -86,7 +86,7 @@ struct NeonGlassTheme: AppTheme {
 
     /// Monospace font for code
     var monoFont: Font {
-        .system(size: 14, design: .monospaced)
+        .system(size: 16, design: .monospaced)
     }
 
     /// Bold system font for headings
@@ -141,7 +141,7 @@ struct NeonGlassTheme: AppTheme {
 
     /// Tint for user message bubbles
     var glassUser: Color {
-        accentSecondary.opacity(0.3)
+        accent.opacity(0.3)
     }
 
     /// Tint for AI message bubbles

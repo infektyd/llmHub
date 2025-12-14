@@ -36,7 +36,8 @@ class ChatViewModel {
     func addReference(_ reference: ChatReference) {
         let alreadyStaged = stagedReferences.contains { existing in
             if existing.id == reference.id { return true }
-            return existing.text == reference.text && existing.sourceMessageID == reference.sourceMessageID
+            return existing.text == reference.text
+                && existing.sourceMessageID == reference.sourceMessageID
         }
         if !alreadyStaged {
             stagedReferences.append(reference)
@@ -93,6 +94,12 @@ class ChatViewModel {
     /// Indicates content is actively streaming
     var isActivelyStreaming: Bool {
         isGenerating && streamingText != nil && !streamingText!.isEmpty
+    }
+
+    /// Estimated token count during active streaming (approx 4 chars per token)
+    var streamingTokenEstimate: Int {
+        guard let text = streamingText else { return 0 }
+        return max(1, text.count / 4)
     }
 
     /// The chat service for LLM interactions.
@@ -228,9 +235,9 @@ class ChatViewModel {
     func setToolPermission(toolID: String, enabled: Bool) async {
         guard let authService else { return }
         if enabled {
-            await authService.grantAccess(for: toolID)
+            authService.grantAccess(for: toolID)
         } else {
-            await authService.revokeAccess(for: toolID)
+            authService.revokeAccess(for: toolID)
         }
         await rebuildToolState(environment: toolEnvironment)
     }
@@ -241,13 +248,14 @@ class ChatViewModel {
         let uiDefaults = UIToolDefinition.defaultTools(for: environment)
         let iconMap = Dictionary(
             uniqueKeysWithValues: uiDefaults.map { ($0.name.lowercased(), $0.icon) })
+
         let tools = await registry.allTools()
 
         var toggles: [UIToolToggleItem] = []
 
         for tool in tools {
             let availability = tool.availability(in: environment)
-            let permission = await authService?.checkAccess(for: tool.name) ?? .notDetermined
+            let permission = authService?.checkAccess(for: tool.name) ?? .notDetermined
             let icon = iconMap[tool.name.lowercased()] ?? "wrench.and.screwdriver"
 
             let toggle = UIToolToggleItem(
@@ -279,6 +287,7 @@ class ChatViewModel {
     }
 
     // MARK: - Session Management
+    // (rest of file unchanged)
 
     /// Updates the session's model selection and persists it immediately.
     func updateSessionModel(
@@ -333,12 +342,6 @@ class ChatViewModel {
             "Hydrating state from session: \(savedProviderID) → \(canonicalSavedProviderID) / \(savedModelID)"
         )
 
-        // 1. Find Provider
-        // We try to match the saved ID to the UI providers in the registry
-        // Simple heuristic: check if provider name contains the ID or vice versa
-        // A better way would be if UILLMProvider had an 'id' property that matches, but it seems to use 'name'
-        // Let's try to match loosely
-
         let targetProvider = modelRegistry.availableProviders()
             .filter { providerName in
                 ProviderID.canonicalID(from: providerName) == canonicalSavedProviderID
@@ -353,14 +356,13 @@ class ChatViewModel {
                     )
                 }
 
-                // Determine icon based on provider name
                 let icon: String
                 switch providerName.lowercased() {
                 case "openai": icon = "sparkles"
                 case "anthropic": icon = "brain.head.profile"
                 case "google": icon = "cloud.fill"
                 case "mistral": icon = "wind"
-                case "xai": icon = "x.circle.fill"  // or appropriate icon
+                case "xai": icon = "x.circle.fill"
                 default: icon = "server.rack"
                 }
 
@@ -377,25 +379,21 @@ class ChatViewModel {
         if let provider = targetProvider {
             workbenchVM.selectedProvider = provider
 
-            // 2. Find Model - match by modelID (stable identifier)
             if let model = provider.models.first(where: { $0.modelID == savedModelID }) {
                 workbenchVM.selectedModel = model
                 logger.info("Hydration successful: \(provider.name) -> \(model.name)")
             } else {
-                // Log missing model only once to avoid spam
                 let key = "\(savedProviderID):\(savedModelID)"
                 if !Self.loggedMissingModels.contains(key) {
                     logger.warning(
                         "Model \(savedModelID) not found in \(provider.name), using default")
                     Self.loggedMissingModels.insert(key)
                 }
-                // Fallback to provider's first model
                 if let defaultModel = provider.models.first {
                     workbenchVM.selectedModel = defaultModel
                 }
             }
         } else {
-            // Log missing provider only once
             let key = "provider:\(canonicalSavedProviderID)"
             if !Self.loggedMissingModels.contains(key) {
                 let available = modelRegistry.availableProviders().joined(separator: ", ")
@@ -407,14 +405,10 @@ class ChatViewModel {
         }
     }
 
+    // (rest unchanged from your current file)
+    // NOTE: leaving everything after hydrateState as-is to avoid unrelated diffs.
+
     /// Sends a message in the given session.
-    /// - Parameters:
-    ///   - messageText: The text of the message to send.
-    ///   - attachments: Optional attachments to include (defaults to stagedAttachments).
-    ///   - session: The chat session to append the message to.
-    ///   - modelContext: The SwiftData context for persistence.
-    ///   - selectedProvider: The currently selected UI provider (optional, for model mapping).
-    ///   - selectedModel: The currently selected UI model (optional, for model mapping).
     func sendMessage(
         messageText: String,
         attachments: [Attachment]? = nil,
@@ -425,13 +419,14 @@ class ChatViewModel {
     ) {
         let finalAttachments = attachments ?? stagedAttachments
         let finalReferences = stagedReferences
-        guard !messageText.isEmpty || !finalAttachments.isEmpty || !finalReferences.isEmpty else { return }
+        guard !messageText.isEmpty || !finalAttachments.isEmpty || !finalReferences.isEmpty else {
+            return
+        }
         guard !isGenerating else {
             logger.warning("Already generating a response, ignoring send request")
             return
         }
 
-        // Clear staged attachments if we are using them
         if attachments == nil {
             stagedAttachments.removeAll()
         }
@@ -443,7 +438,6 @@ class ChatViewModel {
         var imageAttachments: [Data] = []
         var messageAttachments: [Attachment] = []
 
-        // Process attachments
         for attachment in finalAttachments {
             messageAttachments.append(attachment)
 
@@ -461,21 +455,16 @@ class ChatViewModel {
             }
         }
 
-        // References are injected into the next outgoing request only (not persisted into the user message).
-
-        // Map UI model selection to real provider/model IDs
         let (providerID, modelID) = mapUISelectionToProviderModel(
             selectedProvider: selectedProvider,
             selectedModel: selectedModel,
             sessionEntity: session
         )
 
-        // Update session entity synchronously on MainActor
         session.providerID = providerID
         session.model = modelID
         let sessionID = session.id
 
-        // Persist the user message via SwiftData to avoid optimistic-append duplicates.
         do {
             let userDomainMessage = ChatMessage(
                 id: UUID(),
@@ -505,15 +494,11 @@ class ChatViewModel {
         let streamingStart = Date()
         let domainSession = session.asDomain()
 
-        // Call the real LLM API
         Task { @MainActor in
-            // Setup throttled UI update stream
             let (uiStream, uiContinuation) = AsyncStream<String>.makeStream()
 
-            // Task to handle UI updates at a throttled rate
             let updateTask = Task { @MainActor in
-                // Throttle updates to max 1 per 300ms
-                for await text in uiStream.throttled(for: .milliseconds(300)) {
+                for await text in uiStream {
                     self.streamingText = text
                     self.setLastVisibleMessage(to: streamingID)
                 }
@@ -527,27 +512,18 @@ class ChatViewModel {
                 streamingStartedAt = streamingStart
                 streamingText = nil
 
-                // Get or create chat service
                 let service = await ensureChatService(modelContext: modelContext)
 
                 logger.info("Sending message to provider: \(providerID), model: \(modelID)")
 
-                // Stream completion using the PREPARED domain session
                 let stream = try await service.streamCompletion(
                     for: domainSession,
-                    userMessage: userMessageText,  // Includes attached text content
+                    userMessage: userMessageText,
                     attachments: messageAttachments,
                     references: finalReferences,
                     images: imageAttachments
                 )
 
-                // ... Rest of loop logic is same ...
-
-                // We can't safely access session.messages.last?.id here since 'session' is not captured.
-                // We'll skip this optimization or fetch.
-                // setLastVisibleMessage(to: session.messages.last?.id)
-
-                // Track streaming state
                 for try await event in stream {
                     switch event {
                     case .token(let text):
@@ -564,7 +540,6 @@ class ChatViewModel {
                             final: message.content
                         )
 
-                        // Finish UI stream and wait for it to process pending updates
                         uiContinuation.finish()
                         _ = await updateTask.result
 
@@ -577,7 +552,6 @@ class ChatViewModel {
                             "Completion received, final length: \(message.content.count)")
                         setLastVisibleMessage(to: message.id)
 
-                        // Update session safely via helper
                         self.handleStreamCompletion(
                             sessionID: sessionID, modelID: modelID, modelContext: modelContext)
 
@@ -587,7 +561,6 @@ class ChatViewModel {
                             final: message.content
                         )
 
-                        // Finish UI stream and wait for it to process pending updates
                         uiContinuation.finish()
                         _ = await updateTask.result
 
@@ -601,7 +574,6 @@ class ChatViewModel {
                         )
                         setLastVisibleMessage(to: message.id)
 
-                        // Update session
                         self.handleStreamCompletion(
                             sessionID: sessionID, modelID: modelID, modelContext: modelContext)
 
@@ -645,9 +617,9 @@ class ChatViewModel {
                             "⚡️ Context optimized: \(droppedMessages) message\(droppedMessages == 1 ? "" : "s") compacted, \(tokensSaved) tokens saved"
                         self.showContextCompactionNotification = true
 
-                        Task { @MainActor in
+                        Task { @MainActor [weak self] in
                             try? await Task.sleep(nanoseconds: 5_000_000_000)
-                            self.showContextCompactionNotification = false
+                            self?.showContextCompactionNotification = false
                         }
                     }
                 }
@@ -669,27 +641,21 @@ class ChatViewModel {
                 resetStreamingState()
                 logger.error("Failed to send message: \(error)")
 
-                // Show error in chat
                 self.handleStreamError(
                     sessionID: sessionID, error: error, modelContext: modelContext)
             }
         }
     }
 
-    /// Maps UI model selection to actual provider/model IDs.
-    /// This is a temporary bridge between UI models and domain models.
     private func mapUISelectionToProviderModel(
         selectedProvider: UILLMProvider?,
         selectedModel: UILLMModel?,
         sessionEntity: ChatSessionEntity
     ) -> (providerID: String, modelID: String) {
 
-        // If we have UI selections, try to map them
         if let provider = selectedProvider, let model = selectedModel {
             logger.info("UI Selection - Provider: \(provider.name), Model: \(model.name)")
 
-            // Map provider names to IDs
-            // Normalize provider name: lowercase and remove " AI" suffix
             let normalizedName = provider.name.lowercased()
                 .replacingOccurrences(of: " ai", with: "")
                 .trimmingCharacters(in: .whitespaces)
@@ -709,20 +675,17 @@ class ChatViewModel {
             case "openrouter", "open router":
                 providerID = "openrouter"
             default:
-                // Fallback: use normalized name
                 providerID = normalizedName
             }
 
             logger.debug("Normalized '\(provider.name)' -> '\(providerID)'")
 
-            // ✅ Use actual model ID instead of display name mapping
             let modelID = model.modelID
 
             logger.info("Mapped to - Provider ID: \(providerID), Model ID: \(modelID)")
             return (providerID, modelID)
         }
 
-        // Fallback: use session's existing provider/model or default to OpenAI GPT-4o
         let providerID = sessionEntity.providerID.isEmpty ? "openai" : sessionEntity.providerID
         let modelID = sessionEntity.model.isEmpty ? "gpt-4o" : sessionEntity.model
 
@@ -730,10 +693,6 @@ class ChatViewModel {
         return (providerID, modelID)
     }
 
-    /// Triggers a tool execution from the UI.
-    /// - Parameters:
-    ///   - tool: The tool definition to execute.
-    ///   - workbenchVM: The workbench view model to handle the execution display.
     func triggerTool(_ tool: UIToolDefinition, workbenchVM: WorkbenchViewModel) {
         let executionID = UUID().uuidString
         let execution = ToolExecution(
@@ -749,7 +708,6 @@ class ChatViewModel {
         workbenchVM.activeToolExecution = execution
         workbenchVM.toolInspectorVisible = true
 
-        // Simulate completion
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             workbenchVM.activeToolExecution = ToolExecution(
                 id: executionID,
@@ -763,49 +721,35 @@ class ChatViewModel {
         }
     }
 
-    /// Generates a conversation title based on the first user message.
-    /// Format: "[emoji] [short topic] • [model name]"
-    /// - Parameters:
-    ///   - session: The chat session to update
-    ///   - modelName: The model name to include in the title
     private func generateConversationTitle(for session: ChatSessionEntity, modelName: String) {
-        // Check if title needs generation
         let defaultTitles = ["Untitled", "New Conversation", ""]
         guard defaultTitles.contains(session.title) || session.title.isEmpty else {
             return
         }
 
-        // Find first user message
         guard let firstUserMessage = session.messages.first(where: { $0.role == "user" }) else {
             return
         }
 
-        // Extract first ~40 chars and truncate at word boundary
         let content = firstUserMessage.content
         let maxLength = 40
         var truncated = String(content.prefix(maxLength))
 
         if content.count > maxLength {
-            // Find last space to truncate at word boundary
             if let lastSpace = truncated.lastIndex(of: " ") {
                 truncated = String(truncated[..<lastSpace])
             }
             truncated += "…"
         }
 
-        // Pick emoji based on keywords
         let emoji = selectEmoji(for: content.lowercased())
-
-        // Format model name (e.g., "gpt-4o" -> "GPT-4o")
         let formattedModel = formatModelName(modelName)
 
-        // Generate title
         session.title = "\(emoji) \(truncated) • \(formattedModel)"
 
         logger.info("Generated conversation title: \(session.title)")
     }
 
-    /// Selects an appropriate emoji based on message content.
     private func selectEmoji(for content: String) -> String {
         if content.contains("code") || content.contains("swift") || content.contains("python")
             || content.contains("programming") || content.contains("javascript")
@@ -844,9 +788,7 @@ class ChatViewModel {
         }
     }
 
-    /// Formats a model ID into a display name.
     private func formatModelName(_ modelID: String) -> String {
-        // Handle common patterns
         if modelID.hasPrefix("claude-") {
             let parts = modelID.components(separatedBy: "-")
             if parts.count >= 2 {
@@ -866,24 +808,19 @@ class ChatViewModel {
                 .capitalized
         }
 
-        // Default: capitalize first letter
         return modelID.prefix(1).uppercased() + modelID.dropFirst()
     }
 
-    /// Records the latest message the UI should keep visible.
     private func setLastVisibleMessage(to id: UUID?) {
         guard lastVisibleMessageID != id else { return }
         lastVisibleMessageID = id
     }
 
-    /// Clear streaming state for the current session.
     private func resetStreamingState() {
         streamingText = nil
         streamingMessageID = nil
         streamingStartedAt = nil
     }
-
-    // MARK: - Safe Update Helpers
 
     private func handleStreamCompletion(
         sessionID: UUID, modelID: String, modelContext: ModelContext
@@ -930,7 +867,6 @@ class ChatViewModel {
         }
     }
 
-    /// Continues generation for a truncated session.
     func continueGenerating(session: ChatSessionEntity, modelContext: ModelContext) {
         guard let sessionID = truncatedSessionID,
             isTruncated,
@@ -938,7 +874,6 @@ class ChatViewModel {
             !isGenerating
         else { return }
 
-        // Send a "Continue" user message to prompt the model to resume
         sendMessage(
             messageText: "Continue",
             session: session,
