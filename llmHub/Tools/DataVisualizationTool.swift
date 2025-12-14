@@ -20,7 +20,7 @@ nonisolated struct DataVisualizationTool: Tool {
         Use this tool when you need to visualize data for analysis or presentation.
         """
 
-    var parameters: ToolParametersSchema {
+    nonisolated var parameters: ToolParametersSchema {
         ToolParametersSchema(
             properties: [
                 "chart_type": ToolProperty(
@@ -59,14 +59,14 @@ nonisolated struct DataVisualizationTool: Tool {
         )
     }
 
-    var permissionLevel: ToolPermissionLevel { .standard }
-    var requiredCapabilities: [ToolCapability] { [.codeExecution] }  // Using code execution backend
-    var weight: ToolWeight { .heavy }
-    var isCacheable: Bool { true }
+    nonisolated var permissionLevel: ToolPermissionLevel { .standard }
+    nonisolated var requiredCapabilities: [ToolCapability] { [.codeExecution] }  // Using code execution backend
+    nonisolated var weight: ToolWeight { .heavy }
+    nonisolated var isCacheable: Bool { true }
 
     private let logger = Logger(subsystem: "com.llmhub", category: "DataVisualizationTool")
 
-    func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
+    nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
         guard let chartType = arguments.string("chart_type") else {
             throw ToolError.invalidArguments("chart_type is required")
         }

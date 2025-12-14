@@ -18,7 +18,7 @@ nonisolated struct WorkspaceTool: Tool {
         Use this to understand project structure and find specific code.
         """
 
-    var parameters: ToolParametersSchema {
+    nonisolated var parameters: ToolParametersSchema {
         ToolParametersSchema(
             properties: [
                 "operation": ToolProperty(
@@ -51,7 +51,7 @@ nonisolated struct WorkspaceTool: Tool {
     let weight: ToolWeight = .fast
     let isCacheable = false
 
-    func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
+    nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
         guard let operation = arguments.string("operation") else {
             throw ToolError.invalidArguments("operation is required")
         }

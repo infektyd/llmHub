@@ -20,7 +20,7 @@ nonisolated struct FileReaderTool: Tool {
         Use this tool when you need to examine file contents or analyze documents.
         """
 
-    var parameters: ToolParametersSchema {
+    nonisolated var parameters: ToolParametersSchema {
         ToolParametersSchema(
             properties: [
                 "path": ToolProperty(
@@ -68,7 +68,7 @@ nonisolated struct FileReaderTool: Tool {
 
     init() {}
 
-    func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
+    nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
         guard let path = arguments.string("path"), !path.isEmpty else {
             throw ToolError.invalidArguments("path is required")
         }

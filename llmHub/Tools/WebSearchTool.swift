@@ -18,7 +18,7 @@ nonisolated struct WebSearchTool: Tool {
         news, or anything that requires recent information.
         """
 
-    var parameters: ToolParametersSchema {
+    nonisolated var parameters: ToolParametersSchema {
         ToolParametersSchema(
             properties: [
                 "query": ToolProperty(
@@ -52,7 +52,7 @@ nonisolated struct WebSearchTool: Tool {
         self.session = session
     }
 
-    func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
+    nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
         guard let query = arguments.string("query"), !query.isEmpty else {
             throw ToolError.invalidArguments("query is required")
         }

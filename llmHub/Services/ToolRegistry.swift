@@ -9,19 +9,22 @@ actor ToolRegistry {
     private let logger = Logger(subsystem: "com.llmhub", category: "ToolRegistry")
     private var tools: [String: any Tool] = [:]
 
-    init(tools: [any Tool] = []) {
+    init(tools: [any Tool] = []) async {
         for tool in tools {
-            self.tools[tool.name] = tool
+            let name = tool.name
+            self.self.tools[name] = tool
         }
     }
 
-    func register(_ tool: any Tool) {
-        tools[tool.name] = tool
+    func register(_ tool: any Tool) async {
+        let name = tool.name
+        self.tools[name] = tool
     }
 
-    func register(_ tools: [any Tool]) {
+    func register(_ tools: [any Tool]) async {
         for tool in tools {
-            self.tools[tool.name] = tool
+            let name = tool.name
+            self.tools[name] = tool
         }
     }
 
