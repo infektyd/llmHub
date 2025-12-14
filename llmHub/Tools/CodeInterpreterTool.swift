@@ -10,7 +10,7 @@ import OSLog
 
 /// Code Interpreter Tool conforming to the Tool protocol.
 /// Executes code in Swift, Python, TypeScript, JavaScript, and Dart.
-nonisolated final class CodeInterpreterTool: Tool, @unchecked Sendable {
+final class CodeInterpreterTool: Tool, @unchecked Sendable {
     let name = "code_interpreter"
     let description = """
         Executes code in various programming languages and returns the output. \
@@ -19,7 +19,7 @@ nonisolated final class CodeInterpreterTool: Tool, @unchecked Sendable {
         perform calculations, process data, or demonstrate programming concepts.
         """
 
-    var parameters: ToolParametersSchema {
+    nonisolated var parameters: ToolParametersSchema {
         ToolParametersSchema(
             properties: [
                 "code": ToolProperty(
@@ -37,7 +37,7 @@ nonisolated final class CodeInterpreterTool: Tool, @unchecked Sendable {
     }
 
     // Tool Protocol properties
-    var permissionLevel: ToolPermissionLevel {
+    nonisolated var permissionLevel: ToolPermissionLevel {
         switch securityMode {
         case .approval: return .dangerous
         case .sandbox: return .sensitive
@@ -45,24 +45,24 @@ nonisolated final class CodeInterpreterTool: Tool, @unchecked Sendable {
         }
     }
 
-    var requiredCapabilities: [ToolCapability] { [.codeExecution] }
-    var weight: ToolWeight { .heavy }
-    var isCacheable: Bool { false }
+    nonisolated var requiredCapabilities: [ToolCapability] { [.codeExecution] }
+    nonisolated var weight: ToolWeight { .heavy }
+    nonisolated var isCacheable: Bool { false }
 
     private let engine: CodeExecutionEngine
     private let environment: ToolEnvironment
     private let logger = Logger(subsystem: "com.llmhub", category: "CodeInterpreterTool")
 
     // Configuration
-    var securityMode: CodeSecurityMode = .sandbox
-    var timeoutSeconds: Int = 30
+    nonisolated(unsafe) var securityMode: CodeSecurityMode = .sandbox
+    nonisolated(unsafe) var timeoutSeconds: Int = 30
 
     // Callback for approval mode
-    var approvalHandler: ((String, SupportedLanguage) async -> Bool)?
+    nonisolated(unsafe) var approvalHandler: ((String, SupportedLanguage) async -> Bool)?
 
     // Callback for execution events (for UI updates)
-    var onExecutionStart: ((CodeExecutionRequest) -> Void)?
-    var onExecutionComplete: ((CodeExecutionResult) -> Void)?
+    nonisolated(unsafe) var onExecutionStart: ((CodeExecutionRequest) -> Void)?
+    nonisolated(unsafe) var onExecutionComplete: ((CodeExecutionResult) -> Void)?
 
     /// Initialize with a specific engine.
     /// - Parameter engine: The `CodeExecutionEngine` instance.
@@ -78,7 +78,7 @@ nonisolated final class CodeInterpreterTool: Tool, @unchecked Sendable {
         self.engine = CodeExecutionEngine()
     }
 
-    func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
+    nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
         guard environment.supports(.codeExecution) else {
             logger.debug("Code interpreter unavailable on this platform")
             throw ToolError.unavailable(reason: "Code execution unavailable on this platform")

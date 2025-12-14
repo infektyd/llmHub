@@ -92,7 +92,7 @@ final class ToolSchemaValidationTests: XCTestCase {
     }
 
     func testSchemaMismatchReturnsToolCallRejectedJSON() async throws {
-        let registry = ToolRegistry(tools: [EchoTool()])
+        let registry = await ToolRegistry(tools: [EchoTool()])
         let executor = ToolExecutor(registry: registry, environment: .current)
 
         let call = ToolCall(id: "call_1", name: "echo", input: #"{}"#)
@@ -110,7 +110,7 @@ final class ToolSchemaValidationTests: XCTestCase {
     }
 
     func testUnknownToolReturnsToolCallRejectedJSON() async throws {
-        let registry = ToolRegistry(tools: [])
+        let registry = await ToolRegistry(tools: [])
         let executor = ToolExecutor(registry: registry, environment: .current)
 
         let call = ToolCall(id: "call_2", name: "does_not_exist", input: #"{}"#)

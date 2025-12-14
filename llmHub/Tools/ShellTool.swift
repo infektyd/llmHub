@@ -18,7 +18,7 @@ nonisolated struct ShellTool: Tool {
         Not available on iOS for security reasons.
         """
 
-    var parameters: ToolParametersSchema {
+    nonisolated var parameters: ToolParametersSchema {
         ToolParametersSchema(
             properties: [
                 "command": ToolProperty(type: .string, description: "The shell command to execute"),
@@ -48,7 +48,7 @@ nonisolated struct ShellTool: Tool {
     let weight: ToolWeight = .heavy
     let isCacheable = false
 
-    func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
+    nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
         #if os(iOS)
             throw ToolError.unavailable(reason: "Shell access is not permitted on iOS.")
         #else

@@ -18,7 +18,7 @@ nonisolated struct FilePatchTool: Tool {
         Validates changes before applying to prevent corruption.
         """
 
-    var parameters: ToolParametersSchema {
+    nonisolated var parameters: ToolParametersSchema {
         ToolParametersSchema(
             properties: [
                 "file_path": ToolProperty(
@@ -51,7 +51,7 @@ nonisolated struct FilePatchTool: Tool {
     let weight: ToolWeight = .heavy
     let isCacheable = false
 
-    func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
+    nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
         guard let filePath = arguments.string("file_path") else {
             throw ToolError.invalidArguments("file_path is required")
         }

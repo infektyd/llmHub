@@ -245,15 +245,15 @@ nonisolated final class MCPBridgedTool: Tool, @unchecked Sendable {
     }
 
     // Tool Protocol Default Properties
-    var permissionLevel: ToolPermissionLevel { .dangerous }  // Treat external tools as dangerous by default
-    var requiredCapabilities: [ToolCapability] { [.networkIO] }  // Needs network to talk to MCP server
-    var weight: ToolWeight { .heavy }
-    var isCacheable: Bool { false }
+    nonisolated var permissionLevel: ToolPermissionLevel { .dangerous }  // Treat external tools as dangerous by default
+    nonisolated var requiredCapabilities: [ToolCapability] { [.networkIO] }  // Needs network to talk to MCP server
+    nonisolated var weight: ToolWeight { .heavy }
+    nonisolated var isCacheable: Bool { false }
 
     /// Executes the tool via the MCP client.
     /// - Parameter arguments: The input arguments.
     /// - Returns: The tool output as a structured result.
-    func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
+    nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
         logger.info("Calling MCP tool: \(self.name)")
 
         do {

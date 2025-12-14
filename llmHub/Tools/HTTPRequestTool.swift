@@ -17,7 +17,7 @@ nonisolated struct HTTPRequestTool: Tool {
         Use this tool when you need to interact with APIs directly. Prefer web_search for public pages.
         """
 
-    var parameters: ToolParametersSchema {
+    nonisolated var parameters: ToolParametersSchema {
         ToolParametersSchema(
             properties: [
                 "url": ToolProperty(type: .string, description: "The URL to request"),
@@ -64,7 +64,7 @@ nonisolated struct HTTPRequestTool: Tool {
         self.urlSession = session
     }
 
-    func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
+    nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
         guard let urlString = arguments.string("url"), let url = URL(string: urlString) else {
             throw ToolError.invalidArguments("url is required and must be valid")
         }

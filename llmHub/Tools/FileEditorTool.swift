@@ -17,7 +17,7 @@ nonisolated final class FileEditorTool: Tool {
         deleting, renaming, moving, and copying files.
         """
 
-    var parameters: ToolParametersSchema {
+    nonisolated var parameters: ToolParametersSchema {
         ToolParametersSchema(
             properties: [
                 "operation": ToolProperty(
@@ -48,7 +48,7 @@ nonisolated final class FileEditorTool: Tool {
 
     init() {}
 
-    func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
+    nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
         guard let operationStr = arguments.string("operation") else {
             throw ToolError.invalidArguments("operation is required")
         }

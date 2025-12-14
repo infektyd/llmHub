@@ -186,7 +186,7 @@ class ChatViewModel {
             WorkspaceTool(),
         ]
 
-        let toolRegistry = ToolRegistry(tools: tools)
+        let toolRegistry = await ToolRegistry(tools: tools)
         let toolExecutor = ToolExecutor(registry: toolRegistry, environment: toolEnvironment)
 
         self.toolRegistry = toolRegistry

@@ -84,3 +84,4 @@ error reports/
 *.pem
 *.key
 .DS_Store
+.aider*

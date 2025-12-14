@@ -290,7 +290,7 @@ nonisolated struct CalculatorTool: Tool {
     let description =
         "Evaluates mathematical expressions with scientific functions and complex numbers."
 
-    var parameters: ToolParametersSchema {
+    nonisolated var parameters: ToolParametersSchema {
         ToolParametersSchema(
             properties: [
                 "expression": ToolProperty(
@@ -319,7 +319,7 @@ nonisolated struct CalculatorTool: Tool {
 
     init() {}
 
-    func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
+    nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
         guard let expression = arguments.string("expression") else {
             throw ToolError.invalidArguments("Missing 'expression' string")
         }

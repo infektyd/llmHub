@@ -246,7 +246,7 @@ final class SettingsViewModel: ObservableObject {
             WebSearchTool(),
         ]
 
-        let registry = ToolRegistry(tools: tools)
+        let registry = await ToolRegistry(tools: tools)
         let availableTools = await registry.allTools()
 
         let iconMap: [String: String] = [
