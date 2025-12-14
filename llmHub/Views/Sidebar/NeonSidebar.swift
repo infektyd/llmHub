@@ -17,7 +17,6 @@ struct NeonSidebar: View {
     @Environment(\.theme) private var theme
     @Query(sort: \ChatSessionEntity.updatedAt, order: .reverse) private var sessions:
         [ChatSessionEntity]
-    @AppStorage("glassOpacity_sidebar") private var glassOpacity: Double = 0.8
 
     var pinnedSessions: [ChatSessionEntity] {
         sessions.filter { $0.isPinned }
@@ -242,7 +241,7 @@ struct NeonSidebar: View {
     // MARK: - Subviews
 
     private var sidebarBackground: some View {
-        AdaptiveGlassBackground(target: .sidebar)
+        Color.clear.glassEffect(.regular, in: Rectangle())
     }
 
     private var searchBarBackground: some View {
@@ -250,7 +249,6 @@ struct NeonSidebar: View {
             if theme.usesGlassEffect {
                 RoundedRectangle(cornerRadius: 8)
                     .glassEffect(GlassEffect.regular.interactive(), in: .rect(cornerRadius: 8))
-                    .opacity(glassOpacity)
             } else {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(theme.surface)

@@ -87,41 +87,41 @@ public class GeminiManager {
                     guard let httpResponse = response as? HTTPURLResponse,
                         (200...299).contains(httpResponse.statusCode)
                     else {
-                        // Read error body if possible
                         var errorText = ""
-                        for try await line in result.lines {
-                            errorText += line
-                        }
+                        for try await line in result.lines { errorText += line }
                         print("Gemini Streaming Error: \(errorText)")
                         throw GeminiError.apiError
                     }
 
-                    for try await line in result.lines {
-                        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if trimmed.hasPrefix("data: ") {
-                            let json = String(trimmed.dropFirst(6))  // Remove "data: "
-                            if json == "[DONE]" { break }
+                    var sse = SSEEventParser()
+                    let decoder = JSONDecoder()
 
-                            if let data = json.data(using: .utf8) {
-                                let chunk = try JSONDecoder().decode(
-                                    GenerationResponse.self, from: data)
-                                continuation.yield(chunk)
-                            }
-                        } else if trimmed.hasPrefix("[") || trimmed.hasPrefix("{") {
-                            // Some endpoints might return raw JSON array elements without "data: " prefix
-                            // Depending on exact API version.
-                            // Standard SSE uses "data: ".
-                            // If it's a raw JSON stream (not SSE), we might need different parsing.
-                            // For v1beta/models/...:streamGenerateContent it is often a JSON array stream where each chunk is an object.
-                            // However, URLSession.bytes.lines handles line-delimited.
-                            // Let's assume standard JSON stream for now, but handle potential raw JSON object parsing if needed.
+                    for try await byte in result {
+                        for payload in sse.append(byte: byte) {
+                            if payload == "[DONE]" { break }
 
-                            // Attempt to decode line as direct JSON if not SSE
-                            if let data = trimmed.data(using: .utf8),
-                                let chunk = try? JSONDecoder().decode(
-                                    GenerationResponse.self, from: data)
-                            {
+                            guard let data = payload.data(using: .utf8) else { continue }
+
+                            do {
+                                let chunk = try decoder.decode(GenerationResponse.self, from: data)
+
+                                // SAFETY CHECK: Malformed tool calls
+                                if let candidate = chunk.candidates?.first {
+                                    if candidate.finishReason == "MALFORMED_FUNCTION_CALL" {
+                                        print(
+                                            "GeminiManager: Detected MALFORMED_FUNCTION_CALL. Stopping stream safely."
+                                        )
+                                        continuation.finish()
+                                        return
+                                    }
+                                }
+
                                 continuation.yield(chunk)
+
+                            } catch {
+                                #if DEBUG
+                                    print("GeminiManager: JSON Decode Failure: \(error)")
+                                #endif
                             }
                         }
                     }

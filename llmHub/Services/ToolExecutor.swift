@@ -60,11 +60,17 @@ actor ToolExecutor {
         } catch {
             metrics.markEnd()
             metrics.errorClass = .validationError
+            let payload = toolCallRejectedJSON(
+                id: call.id,
+                toolName: call.name,
+                reason: "invalid_arguments",
+                message: "Invalid tool arguments (expected a JSON object)."
+            )
             return ToolCallResult(
                 id: call.id,
                 toolName: call.name,
                 result: .failure(
-                    "Invalid arguments for \(call.name): \(error.localizedDescription)",
+                    payload,
                     metrics: metrics,
                     errorClass: .validationError
                 )
@@ -75,11 +81,18 @@ actor ToolExecutor {
         guard let tool = await registry.tool(named: call.name) else {
             metrics.markEnd()
             metrics.errorClass = .resourceNotFound
+            let payload = toolCallRejectedJSON(
+                id: call.id,
+                toolName: call.name,
+                reason: "unknown_tool",
+                message: "Tool not found."
+            )
             return ToolCallResult(
                 id: call.id,
                 toolName: call.name,
                 result: .failure(
-                    "Tool not found: \(call.name)", metrics: metrics,
+                    payload,
+                    metrics: metrics,
                     errorClass: .resourceNotFound
                 )
             )
@@ -96,6 +109,26 @@ actor ToolExecutor {
                     metrics: metrics,
                     errorClass: .resourceNotFound
                 )
+            )
+        }
+
+        // Validate tool-call payload against the tool's declared schema.
+        // Rationale: Model-produced tool calls can be syntactically valid JSON but still violate schema.
+        let schemaErrors = validate(arguments: arguments, schema: tool.parameters)
+        if !schemaErrors.isEmpty {
+            metrics.markEnd()
+            metrics.errorClass = .validationError
+            let payload = toolCallRejectedJSON(
+                id: call.id,
+                toolName: call.name,
+                reason: "schema_validation_failed",
+                message: "Tool arguments did not match schema.",
+                errors: schemaErrors
+            )
+            return ToolCallResult(
+                id: call.id,
+                toolName: call.name,
+                result: .failure(payload, metrics: metrics, errorClass: .validationError)
             )
         }
 
@@ -216,6 +249,95 @@ actor ToolExecutor {
             throw ToolError.invalidArguments("Expected a JSON object")
         }
         return ToolArguments(dict)
+    }
+
+    // MARK: - Tool Call Validation / Rejection
+
+    private struct ToolCallRejected: Encodable {
+        let type: String = "tool_call_rejected"
+        let toolCallId: String
+        let toolName: String
+        let reason: String
+        let message: String
+        let errors: [String]?
+    }
+
+    private func toolCallRejectedJSON(
+        id: String,
+        toolName: String,
+        reason: String,
+        message: String,
+        errors: [String]? = nil
+    ) -> String {
+        let payload = ToolCallRejected(
+            toolCallId: id,
+            toolName: toolName,
+            reason: reason,
+            message: message,
+            errors: errors
+        )
+        let encoder = JSONEncoder()
+        if #available(iOS 11.0, macOS 10.13, *) {
+            encoder.outputFormatting = [.sortedKeys]
+        }
+        if let data = try? encoder.encode(payload), let text = String(data: data, encoding: .utf8) {
+            return text
+        }
+        // Last-resort fallback: keep the string JSON-like even if encoding fails.
+        return #"{"type":"tool_call_rejected","toolCallId":"\#(id)","toolName":"\#(toolName)","reason":"\#(reason)","message":"\#(message)"}"#
+    }
+
+    private func validate(arguments: ToolArguments, schema: ToolParametersSchema) -> [String] {
+        var errors: [String] = []
+        let values = arguments.jsonValuesByKey
+
+        for requiredKey in schema.required {
+            if values[requiredKey] == nil {
+                errors.append("Missing required property '\(requiredKey)'.")
+            }
+        }
+
+        for (key, property) in schema.properties {
+            guard let value = values[key] else { continue }
+
+            if !matches(value: value, schemaType: property.type) {
+                errors.append("Property '\(key)' expected type \(property.type.rawValue).")
+                continue
+            }
+
+            if let allowed = property.enumValues,
+                case .string(let s) = value,
+                !allowed.contains(s)
+            {
+                errors.append(
+                    "Property '\(key)' must be one of [\(allowed.joined(separator: ", "))]."
+                )
+            }
+
+            if property.type == .array, let items = property.items, case .array(let arr) = value {
+                for (idx, element) in arr.enumerated() {
+                    if !matches(value: element, schemaType: items.type) {
+                        errors.append(
+                            "Property '\(key)[\(idx)]' expected type \(items.type.rawValue)."
+                        )
+                    }
+                }
+            }
+        }
+
+        return errors
+    }
+
+    private func matches(value: JSONValue, schemaType: JSONSchemaType) -> Bool {
+        switch (schemaType, value) {
+        case (.string, .string): return true
+        case (.number, .number): return true
+        case (.integer, .number(let n)): return n.rounded() == n
+        case (.boolean, .bool): return true
+        case (.array, .array): return true
+        case (.object, .object): return true
+        default: return false
+        }
     }
 
     private func acquireHeavySlot() async {

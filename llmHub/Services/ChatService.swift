@@ -87,7 +87,29 @@ final class ChatService {
         let descriptor = FetchDescriptor<ChatSessionEntity>(sortBy: [
             SortDescriptor(\.updatedAt, order: .reverse)
         ])
-        return try modelContext.fetch(descriptor).map { $0.asDomain() }
+        let entities = try modelContext.fetch(descriptor)
+
+        // Rationale: Persisted provider IDs may come from legacy UI/model registries (e.g. "OpenAI", "openAI").
+        // Normalize in-place so subsequent lookups and UI hydration are stable.
+        var didMigrate = false
+        for entity in entities {
+            let canonical =
+                providerRegistry.canonicalProviderID(for: entity.providerID)
+                ?? ProviderID.canonicalID(from: entity.providerID)
+            if entity.providerID != canonical {
+                entity.providerID = canonical
+                didMigrate = true
+            }
+        }
+        if didMigrate {
+            do {
+                try modelContext.save()
+            } catch {
+                logger.error("Failed to persist providerID migration: \(error.localizedDescription)")
+            }
+        }
+
+        return entities.map { $0.asDomain() }
     }
 
     /// Creates a new chat session.
@@ -97,10 +119,14 @@ final class ChatService {
     /// - Returns: The created `ChatSession`.
     func createSession(providerID: String, model: String) throws -> ChatSession {
         let referenceID = ReferenceFormatter.newReferenceID()
+        // Rationale: Store canonical provider IDs to avoid case/alias drift.
+        let canonicalProviderID =
+            providerRegistry.canonicalProviderID(for: providerID)
+            ?? ProviderID.canonicalID(from: providerID)
         let session = ChatSession(
             id: UUID(),
             title: "Untitled",
-            providerID: providerID,
+            providerID: canonicalProviderID,
             model: model,
             createdAt: Date(),
             updatedAt: Date(),
@@ -497,6 +523,18 @@ final class ChatService {
             ).first
         else {
             throw ChatServiceError.sessionMissing
+        }
+        // Rationale: Ensure we return canonical IDs even if the DB still contains legacy values.
+        let canonical =
+            providerRegistry.canonicalProviderID(for: entity.providerID)
+            ?? ProviderID.canonicalID(from: entity.providerID)
+        if entity.providerID != canonical {
+            entity.providerID = canonical
+            do {
+                try modelContext.save()
+            } catch {
+                logger.error("Failed to persist providerID migration for session \(id): \(error.localizedDescription)")
+            }
         }
         return entity.asDomain()
     }

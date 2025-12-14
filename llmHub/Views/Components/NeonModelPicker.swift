@@ -152,8 +152,8 @@ import SwiftUI
         private var pickerButtonBackground: some View {
             Group {
                 if theme.usesGlassEffect {
-                    AdaptiveGlassBackground(target: .modelPicker)
-                        .clipShape(Capsule())
+                    Capsule()
+                        .glassEffect(.regular, in: .capsule)
                         .overlay(
                             Capsule()
                                 .stroke(

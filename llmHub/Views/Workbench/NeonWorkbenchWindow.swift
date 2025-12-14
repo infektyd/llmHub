@@ -14,8 +14,14 @@ struct NeonWorkbenchWindow: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.theme) private var theme
     @Query private var sessions: [ChatSessionEntity]
-    @AppStorage("windowBackgroundOpacity") private var windowBackgroundOpacity: Double = 1.0
+    @AppStorage("windowBackgroundStyle") private var backgroundStyleRaw: String =
+        WindowBackgroundStyle.grounded.rawValue
     @State private var preferredColumn: NavigationSplitViewColumn = .sidebar
+
+    /// Computed property to get the enum from raw value
+    private var backgroundStyle: WindowBackgroundStyle {
+        WindowBackgroundStyle(rawValue: backgroundStyleRaw) ?? .grounded
+    }
 
     var body: some View {
         #if os(iOS)
@@ -46,7 +52,7 @@ struct NeonWorkbenchWindow: View {
                 contentView
             }
             .navigationSplitViewStyle(.balanced)
-            .background(LiquidFieldBackground(opacity: windowBackgroundOpacity))
+            .background(NativeWindowBackground(style: backgroundStyle))
             .safeAreaInset(edge: .bottom) {
                 if viewModel.selectedConversationID != nil {
                     statusBar
@@ -140,9 +146,9 @@ struct NeonWorkbenchWindow: View {
                     ))
             }
         }
-        .background(LiquidFieldBackground(opacity: windowBackgroundOpacity))
+        .background(NativeWindowBackground(style: backgroundStyle))
         #if os(macOS)
-            .transparentWindow(opacity: $windowBackgroundOpacity)
+            .transparentWindow(opacity: backgroundStyle == .airy ? 0.0 : 1.0)
         #endif
         .onChange(of: viewModel.selectedConversationID) { oldValue, newValue in
             print(
@@ -216,8 +222,12 @@ struct NeonWorkbenchWindow: View {
             Divider().frame(height: 12)
 
             Label {
-                Text(String(format: "$%.2f", NSDecimalNumber(decimal: viewModel.currentSessionCost).doubleValue))
-                    .font(.caption2.weight(.medium))
+                Text(
+                    String(
+                        format: "$%.2f",
+                        NSDecimalNumber(decimal: viewModel.currentSessionCost).doubleValue)
+                )
+                .font(.caption2.weight(.medium))
             } icon: {
                 Image(systemName: "dollarsign.circle.fill")
                     .font(.caption2)

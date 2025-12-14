@@ -28,10 +28,16 @@ struct GlassTranscriptSurface<Content: View, Footer: View>: View {
             footer
         }
         .background {
-            // The single glass surface backing the entire transcript sheet.
-            AdaptiveGlassBackground(target: .chatArea)
+            // Native glass surface for the entire transcript
+            Color.clear
+                .glassEffect(
+                    .regular,
+                    in: RoundedRectangle(
+                        cornerRadius: LiquidGlassTokens.Radius.sheet, style: .continuous))
         }
-        .clipShape(RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.sheet, style: .continuous))
+        .clipShape(
+            RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.sheet, style: .continuous)
+        )
         .overlay(
             RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.sheet, style: .continuous)
                 .stroke(

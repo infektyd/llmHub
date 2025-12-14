@@ -16,8 +16,6 @@ struct TokenUsageCapsule: View {
     let totalCost: Decimal
     let contextLimit: Int
 
-    @AppStorage("glassOpacity_statusBar") private var glassOpacity: Double = 0.85
-
     private var totalTokens: Int {
         inputTokens + outputTokens
     }

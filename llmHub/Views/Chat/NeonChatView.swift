@@ -18,8 +18,6 @@ struct NeonChatView: View {
     @StateObject private var interactionController = ChatInteractionController()
     @State private var inputText: String = ""  // Lifted state for InputPanel
 
-    @AppStorage("windowBackgroundOpacity") private var windowBackgroundOpacity: Double = 1.0
-
     @State private var scrollOffset: CGFloat = 0
     // Removed messageBottomPadding as safeAreaInset handles it
 

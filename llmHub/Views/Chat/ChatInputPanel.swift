@@ -30,7 +30,6 @@ struct ChatInputPanel: View {
     let onRemoveReference: (Int) -> Void
 
     @FocusState private var isInputFocused: Bool
-    @AppStorage("glassOpacity_inputBar") private var inputBarGlassOpacity: Double = 0.8
     @AppStorage("pasteThreshold") private var pasteThreshold: Int = 4000
     @Environment(\.theme) private var theme
 
@@ -299,8 +298,10 @@ struct ChatInputPanel: View {
                 )
                 .background {
                     if !theme.usesGlassEffect {
-                        RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control, style: .continuous)
-                            .fill(theme.surface)
+                        RoundedRectangle(
+                            cornerRadius: LiquidGlassTokens.Radius.control, style: .continuous
+                        )
+                        .fill(theme.surface)
                     }
                 }
         }
@@ -324,14 +325,17 @@ struct ChatInputPanel: View {
                             ? GlassEffect.regular.tint(theme.accent.opacity(0.20)).interactive()
                             : GlassEffect.clear.interactive())
                         : GlassEffect.identity,
-                    in: RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control, style: .continuous)
+                    in: RoundedRectangle(
+                        cornerRadius: LiquidGlassTokens.Radius.control, style: .continuous)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control, style: .continuous)
-                        .stroke(
-                            anyEnabled ? theme.accent.opacity(0.30) : theme.textPrimary.opacity(0.10),
-                            lineWidth: 1
-                        )
+                    RoundedRectangle(
+                        cornerRadius: LiquidGlassTokens.Radius.control, style: .continuous
+                    )
+                    .stroke(
+                        anyEnabled ? theme.accent.opacity(0.30) : theme.textPrimary.opacity(0.10),
+                        lineWidth: 1
+                    )
                 )
         }
         .buttonStyle(.plain)
@@ -368,7 +372,6 @@ struct ChatInputPanel: View {
                             : GlassEffect.regular.interactive(),
                         in: .rect(cornerRadius: 14)
                     )
-                    .opacity(inputBarGlassOpacity)
             } else {
                 RoundedRectangle(cornerRadius: theme.cornerRadius)
                     .fill(theme.surface)
@@ -540,6 +543,9 @@ struct ToolsListView: View {
             .padding(20)
         }
         .scrollContentBackground(.hidden)
-        .background(AdaptiveGlassBackground(target: .toolInspector))
+        .background {
+            Color.clear
+                .glassEffect(.regular, in: Rectangle())
+        }
     }
 }

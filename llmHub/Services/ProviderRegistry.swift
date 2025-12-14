@@ -2,47 +2,150 @@
 //  ProviderRegistry.swift
 //  llmHub
 //
-//  Created by AI Assistant on 11/27/25.
+//  Created by AI Assistant on 12/13/25.
 //
 
 import Foundation
+import OSLog
 
 /// A registry for managing available LLM providers.
 final class ProviderRegistry {
-    /// Dictionary of registered providers, keyed by their ID.
+    private let logger = Logger(subsystem: "com.llmhub", category: "ProviderRegistry")
+
+    /// Dictionary of registered providers, keyed by their CANONICAL ID.
     private let providers: [String: any LLMProvider]
 
+    /// Alias mapping for persisted/legacy IDs → canonical IDs.
+    private let aliasToCanonicalID: [String: String]
+
     /// Initializes a new `ProviderRegistry`.
-    /// - Parameter providerBuilders: Closures that create the provider instances.
     init(providerBuilders: [() -> any LLMProvider]) {
-        let resolved = providerBuilders.map { $0() }
-        // ✅ Normalize provider IDs to lowercase to prevent case-sensitivity issues
-        self.providers = Dictionary(
-            uniqueKeysWithValues: resolved.map { ($0.id.lowercased(), $0) }
-        )
-    }
+        var canonicalProviders: [String: any LLMProvider] = [:]
+        var aliases: [String: String] = [:]
 
-    /// Retrieves a specific provider by its ID.
-    /// - Parameter id: The unique identifier of the provider.
-    /// - Returns: The requested `LLMProvider`.
-    /// - Throws: `RegistryError.providerMissing` if the provider is not found.
-    func provider(for id: String) throws -> any LLMProvider {
-        // ✅ Normalize lookup to lowercase
-        let normalizedID = id.lowercased()
-        guard let provider = providers[normalizedID] else {
-            throw RegistryError.providerMissing
+        // 1. Register Built-in Legacy Aliases first
+        for (aliasKey, canonical) in ProviderID.legacyAliasesByLookupKey {
+            aliases[aliasKey] = canonical
         }
-        return provider
+
+        // 2. Resolve and Register Providers
+        for builder in providerBuilders {
+            let provider = builder()
+            let canonicalID = ProviderID.canonicalID(from: provider.id)
+
+            // Register provider
+            canonicalProviders[canonicalID] = provider
+
+            // Register self-alias (canonical -> canonical)
+            aliases[ProviderID.lookupKey(from: canonicalID)] = canonicalID
+
+            // Register name alias (e.g. "OpenAI" -> "openai")
+            let nameKey = ProviderID.lookupKey(from: provider.name)
+            aliases[nameKey] = canonicalID
+
+            // Register raw ID alias (e.g. "OpenAI" -> "openai")
+            let rawKey = ProviderID.lookupKey(from: provider.id)
+            aliases[rawKey] = canonicalID
+
+            Logger(subsystem: "com.llmhub", category: "ProviderRegistry").info(
+                "Registered provider: \(provider.name) (ID: \(provider.id)) -> Canonical: \(canonicalID)"
+            )
+        }
+
+        self.providers = canonicalProviders
+        self.aliasToCanonicalID = aliases
+
+        self.logger.info("Registry initialized with \(canonicalProviders.count) providers.")
     }
 
-    /// Returns a list of all registered providers.
+    /// Retrieves a specific provider by its ID with robust fallback.
+    func provider(for id: String) throws -> any LLMProvider {
+        let requestedKey = ProviderID.lookupKey(from: id)
+
+        // 1. Try Fast Lookup via Alias Map
+        if let canonicalID = aliasToCanonicalID[requestedKey],
+            let provider = providers[canonicalID]
+        {
+            return provider
+        }
+
+        // 2. Try Direct Canonical Lookup
+        let canonicalFromRaw = ProviderID.canonicalID(from: id)
+        if let provider = providers[canonicalFromRaw] {
+            return provider
+        }
+
+        // 3. Fail-Safe Scan (O(N) fallback for weird edge cases)
+        for (key, provider) in providers {
+            if key.caseInsensitiveCompare(id) == .orderedSame {
+                return provider
+            }
+            if provider.name.caseInsensitiveCompare(id) == .orderedSame {
+                return provider
+            }
+        }
+
+        // 4. Failure
+        let available = providers.keys.sorted()
+        logger.error(
+            "Provider lookup failed for id='\(id)'. Available: \(available.joined(separator: ", "))"
+        )
+        throw RegistryError.providerMissing(requestedID: id, availableIDs: available)
+    }
+
+    /// Resolves a raw/persisted provider ID to a canonical ID.
+    func canonicalProviderID(for rawID: String) -> String? {
+        let key = ProviderID.lookupKey(from: rawID)
+        if let mapped = aliasToCanonicalID[key] { return mapped }
+
+        // Fallback: Check if rawID matches any canonical key directly
+        let canonical = ProviderID.canonicalID(from: rawID)
+        return providers.keys.contains(canonical) ? canonical : nil
+    }
+
     var availableProviders: [any LLMProvider] {
-        Array(providers.values)
+        Array(providers.values).sorted { $0.name < $1.name }
     }
 }
 
-/// Errors related to the provider registry.
-enum RegistryError: Error {
-    /// The requested provider could not be found.
-    case providerMissing
+enum RegistryError: LocalizedError {
+    case providerMissing(requestedID: String, availableIDs: [String])
+
+    var errorDescription: String? {
+        switch self {
+        case .providerMissing(let requestedID, let availableIDs):
+            return
+                "Provider '\(requestedID)' not found. Installed: \(availableIDs.joined(separator: ", "))"
+        }
+    }
+}
+
+// MARK: - Provider ID Canonicalization
+
+enum ProviderID {
+    static let legacyAliasesByLookupKey: [String: String] = [
+        "openai": "openai",
+        "anthropic": "anthropic",
+        "claude": "anthropic",
+        "google": "google",
+        "googleai": "google",
+        "gemini": "google",
+        "mistral": "mistral",
+        "xai": "xai",
+        "grok": "xai",
+        "openrouter": "openrouter",
+    ]
+
+    static func lookupKey(from raw: String) -> String {
+        raw.lowercased()
+            .unicodeScalars
+            .filter { CharacterSet.alphanumerics.contains($0) }
+            .map(String.init)
+            .joined()
+    }
+
+    static func canonicalID(from raw: String) -> String {
+        let key = lookupKey(from: raw)
+        return legacyAliasesByLookupKey[key] ?? key
+    }
 }

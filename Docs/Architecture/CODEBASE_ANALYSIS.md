@@ -8,10 +8,12 @@
 ## 1. Architecture Overview
 
 ### Entry Point
+
 - `llmHubApp.swift` — Standard SwiftUI `@main` entry
 - Primary window: `NeonWorkbenchWindow.swift` (macOS) / iOS App Scene
 
 ### Core Data Flow
+
 ```
 User Input → ChatInputPanel → ChatViewModel.sendMessage()
                                     ↓
@@ -33,13 +35,14 @@ User Input → ChatInputPanel → ChatViewModel.sendMessage()
 **Status:** ✅ **Fully Implemented** — `ChatService` orchestrates complete Brain/Hand/Loop with real LLM calls, tool execution, and streaming responses.
 
 ### Key Dependencies/Frameworks
-| Framework | Usage |
-|-----------|-------|
-| SwiftUI | All UI |
-| SwiftData | Persistence (`ChatSessionEntity`, `ChatMessageEntity`, etc.) |
-| Foundation/URLSession | Networking (providers) |
-| XPC Services | Code execution sandbox |
-| OSLog | Logging |
+
+| Framework             | Usage                                                        |
+| --------------------- | ------------------------------------------------------------ |
+| SwiftUI               | All UI                                                       |
+| SwiftData             | Persistence (`ChatSessionEntity`, `ChatMessageEntity`, etc.) |
+| Foundation/URLSession | Networking (providers)                                       |
+| XPC Services          | Code execution sandbox                                       |
+| OSLog                 | Logging                                                      |
 
 **No third-party dependencies** — all native Apple frameworks.
 
@@ -50,11 +53,13 @@ User Input → ChatInputPanel → ChatViewModel.sendMessage()
 ### Implemented & Functional
 
 - **SwiftData persistence layer**
+
   - `ChatModels.swift` — Full domain models + `@Model` entities
   - Bidirectional conversion: `ChatSession ↔ ChatSessionEntity`
   - Folder/tag organization system
 
 - **XPC code execution architecture**
+
   - `CodeExecutionXPCProtocol.swift` — Protocol defined
   - `XPCExecutionBackend.swift` — Client implementation complete
   - `CodeExecutionEngine.swift` — Actor-based engine with sandbox support
@@ -62,10 +67,16 @@ User Input → ChatInputPanel → ChatViewModel.sendMessage()
   - Supports: Swift, Python, JavaScript, TypeScript, Dart
 
 - **UI shell structure**
+
   - `NeonWorkbenchWindow.swift` — Three-pane layout (sidebar, chat, inspector)
   - `NeonChatView.swift` — Message display with scroll tracking
   - `NeonSidebar.swift` — Conversation history
   - `NeonToolInspector.swift` — Tool execution display
+
+- **Liquid Glass UI Migration**
+
+  - Migration complete and verified
+  - Native `.glassEffect()` usage standard throughout
 
 - **Provider configuration** (`ProvidersConfig.swift`)
   - Model definitions for: OpenAI, Anthropic, Google AI, Mistral, xAI, OpenRouter
@@ -74,6 +85,7 @@ User Input → ChatInputPanel → ChatViewModel.sendMessage()
 ### Which Models Are Integrated?
 
 **✅ Fully Functional Providers:**
+
 - **OpenAI**: GPT-4o, GPT-4o Mini, o1-preview, o1-mini, GPT-4 Turbo, GPT-4, GPT-3.5 Turbo
 - **Anthropic**: Claude 4 Opus, Sonnet 4.5, Haiku 4.5, Claude 3.5, Claude 3
 - **Google Gemini**: Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 1.5 Flash/Pro, Gemini 1.0 Pro/Ultra
@@ -120,14 +132,13 @@ None found via code search. Documentation mentions planned features in `AGENTS.m
 
 ### Commented-Out / Planned Features
 
-From `LIQUID_GLASS_MIGRATION.md`:
-- Liquid Glass migration incomplete — 8 files need updating
-- Legacy `.ultraThinMaterial` still in use
+- Legacy `.ultraThinMaterial` usage removed/migrated
 
 From `AGENTS.md` roadmap:
+
 ```
 Near-term:
-- [ ] Complete Liquid Glass migration
+- [x] Complete Liquid Glass migration
 - [ ] Multi-window support
 - [ ] Widget for quick prompts
 
@@ -143,16 +154,16 @@ Medium-term:
 
 ### ✅ Fully Integrated
 
-| Component | Status |
-|-----------|--------|
-| `ChatInputPanel` | ✅ Connected to ChatService |
-| `ModelPicker` | ✅ Model selection works |
-| `ToolInspector` | ✅ Shows real tool execution |
-| Sidebar conversations | ✅ SwiftData persistence works |
-| `ChatService` | ✅ Fully orchestrated Brain/Hand/Loop |
-| Streaming UI | ✅ Consumes `AsyncThrowingStream` |
-| API key management | ✅ Settings UI with Keychain storage |
-| Tool registration | ✅ Tools registered in `ToolRegistry` |
+| Component             | Status                                |
+| --------------------- | ------------------------------------- |
+| `ChatInputPanel`      | ✅ Connected to ChatService           |
+| `ModelPicker`         | ✅ Model selection works              |
+| `ToolInspector`       | ✅ Shows real tool execution          |
+| Sidebar conversations | ✅ SwiftData persistence works        |
+| `ChatService`         | ✅ Fully orchestrated Brain/Hand/Loop |
+| Streaming UI          | ✅ Consumes `AsyncThrowingStream`     |
+| API key management    | ✅ Settings UI with Keychain storage  |
+| Tool registration     | ✅ Tools registered in `ToolRegistry` |
 
 ### 🔄 Areas for Enhancement
 
@@ -185,16 +196,16 @@ Medium-term:
 
 ## File Reference
 
-| Category | Files |
-|----------|-------|
-| **Models** | `ChatModels.swift`, `CodeExecutionModels.swift`, `FileOperationModels.swift`, `UIModels.swift` |
-| **Providers** | `LLMProviderProtocol.swift`, `OpenAIManager.swift`, `AnthropicManager.swift`, `GeminiManager.swift`, `MistralManager.swift`, `XAIManager.swift`, `OpenRouterManager.swift`, `*Provider.swift` (6 files) |
-| **Services** | `ChatService.swift`, `ToolRegistry.swift`, `ProviderRegistry.swift`, `CodeExecutionEngine.swift`, `MCPClient.swift`, `MCPTypes.swift`, `SandboxManager.swift` |
-| **Tools** | `CodeInterpreterTool.swift`, `FileEditorTool.swift`, `FileReaderTool.swift`, `WebSearchTool.swift`, `MCPToolBridge.swift` |
-| **XPC** | `CodeExecutionXPCProtocol.swift`, `XPCExecutionBackend.swift`, `ExecutionBackend.swift` |
-| **Views** | `NeonWorkbenchWindow.swift`, `NeonChatView.swift`, `NeonChatInput.swift`, `NeonToolbar.swift`, `NeonMessageBubble.swift`, `NeonSidebar.swift`, `NeonToolInspector.swift`, `NeonWelcomeView.swift`, `NeonModelPicker.swift` |
-| **ViewModels** | `ChatViewModel.swift`, `WorkbenchViewModel.swift` |
-| **Support** | `ProvidersConfig.swift`, `KeychainStore.swift`, `ReferenceFormatter.swift`, `NeonTheme.swift` |
+| Category       | Files                                                                                                                                                                                                                      |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Models**     | `ChatModels.swift`, `CodeExecutionModels.swift`, `FileOperationModels.swift`, `UIModels.swift`                                                                                                                             |
+| **Providers**  | `LLMProviderProtocol.swift`, `OpenAIManager.swift`, `AnthropicManager.swift`, `GeminiManager.swift`, `MistralManager.swift`, `XAIManager.swift`, `OpenRouterManager.swift`, `*Provider.swift` (6 files)                    |
+| **Services**   | `ChatService.swift`, `ToolRegistry.swift`, `ProviderRegistry.swift`, `CodeExecutionEngine.swift`, `MCPClient.swift`, `MCPTypes.swift`, `SandboxManager.swift`                                                              |
+| **Tools**      | `CodeInterpreterTool.swift`, `FileEditorTool.swift`, `FileReaderTool.swift`, `WebSearchTool.swift`, `MCPToolBridge.swift`                                                                                                  |
+| **XPC**        | `CodeExecutionXPCProtocol.swift`, `XPCExecutionBackend.swift`, `ExecutionBackend.swift`                                                                                                                                    |
+| **Views**      | `NeonWorkbenchWindow.swift`, `NeonChatView.swift`, `NeonChatInput.swift`, `NeonToolbar.swift`, `NeonMessageBubble.swift`, `NeonSidebar.swift`, `NeonToolInspector.swift`, `NeonWelcomeView.swift`, `NeonModelPicker.swift` |
+| **ViewModels** | `ChatViewModel.swift`, `WorkbenchViewModel.swift`                                                                                                                                                                          |
+| **Support**    | `ProvidersConfig.swift`, `KeychainStore.swift`, `ReferenceFormatter.swift`, `NeonTheme.swift`                                                                                                                              |
 
 ---
 

@@ -23,7 +23,7 @@ log stream --predicate 'subsystem == "com.llmhub"'
 
 ## Architecture: Brain/Hand/Loop
 
-llmHub is a native macOS IDE for LLMs with a modular architecture:
+llmHub is a native macOS AI Workbench for LLMs with a modular architecture:
 
 **Brain (Providers)** - LLM backends in `llmHub/Providers/`
 
@@ -61,7 +61,7 @@ llmHub is a native macOS IDE for LLMs with a modular architecture:
 
 **Liquid Glass UI (SwiftUI)**
 
-- Use `.glassEffect()` and `GlassEffectContainer` for new UI
+- Use `.glassEffect()` on views. Reference `LiquidGlassTokens` for spacing and radii. Do not use legacy wrapper views.
 - `.buttonStyle(.glass)` for buttons
 - `.interactive()` for touch-responsive elements
 - Avoid legacy `.ultraThinMaterial`

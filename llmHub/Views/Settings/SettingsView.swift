@@ -13,9 +13,6 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var modelRegistry: ModelRegistry
 
-    // Global Appearance State for Live Preview
-    @AppStorage("windowBackgroundOpacity") private var windowBackgroundOpacity: Double = 1.0
-
     var body: some View {
         TabView {
             // MARK: - API Keys Tab
@@ -40,11 +37,9 @@ struct SettingsView: View {
                 .tag(2)
         }
         #if os(macOS)
-            .frame(width: 700, height: 550)  // Slightly larger for modern feel
-            // Ensure settings window remains visible (min 0.8) while previewing lower opacities
-            .windowAppearance(opacity: 0.0, alpha: max(0.8, windowBackgroundOpacity))
+            .frame(width: 700, height: 550)
         #endif
-        .background(Color.neonMidnight.opacity(0.5))  // Semi-transparent backing
+        .background(Color.neonMidnight.opacity(0.5))
         .onAppear {
             viewModel.modelRegistry = modelRegistry
         }
@@ -56,76 +51,39 @@ struct SettingsView: View {
 struct AppearanceSettingsView: View {
     @State private var themeManager = ThemeManager.shared
 
-    // Live Preview Bindings
-    @AppStorage("windowBackgroundOpacity") private var windowBackgroundOpacity: Double = 1.0
-    @AppStorage("glassIntensity.sidebar") private var sidebarGlassIntensity: Double = 95
-    @AppStorage("glassIntensity.chatArea") private var chatAreaGlassIntensity: Double = 10
-    @AppStorage("glassIntensity.inputBar") private var inputBarGlassIntensity: Double = 10
-    @AppStorage("glassIntensity.toolInspector") private var toolInspectorGlassIntensity: Double = 65
-    @AppStorage("glassIntensity.messages") private var messagesGlassIntensity: Double = 95
-    @AppStorage("glassIntensity.modelPicker") private var modelPickerGlassIntensity: Double = 100
-
-    // Animations
-    @State private var orbPulse: Bool = false
-
-    // Validated Binding for Slider
-    private var opacityBinding: Binding<Double> {
-        Binding(
-            get: { windowBackgroundOpacity },
-            set: { newValue in
-                // Validate and clamp bounds
-                windowBackgroundOpacity = max(0.0, min(1.0, newValue))
-            }
-        )
-    }
-
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 32) {
-                // Header & Orb
-                HStack(alignment: .center) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Appearance")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [.white, Color.neonElectricBlue],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
+            VStack(alignment: .leading, spacing: 28) {
+                // Header
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Appearance")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.primary)
 
-                        Text("Craft your workspace environment.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer()
-
-                    // Live Preview Orb
-                    OrbPreview(intensity: (sidebarGlassIntensity + chatAreaGlassIntensity) / 200.0)
-                        .frame(width: 50, height: 50)
+                    Text("Customize your workspace look and feel.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                 }
                 .padding(.horizontal)
-                .padding(.top, 20)
+                .padding(.top, 16)
 
-                // Theme Selection (Liquid Cards)
-                VStack(alignment: .leading, spacing: 16) {
-                    Label("Theme Engine", systemImage: "swatchpalette.fill")
+                // MARK: - Theme Engine
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("Theme", systemImage: "swatchpalette.fill")
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.primary)
                         .padding(.horizontal)
 
                     ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 16) {
+                        HStack(spacing: 12) {
                             ForEach(ThemeManager.available, id: \.name) { theme in
                                 LiquidThemeCard(
                                     theme: theme,
                                     isSelected: themeManager.current.name == theme.name
                                 )
                                 .onTapGesture {
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
                                         themeManager.setTheme(theme)
                                     }
                                 }
@@ -135,11 +93,11 @@ struct AppearanceSettingsView: View {
                     }
                 }
 
-                // Transcript Style (Pill Segmented Control)
-                VStack(alignment: .leading, spacing: 12) {
-                    Label("Transcript Style", systemImage: "text.bubble.fill")
+                // MARK: - Transcript Style
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("Transcript", systemImage: "text.bubble.fill")
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.primary)
                         .padding(.horizontal)
 
                     HStack(spacing: 0) {
@@ -154,23 +112,14 @@ struct AppearanceSettingsView: View {
                                     .font(.subheadline)
                                     .fontWeight(isSelected ? .semibold : .medium)
                                     .foregroundStyle(isSelected ? .white : .secondary)
-                                    .padding(.vertical, 8)
+                                    .padding(.vertical, 10)
                                     .padding(.horizontal, 16)
                                     .frame(maxWidth: .infinity)
                                     .background(
                                         RoundedRectangle(cornerRadius: 8)
                                             .fill(
                                                 isSelected
-                                                    ? Color.neonElectricBlue.opacity(0.3)
-                                                    : Color.clear
-                                            )
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 8)
-                                                    .stroke(
-                                                        isSelected
-                                                            ? Color.neonElectricBlue.opacity(0.6)
-                                                            : .clear, lineWidth: 1)
-                                            )
+                                                    ? Color.accentColor.opacity(0.3) : Color.clear)
                                     )
                                     .contentShape(Rectangle())
                             }
@@ -181,98 +130,35 @@ struct AppearanceSettingsView: View {
                     .background(
                         RoundedRectangle(cornerRadius: 10)
                             .fill(.ultraThinMaterial)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(.white.opacity(0.05), lineWidth: 1)
-                            )
                     )
                     .padding(.horizontal)
                 }
 
-                // MARK: - Floating Islands
-                VStack(alignment: .leading, spacing: 24) {
-                    // Window Opacity (Floating Island)
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Label("Window Opacity", systemImage: "macwindow")
-                                .font(.headline)
-                                .foregroundStyle(.white)
-                            Spacer()
-                            Text("\(Int(windowBackgroundOpacity * 100))%")
-                                .font(.system(.subheadline, design: .monospaced))
-                                .foregroundStyle(Color.neonElectricBlue)
-                        }
+                // MARK: - Window Style (macOS only)
+                #if os(macOS)
+                    WindowStylePicker()
+                        .padding(.top, 4)
+                #endif
 
-                        LiquidSlider(value: opacityBinding, range: 0.0...1.0)
-                            .frame(height: 24)
-
-                        Text("Controls the global transparency of the app window.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(16)
-                    .glassEffect(GlassEffect.regular)
-
-                    // Glass Refraction (Floating Island)
-                    VStack(alignment: .leading, spacing: 12) {
-                        Label("Glass Refraction", systemImage: "drop.fill")
-                            .font(.headline)
-                            .foregroundStyle(.white)
-
-                        LazyVGrid(
-                            columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 20
-                        ) {
-                            GlassIntensityControl(label: "Sidebar", value: $sidebarGlassIntensity)
-                            GlassIntensityControl(
-                                label: "Input Bar", value: $inputBarGlassIntensity)
-                            GlassIntensityControl(
-                                label: "Chat Area", value: $chatAreaGlassIntensity)
-                            GlassIntensityControl(
-                                label: "Inspector", value: $toolInspectorGlassIntensity)
-                            GlassIntensityControl(label: "Messages", value: $messagesGlassIntensity)
-                            GlassIntensityControl(
-                                label: "Picker", value: $modelPickerGlassIntensity)
-                        }
-                    }
-                    .padding(16)
-                    .glassEffect(GlassEffect.regular)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                Spacer(minLength: 20)
 
                 // Reset Action
                 HStack {
                     Spacer()
-                    Button(action: resetToDefaults) {
-                        Text("Reset to Neon Defaults")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundStyle(Color.neonElectricBlue)
-                            .padding(8)
-                            .background(
-                                Capsule()
-                                    .strokeBorder(Color.neonElectricBlue.opacity(0.3), lineWidth: 1)
-                            )
+                    Button("Reset to Defaults") {
+                        withAnimation(.bouncy) {
+                            themeManager.setTheme(ThemeManager.available.first!)
+                            themeManager.setTranscriptStyle(.neonDark)
+                        }
                     }
-                    .buttonStyle(.plain)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                     Spacer()
                 }
-                .padding(.bottom, 24)
+                .padding(.bottom, 20)
             }
         }
-        .background(Color.clear)  // Let window background handle it
-    }
-
-    private func resetToDefaults() {
-        withAnimation(.bouncy) {
-            windowBackgroundOpacity = 1.0
-            sidebarGlassIntensity = 95
-            chatAreaGlassIntensity = 10
-            inputBarGlassIntensity = 10
-            toolInspectorGlassIntensity = 65
-            messagesGlassIntensity = 95
-            modelPickerGlassIntensity = 100
-        }
+        .background(Color.clear)
     }
 }
 
@@ -358,37 +244,6 @@ struct LiquidSlider: View {
                     )
             }
         }
-    }
-}
-
-/// A mini control for glass intensity.
-struct GlassIntensityControl: View {
-    let label: String
-    @Binding var value: Double
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(label)
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.8))
-                Spacer()
-                Text("\(Int(value))")
-                    .font(.caption2.monospaced())
-                    .foregroundStyle(Color.neonElectricBlue)
-            }
-            LiquidSlider(value: $value, range: 0...100)
-                .frame(height: 16)
-        }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(.white.opacity(0.05), lineWidth: 1)
-                )
-        )
     }
 }
 
