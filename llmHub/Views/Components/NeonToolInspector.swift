@@ -10,7 +10,6 @@ import SwiftUI
 struct NeonToolInspector: View {
     @Binding var isVisible: Bool
     @Binding var toolExecution: ToolExecution?
-    @AppStorage("glassOpacity_toolInspector") private var glassOpacity: Double = 0.8
     @Environment(\.theme) private var theme
 
     var body: some View {
@@ -35,7 +34,9 @@ struct NeonToolInspector: View {
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(AdaptiveGlassBackground(target: .toolInspector))
+        .background {
+            Color.clear.glassEffect(.regular, in: Rectangle())
+        }
     }
 
     // MARK: - Sections

@@ -1,7 +1,9 @@
 import Foundation
+import OSLog
 
 @MainActor
 struct GoogleAIProvider: LLMProvider {
+    private let logger = AppLogger.category("GoogleAIProvider")
     nonisolated let id: String = "google"
     nonisolated let name: String = "Google AI (Gemini)"
 
@@ -228,49 +230,74 @@ struct GoogleAIProvider: LLMProvider {
                         return
                     }
 
-	                    var fullText = ""
-	                    var accumulatedToolCalls: [ToolCall] = []
+                    var fullText = ""
+                    var accumulatedToolCalls: [ToolCall] = []
+                    var stopDueToMalformedFunctionCall = false
 
-	                    for try await line in result.lines {
-	                        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                    // Rationale: Gemini SSE can emit multi-line data events and JSON may be split across TCP frames.
+                    // Buffer until a full SSE event is available before decoding.
+                    var sse = SSEEventParser()
+                    let decoder = JSONDecoder()
 
-	                        if trimmed.hasPrefix("data: ") {
-	                            let json = String(trimmed.dropFirst(6))
-	                            if json == "[DONE]" { break }
+                    for try await byte in result {
+                        for payload in sse.append(byte: byte) {
+                            if payload == "[DONE]" { break }
 
-	                            if let data = json.data(using: .utf8),
-	                                let chunk = try? JSONDecoder().decode(
-	                                    GenerationResponse.self, from: data)
-	                            {
-	                                if let text = chunk.text, !text.isEmpty {
-	                                    fullText += text
-	                                    continuation.yield(.token(text: text))
-	                                }
-	                                
-	                                // Handle Function Calls even when text is nil/empty.
-	                                if let candidates = chunk.candidates, let first = candidates.first {
-	                                    for part in first.content.parts {
-	                                        if case .functionCall(let fc) = part {
-	                                            let encoder = JSONEncoder()
-	                                            if let argsData = try? encoder.encode(fc.args),
-	                                               let argsStr = String(data: argsData, encoding: .utf8) {
-	                                                let callId = "call_\(UUID().uuidString.prefix(8))"
-	                                                let toolCall = ToolCall(id: callId, name: fc.name, input: argsStr)
-	                                                accumulatedToolCalls.append(toolCall)
-	                                                continuation.yield(.toolUse(id: callId, name: fc.name, input: argsStr))
-	                                            }
-	                                        }
-	                                    }
-	                                }
-	                            } else {
-	#if DEBUG
-	                                if !json.isEmpty {
-	                                    print("GoogleAIProvider: Failed to decode stream chunk: \(json.prefix(200))")
-	                                }
-	#endif
-	                            }
-	                        }
-	                    }
+                            guard let data = payload.data(using: .utf8) else { continue }
+                            let chunk: GenerationResponse
+                            do {
+                                chunk = try decoder.decode(GenerationResponse.self, from: data)
+                            } catch {
+                                logger.debug(
+                                    "Failed to decode Gemini stream event: \(payload.prefix(240), privacy: .public)"
+                                )
+                                continue
+                            }
+
+                            if let finishReason = chunk.candidates?.first?.finishReason,
+                                finishReason == "MALFORMED_FUNCTION_CALL"
+                            {
+                                // Rationale: Treat as model output error; surface a readable warning and skip tool execution.
+                                stopDueToMalformedFunctionCall = true
+                                accumulatedToolCalls.removeAll()
+
+                                let warning =
+                                    "\n[Gemini warning] Model produced a malformed function call; tool execution was skipped for this turn.\n"
+                                fullText += warning
+                                continuation.yield(.token(text: warning))
+                                break
+                            }
+
+                            if let text = chunk.text, !text.isEmpty {
+                                fullText += text
+                                continuation.yield(.token(text: text))
+                            }
+
+                            // Handle Function Calls even when text is nil/empty.
+                            if !stopDueToMalformedFunctionCall,
+                                let candidates = chunk.candidates,
+                                let first = candidates.first
+                            {
+                                for part in first.content.parts {
+                                    if case .functionCall(let fc) = part {
+                                        let encoder = JSONEncoder()
+                                        if let argsData = try? encoder.encode(fc.args),
+                                            let argsStr = String(data: argsData, encoding: .utf8)
+                                        {
+                                            let callId = "call_\(UUID().uuidString.prefix(8))"
+                                            let toolCall = ToolCall(
+                                                id: callId, name: fc.name, input: argsStr)
+                                            accumulatedToolCalls.append(toolCall)
+                                            continuation.yield(
+                                                .toolUse(id: callId, name: fc.name, input: argsStr))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if stopDueToMalformedFunctionCall { break }
+                    }
 
 	                    // Final completion event with full message
 	                    let message = ChatMessage(

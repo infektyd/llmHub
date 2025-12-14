@@ -55,6 +55,9 @@ struct ToolArguments: Sendable {
         storage.mapValues { $0.toAny() }
     }
 
+    /// Access to typed values for schema validation.
+    nonisolated var jsonValuesByKey: [String: JSONValue] { storage }
+
     /// Legacy alias used by some tools.
     nonisolated var dictionary: [String: Any] { rawDictionary }
 }

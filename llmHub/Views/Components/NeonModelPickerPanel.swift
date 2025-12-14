@@ -278,7 +278,7 @@ struct NeonModelPickerPanel: View {
     // MARK: - Subviews
 
     private var panelBackground: some View {
-        AdaptiveGlassBackground(target: .modelPicker)
+        Color.clear.glassEffect(.regular, in: Rectangle())
     }
 
     private var headerBackground: some View {

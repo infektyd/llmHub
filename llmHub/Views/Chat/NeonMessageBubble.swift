@@ -19,7 +19,6 @@ struct NeonMessageBubble: View {
     let relatedToolCall: ToolCall?
     var interactionController: ChatInteractionController? = nil
 
-    @AppStorage("glassOpacity_messages") private var glassOpacity: Double = 0.8
     @Environment(\.theme) private var theme
 
     @State private var selectedAttachment: Attachment?
@@ -110,7 +109,7 @@ struct NeonMessageBubble: View {
                     Circle()
                         .frame(width: 32, height: 32)
                         .glassEffect(
-                            GlassEffect.regular.tint(.glassAI.opacity(glassOpacity)),
+                            GlassEffect.regular.tint(.glassAI.opacity(0.8)),
                             in: .circle
                         )
                         .overlay(
@@ -210,7 +209,9 @@ struct NeonMessageBubble: View {
                 .textSelection(.enabled)
                 .padding(16)
                 .background {
-                    AdaptiveGlassBackground(target: .messages)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .glassEffect(
+                            .regular, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
 
         case .tool:

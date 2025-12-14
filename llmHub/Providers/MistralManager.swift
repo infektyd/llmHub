@@ -94,12 +94,15 @@ public class MistralManager {
         let url = primaryURL.appendingPathComponent("chat/completions")
         
         return AsyncThrowingStream { continuation in
-            Task {
+            // Capture session locally to prevent retain cycle
+            let localSession = self.session
+            
+            let task = Task {
                 do {
                     var request = try makeRequest(url: url, payload: requestPayload)
                     request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
                     
-                    let (bytes, response) = try await session.bytes(for: request)
+                    let (bytes, response) = try await localSession.bytes(for: request)
                     guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
                         var errorText = ""
                         for try await line in bytes.lines { errorText += line }
@@ -122,6 +125,10 @@ public class MistralManager {
                 } catch {
                     continuation.finish(throwing: error)
                 }
+            }
+            
+            continuation.onTermination = { @Sendable _ in
+                task.cancel()
             }
         }
     }

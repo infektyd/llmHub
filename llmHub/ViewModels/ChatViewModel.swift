@@ -325,7 +325,13 @@ class ChatViewModel {
             return
         }
 
-        logger.info("Hydrating state from session: \(savedProviderID) / \(savedModelID)")
+        // Rationale: Persisted provider IDs may be legacy/case-varied (e.g. "OpenAI", "openAI").
+        // Normalize before matching against the model registry list.
+        let canonicalSavedProviderID = ProviderID.canonicalID(from: savedProviderID)
+
+        logger.info(
+            "Hydrating state from session: \(savedProviderID) → \(canonicalSavedProviderID) / \(savedModelID)"
+        )
 
         // 1. Find Provider
         // We try to match the saved ID to the UI providers in the registry
@@ -335,11 +341,7 @@ class ChatViewModel {
 
         let targetProvider = modelRegistry.availableProviders()
             .filter { providerName in
-                // Normalize provider name
-                let normalized = providerName.lowercased()
-                    .replacingOccurrences(of: " ai", with: "")
-                    .trimmingCharacters(in: CharacterSet.whitespaces)
-                return normalized == savedProviderID || savedProviderID.contains(normalized)
+                ProviderID.canonicalID(from: providerName) == canonicalSavedProviderID
             }
             .map { providerName -> UILLMProvider in
                 let models = modelRegistry.models(for: providerName).map { model in
@@ -394,9 +396,12 @@ class ChatViewModel {
             }
         } else {
             // Log missing provider only once
-            let key = "provider:\(savedProviderID)"
+            let key = "provider:\(canonicalSavedProviderID)"
             if !Self.loggedMissingModels.contains(key) {
-                logger.warning("Could not find provider for ID: \(savedProviderID)")
+                let available = modelRegistry.availableProviders().joined(separator: ", ")
+                logger.warning(
+                    "Could not find provider for ID: \(savedProviderID) (canonical: \(canonicalSavedProviderID)). Available: \(available)"
+                )
                 Self.loggedMissingModels.insert(key)
             }
         }

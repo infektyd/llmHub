@@ -97,12 +97,15 @@ public class OpenAIManager {
         let url = baseURL.appendingPathComponent("chat/completions")
 
         return AsyncThrowingStream { continuation in
-            Task {
+            // Capture session weakly to prevent retain cycle
+            let localSession = self.session
+            
+            let task = Task {
                 do {
                     var request = try makeRequest(url: url, payload: payload)
                     request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
 
-                    let (bytes, response) = try await session.bytes(for: request)
+                    let (bytes, response) = try await localSession.bytes(for: request)
                     guard let http = response as? HTTPURLResponse,
                         (200...299).contains(http.statusCode)
                     else {
@@ -129,6 +132,10 @@ public class OpenAIManager {
                 } catch {
                     continuation.finish(throwing: error)
                 }
+            }
+            
+            continuation.onTermination = { @Sendable _ in
+                task.cancel()
             }
         }
     }

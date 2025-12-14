@@ -156,9 +156,9 @@ struct NeonMessageRow: View {
     @ViewBuilder
     private var toolRequestsRow: some View {
         if role == .assistant,
-           let toolCallsData = message.toolCallsData,
-           let toolCalls = try? JSONDecoder().decode([ToolCall].self, from: toolCallsData),
-           !toolCalls.isEmpty
+            let toolCallsData = message.toolCallsData,
+            let toolCalls = try? JSONDecoder().decode([ToolCall].self, from: toolCallsData),
+            !toolCalls.isEmpty
         {
             HStack(spacing: 8) {
                 Image(systemName: "wrench.and.screwdriver")

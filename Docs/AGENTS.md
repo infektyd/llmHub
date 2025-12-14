@@ -6,7 +6,7 @@
 
 ## 🎯 Vision Statement
 
-**llmHub** is a native macOS and iOS IDE designed to bridge chat interfaces with powerful agentic workflows. It prioritizes:
+**llmHub** is a native macOS AI Workspace designed to bridge chat interfaces with powerful agentic workflows. It prioritizes:
 
 1.  **Frontier Model Integration**: Support for all major providers (OpenAI, Anthropic, Gemini, Mistral, xAI).
 2.  **Liquid Glass UI**: A state-of-the-art translucent interface using modern SwiftUI and `GlassEffect` APIs.
@@ -57,7 +57,7 @@ The UI follows the "Liquid Glass" design language, characterized by translucent 
 ### Core Primitives
 
 - **`GlassEffect`**: Custom SwiftUI modifier replacing standard `.background(.ultraThinMaterial)`.
-- **`GlassEffectContainer`**: Groups adjacent glass elements for specialized merging/rendering (future-proofing).
+- **Guidelines**: Use native SwiftUI `.glassEffect()` modifiers combined with `LiquidGlassTokens` for consistency.
 - **`LiquidGlassTokens`**: Central source of truth for spacing, radius, and colors (`NeonTheme.swift`).
 
 ### Key Components

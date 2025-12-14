@@ -1,6 +1,6 @@
 # llmHub
 
-**llmHub** is a native macOS and iOS IDE for Large Language Models, designed to bridge the gap between chat interfaces and powerful agentic workflows. It features a modular "Brain/Hand/Loop" architecture, securely sandboxed code execution (macOS), Model Context Protocol (MCP) integration, and a cutting-edge **Liquid Glass** UI design.
+**llmHub** is a native macOS and iOS AI Workbench, designed to bridge the gap between chat interfaces and powerful agentic workflows. It features a modular "Brain/Hand/Loop" architecture, securely sandboxed code execution (macOS), Model Context Protocol (MCP) integration, and a cutting-edge **Liquid Glass** UI design.
 
 ## 🚀 Features
 
@@ -122,7 +122,7 @@ This project uses **Swift 6.2** with strict concurrency, **SwiftData** for persi
 
 - **Brain/Hand/Loop**: Providers (LLM) → Tools (Actions) → ChatService (Orchestrator)
 - **Swift 6 Concurrency**: All UI types, ViewModels, and Providers use `@MainActor`
-- **Liquid Glass First**: All new UI must use `.glassEffect()` and `GlassEffectContainer`
+- **Liquid Glass First**: All new UI must use `.glassEffect()` and `LiquidGlassTokens` for consistency. Do not use wrapper views.
 - **Platform Awareness**: Use `#if os(iOS)` and `#if os(macOS)` for platform-specific code
 - **No Placeholders**: Production-quality implementations only (see user rules)
 

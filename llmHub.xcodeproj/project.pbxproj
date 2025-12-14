@@ -652,6 +652,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_ENABLED_OPAQUE_TYPE_ERASURE = no;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 6.0;
 			};
@@ -710,6 +711,7 @@
 				MTL_FAST_MATH = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_ENABLED_OPAQUE_TYPE_ERASURE = no;
 				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
@@ -880,7 +882,7 @@
 				A3C71F4E2ED9389B0088DF32 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		A3C71F4A2ED9389B0088DF32 /* Build configuration list for PBXNativeTarget "llmHub" */ = {
 			isa = XCConfigurationList;
@@ -889,7 +891,7 @@
 				A3C71F4C2ED9389B0088DF32 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		A3C71F4F2ED9389B0088DF32 /* Build configuration list for PBXNativeTarget "llmHubTests" */ = {
 			isa = XCConfigurationList;
@@ -898,7 +900,7 @@
 				A3C71F512ED9389B0088DF32 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		A3C71F522ED9389B0088DF32 /* Build configuration list for PBXNativeTarget "llmHubUITests" */ = {
 			isa = XCConfigurationList;
@@ -907,7 +909,7 @@
 				A3C71F542ED9389B0088DF32 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		B3000050303030300001 /* Build configuration list for PBXNativeTarget "llmHubHelper" */ = {
 			isa = XCConfigurationList;
@@ -916,7 +918,7 @@
 				B3000052303030300001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 
