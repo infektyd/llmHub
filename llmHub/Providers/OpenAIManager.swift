@@ -195,7 +195,8 @@ public class OpenAIManager {
         messages: [OpenAIChatMessage],
         model: String,
         tools: [OpenAITool]? = nil,
-        jsonMode: Bool = false
+        jsonMode: Bool = false,
+        reasoningSummary: String? = nil
     ) throws -> URLRequest {
         let inputs: [OpenAIResponseInput] = messages.map { msg in
             let role = MessageRole(rawValue: msg.role) ?? .assistant
@@ -238,6 +239,7 @@ public class OpenAIManager {
             model: model,
             input: inputs,
             tools: responsesTools,
+            reasoning: reasoningSummary.map { OpenAIResponsesReasoning(summary: $0) },
             stream: false,
             responseFormat: jsonMode ? OpenAIResponseFormat(type: "json_object") : nil
         )
@@ -423,8 +425,14 @@ struct OpenAIResponsesRequest: Encodable {
     let model: String
     let input: [OpenAIResponseInput]
     let tools: [OpenAIResponsesTool]?
+    let reasoning: OpenAIResponsesReasoning?
     let stream: Bool?
     let responseFormat: OpenAIResponseFormat?
+}
+
+/// Reasoning configuration for the Responses API.
+struct OpenAIResponsesReasoning: Encodable {
+    let summary: String?
 }
 
 /// Tool format for the Responses API (flattened structure with name at top level)

@@ -8,7 +8,9 @@ struct ModelRouterTests {
         print("Running ModelRouter Tests...")
 
         testGPT5Family()
+        testGPT41Family()
         testO1Family()
+        testOSeriesFamily()
         testStandardModels()
 
         print("✅ All tests passed!")
@@ -37,6 +39,24 @@ struct ModelRouterTests {
             ModelRouter.endpoint(for: "o1-mini") == .responses,
             "o1-mini should use responses endpoint")
         print("✅ O1 family tests passed")
+    }
+
+    static func testGPT41Family() {
+        assert(
+            ModelRouter.endpoint(for: "gpt-4.1") == .responses,
+            "gpt-4.1 should use responses endpoint")
+        assert(
+            ModelRouter.endpoint(for: "gpt-4.1-mini") == .responses,
+            "gpt-4.1-mini should use responses endpoint")
+        print("✅ GPT-4.1 family tests passed")
+    }
+
+    static func testOSeriesFamily() {
+        assert(ModelRouter.endpoint(for: "o3") == .responses, "o3 should use responses endpoint")
+        assert(
+            ModelRouter.endpoint(for: "o4-mini") == .responses,
+            "o4-mini should use responses endpoint")
+        print("✅ o-series family tests passed")
     }
 
     static func testStandardModels() {

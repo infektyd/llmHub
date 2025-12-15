@@ -18,85 +18,59 @@ struct NeonSidebar: View {
     @Query(sort: \ChatSessionEntity.updatedAt, order: .reverse) private var sessions:
         [ChatSessionEntity]
 
-    var pinnedSessions: [ChatSessionEntity] {
-        sessions.filter { $0.isPinned }
-    }
-
-    var recentSessions: [ChatSessionEntity] {
-        sessions.filter { !$0.isPinned }
-    }
+    @State private var sidebarVM = SidebarViewModel()
 
     var body: some View {
-        let _ = print("🔄 [NeonSidebar] body evaluated")
         VStack(spacing: 0) {
             // Header with New Chat button
-            HStack {
-                Text("Conversations")
-                    .font(.headline)
-                    .foregroundColor(theme.textPrimary)
+            headerView
 
-                Spacer()
+            // Grouping Mode Picker
+            groupingPicker
 
-                // Show selection count if multi-selecting
-                if !viewModel.selectedConversationIDs.isEmpty {
-                    Text("\(viewModel.selectedConversationIDs.count) selected")
-                        .font(.caption)
-                        .foregroundColor(theme.accent)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(
-                            Capsule()
-                                .fill(theme.accent.opacity(0.2))
-                        )
+            // Cleanup Banner (if needed)
+            if sidebarVM.cleanupCount(modelContext: modelContext) > 0 {
+                CleanupBannerView(
+                    flaggedCount: sidebarVM.cleanupCount(modelContext: modelContext)
+                ) {
+                    sidebarVM.showCleanupSheet = true
                 }
-
-                Button(action: { viewModel.createNewConversation(modelContext: modelContext) }) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.title3)
-                        .foregroundColor(theme.accent)
-                }
-                .buttonStyle(.plain)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
 
             // Search Bar
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(theme.textSecondary)
-                    .font(.system(size: 14))
-
-                TextField("Search conversations...", text: Bindable(viewModel).searchText)
-                    .textFieldStyle(.plain)
-                    .foregroundColor(theme.textPrimary)
-            }
-            .padding(10)
-            .background(searchBarBackground)
-            .padding(.horizontal, 16)
-            .padding(.bottom, 12)
+            searchBar
 
             // Conversation List
             ScrollView {
                 VStack(spacing: 0) {
-                    // Pinned Section
-                    if !pinnedSessions.isEmpty {
-                        SectionHeader(title: "Pinned", icon: "pin.fill")
+                    let sectionList = sidebarVM.sections(from: sessions)
 
-                        ForEach(pinnedSessions) { session in
-                            conversationRowView(for: session)
-                        }
-                        Rectangle()
-                            .fill(theme.textPrimary.opacity(0.06))
-                            .frame(height: 1)
-                            .padding(.vertical, 10)
-                            .padding(.horizontal, 16)
+                    ForEach(sectionList) { section in
+                        sectionView(section)
                     }
 
-                    // Recent Section
-                    SectionHeader(title: "Recent", icon: "clock.fill")
+                    // Archived Section (at bottom)
+                    if let archivedSection = sidebarVM.archivedSection(from: sessions) {
+                        Divider()
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 16)
 
-                    ForEach(recentSessions) { session in
-                        conversationRowView(for: session)
+                        CollapsibleSectionHeader(
+                            title: archivedSection.title,
+                            icon: archivedSection.icon,
+                            count: archivedSection.totalCount,
+                            isCollapsed: sidebarVM.isCollapsed(archivedSection.title)
+                        ) {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                sidebarVM.toggleCollapsed(archivedSection.title)
+                            }
+                        }
+
+                        if !sidebarVM.isCollapsed(archivedSection.title) {
+                            ForEach(archivedSection.sessions) { session in
+                                conversationRowView(for: session)
+                            }
+                        }
                     }
                 }
                 .padding(.vertical, 8)
@@ -111,6 +85,101 @@ struct NeonSidebar: View {
         .onKeyPress(.escape) {
             viewModel.clearSelection()
             return .handled
+        }
+        .sheet(isPresented: $sidebarVM.showCleanupSheet) {
+            CleanupReviewSheet(sidebarViewModel: sidebarVM)
+        }
+        .onAppear {
+            // Run cleanup check on appear
+            sidebarVM.runCleanupCheck(modelContext: modelContext)
+        }
+    }
+
+    // MARK: - Header View
+
+    private var headerView: some View {
+        HStack {
+            Text("Conversations")
+                .font(.headline)
+                .foregroundColor(theme.textPrimary)
+
+            Spacer()
+
+            // Show selection count if multi-selecting
+            if !viewModel.selectedConversationIDs.isEmpty {
+                Text("\(viewModel.selectedConversationIDs.count) selected")
+                    .font(.caption)
+                    .foregroundColor(theme.accent)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(theme.accent.opacity(0.2))
+                    )
+            }
+
+            Button(action: { viewModel.createNewConversation(modelContext: modelContext) }) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.title3)
+                    .foregroundColor(theme.accent)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+
+    // MARK: - Grouping Picker
+
+    private var groupingPicker: some View {
+        Picker("Group by", selection: $sidebarVM.groupingMode) {
+            ForEach(SidebarViewModel.GroupingMode.allCases) { mode in
+                Label(mode.rawValue, systemImage: mode.icon)
+                    .tag(mode)
+            }
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+    }
+
+    // MARK: - Search Bar
+
+    private var searchBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(theme.textSecondary)
+                .font(.system(size: 14))
+
+            TextField("Search conversations...", text: $sidebarVM.searchQuery)
+                .textFieldStyle(.plain)
+                .foregroundColor(theme.textPrimary)
+        }
+        .padding(10)
+        .background(searchBarBackground)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 12)
+    }
+
+    // MARK: - Section View
+
+    @ViewBuilder
+    private func sectionView(_ section: SidebarSection) -> some View {
+        CollapsibleSectionHeader(
+            title: section.title,
+            icon: section.icon,
+            count: section.totalCount,
+            isCollapsed: sidebarVM.isCollapsed(section.title)
+        ) {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                sidebarVM.toggleCollapsed(section.title)
+            }
+        }
+
+        if !sidebarVM.isCollapsed(section.title) {
+            ForEach(section.sessions) { session in
+                conversationRowView(for: session)
+            }
         }
     }
 
@@ -130,6 +199,30 @@ struct NeonSidebar: View {
                     handleTapWithModifiers(session: session)
                 }
         )
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button(role: .destructive) {
+                viewModel.deleteConversation(id: session.id, modelContext: modelContext)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+
+            Button {
+                archiveSession(session)
+            } label: {
+                Label("Archive", systemImage: "archivebox")
+            }
+            .tint(.orange)
+        }
+        .swipeActions(edge: .leading) {
+            Button {
+                togglePin(session)
+            } label: {
+                Label(
+                    session.isPinned ? "Unpin" : "Pin",
+                    systemImage: session.isPinned ? "pin.slash" : "pin")
+            }
+            .tint(.blue)
+        }
         .contextMenu {
             conversationContextMenu(for: session)
         }
@@ -157,6 +250,27 @@ struct NeonSidebar: View {
                 Label("Clear Selection", systemImage: "xmark.circle")
             }
         } else {
+            // Pin/Unpin
+            Button(action: { togglePin(session) }) {
+                Label(
+                    session.isPinned ? "Unpin" : "Pin",
+                    systemImage: session.isPinned ? "pin.slash" : "pin.fill")
+            }
+
+            // Archive/Unarchive
+            Button(action: { archiveSession(session) }) {
+                Label(session.isArchived ? "Unarchive" : "Archive", systemImage: "archivebox")
+            }
+
+            // Mark Complete
+            Button(action: { markComplete(session) }) {
+                Label(
+                    session.isComplete ? "Mark Incomplete" : "Mark Complete",
+                    systemImage: session.isComplete ? "circle" : "checkmark.circle")
+            }
+
+            Divider()
+
             Button(action: {
                 viewModel.toggleSelection(id: session.id)
             }) {
@@ -174,89 +288,83 @@ struct NeonSidebar: View {
         }
     }
 
+    // MARK: - Actions
+
+    private func togglePin(_ session: ChatSessionEntity) {
+        session.isPinned.toggle()
+        session.updatedAt = Date()
+        try? modelContext.save()
+    }
+
+    private func archiveSession(_ session: ChatSessionEntity) {
+        session.isArchived.toggle()
+        session.flaggedForCleanupAt = nil
+        session.updatedAt = Date()
+        try? modelContext.save()
+    }
+
+    private func markComplete(_ session: ChatSessionEntity) {
+        session.isComplete.toggle()
+        session.updatedAt = Date()
+        try? modelContext.save()
+    }
+
     // MARK: - Event Handlers
 
     private func handleTapWithModifiers(session: ChatSessionEntity) {
-        print("🔵 TAP: handleTapWithModifiers called for session: \(session.id)")
-        print(
-            "🔵 TAP: Current selectedConversationID: \(String(describing: viewModel.selectedConversationID))"
-        )
-
         #if os(macOS)
-            // Check modifier keys synchronously from current NSEvent
             let event = NSApp.currentEvent
             let flags = event?.modifierFlags ?? []
 
             if flags.contains(.command) {
-                // Cmd+click: Toggle multi-selection
-                print("🔵 TAP: [macOS] Cmd+click detected - toggling multi-selection")
                 viewModel.toggleSelection(id: session.id)
             } else if flags.contains(.shift) {
-                // Shift+click: Range selection
-                print("🔵 TAP: [macOS] Shift+click detected - range selection")
-                let allSessions = pinnedSessions + recentSessions
+                let allSessions = sessions.filter { !$0.isArchived }
                 viewModel.selectRange(to: session.id, in: allSessions)
             } else {
-                // Regular click: Clear multi-selection and select single
-                print("🔵 TAP: [macOS] Regular click - setting single selection")
                 if !viewModel.selectedConversationIDs.isEmpty {
                     viewModel.clearSelection()
                 }
-
                 withAnimation(.easeInOut(duration: 0.2)) {
                     viewModel.selectedConversationID = session.id
                 }
-                print(
-                    "🔵 TAP: Selection after: \(String(describing: viewModel.selectedConversationID))"
-                )
             }
         #else
-            // iOS/iPadOS: Treat as regular tap
-            // Note: For multi-selection on iOS, we would typically use EditMode,
-            // but for now we'll just handle single selection.
-            print("🔵 TAP: [iOS] Regular tap - setting single selection")
             if !viewModel.selectedConversationIDs.isEmpty {
                 viewModel.clearSelection()
             }
-
             withAnimation(.easeInOut(duration: 0.2)) {
                 viewModel.selectedConversationID = session.id
             }
-            print("🔵 TAP: Selection after: \(String(describing: viewModel.selectedConversationID))")
         #endif
     }
 
     private func handleDeleteKeyPress() {
         if !viewModel.selectedConversationIDs.isEmpty {
-            // Delete multi-selected conversations
-            print("🗑️ Delete key: Deleting \(viewModel.selectedConversationIDs.count) conversations")
             viewModel.deleteSelectedConversations(modelContext: modelContext)
         } else if let selectedID = viewModel.selectedConversationID {
-            // Delete currently selected conversation
-            print("🗑️ Delete key: Deleting single conversation")
             viewModel.deleteConversation(id: selectedID, modelContext: modelContext)
         }
     }
 
-    // MARK: - Subviews
+    // MARK: - Backgrounds
 
     private var sidebarBackground: some View {
         Color.clear.glassEffect(.regular, in: Rectangle())
     }
 
+    @ViewBuilder
     private var searchBarBackground: some View {
-        Group {
-            if theme.usesGlassEffect {
-                RoundedRectangle(cornerRadius: 8)
-                    .glassEffect(GlassEffect.regular.interactive(), in: .rect(cornerRadius: 8))
-            } else {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(theme.surface)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(theme.textSecondary.opacity(0.15), lineWidth: 1)
-                    )
-            }
+        if theme.usesGlassEffect {
+            RoundedRectangle(cornerRadius: 8)
+                .glassEffect(GlassEffect.regular.interactive(), in: .rect(cornerRadius: 8))
+        } else {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(theme.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(theme.textSecondary.opacity(0.15), lineWidth: 1)
+                )
         }
     }
 }

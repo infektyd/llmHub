@@ -51,13 +51,12 @@ struct MistralProvider: LLMProvider {
         }
     }
 
-    func buildRequest(messages: [ChatMessage], model: String) async throws -> URLRequest {
-        try await buildRequest(messages: messages, model: model, jsonMode: false)
-    }
-
-    func buildRequest(messages: [ChatMessage], model: String, jsonMode: Bool) async throws
-        -> URLRequest
-    {
+    func buildRequest(
+        messages: [ChatMessage],
+        model: String,
+        tools: [ToolDefinition]?,
+        options: LLMRequestOptions
+    ) async throws -> URLRequest {
         guard let apiKey = await keychain.apiKey(for: .mistral) else {
             throw LLMProviderError.authenticationMissing
         }
@@ -101,11 +100,36 @@ struct MistralProvider: LLMProvider {
             }
         }
 
+        let mistralTools: [MistralTool]? = tools?.map { toolDef in
+            MistralTool(
+                type: "function",
+                function: MistralFunction(
+                    name: toolDef.name,
+                    description: toolDef.description,
+                    parameters: toolDef.inputSchema.mapValues(OpenAIJSONValue.from)
+                )
+            )
+        }
+
+        let shouldUseReasoningMode: Bool = {
+            switch options.thinkingPreference {
+            case .off:
+                return false
+            case .on:
+                return model.lowercased().contains("magistral")
+            case .auto:
+                return model.lowercased().contains("magistral")
+            }
+        }()
+
         // Default to non-streaming request builder
         return try manager.makeChatRequest(
             messages: mistralMessages,
             model: model,
-            stream: false
+            stream: false,
+            tools: mistralTools,
+            parallelToolCalls: (mistralTools?.isEmpty == false) ? true : nil,
+            promptMode: shouldUseReasoningMode ? "reasoning" : nil
         )
     }
 
@@ -144,7 +168,10 @@ struct MistralProvider: LLMProvider {
                     }
 
                     var fullText = ""
-                    var toolCallsInProgress: [Int: PendingToolCall] = [:]
+                    var thoughtProcess = ""
+                    var thinkExtractor = ThinkTagStreamExtractor()
+                    var toolAssembler = PartialToolCallAssembler()
+                    var finalizedToolCalls: [ToolCall] = []
                     var lastFinishReason: String? = nil
 
                     for try await line in result.lines {
@@ -159,28 +186,26 @@ struct MistralProvider: LLMProvider {
                                 let choice = chunk.choices.first
                             else { continue }
 
-                            if let content = choice.delta.content {
-                                fullText += content
-                                continuation.yield(.token(text: content))
+                            if let content = choice.delta.content, !content.isEmpty {
+                                let extracted = thinkExtractor.process(delta: content)
+                                if !extracted.thinking.isEmpty {
+                                    thoughtProcess += extracted.thinking
+                                    continuation.yield(.thinking(extracted.thinking))
+                                }
+                                if !extracted.visible.isEmpty {
+                                    fullText += extracted.visible
+                                    continuation.yield(.token(text: extracted.visible))
+                                }
                             }
 
                             if let toolCalls = choice.delta.toolCalls {
                                 for tc in toolCalls {
-                                    let idx = tc.index
-                                    if toolCallsInProgress[idx] == nil {
-                                        toolCallsInProgress[idx] = PendingToolCall(
-                                            index: idx, id: nil, name: nil, arguments: "")
-                                    }
-
-                                    if let id = tc.id {
-                                        toolCallsInProgress[idx]?.id = id
-                                    }
-                                    if let name = tc.function?.name {
-                                        toolCallsInProgress[idx]?.name = name
-                                    }
-                                    if let args = tc.function?.arguments {
-                                        toolCallsInProgress[idx]?.arguments += args
-                                    }
+                                    toolAssembler.ingest(
+                                        index: tc.index,
+                                        id: tc.id,
+                                        name: tc.function?.name,
+                                        argumentsDelta: tc.function?.arguments
+                                    )
                                 }
                             }
 
@@ -190,11 +215,10 @@ struct MistralProvider: LLMProvider {
                             }
 
                             if choice.finishReason == "tool_calls" {
-                                for (_, tc) in toolCallsInProgress.sorted(by: { $0.key < $1.key }) {
-                                    if let id = tc.id, let name = tc.name {
-                                        continuation.yield(
-                                            .toolUse(id: id, name: name, input: tc.arguments))
-                                    }
+                                let calls = toolAssembler.finalizeAll()
+                                finalizedToolCalls.append(contentsOf: calls)
+                                for tc in calls {
+                                    continuation.yield(.toolUse(id: tc.id, name: tc.name, input: tc.input))
                                 }
                             }
 
@@ -211,17 +235,31 @@ struct MistralProvider: LLMProvider {
                         }
                     }
 
+                    let flushed = thinkExtractor.flush()
+                    if !flushed.thinking.isEmpty {
+                        thoughtProcess += flushed.thinking
+                        continuation.yield(.thinking(flushed.thinking))
+                    }
+                    if !flushed.visible.isEmpty {
+                        fullText += flushed.visible
+                        continuation.yield(.token(text: flushed.visible))
+                    }
+
                     // Final completion
-                    let message = ChatMessage(
+                    var message = ChatMessage(
                         id: UUID(),
                         role: .assistant,
                         content: fullText,
+                        thoughtProcess: thoughtProcess.isEmpty ? nil : thoughtProcess,
                         parts: [],  // Initialize with empty parts
                         createdAt: Date(),
                         codeBlocks: [],
                         tokenUsage: nil,
                         costBreakdown: nil
                     )
+                    if !finalizedToolCalls.isEmpty {
+                        message.toolCalls = finalizedToolCalls
+                    }
 
                     // Check if response was truncated due to max_tokens
                     if lastFinishReason == "length" {

@@ -14,6 +14,7 @@ import UniformTypeIdentifiers
 /// Features a glass-morphism design, auto-expanding text field, file attachments, and categorized tool toggles.
 struct ChatInputPanel: View {
     @Binding var text: String
+    @Binding var thinkingPreference: ThinkingPreference
     let isSending: Bool
     let onSend: (String) -> Void
     let tools: [UIToolToggleItem]
@@ -49,6 +50,7 @@ struct ChatInputPanel: View {
 
             HStack(alignment: .bottom, spacing: LiquidGlassTokens.Spacing.rowGutter) {
                 toolSelectorButton
+                thinkingSelectorButton
                 attachmentButton
                 inputField
                 sendButton
@@ -359,6 +361,48 @@ struct ChatInputPanel: View {
                 }
             }
         #endif
+    }
+
+    private var thinkingSelectorButton: some View {
+        Menu {
+            ForEach(ThinkingPreference.allCases, id: \.self) { pref in
+                Button {
+                    thinkingPreference = pref
+                } label: {
+                    if pref == thinkingPreference {
+                        Label(pref.displayName, systemImage: "checkmark")
+                    } else {
+                        Text(pref.displayName)
+                    }
+                }
+            }
+        } label: {
+            Image(systemName: thinkingPreference.iconSystemName)
+                .font(.system(size: 16, weight: .semibold))
+                .frame(width: toolButtonSize, height: toolButtonSize)
+                .foregroundColor(theme.textSecondary)
+                .glassEffect(
+                    theme.usesGlassEffect
+                        ? (thinkingPreference == .off
+                            ? GlassEffect.clear.interactive()
+                            : GlassEffect.regular.tint(theme.accent.opacity(0.20)).interactive())
+                        : GlassEffect.identity,
+                    in: RoundedRectangle(
+                        cornerRadius: LiquidGlassTokens.Radius.control, style: .continuous)
+                )
+                .overlay(
+                    RoundedRectangle(
+                        cornerRadius: LiquidGlassTokens.Radius.control, style: .continuous
+                    )
+                    .stroke(
+                        thinkingPreference == .off
+                            ? theme.textPrimary.opacity(0.10) : theme.accent.opacity(0.30),
+                        lineWidth: 1
+                    )
+                )
+        }
+        .buttonStyle(.plain)
+        .help("Thinking: \(thinkingPreference.displayName)")
     }
 
     // MARK: - Backgrounds

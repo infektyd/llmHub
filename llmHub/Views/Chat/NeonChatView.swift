@@ -5,11 +5,12 @@
 //  Created by Hans Axelsson on 12/01/25.
 //
 
-#if canImport(MarkdownUI)
-import MarkdownUI
-#endif
 import SwiftUI
+import SwiftData
 
+#if canImport(MarkdownUI)
+    import MarkdownUI
+#endif
 
 struct NeonChatView: View {
     let session: ChatSessionEntity
@@ -277,6 +278,13 @@ extension NeonChatView {
 
             ChatInputPanel(
                 text: $inputText,
+                thinkingPreference: Binding(
+                    get: { session.thinkingPreference },
+                    set: { newValue in
+                        session.thinkingPreference = newValue
+                        try? modelContext.save()
+                    }
+                ),
                 isSending: chatVM.isGenerating,
                 onSend: { messageText in
                     chatVM.sendMessage(
@@ -389,7 +397,8 @@ extension NeonChatView {
                 let relatedBlocks: [ToolCallBlock] = {
                     guard message.role == MessageRole.assistant.rawValue,
                         let toolCallsData = message.toolCallsData,
-                        let toolCalls = try? JSONDecoder().decode([ToolCall].self, from: toolCallsData),
+                        let toolCalls = try? JSONDecoder().decode(
+                            [ToolCall].self, from: toolCallsData),
                         !toolCalls.isEmpty
                     else { return [] }
 
@@ -425,6 +434,21 @@ extension NeonChatView {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
                 .transition(.opacity)
+            }
+
+            // Tool execution indicator
+            if !chatVM.executingToolNames.isEmpty {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Running: \(chatVM.executingToolNames.sorted().joined(separator: ", "))")
+                        .font(.caption)
+                        .foregroundStyle(theme.textSecondary)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
             // Streaming message (actively streaming)
@@ -500,7 +524,9 @@ extension NeonChatView {
         return map
     }
 
-    private func buildToolResultMap(from messages: [ChatMessageEntity]) -> [String: ChatMessageEntity] {
+    private func buildToolResultMap(from messages: [ChatMessageEntity]) -> [String:
+        ChatMessageEntity]
+    {
         var map: [String: ChatMessageEntity] = [:]
         for message in messages {
             guard message.role == MessageRole.tool.rawValue,

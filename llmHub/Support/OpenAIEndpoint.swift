@@ -23,14 +23,17 @@ struct ModelRouter: Sendable {
     /// - Parameter modelID: The model identifier (e.g., "gpt-5", "o1-preview", "gpt-4")
     /// - Returns: The appropriate `OpenAIEndpoint`
     static func endpoint(for modelID: String) -> OpenAIEndpoint {
-        switch modelID {
-        case let model where model.contains("gpt-5"):
-            return .responses
-        case let model where model.hasPrefix("o1"):
-            return .responses
-        default:
-            return .chatCompletions
-        }
+        let lower = modelID.lowercased()
+
+        // Responses API families (best-effort; OpenAI expands these over time):
+        // - gpt-5*
+        // - gpt-4.1*
+        // - o-series reasoning models (o1/o3/o4-*)
+        if lower.contains("gpt-5") { return .responses }
+        if lower.hasPrefix("gpt-4.1") { return .responses }
+        if lower.hasPrefix("o"), lower.dropFirst().first?.isNumber == true { return .responses }
+
+        return .chatCompletions
     }
 }
 

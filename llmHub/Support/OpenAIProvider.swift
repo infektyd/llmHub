@@ -62,17 +62,24 @@ struct OpenAIProvider: LLMProvider {
     }
 
     func buildRequest(messages: [ChatMessage], model: String) async throws -> URLRequest {
-        try await buildRequest(messages: messages, model: model, tools: nil, jsonMode: false)
-    }
-
-    func buildRequest(messages: [ChatMessage], model: String, tools: [ToolDefinition]?) async throws
-        -> URLRequest
-    {
-        try await buildRequest(messages: messages, model: model, tools: tools, jsonMode: false)
+        try await buildRequest(messages: messages, model: model, tools: nil, options: .default)
     }
 
     func buildRequest(
-        messages: [ChatMessage], model: String, tools: [ToolDefinition]?, jsonMode: Bool
+        messages: [ChatMessage],
+        model: String,
+        tools: [ToolDefinition]?,
+        options: LLMRequestOptions
+    ) async throws -> URLRequest {
+        try await buildRequest(messages: messages, model: model, tools: tools, options: options, jsonMode: false)
+    }
+
+    private func buildRequest(
+        messages: [ChatMessage],
+        model: String,
+        tools: [ToolDefinition]?,
+        options: LLMRequestOptions,
+        jsonMode: Bool
     ) async throws -> URLRequest {
         guard let apiKey = await keychain.apiKey(for: .openAI) else {
             throw LLMProviderError.authenticationMissing
@@ -80,6 +87,7 @@ struct OpenAIProvider: LLMProvider {
 
         let manager = OpenAIManager(apiKey: apiKey)
         let endpoint = ModelRouter.endpoint(for: model)
+        let requestThinking = shouldRequestThinking(model: model, preference: options.thinkingPreference)
 
         // Map messages
         let openAIMessages = messages.map { msg -> OpenAIChatMessage in
@@ -155,7 +163,8 @@ struct OpenAIProvider: LLMProvider {
                 messages: openAIMessages,
                 model: model,
                 tools: openAITools,
-                jsonMode: jsonMode
+                jsonMode: jsonMode,
+                reasoningSummary: requestThinking ? "auto" : nil
             )
         case .chatCompletions:
             return try manager.makeChatRequest(
@@ -168,49 +177,196 @@ struct OpenAIProvider: LLMProvider {
         }
     }
 
+    private func shouldRequestThinking(model: String, preference: ThinkingPreference) -> Bool {
+        switch preference {
+        case .off:
+            return false
+        case .on:
+            return true
+        case .auto:
+            let lower = model.lowercased()
+            // Best-effort heuristic: OpenAI reasoning families commonly use the Responses API.
+            return ModelRouter.endpoint(for: lower) == .responses
+        }
+    }
+
     func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {
         AsyncThrowingStream(ProviderEvent.self) { continuation in
             Task {
                 do {
-                    // Non-streaming responses endpoint
+                    // Streaming Responses endpoint
                     if request.url?.path.contains("/responses") == true {
-                        var req = request
-                        if let bodyData = req.httpBody,
+                        var streamRequest = request
+                        if let bodyData = request.httpBody,
                             var json = try? JSONSerialization.jsonObject(with: bodyData)
                                 as? [String: Any]
                         {
-                            json["stream"] = false
-                            req.httpBody = try JSONSerialization.data(withJSONObject: json)
+                            json["stream"] = true
+                            streamRequest.httpBody = try JSONSerialization.data(withJSONObject: json)
                         }
-                        let (data, response) = try await LLMURLSession.shared.data(for: req)
+                        streamRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+
+                        let (bytes, response) = try await LLMURLSession.shared.bytes(for: streamRequest)
                         guard let http = response as? HTTPURLResponse,
                             (200...299).contains(http.statusCode)
                         else {
-                            let errorText = String(data: data, encoding: .utf8) ?? "Unknown error"
-                            continuation.yield(.error(.server(reason: errorText)))
+                            var errorText = ""
+                            for try await line in bytes.lines { errorText += line }
+                            continuation.yield(
+                                .error(
+                                    .server(
+                                        reason: errorText.isEmpty ? "Unknown stream error" : errorText))
+                            )
                             continuation.finish()
                             return
                         }
-                        let decoded = try JSONDecoder().decode(
-                            OpenAIResponseEnvelope.self, from: data)
-                        let text =
-                            decoded.output?
-                            .compactMap { $0.text }
-                            .joined(separator: "\n")
-                            .nilIfEmpty
-                            ?? decoded.output?
-                            .compactMap { $0.contentText }
-                            .joined(separator: "\n")
-                            .nilIfEmpty
-                            ?? ""
+
+                        func parseJSONDict(_ payload: String) -> [String: Any]? {
+                            guard let data = payload.data(using: .utf8) else { return nil }
+                            return (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+                        }
+
+                        func firstString(_ dict: [String: Any], keys: [String]) -> String? {
+                            for key in keys {
+                                if let s = dict[key] as? String, !s.isEmpty { return s }
+                            }
+                            return nil
+                        }
+
+                        func firstInt(_ dict: [String: Any], keys: [String]) -> Int? {
+                            for key in keys {
+                                if let i = dict[key] as? Int { return i }
+                                if let s = dict[key] as? String, let i = Int(s) { return i }
+                            }
+                            return nil
+                        }
+
+                        func isValidJSONObjectString(_ s: String) -> Bool {
+                            guard let data = s.data(using: .utf8) else { return false }
+                            return (try? JSONSerialization.jsonObject(with: data)) != nil
+                        }
+
+                        var fullText = ""
+                        var thinkingSummary = ""
+
+                        // Tool call assembly (best-effort; Responses schema varies by event type).
+                        struct PartialCall {
+                            var id: String
+                            var name: String?
+                            var arguments: String
+                        }
+                        var partialCallsByID: [String: PartialCall] = [:]
+                        var emittedToolCallIDs: Set<String> = []
+                        var finalizedToolCalls: [ToolCall] = []
+
+                        func upsertToolCall(id: String, name: String?, argsDelta: String?) {
+                            var existing = partialCallsByID[id] ?? PartialCall(id: id, name: nil, arguments: "")
+                            if let name, !name.isEmpty { existing.name = name }
+                            if let argsDelta { existing.arguments += argsDelta }
+                            partialCallsByID[id] = existing
+                        }
+
+                        func finalizeToolCallIfReady(id: String) {
+                            guard var call = partialCallsByID[id] else { return }
+                            guard let name = call.name, !name.isEmpty else { return }
+                            guard !emittedToolCallIDs.contains(id) else { return }
+                            guard isValidJSONObjectString(call.arguments) else { return }
+                            emittedToolCallIDs.insert(id)
+                            let tc = ToolCall(id: id, name: name, input: call.arguments)
+                            finalizedToolCalls.append(tc)
+                            continuation.yield(.toolUse(id: id, name: name, input: call.arguments))
+                            call.name = name
+                            partialCallsByID[id] = call
+                        }
+
+                        var sse = SSEEventFrameParser()
+                        for try await byte in bytes {
+                            for frame in sse.append(byte: byte) {
+                                if frame.data == "[DONE]" { break }
+
+                                let eventName = frame.event
+                                let dict = parseJSONDict(frame.data)
+                                let typeName = (dict?["type"] as? String) ?? eventName ?? ""
+
+                                switch typeName {
+                                case "response.output_text.delta":
+                                    if let delta = dict.flatMap({ firstString($0, keys: ["delta", "text"]) }) {
+                                        if !delta.isEmpty {
+                                            fullText += delta
+                                            continuation.yield(.token(text: delta))
+                                        }
+                                    }
+
+                                case "response.reasoning_summary_text.delta":
+                                    if let delta = dict.flatMap({ firstString($0, keys: ["delta", "text"]) }) {
+                                        if !delta.isEmpty {
+                                            thinkingSummary += delta
+                                            continuation.yield(.thinking(delta))
+                                        }
+                                    }
+
+                                case "response.function_call_arguments.delta":
+                                    guard let dict else { break }
+                                    let callID =
+                                        firstString(dict, keys: ["call_id", "item_id", "id"])
+                                        ?? "call_0"
+                                    let name = firstString(dict, keys: ["name", "function_name"])
+                                    let delta = firstString(dict, keys: ["delta", "arguments_delta", "arguments"])
+                                    upsertToolCall(id: callID, name: name, argsDelta: delta)
+
+                                case "response.output_item.added", "response.output_item.done":
+                                    guard let dict, let item = dict["item"] as? [String: Any] else { break }
+                                    let itemType = (item["type"] as? String) ?? ""
+                                    guard itemType == "function_call" else { break }
+
+                                    let callID =
+                                        firstString(item, keys: ["call_id", "id", "item_id"])
+                                        ?? "call_0"
+                                    let name = firstString(item, keys: ["name", "function_name"])
+                                    let args = firstString(item, keys: ["arguments", "input"])
+                                    upsertToolCall(id: callID, name: name, argsDelta: args)
+                                    if typeName == "response.output_item.done" {
+                                        finalizeToolCallIfReady(id: callID)
+                                    }
+
+                                case "response.completed":
+                                    // Usage may arrive here (best-effort).
+                                    if let dict {
+                                        let usageDict =
+                                            (dict["usage"] as? [String: Any])
+                                            ?? ((dict["response"] as? [String: Any])?["usage"] as? [String: Any])
+                                        if let usageDict {
+                                            let inputTokens = firstInt(usageDict, keys: ["input_tokens", "prompt_tokens"]) ?? 0
+                                            let outputTokens = firstInt(usageDict, keys: ["output_tokens", "completion_tokens"]) ?? 0
+                                            let cachedTokens = firstInt(usageDict, keys: ["cached_tokens"]) ?? 0
+                                            continuation.yield(.usage(TokenUsage(inputTokens: inputTokens, outputTokens: outputTokens, cachedTokens: cachedTokens)))
+                                        }
+                                    }
+                                    // Attempt to finalize any fully-formed tool calls.
+                                    for id in partialCallsByID.keys {
+                                        finalizeToolCallIfReady(id: id)
+                                    }
+
+                                default:
+                                    break
+                                }
+                            }
+                        }
+
                         let message = ChatMessage(
                             id: UUID(),
                             role: .assistant,
-                            content: text,
-                            parts: [.text(text)],
+                            content: fullText,
+                            thoughtProcess: thinkingSummary.nilIfEmpty,
+                            parts: fullText.isEmpty ? [] : [.text(fullText)],
                             createdAt: Date(),
-                            codeBlocks: []
+                            codeBlocks: [],
+                            tokenUsage: nil,
+                            costBreakdown: nil,
+                            toolCallID: nil,
+                            toolCalls: finalizedToolCalls.isEmpty ? nil : finalizedToolCalls
                         )
+
                         continuation.yield(.completion(message: message))
                         continuation.finish()
                         return
@@ -245,7 +401,8 @@ struct OpenAIProvider: LLMProvider {
                     }
 
                     var fullText = ""
-                    var toolCallsInProgress: [Int: PendingToolCall] = [:]
+                    var toolAssembler = PartialToolCallAssembler()
+                    var finalizedToolCalls: [ToolCall] = []
                     var lastFinishReason: String? = nil
 
                     for try await line in result.lines {
@@ -269,21 +426,12 @@ struct OpenAIProvider: LLMProvider {
 
                         if let toolCalls = choice.delta.toolCalls {
                             for tc in toolCalls {
-                                let idx = tc.index
-                                if toolCallsInProgress[idx] == nil {
-                                    toolCallsInProgress[idx] = PendingToolCall(
-                                        index: idx, id: nil, name: nil, arguments: "")
-                                }
-
-                                if let id = tc.id {
-                                    toolCallsInProgress[idx]?.id = id
-                                }
-                                if let name = tc.function?.name {
-                                    toolCallsInProgress[idx]?.name = name
-                                }
-                                if let args = tc.function?.arguments {
-                                    toolCallsInProgress[idx]?.arguments += args
-                                }
+                                toolAssembler.ingest(
+                                    index: tc.index,
+                                    id: tc.id,
+                                    name: tc.function?.name,
+                                    argumentsDelta: tc.function?.arguments
+                                )
                             }
                         }
 
@@ -293,11 +441,10 @@ struct OpenAIProvider: LLMProvider {
                         }
 
                         if choice.finishReason == "tool_calls" {
-                            for (_, tc) in toolCallsInProgress.sorted(by: { $0.key < $1.key }) {
-                                if let id = tc.id, let name = tc.name {
-                                    continuation.yield(
-                                        .toolUse(id: id, name: name, input: tc.arguments))
-                                }
+                            let calls = toolAssembler.finalizeAll()
+                            finalizedToolCalls.append(contentsOf: calls)
+                            for tc in calls {
+                                continuation.yield(.toolUse(id: tc.id, name: tc.name, input: tc.input))
                             }
                         }
 
@@ -323,12 +470,8 @@ struct OpenAIProvider: LLMProvider {
                         costBreakdown: nil
                     )
 
-                    if !toolCallsInProgress.isEmpty {
-                        message.toolCalls = toolCallsInProgress.sorted(by: { $0.key < $1.key })
-                            .compactMap { (_, tc) in
-                                guard let id = tc.id, let name = tc.name else { return nil }
-                                return ToolCall(id: id, name: name, input: tc.arguments)
-                            }
+                    if !finalizedToolCalls.isEmpty {
+                        message.toolCalls = finalizedToolCalls
                     }
 
                     // Check if response was truncated due to max_tokens

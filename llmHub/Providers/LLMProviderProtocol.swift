@@ -35,17 +35,15 @@ protocol LLMProvider: Identifiable {
     /// - Parameters:
     ///   - messages: The history of messages in the chat session.
     ///   - model: The model identifier to use.
-    /// - Returns: A configured `URLRequest`.
-    func buildRequest(messages: [ChatMessage], model: String) async throws -> URLRequest
-
-    /// Builds a URLRequest for a chat completion with tool support.
-    /// - Parameters:
-    ///   - messages: The history of messages in the chat session.
-    ///   - model: The model identifier to use.
     ///   - tools: The list of tools available to the model.
+    ///   - options: Cross-provider request options (thinking, etc).
     /// - Returns: A configured `URLRequest`.
-    func buildRequest(messages: [ChatMessage], model: String, tools: [ToolDefinition]?) async throws
-        -> URLRequest
+    func buildRequest(
+        messages: [ChatMessage],
+        model: String,
+        tools: [ToolDefinition]?,
+        options: LLMRequestOptions
+    ) async throws -> URLRequest
 
     /// Streams the response from the provider.
     /// - Parameter request: The request to execute.
@@ -58,14 +56,17 @@ protocol LLMProvider: Identifiable {
     func parseTokenUsage(from response: Data) throws -> TokenUsage?
 }
 
-// Default implementation for providers that don't support tools yet
 extension LLMProvider {
-    /// Default implementation that ignores tools and calls the basic `buildRequest`.
+    func buildRequest(messages: [ChatMessage], model: String, options: LLMRequestOptions = .default)
+        async throws -> URLRequest
+    {
+        try await buildRequest(messages: messages, model: model, tools: nil, options: options)
+    }
+
     func buildRequest(messages: [ChatMessage], model: String, tools: [ToolDefinition]?) async throws
         -> URLRequest
     {
-        // Default: ignore tools, just build regular request
-        try await buildRequest(messages: messages, model: model)
+        try await buildRequest(messages: messages, model: model, tools: tools, options: .default)
     }
 }
 

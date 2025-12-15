@@ -52,15 +52,12 @@ struct XAIProvider: LLMProvider {
 
     }
 
-    @available(iOS 26.1, macOS 26.1, *)
-    func buildRequest(messages: [ChatMessage], model: String) async throws -> URLRequest {
-        try await buildRequest(messages: messages, model: model, jsonMode: false)
-    }
-
-    @available(iOS 26.1, macOS 26.1, *)
-    func buildRequest(messages: [ChatMessage], model: String, jsonMode: Bool) async throws
-        -> URLRequest
-    {
+    func buildRequest(
+        messages: [ChatMessage],
+        model: String,
+        tools: [ToolDefinition]?,
+        options: LLMRequestOptions
+    ) async throws -> URLRequest {
         guard let apiKey = await keychain.apiKey(for: .xai) else {
             throw LLMProviderError.authenticationMissing
         }
@@ -145,7 +142,10 @@ struct XAIProvider: LLMProvider {
                     }
 
                     var fullText = ""
-                    var toolCallsInProgress: [Int: PendingToolCall] = [:]
+                    var thoughtProcess = ""
+                    var toolAssembler = PartialToolCallAssembler()
+                    var finalizedToolCalls: [ToolCall] = []
+                    var emittedReferences: Set<String> = []
                     var lastFinishReason: String? = nil
 
                     for try await line in result.lines {
@@ -160,28 +160,32 @@ struct XAIProvider: LLMProvider {
                                 let choice = chunk.choices.first
                             else { continue }
 
-                            if let content = choice.delta.content {
+                            if let reasoning = choice.delta.reasoning_content, !reasoning.isEmpty {
+                                thoughtProcess += reasoning
+                                continuation.yield(.thinking(reasoning))
+                            }
+
+                            if let content = choice.delta.content, !content.isEmpty {
                                 fullText += content
                                 continuation.yield(.token(text: content))
                             }
 
+                            if let citations = chunk.citations, !citations.isEmpty {
+                                for citation in citations where !citation.isEmpty {
+                                    if emittedReferences.insert(citation).inserted {
+                                        continuation.yield(.reference(citation))
+                                    }
+                                }
+                            }
+
                             if let toolCalls = choice.delta.tool_calls {
                                 for tc in toolCalls {
-                                    let idx = tc.index
-                                    if toolCallsInProgress[idx] == nil {
-                                        toolCallsInProgress[idx] = PendingToolCall(
-                                            index: idx, id: nil, name: nil, arguments: "")
-                                    }
-
-                                    if let id = tc.id {
-                                        toolCallsInProgress[idx]?.id = id
-                                    }
-                                    if let name = tc.function?.name {
-                                        toolCallsInProgress[idx]?.name = name
-                                    }
-                                    if let args = tc.function?.arguments {
-                                        toolCallsInProgress[idx]?.arguments += args
-                                    }
+                                    toolAssembler.ingest(
+                                        index: tc.index,
+                                        id: tc.id,
+                                        name: tc.function?.name,
+                                        argumentsDelta: tc.function?.arguments
+                                    )
                                 }
                             }
 
@@ -191,28 +195,30 @@ struct XAIProvider: LLMProvider {
                             }
 
                             if choice.finish_reason == "tool_calls" {
-                                for (_, tc) in toolCallsInProgress.sorted(by: { $0.key < $1.key }) {
-                                    if let id = tc.id, let name = tc.name {
-                                        continuation.yield(
-                                            .toolUse(id: id, name: name, input: tc.arguments))
-                                    }
+                                let calls = toolAssembler.finalizeAll()
+                                finalizedToolCalls.append(contentsOf: calls)
+                                for tc in calls {
+                                    continuation.yield(.toolUse(id: tc.id, name: tc.name, input: tc.input))
                                 }
                             }
                         }
                     }
 
                     // Final completion
-                    let message = ChatMessage(
+                    var message = ChatMessage(
                         id: UUID(),
                         role: .assistant,
                         content: fullText,
-                        thoughtProcess: nil,
+                        thoughtProcess: thoughtProcess.isEmpty ? nil : thoughtProcess,
                         parts: [],
                         createdAt: Date(),
                         codeBlocks: [],
                         tokenUsage: nil,
                         costBreakdown: nil
                     )
+                    if !finalizedToolCalls.isEmpty {
+                        message.toolCalls = finalizedToolCalls
+                    }
 
                     // Check if response was truncated due to max_tokens
                     if lastFinishReason == "length" {

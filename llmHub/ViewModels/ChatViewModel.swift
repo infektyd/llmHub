@@ -64,6 +64,8 @@ class ChatViewModel {
     var isTruncated: Bool = false
     /// The session ID of the truncated response (for continuation).
     var truncatedSessionID: UUID?
+    /// Names of tools currently executing (for UI feedback).
+    var executingToolNames: Set<String> = []
     /// The message displayed for streaming tokens.
     var streamingDisplayMessage: ChatMessage? {
         guard let messageID = streamingMessageID,
@@ -548,6 +550,7 @@ class ChatViewModel {
                         streamingStartedAt = nil
                         isTruncated = false
                         truncatedSessionID = nil
+                        executingToolNames.removeAll()
                         logger.info(
                             "Completion received, final length: \(message.content.count)")
                         setLastVisibleMessage(to: message.id)
@@ -569,6 +572,7 @@ class ChatViewModel {
                         streamingStartedAt = nil
                         isTruncated = true
                         truncatedSessionID = sessionID
+                        executingToolNames.removeAll()
                         logger.warning(
                             "Response TRUNCATED at \(message.content.count) characters - max_tokens limit reached"
                         )
@@ -587,6 +591,7 @@ class ChatViewModel {
                         streamingStartedAt = nil
                         isTruncated = false
                         truncatedSessionID = nil
+                        executingToolNames.removeAll()
                         logger.error("LLM Error: \(error.localizedDescription)")
 
                         self.handleStreamError(
@@ -604,6 +609,7 @@ class ChatViewModel {
                         logger.info("Tool use: \(name) (id: \(id))")
 
                     case .toolExecuting(let name):
+                        executingToolNames.insert(name)
                         logger.info("Tool executing: \(name)")
 
                     case .reference(let ref):
@@ -639,6 +645,7 @@ class ChatViewModel {
 
                 isGenerating = false
                 resetStreamingState()
+                executingToolNames.removeAll()
                 logger.error("Failed to send message: \(error)")
 
                 self.handleStreamError(
@@ -832,13 +839,59 @@ class ChatViewModel {
                 let count = session.messages.count
                 logger.info("Session message count: \(count)")
 
+                // Update lastActivityAt on every message
+                session.lastActivityAt = Date()
+
                 if count <= 2 {
                     self.generateConversationTitle(for: session, modelName: modelID)
                 }
+
+                // Schedule AFM classification after first message or at 5 messages
+                if count == 2 || count == 5 {
+                    self.scheduleClassification(for: session, modelContext: modelContext)
+                }
+
+                try modelContext.save()
             }
         } catch {
             logger.error(
                 "Failed to fetch session for completion update: \(error.localizedDescription)")
+        }
+    }
+
+    /// Schedules AFM classification for a conversation session.
+    private func scheduleClassification(for session: ChatSessionEntity, modelContext: ModelContext)
+    {
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+
+            let classificationService = ConversationClassificationService()
+
+            // Convert entities to domain messages for classification
+            let messages = session.messages.sorted { $0.createdAt < $1.createdAt }.map {
+                $0.asDomain()
+            }
+
+            do {
+                let metadata = try await classificationService.classify(messages: messages)
+
+                // Update session with classification results
+                session.afmTitle = metadata.title
+                session.afmEmoji = metadata.emoji
+                session.afmCategory = metadata.category.rawValue
+                session.afmTopics = try? JSONEncoder().encode(metadata.topics)
+                session.afmClassifiedAt = Date()
+                session.lifecycleIntent = metadata.intent.rawValue
+                session.lifecycleRetention = metadata.suggestedRetention.rawValue
+                session.isComplete = metadata.isComplete
+                session.hasArtifacts = metadata.hasArtifacts
+
+                try modelContext.save()
+                self.logger.info(
+                    "Classification completed for session \(session.id): \(metadata.title)")
+            } catch {
+                self.logger.error("Classification failed: \(error.localizedDescription)")
+            }
         }
     }
 

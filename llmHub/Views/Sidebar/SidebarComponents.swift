@@ -31,6 +31,48 @@ struct SectionHeader: View {
     }
 }
 
+// MARK: - Collapsible Section Header
+
+struct CollapsibleSectionHeader: View {
+    let title: String
+    let icon: String
+    let count: Int
+    let isCollapsed: Bool
+    let onToggle: () -> Void
+
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        Button(action: onToggle) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 11))
+                    .foregroundColor(theme.textSecondary)
+
+                Text(title.uppercased())
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(theme.textSecondary)
+
+                Text("(\(count))")
+                    .font(.system(size: 10))
+                    .foregroundColor(theme.textSecondary.opacity(0.7))
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(theme.textSecondary.opacity(0.5))
+                    .rotationEffect(.degrees(isCollapsed ? 0 : 90))
+                    .animation(.easeInOut(duration: 0.2), value: isCollapsed)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 // MARK: - Conversation Row
 
 struct ConversationRow: View {
@@ -48,15 +90,20 @@ struct ConversationRow: View {
                     .font(.system(size: 14))
                     .foregroundColor(theme.accent)
             } else {
-                // Conversation icon/indicator
-                Circle()
-                    .fill(isSelected ? theme.accentSecondary : theme.accent.opacity(0.3))
-                    .frame(width: 8, height: 8)
+                // Emoji indicator or default circle
+                if let emoji = session.afmEmoji, !emoji.isEmpty {
+                    Text(emoji)
+                        .font(.system(size: 14))
+                } else {
+                    Circle()
+                        .fill(isSelected ? theme.accentSecondary : theme.accent.opacity(0.3))
+                        .frame(width: 8, height: 8)
+                }
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text(session.title)
+                    Text(session.displayTitle)
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(isSelected ? theme.textPrimary : theme.textSecondary)
                         .lineLimit(1)
@@ -67,6 +114,20 @@ struct ConversationRow: View {
                             .foregroundColor(theme.accent)
                     }
 
+                    // Cleanup flag indicator
+                    if session.flaggedForCleanupAt != nil {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .font(.system(size: 9))
+                            .foregroundColor(.orange)
+                    }
+
+                    // Archived indicator
+                    if session.isArchived {
+                        Image(systemName: "archivebox.fill")
+                            .font(.system(size: 9))
+                            .foregroundColor(theme.textSecondary.opacity(0.6))
+                    }
+
                     Spacer()
 
                     Text(timeAgo(from: session.updatedAt))
@@ -74,12 +135,14 @@ struct ConversationRow: View {
                         .foregroundColor(theme.textSecondary.opacity(0.7))
                 }
 
-                // Tags
-                if !session.tags.isEmpty {
-                    HStack(spacing: 4) {
-                        ForEach(session.tags) { tag in
-                            TagPill(tag: tag)
-                        }
+                // Category badge (if available) and Tags
+                HStack(spacing: 4) {
+                    if let category = session.afmCategory, !category.isEmpty {
+                        CategoryBadge(category: category)
+                    }
+
+                    ForEach(session.tags) { tag in
+                        TagPill(tag: tag)
                     }
                 }
             }
@@ -152,6 +215,36 @@ struct ConversationRow: View {
             let days = Int(seconds / 86400)
             return "\(days)d ago"
         }
+    }
+}
+
+// MARK: - Category Badge
+
+struct CategoryBadge: View {
+    let category: String
+    @Environment(\.theme) private var theme
+
+    private var categoryColor: Color {
+        switch category.lowercased() {
+        case "coding": return .blue
+        case "research": return .green
+        case "creative": return .purple
+        case "planning": return .orange
+        case "support": return .cyan
+        default: return .gray
+        }
+    }
+
+    var body: some View {
+        Text(category.capitalized)
+            .font(.system(size: 9, weight: .medium))
+            .foregroundColor(categoryColor)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(
+                Capsule()
+                    .fill(categoryColor.opacity(0.15))
+            )
     }
 }
 
