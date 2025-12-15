@@ -102,6 +102,91 @@ struct Attachment: Identifiable, Codable, Equatable, Sendable {
     }
 }
 
+// MARK: - Artifacts
+
+/// A lightweight language classification used for artifact rendering.
+/// Note: Syntax highlighting is handled in the UI layer (Splash uses Swift grammar).
+enum CodeLanguage: String, Codable, Sendable {
+    case json
+    case swift
+    case python
+    case javascript
+    case markdown
+    case text
+
+    static func detect(from content: String, filename: String?) -> CodeLanguage {
+        if let ext = filename?.split(separator: ".").last?.lowercased() {
+            switch ext {
+            case "json": return .json
+            case "swift": return .swift
+            case "py": return .python
+            case "js", "ts": return .javascript
+            case "md": return .markdown
+            default: break
+            }
+        }
+
+        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.hasPrefix("{") || trimmed.hasPrefix("[") { return .json }
+        if content.contains("func ") || content.contains("class ") || content.contains("import ") {
+            return .swift
+        }
+        if content.contains("def ") { return .python }
+        if content.contains("console.") || content.contains("function ") { return .javascript }
+        if content.contains("```") { return .markdown }
+        return .text
+    }
+
+    static func looksLikeLargePasteArtifact(_ content: String) -> Bool {
+        guard content.count > 500 else { return false }
+        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.hasPrefix("{") || trimmed.hasPrefix("[") { return true }
+        if content.contains("```") { return true }
+        if content.contains("func ") || content.contains("class ") || content.contains("import ") {
+            return true
+        }
+        return false
+    }
+
+    var preferredFileExtension: String {
+        switch self {
+        case .json: return "json"
+        case .swift: return "swift"
+        case .python: return "py"
+        case .javascript: return "js"
+        case .markdown: return "md"
+        case .text: return "txt"
+        }
+    }
+}
+
+struct ArtifactMetadata: Identifiable, Sendable {
+    let id: UUID
+    let filename: String
+    /// For pasted artifacts this is the full content. For file-backed artifacts this is a preview.
+    let content: String
+    let language: CodeLanguage
+    let sizeBytes: Int
+    /// Non-nil for file-backed artifacts.
+    let fileURL: URL?
+
+    init(
+        id: UUID = UUID(),
+        filename: String,
+        content: String,
+        language: CodeLanguage,
+        sizeBytes: Int,
+        fileURL: URL? = nil
+    ) {
+        self.id = id
+        self.filename = filename
+        self.content = content
+        self.language = language
+        self.sizeBytes = sizeBytes
+        self.fileURL = fileURL
+    }
+}
+
 /// Represents a single message within a chat session.
 struct ChatMessage: Identifiable, Equatable, Sendable {
     /// The unique identifier of the message.
@@ -133,21 +218,90 @@ struct ChatMessage: Identifiable, Equatable, Sendable {
     
     static func == (lhs: ChatMessage, rhs: ChatMessage) -> Bool {
         lhs.id == rhs.id &&
-        lhs.role == rhs.role &&
-        lhs.content == rhs.content &&
-        lhs.thoughtProcess == rhs.thoughtProcess &&
-        lhs.parts == rhs.parts &&
-        lhs.attachments == rhs.attachments &&
-        lhs.createdAt == rhs.createdAt &&
-        lhs.codeBlocks == rhs.codeBlocks &&
-        lhs.tokenUsage == rhs.tokenUsage &&
-        lhs.costBreakdown == rhs.costBreakdown &&
-        lhs.toolCallID == rhs.toolCallID &&
-        lhs.toolCalls == rhs.toolCalls
+            lhs.role == rhs.role &&
+            lhs.content == rhs.content &&
+            lhs.thoughtProcess == rhs.thoughtProcess &&
+            lhs.parts == rhs.parts &&
+            lhs.attachments == rhs.attachments &&
+            lhs.createdAt == rhs.createdAt &&
+            lhs.codeBlocks == rhs.codeBlocks &&
+            lhs.tokenUsage == rhs.tokenUsage &&
+            lhs.costBreakdown == rhs.costBreakdown &&
+            lhs.toolCallID == rhs.toolCallID &&
+            lhs.toolCalls == rhs.toolCalls
     }
 }
 
-// MARK: - Tool Calling
+// MARK: - Artifact Detection
+
+extension ChatMessage {
+    /// True if this message contains any file attachment, or if the content looks like a large pasted artifact.
+    var hasArtifact: Bool {
+        !artifactMetadatas.isEmpty
+    }
+
+    /// Convenience for rendering a single artifact card.
+    var artifactMetadata: ArtifactMetadata? {
+        artifactMetadatas.first
+    }
+
+    /// Returns all artifact metadata associated with this message.
+    /// - Includes: file attachments (text/code/pdf/other) and large paste content.
+    var artifactMetadatas: [ArtifactMetadata] {
+        var results: [ArtifactMetadata] = []
+
+        // Large paste in content.
+        if rendersContentAsArtifact {
+            let lang = CodeLanguage.detect(from: content, filename: nil)
+            let filename = "Paste.\(lang.preferredFileExtension)"
+            results.append(
+                ArtifactMetadata(
+                    filename: filename,
+                    content: content,
+                    language: lang,
+                    sizeBytes: content.utf8.count,
+                    fileURL: nil
+                )
+            )
+        }
+
+        // File attachments.
+        for attachment in attachments {
+            guard attachment.type != .image else { continue }
+
+            let attrs = FileManager.default.attributesOfItemSafe(atPath: attachment.url.path)
+            let sizeBytes = (attrs[.size] as? NSNumber)?.intValue
+                ?? (attrs[.size] as? Int)
+                ?? attachment.previewText?.utf8.count
+                ?? 0
+
+            let lang = CodeLanguage.detect(from: attachment.previewText ?? "", filename: attachment.filename)
+
+            results.append(
+                ArtifactMetadata(
+                    filename: attachment.filename,
+                    content: attachment.previewText ?? "",
+                    language: lang,
+                    sizeBytes: sizeBytes,
+                    fileURL: attachment.url
+                )
+            )
+        }
+
+        return results
+    }
+
+    /// True when the main message content should be rendered as an artifact card rather than inline markdown.
+    var rendersContentAsArtifact: Bool {
+        role == .user && CodeLanguage.looksLikeLargePasteArtifact(content)
+    }
+}
+
+private extension FileManager {
+    func attributesOfItemSafe(atPath path: String) -> [FileAttributeKey: Any] {
+        (try? attributesOfItem(atPath: path)) ?? [:]
+    }
+}
 
 /// Represents a request for a tool execution.
 struct ToolCall: Codable, Sendable, Equatable {
@@ -492,5 +646,26 @@ final class ChatMessageEntity {
         )
         domainMsg.thoughtProcess = thoughtProcess
         return domainMsg
+    }
+}
+
+// MARK: - Artifact Detection (Entity)
+
+@MainActor
+extension ChatMessageEntity {
+    var hasArtifact: Bool {
+        asDomain().hasArtifact
+    }
+
+    var artifactMetadata: ArtifactMetadata? {
+        asDomain().artifactMetadata
+    }
+
+    var artifactMetadatas: [ArtifactMetadata] {
+        asDomain().artifactMetadatas
+    }
+
+    var rendersContentAsArtifact: Bool {
+        asDomain().rendersContentAsArtifact
     }
 }

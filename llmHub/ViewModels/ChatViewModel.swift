@@ -447,9 +447,9 @@ class ChatViewModel {
                     imageAttachments.append(data)
                 }
             case .text, .code:
-                if let content = try? String(contentsOf: attachment.url, encoding: .utf8) {
-                    userMessageText += "\n\n[Attached: \(attachment.filename)]\n\(content)"
-                }
+                // Keep chat transcript clean: attachments render as collapsible artifact cards.
+                // Attachment contents are injected into the LLM request by ChatService (request-only).
+                break
             default:
                 break
             }
