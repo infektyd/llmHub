@@ -484,7 +484,7 @@ struct ToolsListView: View {
     let onToggle: (String, Bool) -> Void
 
     // Categorized tools
-    private var categorizedTools: [(String, [UIToolToggleItem])] {
+    private var categorizedTools: [(category: String, items: [UIToolToggleItem])] {
         let groups = Dictionary(grouping: tools) { tool -> String in
             let lower = tool.name.lowercased()
             if lower.contains("web") || lower.contains("browser") || lower.contains("search") {
@@ -499,7 +499,9 @@ struct ToolsListView: View {
                 return "General"
             }
         }
-        return groups.sorted { $0.key < $1.key }
+        return groups
+            .sorted { $0.key < $1.key }
+            .map { (category: $0.key, items: $0.value) }
     }
 
     // Grid layout
@@ -510,7 +512,7 @@ struct ToolsListView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                ForEach(categorizedTools, id: \.0) { category, items in
+                ForEach(categorizedTools, id: \.category) { category, items in
                     VStack(alignment: .leading, spacing: 12) {
                         Text(category)
                             .font(.headline)

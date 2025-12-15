@@ -434,7 +434,7 @@ class ChatViewModel {
             stagedReferences.removeAll()
         }
 
-        var userMessageText = messageText
+        let userMessageText = messageText
         var imageAttachments: [Data] = []
         var messageAttachments: [Attachment] = []
 
