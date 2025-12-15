@@ -368,6 +368,8 @@ public struct XAIChatStreamChunk: Decodable {
     public let id: String?
     /// The model used.
     public let model: String?  // Capture which model xAI says it used
+    /// Optional citations/references (provider-specific).
+    public let citations: [String]?
     /// The choices in this chunk.
     public let choices: [Choice]
     
@@ -383,6 +385,8 @@ public struct XAIChatStreamChunk: Decodable {
     public struct Delta: Decodable {
         /// The content update.
         public let content: String?
+        /// Optional reasoning content (provider-specific).
+        public let reasoning_content: String?
         /// The role update.
         public let role: String?
         /// The tool calls update.

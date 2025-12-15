@@ -35,6 +35,43 @@ enum CurrentPlatform: String, Sendable {
     }
 }
 
+// MARK: - LLM Request Options
+
+/// User preference for whether the app should request model "thinking"/reasoning output.
+enum ThinkingPreference: String, Codable, CaseIterable, Sendable {
+    /// Enable thinking only when the selected model/provider supports it.
+    case auto
+    /// Force-enable thinking when supported; otherwise ignore.
+    case on
+    /// Never request thinking; still parse/emit if returned anyway.
+    case off
+
+    var displayName: String {
+        switch self {
+        case .auto: "Auto"
+        case .on: "On"
+        case .off: "Off"
+        }
+    }
+
+    var iconSystemName: String {
+        switch self {
+        case .auto: "brain"
+        case .on: "brain.head.profile"
+        case .off: "brain.slash"
+        }
+    }
+}
+
+/// Cross-provider request options that are not part of message history.
+struct LLMRequestOptions: Sendable {
+    var thinkingPreference: ThinkingPreference = .auto
+    /// Optional provider-specific thinking budget hint.
+    var thinkingBudgetTokens: Int? = nil
+
+    static let `default` = LLMRequestOptions()
+}
+
 // MARK: - Tool Authorization
 
 /// Status of a permission request for a specific tool.

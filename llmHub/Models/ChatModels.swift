@@ -28,6 +28,8 @@ struct ChatSession: Identifiable, Sendable {
     var metadata: ChatSessionMetadata
     /// Indicates whether the session is in JSON mode, forcing JSON output from the model.
     var jsonMode: Bool = false
+    /// Per-session user preference for requesting model reasoning/thinking output.
+    var thinkingPreference: ThinkingPreference = .auto
     /// The unique identifier of the folder this session belongs to, if any.
     var folderID: UUID?
     /// A list of tags associated with the session for organization.
@@ -43,9 +45,9 @@ struct ChatFolder: Identifiable, Hashable, Sendable {
     /// The name of the folder.
     var name: String
     /// The SF Symbol name used for the folder's icon.
-    var icon: String // SF Symbol name
+    var icon: String  // SF Symbol name
     /// The hex string representation of the folder's color.
-    var color: String // Hex string
+    var color: String  // Hex string
     /// The index used to order the folder in a list.
     var orderIndex: Int
     /// The date when the folder was created.
@@ -61,7 +63,7 @@ struct ChatTag: Identifiable, Hashable, Codable, Sendable {
     /// The name of the tag.
     var name: String
     /// The hex string representation of the tag's color.
-    var color: String // Hex string
+    var color: String  // Hex string
 }
 
 // MARK: - Attachments
@@ -73,7 +75,7 @@ enum AttachmentType: String, Codable, Equatable, Sendable {
     case code
     case pdf
     case other
-    
+
     var icon: String {
         switch self {
         case .image: return "photo"
@@ -91,9 +93,12 @@ struct Attachment: Identifiable, Codable, Equatable, Sendable {
     let filename: String
     let url: URL
     let type: AttachmentType
-    let previewText: String? // First ~200 chars for text/code
-    
-    init(id: UUID = UUID(), filename: String, url: URL, type: AttachmentType, previewText: String? = nil) {
+    let previewText: String?  // First ~200 chars for text/code
+
+    init(
+        id: UUID = UUID(), filename: String, url: URL, type: AttachmentType,
+        previewText: String? = nil
+    ) {
         self.id = id
         self.filename = filename
         self.url = url
@@ -209,26 +214,20 @@ struct ChatMessage: Identifiable, Equatable, Sendable {
     var tokenUsage: TokenUsage?
     /// The cost breakdown associated with generating this message.
     var costBreakdown: CostBreakdown?
-    
+
     // Tool calling support
     /// The ID of the tool call this message is a response to (only for tool role).
     var toolCallID: String? = nil
     /// The list of tool calls requested by the assistant (only for assistant role).
     var toolCalls: [ToolCall]? = nil
-    
+
     static func == (lhs: ChatMessage, rhs: ChatMessage) -> Bool {
-        lhs.id == rhs.id &&
-            lhs.role == rhs.role &&
-            lhs.content == rhs.content &&
-            lhs.thoughtProcess == rhs.thoughtProcess &&
-            lhs.parts == rhs.parts &&
-            lhs.attachments == rhs.attachments &&
-            lhs.createdAt == rhs.createdAt &&
-            lhs.codeBlocks == rhs.codeBlocks &&
-            lhs.tokenUsage == rhs.tokenUsage &&
-            lhs.costBreakdown == rhs.costBreakdown &&
-            lhs.toolCallID == rhs.toolCallID &&
-            lhs.toolCalls == rhs.toolCalls
+        lhs.id == rhs.id && lhs.role == rhs.role && lhs.content == rhs.content
+            && lhs.thoughtProcess == rhs.thoughtProcess && lhs.parts == rhs.parts
+            && lhs.attachments == rhs.attachments && lhs.createdAt == rhs.createdAt
+            && lhs.codeBlocks == rhs.codeBlocks && lhs.tokenUsage == rhs.tokenUsage
+            && lhs.costBreakdown == rhs.costBreakdown && lhs.toolCallID == rhs.toolCallID
+            && lhs.toolCalls == rhs.toolCalls
     }
 }
 
@@ -270,12 +269,14 @@ extension ChatMessage {
             guard attachment.type != .image else { continue }
 
             let attrs = FileManager.default.attributesOfItemSafe(atPath: attachment.url.path)
-            let sizeBytes = (attrs[.size] as? NSNumber)?.intValue
+            let sizeBytes =
+                (attrs[.size] as? NSNumber)?.intValue
                 ?? (attrs[.size] as? Int)
                 ?? attachment.previewText?.utf8.count
                 ?? 0
 
-            let lang = CodeLanguage.detect(from: attachment.previewText ?? "", filename: attachment.filename)
+            let lang = CodeLanguage.detect(
+                from: attachment.previewText ?? "", filename: attachment.filename)
 
             results.append(
                 ArtifactMetadata(
@@ -297,8 +298,8 @@ extension ChatMessage {
     }
 }
 
-private extension FileManager {
-    func attributesOfItemSafe(atPath path: String) -> [FileAttributeKey: Any] {
+extension FileManager {
+    fileprivate func attributesOfItemSafe(atPath path: String) -> [FileAttributeKey: Any] {
         (try? attributesOfItem(atPath: path)) ?? [:]
     }
 }
@@ -408,7 +409,8 @@ final class ChatFolderEntity {
     /// The last update date of the folder.
     var updatedAt: Date
     /// The sessions contained within this folder.
-    @Relationship(deleteRule: .nullify, inverse: \ChatSessionEntity.folder) var sessions: [ChatSessionEntity] = []
+    @Relationship(deleteRule: .nullify, inverse: \ChatSessionEntity.folder) var sessions:
+        [ChatSessionEntity] = []
 
     /// Initializes a new `ChatFolderEntity` from a domain model.
     /// - Parameter folder: The `ChatFolder` domain model.
@@ -421,7 +423,7 @@ final class ChatFolderEntity {
         createdAt = folder.createdAt
         updatedAt = folder.updatedAt
     }
-    
+
     /// Converts the entity back to a domain model.
     /// - Returns: A `ChatFolder` instance.
     func asDomain() -> ChatFolder {
@@ -447,7 +449,8 @@ final class ChatTagEntity {
     /// The color string for the tag.
     var color: String
     /// The sessions associated with this tag.
-    @Relationship(deleteRule: .nullify, inverse: \ChatSessionEntity.tags) var sessions: [ChatSessionEntity] = []
+    @Relationship(deleteRule: .nullify, inverse: \ChatSessionEntity.tags) var sessions:
+        [ChatSessionEntity] = []
 
     /// Initializes a new `ChatTagEntity` from a domain model.
     /// - Parameter tag: The `ChatTag` domain model.
@@ -456,7 +459,7 @@ final class ChatTagEntity {
         name = tag.name
         color = tag.color
     }
-    
+
     /// Converts the entity back to a domain model.
     /// - Returns: A `ChatTag` instance.
     func asDomain() -> ChatTag {
@@ -493,7 +496,9 @@ final class ChatSessionEntity {
     var referenceID: String
     /// Indicates if JSON mode is enabled.
     var jsonMode: Bool = false
-    
+    /// Raw storage for `ThinkingPreference`.
+    var thinkingPreferenceRaw: String = ThinkingPreference.auto.rawValue
+
     // Organization
     /// The folder this session belongs to.
     var folder: ChatFolderEntity?
@@ -501,6 +506,51 @@ final class ChatSessionEntity {
     @Relationship(deleteRule: .nullify) var tags: [ChatTagEntity] = []
     /// Indicates if the session is pinned.
     var isPinned: Bool = false
+    /// Indicates if the session is archived (hidden from main view).
+    var isArchived: Bool = false
+
+    // MARK: - AFM-Generated Metadata
+    /// AI-generated title for the conversation (e.g., "Swift concurrency debugging").
+    var afmTitle: String?
+    /// Single emoji representing the conversation topic.
+    var afmEmoji: String?
+    /// Primary category: "coding", "research", "creative", "planning", "support", "general".
+    var afmCategory: String?
+    /// JSON-encoded array of topic strings (e.g., ["swift", "async", "actors"]).
+    var afmTopics: Data?
+    /// When AFM last classified this conversation.
+    var afmClassifiedAt: Date?
+
+    // MARK: - Lifecycle Management
+    /// User's apparent intent: "quickQuestion", "debugging", "exploration", "creation", "reference".
+    var lifecycleIntent: String?
+    /// Suggested retention: "keep", "archive", "reviewIn7Days", "autoDeleteOK".
+    var lifecycleRetention: String?
+    /// Whether the conversation appears complete/resolved.
+    var isComplete: Bool = false
+    /// Whether the conversation contains code blocks, tool outputs, or files.
+    var hasArtifacts: Bool = false
+    /// Updated on each message for staleness tracking.
+    var lastActivityAt: Date?
+    /// When this conversation was flagged for cleanup review.
+    var flaggedForCleanupAt: Date?
+
+    /// Decoded topics array from JSON data.
+    var afmTopicsArray: [String] {
+        guard let data = afmTopics else { return [] }
+        return (try? JSONDecoder().decode([String].self, from: data)) ?? []
+    }
+
+    /// Display title preferring AFM-generated title over default.
+    var displayTitle: String {
+        if let afm = afmTitle, !afm.isEmpty {
+            if let emoji = afmEmoji, !emoji.isEmpty {
+                return "\(emoji) \(afm)"
+            }
+            return afm
+        }
+        return title
+    }
 
     /// Initializes a new `ChatSessionEntity` from a domain model.
     /// - Parameter session: The `ChatSession` domain model.
@@ -518,8 +568,11 @@ final class ChatSessionEntity {
         totalCostUSD = session.metadata.totalCostUSD
         referenceID = session.metadata.referenceID
         jsonMode = session.jsonMode
+        thinkingPreferenceRaw = session.thinkingPreference.rawValue
         isPinned = session.isPinned
-        // Relationships (folder and tags) are usually set via service update methods, 
+        // Initialize lifecycle tracking
+        lastActivityAt = session.createdAt
+        // Relationships (folder and tags) are usually set via service update methods,
         // but if passed in a domain object we'd need context to link them.
         // For init from new session, these start empty/nil.
     }
@@ -536,15 +589,28 @@ final class ChatSessionEntity {
             updatedAt: updatedAt,
             messages: messages.map { $0.asDomain() },
             metadata: ChatSessionMetadata(
-                lastTokenUsage: lastTokenUsageInputTokens.map { TokenUsage(inputTokens: $0, outputTokens: lastTokenUsageOutputTokens!, cachedTokens: lastTokenUsageCachedTokens!) },
+                lastTokenUsage: lastTokenUsageInputTokens.map {
+                    TokenUsage(
+                        inputTokens: $0, outputTokens: lastTokenUsageOutputTokens!,
+                        cachedTokens: lastTokenUsageCachedTokens!)
+                },
                 totalCostUSD: totalCostUSD,
                 referenceID: referenceID
             ),
             jsonMode: jsonMode,
+            thinkingPreference: ThinkingPreference(rawValue: thinkingPreferenceRaw) ?? .auto,
             folderID: folder?.id,
             tags: tags.map { $0.asDomain() },
             isPinned: isPinned
         )
+    }
+}
+
+@MainActor
+extension ChatSessionEntity {
+    var thinkingPreference: ThinkingPreference {
+        get { ThinkingPreference(rawValue: thinkingPreferenceRaw) ?? .auto }
+        set { thinkingPreferenceRaw = newValue.rawValue }
     }
 }
 
@@ -553,7 +619,7 @@ final class ChatSessionEntity {
 extension ChatMessage {
     /// The estimated token count for this message, including protocol overhead.
     var estimatedTokens: Int {
-        TokenEstimator.estimate(content) + 4 // content + overhead
+        TokenEstimator.estimate(content) + 4  // content + overhead
     }
 }
 
@@ -576,9 +642,9 @@ final class ChatMessageEntity {
     /// The thought process, if any.
     var thoughtProcess: String?
     /// The JSON encoded data for message parts.
-    var partsData: Data? // JSON encoded [ChatContentPart]
+    var partsData: Data?  // JSON encoded [ChatContentPart]
     /// The JSON encoded data for attachments.
-    var attachmentsData: Data? // JSON encoded [Attachment]
+    var attachmentsData: Data?  // JSON encoded [Attachment]
     /// The creation date of the message.
     var createdAt: Date
     /// The JSON encoded data for code blocks.
@@ -599,12 +665,12 @@ final class ChatMessageEntity {
     var costBreakdownTotalCost: Decimal?
     /// The session this message belongs to.
     @Relationship var session: ChatSessionEntity?
-    
+
     // Tool calling support
     /// The ID of the tool call this message responds to.
     var toolCallID: String?
     /// The JSON encoded data for tool calls.
-    var toolCallsData: Data? // JSON encoded [ToolCall]
+    var toolCallsData: Data?  // JSON encoded [ToolCall]
 
     /// Initializes a new `ChatMessageEntity` from a domain model.
     /// - Parameter message: The `ChatMessage` domain model.
@@ -635,12 +701,23 @@ final class ChatMessageEntity {
             id: id,
             role: MessageRole(rawValue: role)!,
             content: content,
-            parts: (try? JSONDecoder().decode([ChatContentPart].self, from: partsData ?? Data())) ?? [],
-            attachments: (try? JSONDecoder().decode([Attachment].self, from: attachmentsData ?? Data())) ?? [],
+            parts: (try? JSONDecoder().decode([ChatContentPart].self, from: partsData ?? Data()))
+                ?? [],
+            attachments: (try? JSONDecoder().decode(
+                [Attachment].self, from: attachmentsData ?? Data())) ?? [],
             createdAt: createdAt,
-            codeBlocks: (try? JSONDecoder().decode([CodeBlock].self, from: codeBlocksData ?? Data())) ?? [],
-            tokenUsage: tokenUsageInputTokens.map { TokenUsage(inputTokens: $0, outputTokens: tokenUsageOutputTokens!, cachedTokens: tokenUsageCachedTokens!) },
-            costBreakdown: costBreakdownInputCost.map { CostBreakdown(inputCost: $0, outputCost: costBreakdownOutputCost!, cachedCost: costBreakdownCachedCost!, totalCost: costBreakdownTotalCost!) },
+            codeBlocks: (try? JSONDecoder().decode([CodeBlock].self, from: codeBlocksData ?? Data()))
+                ?? [],
+            tokenUsage: tokenUsageInputTokens.map {
+                TokenUsage(
+                    inputTokens: $0, outputTokens: tokenUsageOutputTokens!,
+                    cachedTokens: tokenUsageCachedTokens!)
+            },
+            costBreakdown: costBreakdownInputCost.map {
+                CostBreakdown(
+                    inputCost: $0, outputCost: costBreakdownOutputCost!,
+                    cachedCost: costBreakdownCachedCost!, totalCost: costBreakdownTotalCost!)
+            },
             toolCallID: toolCallID,
             toolCalls: (try? JSONDecoder().decode([ToolCall].self, from: toolCallsData ?? Data()))
         )

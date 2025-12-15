@@ -103,10 +103,15 @@ struct GoogleAIProvider: LLMProvider {
     }
 
     func buildRequest(messages: [ChatMessage], model: String) async throws -> URLRequest {
-        try await buildRequest(messages: messages, model: model, jsonMode: false)
+        try await buildRequest(messages: messages, model: model, tools: nil, options: .default)
     }
 
-    func buildRequest(messages: [ChatMessage], model: String, jsonMode: Bool) async throws -> URLRequest {
+    func buildRequest(
+        messages: [ChatMessage],
+        model: String,
+        tools: [ToolDefinition]?,
+        options: LLMRequestOptions
+    ) async throws -> URLRequest {
         guard let apiKey = await keychain.apiKey(for: .google) else {
             throw LLMProviderError.authenticationMissing
         }
@@ -187,12 +192,30 @@ struct GoogleAIProvider: LLMProvider {
             }
         }
 
+        let requestedThinkingLevel: ThinkingLevel = {
+            switch options.thinkingPreference {
+            case .off:
+                return .off
+            case .on:
+                return .high
+            case .auto:
+                // Gemini thinking is only supported on select model families; default off otherwise.
+                let lower = model.lowercased()
+                let supportsThinking =
+                    lower.contains("gemini-2.5")
+                    || lower.contains("gemini-3")
+                    || lower.contains("gemini-2.")
+                return supportsThinking ? .high : .off
+            }
+        }()
+
         // We build a non-streaming request by default.
         // streamResponse will convert it to a streaming request if needed.
         return try manager.makeGenerateContentRequest(
             prompt: prompt,
             files: mediaFiles,  // Only new files attached to the current prompt
             model: model,
+            thinkingLevel: requestedThinkingLevel,
             history: history,
             stream: false
         )
@@ -205,11 +228,13 @@ struct GoogleAIProvider: LLMProvider {
                     // Convert to streaming request
                     var streamRequest = request
                     if let url = request.url, url.absoluteString.contains(":generateContent") {
-                        let newString =
+                        var newString =
                             url.absoluteString
                             .replacingOccurrences(
                                 of: ":generateContent", with: ":streamGenerateContent")
-                            + "&alt=sse"
+                        if !newString.contains("alt=sse") {
+                            newString += (newString.contains("?") ? "&" : "?") + "alt=sse"
+                        }
                         streamRequest.url = URL(string: newString)
                     }
 
@@ -281,9 +306,10 @@ struct GoogleAIProvider: LLMProvider {
                                 for part in first.content.parts {
                                     if case .functionCall(let fc) = part {
                                         let encoder = JSONEncoder()
-                                        if let argsData = try? encoder.encode(fc.args),
-                                            let argsStr = String(data: argsData, encoding: .utf8)
-                                        {
+                                        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+                                        let argsObject = fc.args ?? [:]
+                                        let argsData = (try? encoder.encode(argsObject)) ?? Data("{}".utf8)
+                                        if let argsStr = String(data: argsData, encoding: .utf8) {
                                             let callId = "call_\(UUID().uuidString.prefix(8))"
                                             let toolCall = ToolCall(
                                                 id: callId, name: fc.name, input: argsStr)

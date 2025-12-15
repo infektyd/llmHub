@@ -51,6 +51,50 @@ final class ChatService {
     /// Maximum number of tool execution loops to prevent infinite recursion.
     private let maxToolIterations = 10
 
+    private struct TokenBatcher {
+        private(set) var buffer: String = ""
+        private var lastFlushTime: TimeInterval = Date().timeIntervalSinceReferenceDate
+        private let flushInterval: TimeInterval
+
+        init(flushInterval: TimeInterval = 0.05) {
+            self.flushInterval = flushInterval
+        }
+
+        mutating func append(_ delta: String) -> String? {
+            guard !delta.isEmpty else { return nil }
+            buffer += delta
+            if shouldFlush(afterAppending: delta) {
+                return flush()
+            }
+            return nil
+        }
+
+        mutating func flush() -> String? {
+            guard !buffer.isEmpty else { return nil }
+            let out = buffer
+            buffer = ""
+            lastFlushTime = Date().timeIntervalSinceReferenceDate
+            return out
+        }
+
+        private func shouldFlush(afterAppending delta: String) -> Bool {
+            if delta.contains("\n") { return true }
+            if endsWithBoundary(buffer) { return true }
+            let now = Date().timeIntervalSinceReferenceDate
+            return (now - lastFlushTime) >= flushInterval
+        }
+
+        private func endsWithBoundary(_ s: String) -> Bool {
+            guard let last = s.unicodeScalars.last else { return false }
+            switch last {
+            case ".", "!", "?", ":", ";", ")", "]", "}":
+                return true
+            default:
+                return false
+            }
+        }
+    }
+
     /// Initializes a new `ChatService`.
     /// - Parameters:
     ///   - modelContext: The SwiftData context.
@@ -299,8 +343,8 @@ final class ChatService {
                         var enabledTools: [any Tool] = []
                         if let auth = service.toolAuthorizationService {
                             for tool in availableTools {
-                                let status = await auth.checkAccess(for: tool.name)
-        if status == .authorized {
+                                let status = auth.checkAccess(for: tool.name)
+                                if status == .authorized {
                                     enabledTools.append(tool)
                                 }
                             }
@@ -311,14 +355,22 @@ final class ChatService {
                         let exportedToolDefs = enabledTools.compactMap { ToolDefinition(from: $0) }
                         let toolDefs: [ToolDefinition]? = exportedToolDefs.isEmpty ? nil : exportedToolDefs
 
+                        let options = LLMRequestOptions(
+                            thinkingPreference: currentSession.thinkingPreference,
+                            thinkingBudgetTokens: nil
+                        )
+
                         let request = try await provider.buildRequest(
                             messages: compactedMessages,
                             model: currentSession.model,
-                            tools: toolDefs)
+                            tools: toolDefs,
+                            options: options
+                        )
 
                         // Track accumulated tool calls for this iteration
                         var accumulatedToolCalls: [ToolCall] = []
                         var assistantTextBuffer = ""
+                        var tokenBatcher = TokenBatcher()
                         var didPersistAssistantMessage = false
 
                         // Stream response
@@ -326,13 +378,18 @@ final class ChatService {
                             switch event {
                             case .token(let text):
                                 assistantTextBuffer += text
-                                continuation.yield(.token(text: text))
+                                if let flushed = tokenBatcher.append(text) {
+                                    continuation.yield(.token(text: flushed))
+                                }
 
                             case .thinking(let thought):
                                 continuation.yield(.thinking(thought))
 
                             case .toolUse(let id, let name, let input):
                                 logger.debug("ChatService: Tool call detected: \(name)")
+                                if let flushed = tokenBatcher.flush() {
+                                    continuation.yield(.token(text: flushed))
+                                }
                                 // Notify UI of tool use
                                 continuation.yield(.toolUse(id: id, name: name, input: input))
 
@@ -345,12 +402,18 @@ final class ChatService {
                                 break
 
                             case .usage(let usage):
+                                if let flushed = tokenBatcher.flush() {
+                                    continuation.yield(.token(text: flushed))
+                                }
                                 continuation.yield(.usage(usage))
 
                             case .reference(let ref):
                                 continuation.yield(.reference(ref))
 
                             case .completion(let msg):
+                                if let flushed = tokenBatcher.flush() {
+                                    continuation.yield(.token(text: flushed))
+                                }
                                 // Some providers only include tool calls on the final completion
                                 // message with empty content. If so, treat them as pending tool uses
                                 // and keep the agent loop going.
@@ -404,9 +467,15 @@ final class ChatService {
                                 }
 
                             case .error(let error):
+                                if let flushed = tokenBatcher.flush() {
+                                    continuation.yield(.token(text: flushed))
+                                }
                                 continuation.yield(.error(error))
 
                             case .truncated(let msg):
+                                if let flushed = tokenBatcher.flush() {
+                                    continuation.yield(.token(text: flushed))
+                                }
                                 // Response was truncated due to max_tokens limit
                                 // Handle like completion but forward the truncated event
                                 if accumulatedToolCalls.isEmpty,
@@ -436,6 +505,10 @@ final class ChatService {
                             case .contextCompacted:
                                 break
                             }
+                        }
+
+                        if let flushed = tokenBatcher.flush() {
+                            continuation.yield(.token(text: flushed))
                         }
 
                         // After stream completes, execute any pending tool calls
@@ -899,4 +972,3 @@ enum ChatServiceError: LocalizedError {
         }
     }
 }
-

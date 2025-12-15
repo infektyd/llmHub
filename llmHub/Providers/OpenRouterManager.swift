@@ -161,12 +161,18 @@ public class OpenRouterManager {
     public func makeChatRequest(
         messages: [ORMessage],
         model: String,
-        stream: Bool
+        stream: Bool,
+        tools: [ORTool]? = nil,
+        toolChoice: ORToolChoice? = nil,
+        parallelToolCalls: Bool? = nil
     ) throws -> URLRequest {
         let payload = ORChatRequest(
             model: model,
             messages: messages,
-            stream: stream
+            stream: stream,
+            tools: tools,
+            toolChoice: toolChoice,
+            parallelToolCalls: parallelToolCalls
         )
         let url = baseURL.appendingPathComponent("chat/completions")
         return try makeRequest(url: url, payload: payload)
@@ -234,14 +240,50 @@ public struct ORChatRequest: Encodable {
     var maxTokens: Int? = nil
     /// Streaming flag.
     var stream: Bool? = nil
+    /// Available tools (OpenAI-compatible).
+    var tools: [ORTool]? = nil
+    /// Tool choice configuration (OpenAI-compatible).
+    var toolChoice: ORToolChoice? = nil
+    /// Enable parallel tool calls where supported.
+    var parallelToolCalls: Bool? = nil
     /// List of transforms.
     var transforms: [String]? = nil
     /// Route preference.
     var route: String? = nil
     
     enum CodingKeys: String, CodingKey {
-        case model, messages, temperature, stream, transforms, route
+        case model, messages, temperature, stream, tools, transforms, route
         case maxTokens = "max_tokens"
+        case toolChoice = "tool_choice"
+        case parallelToolCalls = "parallel_tool_calls"
+    }
+}
+
+// --- Tools (OpenAI-compatible) ---
+
+public struct ORTool: Encodable {
+    let type: String
+    let function: ORFunction
+}
+
+public struct ORFunction: Encodable {
+    let name: String
+    let description: String?
+    let parameters: [String: OpenAIJSONValue]?
+}
+
+public enum ORToolChoice: Encodable {
+    case auto
+    case none
+    case required
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .auto: try container.encode("auto")
+        case .none: try container.encode("none")
+        case .required: try container.encode("required")
+        }
     }
 }
 

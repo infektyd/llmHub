@@ -20,12 +20,12 @@ final class ToolSchemaValidationTests: XCTestCase {
         nonisolated var isConfigured: Bool { get async { true } }
 
         func fetchModels() async throws -> [LLMModel] { [] }
-        func buildRequest(messages: [ChatMessage], model: String) async throws -> URLRequest {
-            URLRequest(url: endpoint)
-        }
-        func buildRequest(messages: [ChatMessage], model: String, tools: [ToolDefinition]?) async throws
-            -> URLRequest
-        {
+        func buildRequest(
+            messages: [ChatMessage],
+            model: String,
+            tools: [ToolDefinition]?,
+            options: LLMRequestOptions
+        ) async throws -> URLRequest {
             URLRequest(url: endpoint)
         }
         func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {

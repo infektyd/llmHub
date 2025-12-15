@@ -162,12 +162,20 @@ public class MistralManager {
     public func makeChatRequest(
         messages: [MistralMessage],
         model: String,
-        stream: Bool
+        stream: Bool,
+        tools: [MistralTool]? = nil,
+        toolChoice: MistralToolChoice? = nil,
+        parallelToolCalls: Bool? = nil,
+        promptMode: String? = nil
     ) throws -> URLRequest {
         let payload = MistralChatRequest(
             model: model,
             messages: messages,
-            stream: stream
+            stream: stream,
+            tools: tools,
+            toolChoice: toolChoice,
+            parallelToolCalls: parallelToolCalls,
+            promptMode: promptMode
         )
         let url = primaryURL.appendingPathComponent("chat/completions")
         return try makeRequest(url: url, payload: payload)
@@ -354,6 +362,8 @@ public struct MistralChatRequest: Encodable {
     var tools: [MistralTool]?
     /// Tool choice configuration.
     var toolChoice: MistralToolChoice?
+    /// Enable parallel tool calls when tools are provided.
+    var parallelToolCalls: Bool?
     /// Response format configuration.
     var responseFormat: MistralResponseFormat?
     /// Prompt mode (e.g., "reasoning").
@@ -363,6 +373,7 @@ public struct MistralChatRequest: Encodable {
         case model, messages, temperature, stream, tools
         case maxTokens = "max_tokens"
         case toolChoice = "tool_choice"
+        case parallelToolCalls = "parallel_tool_calls"
         case responseFormat = "response_format"
         case promptMode = "prompt_mode"
     }
@@ -444,7 +455,7 @@ public struct MistralFunction: Encodable {
     /// The description of the function.
     let description: String?
     /// The parameters schema.
-    let parameters: [String: AnyEncodable]?
+    let parameters: [String: OpenAIJSONValue]?
 }
 
 /// Specifies how tools should be chosen.

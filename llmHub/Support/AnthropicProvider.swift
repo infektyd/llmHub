@@ -48,13 +48,12 @@ struct AnthropicProvider: LLMProvider {
         }
     }
 
-    func buildRequest(messages: [ChatMessage], model: String) async throws -> URLRequest {
-        try await buildRequest(messages: messages, model: model, tools: nil)
-    }
-
-    func buildRequest(messages: [ChatMessage], model: String, tools: [ToolDefinition]?) async throws
-        -> URLRequest
-    {
+    func buildRequest(
+        messages: [ChatMessage],
+        model: String,
+        tools: [ToolDefinition]?,
+        options: LLMRequestOptions
+    ) async throws -> URLRequest {
         guard let key = await keychain.apiKey(for: .anthropic) else {
             throw LLMProviderError.authenticationMissing
         }

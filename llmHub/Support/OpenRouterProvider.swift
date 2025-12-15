@@ -56,13 +56,12 @@ struct OpenRouterProvider: LLMProvider {
         }
     }
 
-    func buildRequest(messages: [ChatMessage], model: String) async throws -> URLRequest {
-        try await buildRequest(messages: messages, model: model, jsonMode: false)
-    }
-
-    func buildRequest(messages: [ChatMessage], model: String, jsonMode: Bool) async throws
-        -> URLRequest
-    {
+    func buildRequest(
+        messages: [ChatMessage],
+        model: String,
+        tools: [ToolDefinition]?,
+        options: LLMRequestOptions
+    ) async throws -> URLRequest {
         guard let apiKey = await keychain.apiKey(for: .openRouter) else {
             throw LLMProviderError.authenticationMissing
         }
@@ -99,11 +98,24 @@ struct OpenRouterProvider: LLMProvider {
             }
         }
 
+        let orTools: [ORTool]? = tools?.map { toolDef in
+            ORTool(
+                type: "function",
+                function: ORFunction(
+                    name: toolDef.name,
+                    description: toolDef.description,
+                    parameters: toolDef.inputSchema.mapValues(OpenAIJSONValue.from)
+                )
+            )
+        }
+
         // Default to non-streaming request builder
         return try manager.makeChatRequest(
             messages: orMessages,
             model: model,
-            stream: false
+            stream: false,
+            tools: orTools,
+            parallelToolCalls: (orTools?.isEmpty == false) ? true : nil
         )
     }
 
@@ -141,76 +153,266 @@ struct OpenRouterProvider: LLMProvider {
                         return
                     }
 
+                    // Determine stream format from model prefix and provider hints.
+                    let modelID: String = {
+                        guard let body = request.httpBody,
+                            let json = try? JSONSerialization.jsonObject(with: body) as? [String: Any]
+                        else { return "" }
+                        return (json["model"] as? String) ?? ""
+                    }()
+
+                    let headerProviderHint =
+                        (http.value(forHTTPHeaderField: "x-model-provider")
+                            ?? http.value(forHTTPHeaderField: "X-Model-Provider"))?
+                        .lowercased()
+
+                    enum StreamFormat {
+                        case openAIStyle
+                        case anthropicStyle
+                        case geminiStyle
+                        case unknown
+                    }
+
+                    let streamFormat: StreamFormat = {
+                        let lower = modelID.lowercased()
+                        if lower.hasPrefix("anthropic/") { return .anthropicStyle }
+                        if lower.hasPrefix("google/") { return .geminiStyle }
+                        if lower.hasPrefix("openai/") { return .openAIStyle }
+                        if let hint = headerProviderHint {
+                            if hint.contains("anthropic") { return .anthropicStyle }
+                            if hint.contains("google") || hint.contains("gemini") { return .geminiStyle }
+                            if hint.contains("openai") { return .openAIStyle }
+                        }
+                        return modelID.isEmpty ? .unknown : .openAIStyle
+                    }()
+
                     var fullText = ""
-                    var toolCallsInProgress: [Int: PendingToolCall] = [:]
+                    var toolAssembler = PartialToolCallAssembler()
+                    var finalizedToolCalls: [ToolCall] = []
                     var lastFinishReason: String? = nil
 
-                    for try await line in result.lines {
-                        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if trimmed.hasPrefix("data: ") {
+                    switch streamFormat {
+                    case .geminiStyle:
+                        // Gemini-style SSE can emit multi-line `data:` payloads; use buffered framing.
+                        var sse = SSEEventParser()
+                        let decoder = JSONDecoder()
+
+                        for try await byte in result {
+                            for payload in sse.append(byte: byte) {
+                                if payload == "[DONE]" { break }
+                                guard let data = payload.data(using: .utf8) else { continue }
+                                guard let chunk = try? decoder.decode(GenerationResponse.self, from: data) else {
+                                    continue
+                                }
+
+                                if let text = chunk.text, !text.isEmpty {
+                                    fullText += text
+                                    continuation.yield(.token(text: text))
+                                }
+
+                                if let usage = chunk.usageMetadata {
+                                    continuation.yield(
+                                        .usage(
+                                            TokenUsage(
+                                                inputTokens: usage.promptTokenCount ?? 0,
+                                                outputTokens: usage.candidatesTokenCount ?? 0,
+                                                cachedTokens: 0
+                                            )))
+                                }
+                            }
+                        }
+
+                    case .anthropicStyle:
+                        // Anthropic-style SSE events proxied through OpenRouter.
+                        let decoder = JSONDecoder()
+                        var toolCalls: [ToolCall] = []
+                        var currentToolUse: (id: String, name: String, input: String)? = nil
+
+                        for try await line in result.lines {
+                            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                            guard trimmed.hasPrefix("data: ") else { continue }
+
                             let jsonStr = String(trimmed.dropFirst(6))
                             if jsonStr == "[DONE]" { break }
+                            guard let data = jsonStr.data(using: .utf8) else { continue }
 
-                            guard let data = jsonStr.data(using: .utf8),
-                                let chunk = try? JSONDecoder().decode(
-                                    ORStreamChunk.self, from: data),
+                            guard let event = try? decoder.decode(AnthropicStreamEvent.self, from: data) else {
+                                continue
+                            }
+
+                            switch event.type {
+                            case "content_block_start":
+                                if let contentBlock = event.content_block,
+                                    contentBlock.type == "tool_use"
+                                {
+                                    currentToolUse = (
+                                        id: contentBlock.id ?? "",
+                                        name: contentBlock.name ?? "",
+                                        input: ""
+                                    )
+                                }
+
+                            case "content_block_delta":
+                                if let text = event.delta?.text, !text.isEmpty {
+                                    fullText += text
+                                    continuation.yield(.token(text: text))
+                                }
+                                if let thinking = event.delta?.thinking, !thinking.isEmpty {
+                                    continuation.yield(.thinking(thinking))
+                                }
+                                if let partialJson = event.delta?.partial_json, !partialJson.isEmpty {
+                                    if var tu = currentToolUse {
+                                        tu.input += partialJson
+                                        currentToolUse = tu
+                                    }
+                                }
+
+                            case "content_block_stop":
+                                if let tu = currentToolUse, !tu.id.isEmpty, !tu.name.isEmpty {
+                                    let call = ToolCall(id: tu.id, name: tu.name, input: tu.input)
+                                    toolCalls.append(call)
+                                    continuation.yield(.toolUse(id: tu.id, name: tu.name, input: tu.input))
+                                    currentToolUse = nil
+                                }
+
+                            case "message_delta":
+                                if let usage = event.usage {
+                                    continuation.yield(
+                                        .usage(
+                                            TokenUsage(
+                                                inputTokens: usage.input_tokens,
+                                                outputTokens: usage.output_tokens,
+                                                cachedTokens: 0
+                                            )))
+                                }
+
+                            case "message_stop":
+                                break
+
+                            default:
+                                break
+                            }
+                        }
+
+                        finalizedToolCalls = toolCalls
+
+                    case .openAIStyle, .unknown:
+                        // OpenAI-style SSE chunks (OpenRouter default), with fallback to Anthropic event decoding.
+                        let decoder = JSONDecoder()
+                        var toolCalls: [ToolCall] = []
+                        var currentToolUse: (id: String, name: String, input: String)? = nil
+
+                        for try await line in result.lines {
+                            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                            guard trimmed.hasPrefix("data: ") else { continue }
+                            let jsonStr = String(trimmed.dropFirst(6))
+                            if jsonStr == "[DONE]" { break }
+                            guard let data = jsonStr.data(using: .utf8) else { continue }
+
+                            if let chunk = try? decoder.decode(ORStreamChunk.self, from: data),
                                 let choice = chunk.choices.first
-                            else { continue }
+                            {
+                                if let content = choice.delta.content, !content.isEmpty {
+                                    fullText += content
+                                    continuation.yield(.token(text: content))
+                                }
 
-                            if let content = choice.delta.content {
-                                fullText += content
-                                continuation.yield(.token(text: content))
-                            }
-
-                            if let toolCalls = choice.delta.toolCalls {
-                                for tc in toolCalls {
-                                    let idx = tc.index
-                                    if toolCallsInProgress[idx] == nil {
-                                        toolCallsInProgress[idx] = PendingToolCall(
-                                            index: idx, id: nil, name: nil, arguments: "")
-                                    }
-
-                                    if let id = tc.id {
-                                        toolCallsInProgress[idx]?.id = id
-                                    }
-                                    if let name = tc.function?.name {
-                                        toolCallsInProgress[idx]?.name = name
-                                    }
-                                    if let args = tc.function?.arguments {
-                                        toolCallsInProgress[idx]?.arguments += args
+                                if let toolCallsDelta = choice.delta.toolCalls {
+                                    for tc in toolCallsDelta {
+                                        toolAssembler.ingest(
+                                            index: tc.index,
+                                            id: tc.id,
+                                            name: tc.function?.name,
+                                            argumentsDelta: tc.function?.arguments
+                                        )
                                     }
                                 }
+
+                                if let finishReason = choice.finishReason {
+                                    lastFinishReason = finishReason
+                                }
+
+                                if choice.finishReason == "tool_calls" {
+                                    let calls = toolAssembler.finalizeAll()
+                                    finalizedToolCalls.append(contentsOf: calls)
+                                    for tc in calls {
+                                        continuation.yield(.toolUse(id: tc.id, name: tc.name, input: tc.input))
+                                    }
+                                }
+
+                                if let usage = chunk.usage {
+                                    continuation.yield(
+                                        .usage(
+                                            TokenUsage(
+                                                inputTokens: usage.promptTokens,
+                                                outputTokens: usage.completionTokens,
+                                                cachedTokens: 0
+                                            )))
+                                }
+
+                                continue
                             }
 
-                            // Track the finish reason
-                            if let finishReason = choice.finishReason {
-                                lastFinishReason = finishReason
-                            }
+                            // Fallback: try to decode Anthropic events if OpenRouter emits them.
+                            if let event = try? decoder.decode(AnthropicStreamEvent.self, from: data) {
+                                switch event.type {
+                                case "content_block_start":
+                                    if let contentBlock = event.content_block,
+                                        contentBlock.type == "tool_use"
+                                    {
+                                        currentToolUse = (
+                                            id: contentBlock.id ?? "",
+                                            name: contentBlock.name ?? "",
+                                            input: ""
+                                        )
+                                    }
 
-                            if choice.finishReason == "tool_calls" {
-                                for (_, tc) in toolCallsInProgress.sorted(by: { $0.key < $1.key }) {
-                                    if let id = tc.id, let name = tc.name {
+                                case "content_block_delta":
+                                    if let text = event.delta?.text, !text.isEmpty {
+                                        fullText += text
+                                        continuation.yield(.token(text: text))
+                                    }
+                                    if let thinking = event.delta?.thinking, !thinking.isEmpty {
+                                        continuation.yield(.thinking(thinking))
+                                    }
+                                    if let partialJson = event.delta?.partial_json, !partialJson.isEmpty {
+                                        if var tu = currentToolUse {
+                                            tu.input += partialJson
+                                            currentToolUse = tu
+                                        }
+                                    }
+
+                                case "content_block_stop":
+                                    if let tu = currentToolUse, !tu.id.isEmpty, !tu.name.isEmpty {
+                                        let call = ToolCall(id: tu.id, name: tu.name, input: tu.input)
+                                        toolCalls.append(call)
+                                        continuation.yield(.toolUse(id: tu.id, name: tu.name, input: tu.input))
+                                        currentToolUse = nil
+                                    }
+
+                                case "message_delta":
+                                    if let usage = event.usage {
                                         continuation.yield(
-                                            .toolUse(id: id, name: name, input: tc.arguments))
+                                            .usage(
+                                                TokenUsage(
+                                                    inputTokens: usage.input_tokens,
+                                                    outputTokens: usage.output_tokens,
+                                                    cachedTokens: 0
+                                                )))
                                     }
+
+                                default:
+                                    break
                                 }
                             }
+                        }
 
-                            // Usage in stream (OpenRouter often sends this in the last chunk or separate event)
-                            if let usage = chunk.usage {
-                                continuation.yield(
-                                    .usage(
-                                        TokenUsage(
-                                            inputTokens: usage.promptTokens,
-                                            outputTokens: usage.completionTokens,
-                                            cachedTokens: 0
-                                        )))
-                            }
+                        if !toolCalls.isEmpty {
+                            finalizedToolCalls.append(contentsOf: toolCalls)
                         }
                     }
 
-                    // Final completion
-                    let message = ChatMessage(
+                    var message = ChatMessage(
                         id: UUID(),
                         role: .assistant,
                         content: fullText,
@@ -220,8 +422,10 @@ struct OpenRouterProvider: LLMProvider {
                         tokenUsage: nil,
                         costBreakdown: nil
                     )
+                    if !finalizedToolCalls.isEmpty {
+                        message.toolCalls = finalizedToolCalls
+                    }
 
-                    // Check if response was truncated due to max_tokens
                     if lastFinishReason == "length" {
                         continuation.yield(.truncated(message: message))
                     } else {
