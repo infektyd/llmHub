@@ -245,6 +245,14 @@ final class ChatService {
                                 }
                             }
 
+                            // Append attachment contents for this request only (do not persist inline in chat).
+                            if !updatedAttachments.isEmpty {
+                                let attachmentBlock = service.formatAttachmentsForRequest(updatedAttachments)
+                                if !attachmentBlock.isEmpty {
+                                    updatedParts.append(.text("\n\n" + attachmentBlock))
+                                }
+                            }
+
                             // Create a new ChatMessage copying all fields, but with updated parts/attachments
                             let updatedUserMessage = ChatMessage(
                                 id: baseUserMessage.id,
@@ -496,11 +504,6 @@ final class ChatService {
 
                                 try service.appendMessage(toolResultMessage, to: sessionID)
 
-                                // Notify UI of tool result
-                                continuation.yield(
-                                    .token(
-                                        text: "\n[Tool Result: \(toolName)]\n\(toolResultOutput)\n")
-                                )
                             }
 
                             // Continue the loop to let LLM process tool results
@@ -746,6 +749,82 @@ final class ChatService {
         }
         sessionEntity.isPinned.toggle()
         try modelContext.save()
+    }
+
+    // MARK: - Attachment Helpers
+
+    /// Formats non-image attachments into a request-only prompt block.
+    /// This keeps the persisted chat transcript clean while still giving the model the file contents.
+    private func formatAttachmentsForRequest(_ attachments: [Attachment]) -> String {
+        let maxBytes = 100 * 1024
+
+        var blocks: [String] = []
+
+        for attachment in attachments {
+            guard attachment.type != .image else { continue }
+
+            let sizeBytes: Int = {
+                let attrs = try? FileManager.default.attributesOfItem(atPath: attachment.url.path)
+                if let number = attrs?[.size] as? NSNumber { return number.intValue }
+                if let number = attrs?[.size] as? Int { return number }
+                return attachment.previewText?.utf8.count ?? 0
+            }()
+
+            if attachment.type == .pdf {
+                blocks.append("[Attachment: \(attachment.filename) (\(formatFileSize(sizeBytes))) — PDF not inlined]")
+                continue
+            }
+
+            guard let (text, truncated) = loadTextAttachment(attachment, maxBytes: maxBytes) else {
+                blocks.append("[Attachment: \(attachment.filename) (\(formatFileSize(sizeBytes))) — could not read]")
+                continue
+            }
+
+            let fence = fenceLanguage(for: attachment.filename, type: attachment.type)
+            let fenceLine = fence.map { "```\($0)" } ?? "```"
+
+            var block = "[Attachment: \(attachment.filename) (\(formatFileSize(sizeBytes)))]\n"
+            if truncated {
+                block += "[Truncated to \(formatFileSize(maxBytes))]\n"
+            }
+            block += "\(fenceLine)\n\(text)\n```"
+            blocks.append(block)
+        }
+
+        return blocks.joined(separator: "\n\n")
+    }
+
+    private func loadTextAttachment(_ attachment: Attachment, maxBytes: Int) -> (text: String, truncated: Bool)? {
+        do {
+            let data = try Data(contentsOf: attachment.url, options: .mappedIfSafe)
+            let truncated = data.count > maxBytes
+            let slice = data.prefix(maxBytes)
+            let text = String(data: slice, encoding: .utf8) ?? ""
+            return (text, truncated)
+        } catch {
+            return nil
+        }
+    }
+
+    private func fenceLanguage(for filename: String, type: AttachmentType) -> String? {
+        let ext = filename.split(separator: ".").last?.lowercased()
+        switch ext {
+        case "json": return "json"
+        case "swift": return "swift"
+        case "py": return "python"
+        case "js", "ts": return "javascript"
+        case "md": return "markdown"
+        default:
+            return type == .code ? "text" : nil
+        }
+    }
+
+    private func formatFileSize(_ bytes: Int) -> String {
+        if bytes < 1024 { return "\(bytes) B" }
+        let kb = Double(bytes) / 1024.0
+        if kb < 1024 { return String(format: "%.1f KB", kb) }
+        let mb = kb / 1024.0
+        return String(format: "%.1f MB", mb)
     }
 
     // MARK: - Image Helpers

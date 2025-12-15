@@ -5,7 +5,9 @@
 //  Preview for the Unified Liquid Glass System (Light Mode).
 //
 
+#if canImport(MarkdownUI)
 import MarkdownUI
+#endif
 import SwiftUI
 
 struct LiquidGlassLightTranscriptPreview: View {
@@ -85,11 +87,11 @@ struct LiquidGlassLightTranscriptPreview: View {
                             NeonMessageRow(
                                 message: .preview(
                                     role: "tool",
-                                    content: "Build Succeeded (0.4s)",
+                                    content: "Build Succeeded (0.4s)\n\nstdout:\n- Compiling 42 files\n- Linking llmHub\n- Signing\n\nstderr:\n(none)\n\nNotes:\n- This is a long multi-line tool output\n- Collapsed preview must stay inside bubble",
                                     toolCallID: "call_1"
                                 ),
                                 relatedToolCall: ToolCall(
-                                    id: "call_1", name: "swift_compiler", input: "{}")
+                                    id: "call_1", name: "swift_compiler", input: "{\"configuration\":\"Debug\",\"sdk\":\"macosx\"}")
                             )
 
                         }

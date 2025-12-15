@@ -5,14 +5,39 @@
 //  Created by Hans Axelsson on 12/12/25.
 //
 
+#if canImport(MarkdownUI)
 import MarkdownUI
+#endif
 import SwiftUI
+
+/// Flattened tool invocation data for UI + copy.
+struct ToolCallBlock: Identifiable, Equatable {
+    let id: String
+    let name: String
+    let input: String
+    let output: String?
+}
 
 struct NeonMessageRow: View {
     let message: ChatMessageEntity
     let relatedToolCall: ToolCall?
+    let relatedToolBlocks: [ToolCallBlock]
     var interactionController: ChatInteractionController? = nil
     var isStreaming: Bool = false  // For typewriter animation during streaming
+
+    init(
+        message: ChatMessageEntity,
+        relatedToolCall: ToolCall?,
+        relatedToolBlocks: [ToolCallBlock] = [],
+        interactionController: ChatInteractionController? = nil,
+        isStreaming: Bool = false
+    ) {
+        self.message = message
+        self.relatedToolCall = relatedToolCall
+        self.relatedToolBlocks = relatedToolBlocks
+        self.interactionController = interactionController
+        self.isStreaming = isStreaming
+    }
 
     @Environment(\.theme) private var theme
     @AppStorage("showTimestamps") private var showTimestamps: Bool = false
@@ -72,16 +97,19 @@ struct NeonMessageRow: View {
         switch role {
         case .tool:
             ToolResultCard(message: message, relatedToolCall: relatedToolCall)
+                .textSelection(.enabled)
 
         default:
             toolRequestsRow
 
-            if !message.content.isEmpty {
+            let artifacts = message.artifactMetadatas
+
+            if !message.content.isEmpty, !message.rendersContentAsArtifact {
                 if role == .system {
                     Text(message.content)
                         .font(LiquidGlassTokens.messageFont(role: role, theme: theme))
                         .foregroundColor(theme.textTertiary)
-
+                        .textSelection(.enabled)
                         .fixedSize(horizontal: false, vertical: true)
                 } else if role == .assistant && isStreaming {
                     // Typewriter animation for streaming assistant messages
@@ -89,29 +117,42 @@ struct NeonMessageRow: View {
                         .markdownTheme(.llmHubLiquid(theme: theme))
                         .font(LiquidGlassTokens.messageFont(role: role, theme: theme))
                         .foregroundColor(theme.textPrimary)
+                        .textSelection(.enabled)
                 } else {
                     Markdown(message.content)
                         .markdownTheme(.llmHubLiquid(theme: theme))
-
                         .font(LiquidGlassTokens.messageFont(role: role, theme: theme))
+                        .textSelection(.enabled)
                 }
             }
 
-            // Attachments if any
+            // Artifacts (large pastes + non-image file attachments)
+            if !artifacts.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(artifacts) { artifact in
+                        ArtifactCard(artifact: artifact)
+                    }
+                }
+            }
+
+            // Keep lightweight display for image attachments.
             if let data = message.attachmentsData,
                 let attachments = try? JSONDecoder().decode([Attachment].self, from: data),
                 !attachments.isEmpty
             {
-                ForEach(attachments) { attachment in
-                    HStack(spacing: 8) {
-                        Image(systemName: attachment.type.icon)
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(theme.textTertiary)
-                            .frame(width: 14)
+                let images = attachments.filter { $0.type == .image }
+                if !images.isEmpty {
+                    ForEach(images) { attachment in
+                        HStack(spacing: 8) {
+                            Image(systemName: attachment.type.icon)
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(theme.textTertiary)
+                                .frame(width: 14)
 
-                        Text(attachment.filename)
-                            .font(.caption)
-                            .foregroundColor(theme.textSecondary)
+                            Text(attachment.filename)
+                                .font(.caption)
+                                .foregroundColor(theme.textSecondary)
+                        }
                     }
                 }
             }
@@ -183,12 +224,14 @@ struct NeonMessageRow: View {
     }
 
     private func copyToClipboard() {
+        let copyText = buildCopyText()
+
         #if os(macOS)
             let pasteboard = NSPasteboard.general
             pasteboard.clearContents()
-            pasteboard.setString(message.content, forType: .string)
+            pasteboard.setString(copyText, forType: .string)
         #else
-            UIPasteboard.general.string = message.content
+            UIPasteboard.general.string = copyText
         #endif
 
         withAnimation {
@@ -199,5 +242,43 @@ struct NeonMessageRow: View {
                 copied = false
             }
         }
+    }
+
+    private func buildCopyText() -> String {
+        var fullText = message.content
+
+        // For assistant messages, include tool calls + tool outputs in the copied text.
+        if role == .assistant, !relatedToolBlocks.isEmpty {
+            for block in relatedToolBlocks {
+                fullText += "\n\n### [\(block.name)]"
+
+                let args = prettyPrintedJSON(from: block.input) ?? block.input
+                let trimmedArgs = args.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmedArgs.isEmpty, trimmedArgs != "{}" {
+                    fullText += "\n\n**Args**\n```json\n\(trimmedArgs)\n```"
+                }
+
+                let output = (block.output ?? "[No result]")
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                let safeOutput = output.isEmpty ? "[No result]" : output
+                fullText += "\n\n**Output**\n```\n\(safeOutput)\n```"
+            }
+        }
+
+        return fullText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func prettyPrintedJSON(from raw: String) -> String? {
+        guard let data = raw.data(using: .utf8) else { return nil }
+        guard let object = try? JSONSerialization.jsonObject(with: data, options: []) else {
+            return nil
+        }
+        guard JSONSerialization.isValidJSONObject(object) else { return nil }
+        guard
+            let prettyData = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted])
+        else {
+            return nil
+        }
+        return String(data: prettyData, encoding: .utf8)
     }
 }

@@ -5,9 +5,11 @@
 //  Created by Hans Axelsson on 12/01/25.
 //
 
+#if canImport(MarkdownUI)
 import MarkdownUI
-import SwiftData
+#endif
 import SwiftUI
+
 
 struct NeonChatView: View {
     let session: ChatSessionEntity
@@ -376,16 +378,35 @@ extension NeonChatView {
     @ViewBuilder
     private func messagesStack(_ messages: [ChatMessageEntity]) -> some View {
         LazyVStack(spacing: 0) {  // 0 spacing, row has its own rhythm padding
-            // Build map of tool calls for lookup
+            // Build maps for tool call/result lookup.
             let toolCallMap = buildToolCallMap(from: messages)
+            let toolResultMap = buildToolResultMap(from: messages)
 
             // Regular messages - not streaming
-            ForEach(messages, id: \.id) { message in
+            ForEach(messages, id: \ChatMessageEntity.id) { (message: ChatMessageEntity) in
                 let relatedTool = message.toolCallID.flatMap { toolCallMap[$0] }
+
+                let relatedBlocks: [ToolCallBlock] = {
+                    guard message.role == MessageRole.assistant.rawValue,
+                        let toolCallsData = message.toolCallsData,
+                        let toolCalls = try? JSONDecoder().decode([ToolCall].self, from: toolCallsData),
+                        !toolCalls.isEmpty
+                    else { return [] }
+
+                    return toolCalls.map { call in
+                        ToolCallBlock(
+                            id: call.id,
+                            name: call.name,
+                            input: call.input,
+                            output: toolResultMap[call.id]?.content
+                        )
+                    }
+                }()
 
                 NeonMessageRow(
                     message: message,
                     relatedToolCall: relatedTool,
+                    relatedToolBlocks: relatedBlocks,
                     interactionController: interactionController
                 )
                 .id(message.id.description)
@@ -461,6 +482,7 @@ extension NeonChatView {
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
+        .textSelection(.enabled)
     }
 
     private func buildToolCallMap(from messages: [ChatMessageEntity]) -> [String: ToolCall] {
@@ -474,6 +496,17 @@ extension NeonChatView {
             for call in calls {
                 map[call.id] = call
             }
+        }
+        return map
+    }
+
+    private func buildToolResultMap(from messages: [ChatMessageEntity]) -> [String: ChatMessageEntity] {
+        var map: [String: ChatMessageEntity] = [:]
+        for message in messages {
+            guard message.role == MessageRole.tool.rawValue,
+                let toolCallID = message.toolCallID
+            else { continue }
+            map[toolCallID] = message
         }
         return map
     }
