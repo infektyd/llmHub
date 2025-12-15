@@ -24,11 +24,32 @@ struct NeonWorkbenchWindow: View {
     }
 
     var body: some View {
-        #if os(iOS)
-            iosLayout
-        #else
-            macosLayout
-        #endif
+        Group {
+            #if os(iOS)
+                iosLayout
+            #else
+                macosLayout
+            #endif
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .afmUserHintNeeded)) { note in
+            let reason = (note.userInfo?["reason"] as? String)
+                ?? "Apple Intelligence model assets are currently unavailable."
+            Task { @MainActor in
+                viewModel.presentAFMUnavailableHint(reason: reason)
+            }
+        }
+        .alert(
+            "Apple Intelligence unavailable",
+            isPresented: $viewModel.showAFMUnavailableHint
+        ) {
+            Button("OK") {
+                viewModel.dismissAFMUnavailableHint()
+            }
+        } message: {
+            Text(
+                "\(viewModel.afmUnavailableHintReason)\n\nTry: System Settings → Apple Intelligence → Download models (or wait for download to finish), then relaunch llmHub."
+            )
+        }
     }
 
     // MARK: - iOS Layout (2-column)

@@ -19,6 +19,7 @@ struct NeonSidebar: View {
         [ChatSessionEntity]
 
     @State private var sidebarVM = SidebarViewModel()
+    @State private var distillationService = ConversationDistillationService()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -88,6 +89,22 @@ struct NeonSidebar: View {
         }
         .sheet(isPresented: $sidebarVM.showCleanupSheet) {
             CleanupReviewSheet(sidebarViewModel: sidebarVM)
+        }
+        .alert(
+            "Incomplete Distillation",
+            isPresented: Bindable(viewModel).showIncompleteMemoryDeleteWarning
+        ) {
+            Button("Delete", role: .destructive) {
+                viewModel.performPendingDeletion(modelContext: modelContext)
+            }
+            Button("Cancel", role: .cancel) {
+                viewModel.pendingDeleteConversationIDs = []
+                viewModel.showIncompleteMemoryDeleteWarning = false
+            }
+        } message: {
+            Text(
+                "This conversation has partial memories from an incomplete distillation. Review them before deleting—they may contain complete/useful facts, preferences, or artifacts."
+            )
         }
         .onAppear {
             // Run cleanup check on appear
@@ -201,7 +218,7 @@ struct NeonSidebar: View {
         )
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) {
-                viewModel.deleteConversation(id: session.id, modelContext: modelContext)
+                viewModel.requestDeleteConversation(id: session.id, modelContext: modelContext)
             } label: {
                 Label("Delete", systemImage: "trash")
             }
@@ -234,7 +251,7 @@ struct NeonSidebar: View {
             Button(
                 role: .destructive,
                 action: {
-                    viewModel.deleteSelectedConversations(modelContext: modelContext)
+                    viewModel.requestDeleteSelectedConversations(modelContext: modelContext)
                 }
             ) {
                 Label(
@@ -280,7 +297,7 @@ struct NeonSidebar: View {
             Button(
                 role: .destructive,
                 action: {
-                    viewModel.deleteConversation(id: session.id, modelContext: modelContext)
+                    viewModel.requestDeleteConversation(id: session.id, modelContext: modelContext)
                 }
             ) {
                 Label("Delete", systemImage: "trash")
@@ -297,6 +314,12 @@ struct NeonSidebar: View {
     }
 
     private func archiveSession(_ session: ChatSessionEntity) {
+        // Phase 2 Memory: distill on archive/unarchive toggle.
+        session.triggerDistillation(
+            distillationService: distillationService,
+            modelContext: modelContext
+        )
+
         session.isArchived.toggle()
         session.flaggedForCleanupAt = nil
         session.updatedAt = Date()
@@ -341,9 +364,9 @@ struct NeonSidebar: View {
 
     private func handleDeleteKeyPress() {
         if !viewModel.selectedConversationIDs.isEmpty {
-            viewModel.deleteSelectedConversations(modelContext: modelContext)
+            viewModel.requestDeleteSelectedConversations(modelContext: modelContext)
         } else if let selectedID = viewModel.selectedConversationID {
-            viewModel.deleteConversation(id: selectedID, modelContext: modelContext)
+            viewModel.requestDeleteConversation(id: selectedID, modelContext: modelContext)
         }
     }
 

@@ -113,6 +113,12 @@ class ChatViewModel {
     /// Timestamp for the streaming message.
     private var streamingStartedAt: Date?
 
+    /// Service for conversation distillation.
+    private var distillationService: ConversationDistillationService?
+
+    /// Tracks the previous session to trigger cleanup/distillation on switch.
+    private var previousSessionID: UUID?
+
     // Core Actors
     private var workspace: LightweightWorkspace?
     private var authService: ToolAuthorizationService?
@@ -143,6 +149,9 @@ class ChatViewModel {
 
         // Initialize providers config
         let config = makeDefaultConfig()
+
+        // Initialize distillation service
+        self.distillationService = ConversationDistillationService()
 
         // Initialize keychain
         let keychain = KeychainStore()
@@ -286,6 +295,17 @@ class ChatViewModel {
                     description: $0.description
                 )
             }
+    }
+
+    /// Called when user switches sessions or session becomes inactive.
+    /// Triggers background distillation of the session into memory.
+    func onSessionDeactivated(session: ChatSessionEntity, modelContext: ModelContext) {
+        guard let distillationService = distillationService else { return }
+
+        session.triggerDistillation(
+            distillationService: distillationService,
+            modelContext: modelContext
+        )
     }
 
     // MARK: - Session Management

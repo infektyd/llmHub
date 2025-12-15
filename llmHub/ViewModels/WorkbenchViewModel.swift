@@ -35,6 +35,22 @@ class WorkbenchViewModel {
     /// The currently active tool execution being displayed.
     var activeToolExecution: ToolExecution?
 
+    // MARK: - Memory / Deletion Warning
+
+    /// When true, UI should show the incomplete-memory deletion warning.
+    var showIncompleteMemoryDeleteWarning: Bool = false
+    /// Pending conversation IDs to delete if the user confirms.
+    var pendingDeleteConversationIDs: [UUID] = []
+
+    // MARK: - AFM User Hint
+
+    /// When true, UI should show a hint that Apple Intelligence model assets are not ready.
+    var showAFMUnavailableHint: Bool = false
+    /// Detail string to help the user resolve availability issues.
+    var afmUnavailableHintReason: String = ""
+
+    private let distillationService = ConversationDistillationService()
+
     // Search
     /// The current search text for filtering conversations.
     var searchText: String = ""
@@ -50,6 +66,27 @@ class WorkbenchViewModel {
     init() {
         // selectedProvider and selectedModel will be set from real ModelRegistry data
         // via onAppear in NeonWorkbenchWindow
+
+        hydrateAFMHintState()
+    }
+
+    private func hydrateAFMHintState() {
+        let defaults = UserDefaults.standard
+        if defaults.bool(forKey: "afm.unavailable.shouldShowHint") {
+            showAFMUnavailableHint = true
+            afmUnavailableHintReason = defaults.string(forKey: "afm.unavailable.lastReason")
+                ?? "Apple Intelligence is currently unavailable."
+        }
+    }
+
+    func presentAFMUnavailableHint(reason: String) {
+        afmUnavailableHintReason = reason
+        showAFMUnavailableHint = true
+    }
+
+    func dismissAFMUnavailableHint() {
+        showAFMUnavailableHint = false
+        UserDefaults.standard.set(false, forKey: "afm.unavailable.shouldShowHint")
     }
 
     /// Creates a new conversation session and selects it.
@@ -125,6 +162,12 @@ class WorkbenchViewModel {
         do {
             let sessions = try modelContext.fetch(fetchDescriptor)
             if let session = sessions.first {
+                // Phase 2 Memory: schedule background distillation on deletion.
+                session.triggerDistillation(
+                    distillationService: distillationService,
+                    modelContext: modelContext
+                )
+
                 modelContext.delete(session)
                 try modelContext.save()
 
@@ -139,6 +182,17 @@ class WorkbenchViewModel {
         }
     }
 
+    /// Requests deletion for a single conversation, warning if incomplete memories exist.
+    func requestDeleteConversation(id: UUID, modelContext: ModelContext) {
+        if hasIncompleteMemories(for: id, modelContext: modelContext) {
+            pendingDeleteConversationIDs = [id]
+            showIncompleteMemoryDeleteWarning = true
+            return
+        }
+
+        deleteConversation(id: id, modelContext: modelContext)
+    }
+
     /// Deletes all currently multi-selected conversations.
     /// - Parameter modelContext: The SwiftData context.
     func deleteSelectedConversations(modelContext: ModelContext) {
@@ -151,6 +205,54 @@ class WorkbenchViewModel {
         }
 
         selectedConversationIDs.removeAll()
+    }
+
+    /// Requests deletion for the current multi-selection, warning if incomplete memories exist.
+    func requestDeleteSelectedConversations(modelContext: ModelContext) {
+        let idsToDelete = Array(selectedConversationIDs)
+        guard !idsToDelete.isEmpty else { return }
+
+        let hasAnyIncomplete = idsToDelete.contains { id in
+            hasIncompleteMemories(for: id, modelContext: modelContext)
+        }
+
+        if hasAnyIncomplete {
+            pendingDeleteConversationIDs = idsToDelete
+            showIncompleteMemoryDeleteWarning = true
+            return
+        }
+
+        deleteSelectedConversations(modelContext: modelContext)
+    }
+
+    /// Performs any pending deletions (after user confirms warning).
+    func performPendingDeletion(modelContext: ModelContext) {
+        let ids = pendingDeleteConversationIDs
+        guard !ids.isEmpty else {
+            showIncompleteMemoryDeleteWarning = false
+            return
+        }
+
+        for id in ids {
+            deleteConversation(id: id, modelContext: modelContext)
+        }
+
+        pendingDeleteConversationIDs.removeAll()
+        showIncompleteMemoryDeleteWarning = false
+    }
+
+    private func hasIncompleteMemories(for sessionID: UUID, modelContext: ModelContext) -> Bool {
+        do {
+            let count = try modelContext.fetchCount(
+                FetchDescriptor<MemoryEntity>(
+                    predicate: #Predicate { $0.sourceSessionID == sessionID && !$0.isComplete }
+                )
+            )
+            return count > 0
+        } catch {
+            vmLogger.debug("Failed incomplete-memory check: \(error.localizedDescription)")
+            return false
+        }
     }
 
     /// Clears the multi-selection set.
