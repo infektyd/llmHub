@@ -196,7 +196,7 @@ actor LightweightWorkspace {
             let urls = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)
             let dir = urls[0].appendingPathComponent("llmhub/workspace", isDirectory: true)
             if !fileManager.fileExists(atPath: dir.path) {
-                try fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
+                try fileManager.createDirectory(at: dir, withIntermediateDirectories: true, attributes: nil)
             }
             return dir
         } catch {
