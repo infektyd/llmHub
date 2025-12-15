@@ -15,6 +15,8 @@ private let logger = Logger(subsystem: "com.llmhub", category: "LifecycleService
 @MainActor
 final class ConversationLifecycleService {
 
+    private let distillationService = ConversationDistillationService()
+
     // MARK: - Staleness Configuration
 
     /// Days of inactivity before a quick question is flagged.
@@ -150,6 +152,7 @@ final class ConversationLifecycleService {
 
     /// Archives a session (moves to archived state).
     func archive(session: ChatSessionEntity, modelContext: ModelContext) {
+        session.triggerDistillation(distillationService: distillationService, modelContext: modelContext)
         session.isArchived = true
         session.flaggedForCleanupAt = nil
         session.updatedAt = Date()
@@ -165,6 +168,7 @@ final class ConversationLifecycleService {
     /// Archives multiple sessions.
     func archiveAll(_ sessions: [ChatSessionEntity], modelContext: ModelContext) {
         for session in sessions {
+            session.triggerDistillation(distillationService: distillationService, modelContext: modelContext)
             session.isArchived = true
             session.flaggedForCleanupAt = nil
             session.updatedAt = Date()
@@ -211,6 +215,7 @@ final class ConversationLifecycleService {
     /// Deletes a session permanently.
     func delete(session: ChatSessionEntity, modelContext: ModelContext) {
         let sessionID = session.id
+        session.triggerDistillation(distillationService: distillationService, modelContext: modelContext)
         modelContext.delete(session)
 
         do {
@@ -225,6 +230,7 @@ final class ConversationLifecycleService {
     func deleteAll(_ sessions: [ChatSessionEntity], modelContext: ModelContext) {
         let count = sessions.count
         for session in sessions {
+            session.triggerDistillation(distillationService: distillationService, modelContext: modelContext)
             modelContext.delete(session)
         }
 

@@ -130,6 +130,10 @@ struct NeonChatView: View {
             #endif
             // Break retain cycle by nilling the closure
             interactionController.onAddReference = nil
+
+            // Phase 2 Memory: treat view disappearance as session deactivation.
+            // This reliably fires when switching conversations in the sidebar.
+            chatVM.onSessionDeactivated(session: session, modelContext: modelContext)
         }
         .onAppear {
             // Wire up controller interactions

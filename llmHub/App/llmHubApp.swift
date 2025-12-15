@@ -40,6 +40,9 @@ struct llmHubApp: App {
                     // This ensures updated model IDs (Anthropic, xAI) are loaded
                     // Remove this after a few app launches when all users have fresh data
                     modelRegistry.clearAllCaches()
+
+                    // Log AFM availability status once on launch (debug aid for Apple Intelligence)
+                    await AppLogger.logAFMStatusOnLaunch()
                     
                     // Fetch models on app launch
                     await modelRegistry.fetchAllModels()
@@ -50,6 +53,7 @@ struct llmHubApp: App {
             ChatMessageEntity.self,
             ChatFolderEntity.self,
             ChatTagEntity.self,
+            MemoryEntity.self,
         ])
         #if os(macOS)
         .commands {

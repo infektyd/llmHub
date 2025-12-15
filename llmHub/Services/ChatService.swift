@@ -44,6 +44,10 @@ final class ChatService {
     private let toolAuthorizationService: ToolAuthorizationService?
     /// Context management service for compaction.
     private let contextManager: ContextManagementService
+    /// Service for retrieving relevant memories.
+    private let memoryRetrievalService: MemoryRetrievalService
+    /// Service for memory management.
+    private let memoryManagementService: MemoryManagementService
 
     /// Logger instance.
     private let logger = Logger(subsystem: "com.llmhub", category: "ChatService")
@@ -110,7 +114,9 @@ final class ChatService {
         toolRegistry: ToolRegistry,
         toolExecutor: ToolExecutor,
         toolAuthorizationService: ToolAuthorizationService? = nil,
-        contextManager: ContextManagementService = ContextManagementService()
+        contextManager: ContextManagementService = ContextManagementService(),
+        memoryRetrievalService: MemoryRetrievalService = MemoryRetrievalService(),
+        memoryManagementService: MemoryManagementService = MemoryManagementService()
     ) {
         self.modelContext = modelContext
         self.providerRegistry = providerRegistry
@@ -121,6 +127,8 @@ final class ChatService {
         self.toolExecutor = toolExecutor
         self.toolAuthorizationService = toolAuthorizationService
         self.contextManager = contextManager
+        self.memoryRetrievalService = memoryRetrievalService
+        self.memoryManagementService = memoryManagementService
     }
 
     // MARK: - Sessions
@@ -149,7 +157,8 @@ final class ChatService {
             do {
                 try modelContext.save()
             } catch {
-                logger.error("Failed to persist providerID migration: \(error.localizedDescription)")
+                logger.error(
+                    "Failed to persist providerID migration: \(error.localizedDescription)")
             }
         }
 
@@ -260,7 +269,7 @@ final class ChatService {
                         // Start from persisted history, but enrich the most recent user message
                         // with any inline images/attachments for this request only.
                         var llmMessages = currentSession.messages
-                        if (!images.isEmpty || !attachments.isEmpty || !references.isEmpty),
+                        if !images.isEmpty || !attachments.isEmpty || !references.isEmpty,
                             let lastUserIndex = llmMessages.lastIndex(where: { $0.role == .user })
                         {
                             let baseUserMessage = llmMessages[lastUserIndex]
@@ -291,7 +300,8 @@ final class ChatService {
 
                             // Append attachment contents for this request only (do not persist inline in chat).
                             if !updatedAttachments.isEmpty {
-                                let attachmentBlock = service.formatAttachmentsForRequest(updatedAttachments)
+                                let attachmentBlock = service.formatAttachmentsForRequest(
+                                    updatedAttachments)
                                 if !attachmentBlock.isEmpty {
                                     updatedParts.append(.text("\n\n" + attachmentBlock))
                                 }
@@ -317,8 +327,44 @@ final class ChatService {
                         }
 
                         // Compact context if needed before sending to provider
+                        // RETRIEVAL (Phase 2): On first user message, prepend relevant memories
+                        // as plain XML in the system prompt BEFORE compaction so it is token-accounted.
+                        var messagesForCompaction = llmMessages
+                        let isFirstInteraction = llmMessages.filter { $0.role == .user }.count == 1
+
+                        if isFirstInteraction {
+                            let memories = await service.memoryRetrievalService.retrieveRelevant(
+                                for: userMessage,
+                                providerID: currentSession.providerID,
+                                modelContext: service.modelContext
+                            )
+
+                            if !memories.isEmpty {
+                                logger.debug("Injected \(memories.count) memories into system prompt")
+                                let memoryXML = service.memoryRetrievalService
+                                    .formatForSystemPrompt(memories)
+
+                                if var firstMsg = messagesForCompaction.first,
+                                    firstMsg.role == .system
+                                {
+                                    firstMsg.content = "\(memoryXML)\n\n\(firstMsg.content)"
+                                    messagesForCompaction[0] = firstMsg
+                                } else {
+                                    let systemMsg = ChatMessage(
+                                        id: UUID(),
+                                        role: .system,
+                                        content: memoryXML,
+                                        parts: [],
+                                        createdAt: Date(),
+                                        codeBlocks: []
+                                    )
+                                    messagesForCompaction.insert(systemMsg, at: 0)
+                                }
+                            }
+                        }
+
                         let compactionResult = try await service.contextManager.compact(
-                            messages: llmMessages,
+                            messages: messagesForCompaction,
                             maxTokens: nil,  // Will use model's context window or config default
                             providerID: currentSession.providerID
                         )
@@ -353,15 +399,19 @@ final class ChatService {
                         }
 
                         let exportedToolDefs = enabledTools.compactMap { ToolDefinition(from: $0) }
-                        let toolDefs: [ToolDefinition]? = exportedToolDefs.isEmpty ? nil : exportedToolDefs
+                        let toolDefs: [ToolDefinition]? =
+                            exportedToolDefs.isEmpty ? nil : exportedToolDefs
 
                         let options = LLMRequestOptions(
                             thinkingPreference: currentSession.thinkingPreference,
                             thinkingBudgetTokens: nil
                         )
 
+                        // Use compacted messages for the request
+                        var messagesForRequest = compactedMessages
+
                         let request = try await provider.buildRequest(
-                            messages: compactedMessages,
+                            messages: messagesForRequest,
                             model: currentSession.model,
                             tools: toolDefs,
                             options: options
@@ -617,7 +667,9 @@ final class ChatService {
             do {
                 try modelContext.save()
             } catch {
-                logger.error("Failed to persist providerID migration for session \(id): \(error.localizedDescription)")
+                logger.error(
+                    "Failed to persist providerID migration for session \(id): \(error.localizedDescription)"
+                )
             }
         }
         return entity.asDomain()
@@ -757,7 +809,7 @@ final class ChatService {
         let entity = ChatTagEntity(tag: tag)
         modelContext.insert(entity)
         try modelContext.save()
-       	return tag
+        return tag
     }
 
     /// Deletes a tag.
@@ -844,12 +896,16 @@ final class ChatService {
             }()
 
             if attachment.type == .pdf {
-                blocks.append("[Attachment: \(attachment.filename) (\(formatFileSize(sizeBytes))) — PDF not inlined]")
+                blocks.append(
+                    "[Attachment: \(attachment.filename) (\(formatFileSize(sizeBytes))) — PDF not inlined]"
+                )
                 continue
             }
 
             guard let (text, truncated) = loadTextAttachment(attachment, maxBytes: maxBytes) else {
-                blocks.append("[Attachment: \(attachment.filename) (\(formatFileSize(sizeBytes))) — could not read]")
+                blocks.append(
+                    "[Attachment: \(attachment.filename) (\(formatFileSize(sizeBytes))) — could not read]"
+                )
                 continue
             }
 
@@ -867,7 +923,9 @@ final class ChatService {
         return blocks.joined(separator: "\n\n")
     }
 
-    private func loadTextAttachment(_ attachment: Attachment, maxBytes: Int) -> (text: String, truncated: Bool)? {
+    private func loadTextAttachment(_ attachment: Attachment, maxBytes: Int) -> (
+        text: String, truncated: Bool
+    )? {
         do {
             let data = try Data(contentsOf: attachment.url, options: .mappedIfSafe)
             let truncated = data.count > maxBytes

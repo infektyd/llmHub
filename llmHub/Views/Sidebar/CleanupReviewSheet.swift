@@ -18,6 +18,8 @@ struct CleanupReviewSheet: View {
 
     @State private var flaggedSessions: [ChatSessionEntity] = []
     @State private var selectedIDs: Set<UUID> = []
+    @State private var showIncompleteMemoryDeleteWarning: Bool = false
+    @State private var pendingDeleteSessions: [ChatSessionEntity] = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -47,6 +49,32 @@ struct CleanupReviewSheet: View {
         .background(sheetBackground)
         .onAppear {
             loadFlaggedSessions()
+        }
+        .alert(
+            "Incomplete Distillation",
+            isPresented: $showIncompleteMemoryDeleteWarning
+        ) {
+            Button("Delete", role: .destructive) {
+                let sessionsToDelete = pendingDeleteSessions
+                guard !sessionsToDelete.isEmpty else {
+                    showIncompleteMemoryDeleteWarning = false
+                    return
+                }
+
+                sidebarViewModel.deleteSessions(sessionsToDelete, modelContext: modelContext)
+                let ids = Set(sessionsToDelete.map { $0.id })
+                flaggedSessions.removeAll { ids.contains($0.id) }
+                pendingDeleteSessions.removeAll()
+                showIncompleteMemoryDeleteWarning = false
+            }
+            Button("Cancel", role: .cancel) {
+                pendingDeleteSessions.removeAll()
+                showIncompleteMemoryDeleteWarning = false
+            }
+        } message: {
+            Text(
+                "This conversation has partial memories from an incomplete distillation. Review them before deleting—they may contain complete/useful facts, preferences, or artifacts."
+            )
         }
     }
 
@@ -210,8 +238,7 @@ struct CleanupReviewSheet: View {
     }
 
     private func deleteSession(_ session: ChatSessionEntity) {
-        sidebarViewModel.deleteSessions([session], modelContext: modelContext)
-        flaggedSessions.removeAll { $0.id == session.id }
+        requestDeleteSessions([session])
     }
 
     private func keepSession(_ session: ChatSessionEntity) {
@@ -230,8 +257,39 @@ struct CleanupReviewSheet: View {
     }
 
     private func deleteAll() {
-        sidebarViewModel.deleteSessions(flaggedSessions, modelContext: modelContext)
-        flaggedSessions.removeAll()
+        requestDeleteSessions(flaggedSessions)
+    }
+
+    private func requestDeleteSessions(_ sessions: [ChatSessionEntity]) {
+        guard !sessions.isEmpty else { return }
+
+        let ids = sessions.map { $0.id }
+        let hasAnyIncomplete = ids.contains { id in
+            hasIncompleteMemories(for: id)
+        }
+
+        if hasAnyIncomplete {
+            pendingDeleteSessions = sessions
+            showIncompleteMemoryDeleteWarning = true
+            return
+        }
+
+        sidebarViewModel.deleteSessions(sessions, modelContext: modelContext)
+        let idSet = Set(ids)
+        flaggedSessions.removeAll { idSet.contains($0.id) }
+    }
+
+    private func hasIncompleteMemories(for sessionID: UUID) -> Bool {
+        do {
+            let count = try modelContext.fetchCount(
+                FetchDescriptor<MemoryEntity>(
+                    predicate: #Predicate { $0.sourceSessionID == sessionID && !$0.isComplete }
+                )
+            )
+            return count > 0
+        } catch {
+            return false
+        }
     }
 }
 

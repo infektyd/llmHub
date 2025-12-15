@@ -6,10 +6,7 @@
 //
 
 import Foundation
-
-#if canImport(FoundationModels)
-    import FoundationModels
-#endif
+import FoundationModels
 
 // MARK: - Classification Types
 
@@ -163,16 +160,10 @@ final class ConversationClassificationService {
     /// Check if AFM is available on this device.
     /// AFM requires macOS 26+ / iOS 26+ with Apple Intelligence enabled.
     var isAvailable: Bool {
-        #if canImport(FoundationModels)
-            // Check for availability - this is a simplified check
-            // In production, use SystemLanguageModel.default.availability == .available
-            if #available(macOS 26.0, iOS 26.0, *) {
-                return true
-            }
-            return false
-        #else
-            return false
-        #endif
+        if #available(macOS 15.0, iOS 18.0, *) {
+            return SystemLanguageModel.default.availability == .available
+        }
+        return false
     }
 
     /// Classifies a conversation based on its messages.
@@ -182,47 +173,44 @@ final class ConversationClassificationService {
             return ConversationMetadata.fallback(from: messages)
         }
 
-        #if canImport(FoundationModels)
-            if #available(macOS 26.0, iOS 26.0, *) {
-                return try await classifyWithAFM(messages: messages)
-            }
-        #endif
+        if #available(macOS 15.0, iOS 18.0, *) {
+            return try await classifyWithAFM(messages: messages)
+        }
 
         return ConversationMetadata.fallback(from: messages)
     }
 
-    #if canImport(FoundationModels)
-        @available(macOS 26.0, iOS 26.0, *)
-        private func classifyWithAFM(messages: [ChatMessage]) async throws -> ConversationMetadata {
-            // Build context from first N messages (respect 4K token limit)
-            let context = buildClassificationContext(from: messages, maxMessages: 10)
+    @available(macOS 15.0, iOS 18.0, *)
+    private func classifyWithAFM(messages: [ChatMessage]) async throws -> ConversationMetadata {
+        // Build context from first N messages (respect 4K token limit)
+        let context = buildClassificationContext(from: messages, maxMessages: 10)
 
-            // Use the Content Tagging adapter for classification
-            let session = LanguageModelSession()
+        // Use the SystemLanguageModel for classification
+        let model = SystemLanguageModel(useCase: .contentTagging)
+        let session = LanguageModelSession(model: model)
 
-            let prompt = """
-                Analyze this conversation and provide metadata in JSON format:
+        let prompt = """
+            Analyze this conversation and provide metadata in JSON format:
 
-                Conversation:
-                \(context)
+            Conversation:
+            \(context)
 
-                Respond with JSON containing:
-                - title: concise title (max 50 chars)
-                - emoji: single emoji representing the topic
-                - category: one of [coding, research, creative, planning, support, general]
-                - topics: array of 1-5 key topics
-                - intent: one of [quickQuestion, debugging, exploration, creation, reference]
-                - isComplete: boolean
-                - hasArtifacts: boolean
-                - suggestedRetention: one of [keep, archive, reviewIn7Days, autoDeleteOK]
-                """
+            Respond with JSON containing:
+            - title: concise title (max 50 chars)
+            - emoji: single emoji representing the topic
+            - category: one of [coding, research, creative, planning, support, general]
+            - topics: array of 1-5 key topics
+            - intent: one of [quickQuestion, debugging, exploration, creation, reference]
+            - isComplete: boolean
+            - hasArtifacts: boolean
+            - suggestedRetention: one of [keep, archive, reviewIn7Days, autoDeleteOK]
+            """
 
-            let response = try await session.respond(to: prompt)
+        let response = try await session.respond(to: prompt)
 
-            // Parse the response - in production, use @Generable for structured output
-            return try parseAFMResponse(response.content, messages: messages)
-        }
-    #endif
+        // Parse the response - in production, use @Generable for structured output
+        return try parseAFMResponse(response.content, messages: messages)
+    }
 
     private func buildClassificationContext(from messages: [ChatMessage], maxMessages: Int)
         -> String
@@ -235,50 +223,48 @@ final class ConversationClassificationService {
         }.joined(separator: "\n\n")
     }
 
-    #if canImport(FoundationModels)
-        @available(macOS 26.0, iOS 26.0, *)
-        private func parseAFMResponse(_ content: String, messages: [ChatMessage]) throws
-            -> ConversationMetadata
-        {
-            // Try to extract JSON from the response
-            guard let jsonStart = content.firstIndex(of: "{"),
-                let jsonEnd = content.lastIndex(of: "}")
-            else {
-                return ConversationMetadata.fallback(from: messages)
-            }
-
-            let jsonString = String(content[jsonStart...jsonEnd])
-            guard let data = jsonString.data(using: .utf8) else {
-                return ConversationMetadata.fallback(from: messages)
-            }
-
-            struct AFMResponse: Decodable {
-                let title: String
-                let emoji: String
-                let category: String
-                let topics: [String]
-                let intent: String
-                let isComplete: Bool
-                let hasArtifacts: Bool
-                let suggestedRetention: String
-            }
-
-            do {
-                let decoded = try JSONDecoder().decode(AFMResponse.self, from: data)
-                return ConversationMetadata(
-                    title: decoded.title,
-                    emoji: decoded.emoji,
-                    category: ConversationCategory(rawValue: decoded.category) ?? .general,
-                    topics: decoded.topics,
-                    intent: ConversationIntent(rawValue: decoded.intent) ?? .exploration,
-                    isComplete: decoded.isComplete,
-                    hasArtifacts: decoded.hasArtifacts,
-                    suggestedRetention: RetentionPolicy(rawValue: decoded.suggestedRetention)
-                        ?? .reviewIn7Days
-                )
-            } catch {
-                return ConversationMetadata.fallback(from: messages)
-            }
+    @available(macOS 15.0, iOS 18.0, *)
+    private func parseAFMResponse(_ content: String, messages: [ChatMessage]) throws
+        -> ConversationMetadata
+    {
+        // Try to extract JSON from the response
+        guard let jsonStart = content.firstIndex(of: "{"),
+            let jsonEnd = content.lastIndex(of: "}")
+        else {
+            return ConversationMetadata.fallback(from: messages)
         }
-    #endif
+
+        let jsonString = String(content[jsonStart...jsonEnd])
+        guard let data = jsonString.data(using: .utf8) else {
+            return ConversationMetadata.fallback(from: messages)
+        }
+
+        struct AFMResponse: Decodable {
+            let title: String
+            let emoji: String
+            let category: String
+            let topics: [String]
+            let intent: String
+            let isComplete: Bool
+            let hasArtifacts: Bool
+            let suggestedRetention: String
+        }
+
+        do {
+            let decoded = try JSONDecoder().decode(AFMResponse.self, from: data)
+            return ConversationMetadata(
+                title: decoded.title,
+                emoji: decoded.emoji,
+                category: ConversationCategory(rawValue: decoded.category) ?? .general,
+                topics: decoded.topics,
+                intent: ConversationIntent(rawValue: decoded.intent) ?? .exploration,
+                isComplete: decoded.isComplete,
+                hasArtifacts: decoded.hasArtifacts,
+                suggestedRetention: RetentionPolicy(rawValue: decoded.suggestedRetention)
+                    ?? .reviewIn7Days
+            )
+        } catch {
+            return ConversationMetadata.fallback(from: messages)
+        }
+    }
 }
