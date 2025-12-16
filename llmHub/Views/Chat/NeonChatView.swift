@@ -5,8 +5,8 @@
 //  Created by Hans Axelsson on 12/01/25.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 #if canImport(MarkdownUI)
     import MarkdownUI
@@ -76,7 +76,8 @@ struct NeonChatView: View {
                             outputTokens: outputTokens,
                             cachedTokens: session.lastTokenUsageCachedTokens ?? 0,
                             totalCost: session.totalCostUSD,
-                            contextLimit: 128000
+                            contextLimit: 128000,
+                            isEstimate: false  // Values in session are considered authoritative
                         )
                         .padding(.trailing, 14)
                         .padding(.bottom, 120)

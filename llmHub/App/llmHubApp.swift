@@ -42,7 +42,7 @@ struct llmHubApp: App {
                     modelRegistry.clearAllCaches()
 
                     // Log AFM availability status once on launch (debug aid for Apple Intelligence)
-                    await AppLogger.logAFMStatusOnLaunch()
+                    AppLogger.logAFMStatusOnLaunch()
                     
                     // Fetch models on app launch
                     await modelRegistry.fetchAllModels()

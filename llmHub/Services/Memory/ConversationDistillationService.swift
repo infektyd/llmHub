@@ -191,8 +191,10 @@ final class ConversationDistillationService {
         // Phase 2: use SystemLanguageModel content tagging adapter.
         let model = SystemLanguageModel(useCase: .contentTagging)
         let session = LanguageModelSession(model: model)
-        let response: LanguageModelResponse<ConversationEssence> = try await session.respond(
-            to: prompt)
+        let response = try await session.respond(
+            to: prompt,
+            generating: ConversationEssence.self
+        )
         let essence = response.content
 
         return Memory(

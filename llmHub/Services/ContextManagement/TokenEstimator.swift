@@ -4,6 +4,15 @@
 //
 //  Provides heuristic-based token estimation for chat messages.
 //
+//  TOKEN CONTRACT (STEP 4):
+//  - This estimator provides LOCAL ESTIMATES used only for context window management and compaction.
+//  - Local estimates may diverge from provider-reported usage because they exclude:
+//    * Tool schemas/definitions sent to the provider
+//    * System prompts
+//    * Memory XML injection
+//    * Provider-specific encoding overhead
+//  - Provider usage (when available) is the ground truth for billing and should be displayed separately.
+//
 
 import Foundation
 

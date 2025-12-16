@@ -15,6 +15,7 @@ struct TokenUsageCapsule: View {
     let cachedTokens: Int
     let totalCost: Decimal
     let contextLimit: Int
+    var isEstimate: Bool = false
 
     private var totalTokens: Int {
         inputTokens + outputTokens
@@ -36,6 +37,14 @@ struct TokenUsageCapsule: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            // Label for Estimate
+            if isEstimate {
+                Text("EST")
+                    .font(.caption2.bold())
+                    .foregroundStyle(.secondary)
+                    .padding(.trailing, -4)
+            }
+
             // Input Tokens (Context)
             HStack(spacing: 4) {
                 Text("❄️")
@@ -60,14 +69,14 @@ struct TokenUsageCapsule: View {
 
             // Cost
             HStack(spacing: 4) {
-                Text("💲")
+                Text(isEstimate ? "~" : "💲")
                     .font(.caption2)
                 Text(formattedCost)
                     .fontWeight(.medium)
             }
         }
         .font(.caption2)
-        .foregroundStyle(.primary)
+        .foregroundStyle(isEstimate ? .secondary : .primary)
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
         .background {
@@ -106,7 +115,8 @@ struct TokenUsageCapsule: View {
                 outputTokens: 489,
                 cachedTokens: 0,
                 totalCost: 0.02,
-                contextLimit: 128000
+                contextLimit: 128000,
+                isEstimate: false
             )
 
             TokenUsageCapsule(
@@ -114,7 +124,8 @@ struct TokenUsageCapsule: View {
                 outputTokens: 12000,
                 cachedTokens: 5000,
                 totalCost: 1.45,
-                contextLimit: 128000
+                contextLimit: 128000,
+                isEstimate: true
             )
         }
     }

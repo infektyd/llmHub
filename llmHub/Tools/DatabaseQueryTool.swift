@@ -10,17 +10,15 @@ import OSLog
 
 /// Database Query Tool conforming to the Tool protocol.
 /// Executes SQL queries against configured databases.
-/// Database Query Tool conforming to the Tool protocol.
-/// Executes SQL queries against configured databases.
 struct DatabaseQueryTool: Tool {
-    let name = "database_query"
-    let description = """
+    nonisolated let name = "database_query"
+    nonisolated let description = """
         Execute SQL queries against configured databases. \
         Supports SELECT, INSERT, UPDATE, DELETE operations. \
         Use this tool when you need to query or manipulate database data.
         """
 
-    var parameters: ToolParametersSchema {
+    nonisolated var parameters: ToolParametersSchema {
         ToolParametersSchema(
             properties: [
                 "query": ToolProperty(
@@ -44,14 +42,14 @@ struct DatabaseQueryTool: Tool {
         )
     }
 
-    var permissionLevel: ToolPermissionLevel { .dangerous }
-    var requiredCapabilities: [ToolCapability] { [.dbAccess] }
-    var weight: ToolWeight { .heavy }
-    var isCacheable: Bool { false }
+    nonisolated var permissionLevel: ToolPermissionLevel { .dangerous }
+    nonisolated var requiredCapabilities: [ToolCapability] { [.dbAccess] }
+    nonisolated var weight: ToolWeight { .heavy }
+    nonisolated var isCacheable: Bool { false }
 
     private let logger = Logger(subsystem: "com.llmhub", category: "DatabaseQueryTool")
 
-    func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
+    nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
         throw ToolError.unavailable(
             reason:
                 "Database connection not configured. Set up database credentials and connection strings in Settings > Tools > Database."

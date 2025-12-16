@@ -113,6 +113,12 @@ class ChatViewModel {
     /// Timestamp for the streaming message.
     private var streamingStartedAt: Date?
 
+    // MARK: - Tool Execution Timing (STEP 3)
+
+    private var toolExecutionElapsedSeconds: [String: Int] = [:]
+    private var toolExecutionCancelHandlers: [String: () -> Void] = [:]
+    private var toolTimerTask: Task<Void, Never>?
+
     /// Service for conversation distillation.
     private var distillationService: ConversationDistillationService?
 
@@ -952,5 +958,47 @@ class ChatViewModel {
             session: session,
             modelContext: modelContext
         )
+    }
+    
+    // MARK: - Tool Execution Timing (STEP 3)
+    
+    /// Start tracking elapsed time for a tool execution
+    func startToolTimer(toolCallID: String, cancelHandler: @escaping () -> Void) {
+        toolExecutionElapsedSeconds[toolCallID] = 0
+        toolExecutionCancelHandlers[toolCallID] = cancelHandler
+        
+        // Start or restart the timer task if needed
+        if toolTimerTask == nil || toolTimerTask?.isCancelled == true {
+            toolTimerTask = Task { @MainActor in
+                while !Task.isCancelled {
+                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                    
+                    // Update all active tool timers (throttled to 1 Hz)
+                    for toolCallID in toolExecutionElapsedSeconds.keys {
+                        toolExecutionElapsedSeconds[toolCallID, default: 0] += 1
+                    }
+                }
+            }
+        }
+    }
+    
+    /// Stop tracking elapsed time for a tool execution
+    func stopToolTimer(toolCallID: String) {
+        toolExecutionElapsedSeconds.removeValue(forKey: toolCallID)
+        toolExecutionCancelHandlers.removeValue(forKey: toolCallID)
+        
+        // Cancel timer task if no tools are running
+        if toolExecutionElapsedSeconds.isEmpty {
+            toolTimerTask?.cancel()
+            toolTimerTask = nil
+        }
+    }
+    
+    /// Cancel a running tool execution
+    func cancelToolExecution(toolCallID: String) {
+        if let cancelHandler = toolExecutionCancelHandlers[toolCallID] {
+            cancelHandler()
+            stopToolTimer(toolCallID: toolCallID)
+        }
     }
 }

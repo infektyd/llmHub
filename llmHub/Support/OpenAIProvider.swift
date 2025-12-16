@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 @MainActor
 struct OpenAIProvider: LLMProvider {
@@ -7,6 +8,7 @@ struct OpenAIProvider: LLMProvider {
 
     private let keychain: KeychainStore
     private let config: ProvidersConfig.OpenAI
+    private nonisolated let logger = Logger(subsystem: "com.llmhub", category: "OpenAIProvider")
 
     init(keychain: KeychainStore, config: ProvidersConfig.OpenAI) {
         self.keychain = keychain
@@ -88,13 +90,23 @@ struct OpenAIProvider: LLMProvider {
         let manager = OpenAIManager(apiKey: apiKey)
         let endpoint = ModelRouter.endpoint(for: model)
         let requestThinking = shouldRequestThinking(model: model, preference: options.thinkingPreference)
+        let isResponsesAPI = (endpoint == .responses)
 
         // Map messages
         let openAIMessages = messages.map { msg -> OpenAIChatMessage in
-            // Handle tool role messages
+            // Handle tool role messages - Responses API requires "user" role instead of "tool"
             if msg.role == .tool {
+                let mappedRole: String
+                if isResponsesAPI {
+                    // Responses API (gpt-5*, o1*, etc.) requires tool results as "user" role
+                    mappedRole = "user"
+                    logger.debug("OpenAIProvider: Mapped tool result message to 'user' role for Responses API (model: \(model))")
+                } else {
+                    // Chat Completions API uses "tool" role
+                    mappedRole = "tool"
+                }
                 return OpenAIChatMessage(
-                    role: "tool",
+                    role: mappedRole,
                     content: .text(msg.content),
                     toolCallId: msg.toolCallID
                 )
