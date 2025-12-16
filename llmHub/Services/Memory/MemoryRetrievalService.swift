@@ -67,11 +67,13 @@ final class MemoryRetrievalService: Sendable {
             let global = allMemories.filter { $0.providerID == nil }
             let providerScoped = allMemories.filter { $0.providerID != nil }
 
-            let rankedGlobal = rank(memories: global, queryKeywords: queryKeywords, providerID: providerID)
+            let rankedGlobal = rank(
+                memories: global, queryKeywords: queryKeywords, providerID: providerID)
             var topMemories = Array(rankedGlobal.prefix(Self.maxMemoriesToReturn))
 
             if topMemories.count < Self.maxMemoriesToReturn {
-                let rankedProvider = rank(memories: providerScoped, queryKeywords: queryKeywords, providerID: providerID)
+                let rankedProvider = rank(
+                    memories: providerScoped, queryKeywords: queryKeywords, providerID: providerID)
                 for mem in rankedProvider {
                     guard topMemories.count < Self.maxMemoriesToReturn else { break }
                     if !topMemories.contains(where: { $0.id == mem.id }) {
@@ -120,7 +122,7 @@ final class MemoryRetrievalService: Sendable {
             modelContext: modelContext
         )
 
-        let xml = await Task.detached(priority: .utility) { [snapshots] in
+        let xml = await Task {
             MemoryRetrievalService.formatSnapshotsForSystemPrompt(snapshots)
         }.value
 
@@ -185,7 +187,8 @@ final class MemoryRetrievalService: Sendable {
 
         for memory in memories {
             let confidenceStr = String(format: "%.2f", memory.confidence)
-            xml += "  <memory confidence=\"\(confidenceStr)\" scope=\"\(memory.scopeRaw)\" isComplete=\"\(memory.isComplete ? "true" : "false")\">\n"
+            xml +=
+                "  <memory confidence=\"\(confidenceStr)\" scope=\"\(memory.scopeRaw)\" isComplete=\"\(memory.isComplete ? "true" : "false")\">\n"
             xml += "    <summary>\(escapeXML(memory.summary))</summary>\n"
 
             // Add facts if present
@@ -249,22 +252,80 @@ final class MemoryRetrievalService: Sendable {
         xml += "</relevant_memories>"
 
         logger.debug("Formatted \(memories.count) memories as XML (\(xml.count) chars)")
+        return xml
+    }
+
+    /// Formats memory snapshots (Sendable) as XML off-main.
+    /// - Parameter snapshots: Array of MemorySnapshot structs.
+    /// - Returns: XML string for system prompt.
+    static func formatSnapshotsForSystemPrompt(_ snapshots: [MemorySnapshot]) -> String {
+        guard !snapshots.isEmpty else { return "" }
+
+        var xml = "<relevant_memories>\n"
+
+        for snapshot in snapshots {
+            let confidenceStr = String(format: "%.2f", snapshot.confidence)
+            xml +=
+                "  <memory confidence=\"\(confidenceStr)\" scope=\"\(snapshot.scopeRaw)\" isComplete=\"\(snapshot.isComplete ? "true" : "false")\">\n"
+            xml += "    <summary>\(escapeXMLStatic(snapshot.summary))</summary>\n"
+
+            // Add facts if present
+            if !snapshot.facts.isEmpty {
+                xml += "    <user_facts>\n"
+                for fact in snapshot.facts {
+                    xml +=
+                        "      <fact category=\"\(escapeXMLStatic(fact.category))\">\(escapeXMLStatic(fact.statement))</fact>\n"
+                }
+                xml += "    </user_facts>\n"
             }
-            xml += "    </decisions>\n"
+
+            // Add preferences if present
+            if !snapshot.preferences.isEmpty {
+                xml += "    <preferences>\n"
+                for pref in snapshot.preferences {
+                    xml +=
+                        "      <preference topic=\"\(escapeXMLStatic(pref.topic))\">\(escapeXMLStatic(pref.value))</preference>\n"
+                }
+                xml += "    </preferences>\n"
+            }
+
+            // Add decisions if present
+            if !snapshot.decisions.isEmpty {
+                xml += "    <decisions>\n"
+                for decision in snapshot.decisions {
+                    xml += "      <decision>\(escapeXMLStatic(decision.decision))</decision>\n"
+                }
+                xml += "    </decisions>\n"
+            }
+
+            // Add artifacts if present
+            if !snapshot.artifacts.isEmpty {
+                xml += "    <artifacts>\n"
+                for artifact in snapshot.artifacts {
+                    let type = escapeXMLStatic(artifact.type)
+                    let desc = escapeXMLStatic(artifact.description)
+                    let langAttr =
+                        artifact.language.map { " language=\"\(escapeXMLStatic($0))\"" } ?? ""
+                    xml += "      <artifact type=\"\(type)\"\(langAttr)>\(desc)</artifact>\n"
+                }
+                xml += "    </artifacts>\n"
+            }
+
+            xml += "  </memory>\n"
         }
 
-        // Add artifacts if present
-        if let artifactsData = memory.artifactsData,
-            let artifacts = try? JSONDecoder().decode(
-                [FallbackArtifact].self, from: artifactsData),
-            !artifacts.isEmpty
-        {
-            xml += "    <artifacts>\n"
-            for artifact in artifacts {
-                let type = escapeXML(artifact.type)
-                let desc = escapeXML(artifact.description)
-                let langAttr = artifact.language.map { " language=\"\(escapeXML($0))\"" } ?? ""
-                xml += "      <artifact type=\"\(type)\"\(langAttr)>\(desc)</artifact>\n"
+        xml += "</relevant_memories>"
+        return xml
+    }
+
+    // MARK: - Ranking
+
+    private func rank(
+        memories: [MemoryEntity],
+        queryKeywords: [String],
+        providerID: String?
+    ) -> [MemoryEntity] {
+        var scored: [(MemoryEntity, Double)] = []
 
         for memory in memories {
             // Provider filter (nil means global)
@@ -296,7 +357,8 @@ final class MemoryRetrievalService: Sendable {
     }
 
     private func keywordMatchCount(memory: MemoryEntity, queryKeywords: [String]) -> Int {
-        let haystack = (memory.concatenatedKeywords.isEmpty ? memory.keywords : memory.concatenatedKeywords)
+        let haystack =
+            (memory.concatenatedKeywords.isEmpty ? memory.keywords : memory.concatenatedKeywords)
         guard !haystack.isEmpty else { return 0 }
         return queryKeywords.reduce(0) { count, kw in
             count + (haystack.localizedStandardContains(kw) ? 1 : 0)
@@ -327,7 +389,8 @@ final class MemoryRetrievalService: Sendable {
     }
 
     private func extractQueryKeywords(from text: String) -> [String] {
-        let words = text
+        let words =
+            text
             .lowercased()
             .components(separatedBy: CharacterSet.alphanumerics.inverted)
             .filter { $0.count > 2 }
@@ -345,6 +408,15 @@ final class MemoryRetrievalService: Sendable {
     }
 
     private func escapeXML(_ string: String) -> String {
+        string
+            .replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+            .replacingOccurrences(of: "'", with: "&apos;")
+    }
+
+    private static func escapeXMLStatic(_ string: String) -> String {
         string
             .replacingOccurrences(of: "&", with: "&amp;")
             .replacingOccurrences(of: "<", with: "&lt;")
