@@ -6,6 +6,8 @@
 //
 
 import Foundation
+import _Concurrency
+import os
 import OSLog
 
 /// HTTP Request Tool conforming to the unified Tool protocol.
@@ -58,13 +60,26 @@ nonisolated struct HTTPRequestTool: Tool {
     let isCacheable = false
 
     private let maxBodyPreview = 64_000
-    private let urlSession: URLSession
+    private let baseSessionConfiguration: URLSessionConfiguration
 
-    init(session: URLSession = .shared) {
-        self.urlSession = session
+    init(sessionConfiguration: URLSessionConfiguration = .ephemeral) {
+        // Copy to prevent external mutation and to avoid any implicit reliance on URLSession.shared.
+        self.baseSessionConfiguration = (sessionConfiguration.copy() as? URLSessionConfiguration)
+            ?? .ephemeral
     }
 
-    nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
+    nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws
+        -> ToolResult
+    {
+        let startTime = Date()
+
+        // STEP 0: Log execution context for debugging
+        let bundleID = Bundle.main.bundleIdentifier ?? "unknown"
+        let processName = ProcessInfo.processInfo.processName
+        let pid = ProcessInfo.processInfo.processIdentifier
+        context.logger.info(
+            "🌐 http_request executing in: \(bundleID) (process: \(processName), PID: \(pid))")
+
         guard let urlString = arguments.string("url"), let url = URL(string: urlString) else {
             throw ToolError.invalidArguments("url is required and must be valid")
         }
@@ -95,6 +110,27 @@ nonisolated struct HTTPRequestTool: Tool {
         let retries = max(0, min(arguments.int("retry") ?? 0, 3))
         let responseFormat = arguments.string("response_format")?.lowercased() ?? "json"
 
+        // Redact sensitive headers by KEY (Authorization, Cookie, etc)
+        let sensitiveKeys: Set<String> = [
+            "authorization", "proxy-authorization", "cookie", "set-cookie", "x-api-key",
+        ]
+        _ = resolvedHeaders.mapValues { value in
+            // We can return "[REDACTED]" but mapValues gives us just the value.
+            // We need to check the key. Since mapValues doesn't give key, we do it differently.
+            return value
+        }
+
+        var safeHeadersForLog = resolvedHeaders
+        for (key, _) in resolvedHeaders {
+            if sensitiveKeys.contains(key.lowercased()) {
+                safeHeadersForLog[key] = "[REDACTED]"
+            }
+        }
+
+        context.logger.info(
+            "📤 Request: \(method) \(urlString), timeout: \(timeout)s, headers: \(safeHeadersForLog)"
+        )
+
         // Build Request
         var request = URLRequest(url: url, timeoutInterval: TimeInterval(timeout))
         request.httpMethod = method
@@ -107,21 +143,37 @@ nonisolated struct HTTPRequestTool: Tool {
             }
         }
 
-        // Session Configuration
-        let sessionConfig = urlSession.configuration
-        let httpSession = URLSession(
+        // Execution Loop with Retry and Cancellation Support
+        var attempt = 0
+        var lastError: Error?
+        let cancellationWasRequested = OSAllocatedUnfairLock(initialState: false)
+
+        // Create a dedicated URLSession for this tool execution.
+        // Cancellation must only affect requests within this tool call.
+        let sessionConfig = (baseSessionConfiguration.copy() as? URLSessionConfiguration)
+            ?? .ephemeral
+        sessionConfig.timeoutIntervalForRequest = TimeInterval(timeout)
+        sessionConfig.timeoutIntervalForResource = TimeInterval(timeout)
+
+        let dedicatedSession = URLSession(
             configuration: sessionConfig,
             delegate: allowRedirects ? nil : RedirectBlocker(),
             delegateQueue: nil
         )
-
-        // Execution Loop with Retry
-        var attempt = 0
-        var lastError: Error?
+        defer {
+            dedicatedSession.finishTasksAndInvalidate()
+        }
 
         while attempt <= retries {
             do {
-                let (data, response) = try await httpSession.data(for: request)
+                let (data, response) = try await withTaskCancellationHandler {
+                    try await dedicatedSession.data(for: request)
+                } onCancel: {
+                    cancellationWasRequested.withLock { $0 = true }
+                    // Invalidate and cancel ONLY this dedicated session.
+                    dedicatedSession.invalidateAndCancel()
+                }
+
                 guard let httpResponse = response as? HTTPURLResponse else {
                     throw URLError(.badServerResponse)
                 }
@@ -134,7 +186,7 @@ nonisolated struct HTTPRequestTool: Tool {
 
                 let statusLine = "HTTP \(httpResponse.statusCode)"
                 let headerSummary = httpResponse.allHeaderFields
-                    .compactMap { key, value in
+                    .compactMap { (key: AnyHashable, value: Any) -> String? in
                         guard let k = key as? String else { return nil }
                         return "\(k): \(value)"
                     }
@@ -146,31 +198,97 @@ nonisolated struct HTTPRequestTool: Tool {
                     output.append("\n\n[response truncated to \(maxBodyPreview) bytes]")
                 }
 
+                let duration = Date().timeIntervalSince(startTime)
+                let elapsedMs = Int(duration * 1000)
+
                 context.logger.info(
-                    "HTTP \(method) \(url.absoluteString) -> \(httpResponse.statusCode)")
+                    "📥 Response: \(httpResponse.statusCode), bytes: \(data.count), time: \(elapsedMs)ms"
+                )
 
                 return ToolResult.success(
                     output,
                     metadata: [
                         "status": "\(httpResponse.statusCode)",
                         "url": httpResponse.url?.absoluteString ?? urlString,
+                        "bytesReceived": "\(data.count)",
+                        "elapsedMs": "\(elapsedMs)",
+                        "cancellationRequested": "\(cancellationWasRequested.withLock { $0 })",
+                        "process": "\(bundleID)",
                     ],
                     truncated: truncated
                 )
 
+            } catch let error as URLError {
+                lastError = error
+
+                if error.code == .cancelled {
+                    // Check if it was our explicit cancellation
+                    if cancellationWasRequested.withLock({ $0 }) {
+                        throw ToolError.executionFailed(
+                            "Request cancelled by user", retryable: false)
+                    }
+                }
+
+                // ATS Helper
+                if error.code == .appTransportSecurityRequiresSecureConnection {
+                    let msg =
+                        "⚠️ ATS blocked insecure connection; use https:// or run: nscurl --ats-diagnostics \(urlString)"
+                    context.logger.error("\(msg)")
+                    // Fail immediately for ATS, don't retry
+                    throw ToolError.executionFailed(msg, retryable: false)
+                }
+
+                attempt += 1
+
+                let errorDomain = (error as NSError).domain
+                let errorCode = (error as NSError).code
+                context.logger.error(
+                    "❌ URLError: domain=\(errorDomain), code=\(errorCode), desc=\(error.localizedDescription)"
+                )
+
+                if attempt > retries { break }
+                let backoff = UInt64(min(pow(2.0, Double(attempt)), 6.0) * 1_000_000_000)
+                try? await Task.sleep(nanoseconds: backoff)
+
             } catch {
                 lastError = error
+
+                if error is CancellationError,
+                    cancellationWasRequested.withLock({ $0 })
+                {
+                    throw ToolError.executionFailed(
+                        "Request cancelled by user", retryable: false)
+                }
+
                 attempt += 1
+                context.logger.error("❌ Error: \(type(of: error)) - \(error.localizedDescription)")
+
                 if attempt > retries { break }
                 let backoff = UInt64(min(pow(2.0, Double(attempt)), 6.0) * 1_000_000_000)
                 try? await Task.sleep(nanoseconds: backoff)
             }
         }
 
-        throw ToolError.executionFailed(
-            "HTTP request failed: \(lastError?.localizedDescription ?? "Unknown error")",
-            retryable: retries > 0
-        )
+        // Failure Result
+        let duration = Date().timeIntervalSince(startTime)
+        let elapsedMs = Int(duration * 1000)
+
+        let errorDetail: String
+        if let urlError = lastError as? URLError {
+            errorDetail = """
+                HTTP request failed after \(retries + 1) attempt(s). Time: \(elapsedMs)ms
+                Error: \(urlError.localizedDescription)
+                Domain: \(urlError.code.rawValue) (\(urlError.code))
+                URL: \(urlError.failureURLString ?? urlString)
+                """
+        } else {
+            errorDetail = """
+                HTTP request failed after \(retries + 1) attempt(s). Time: \(elapsedMs)ms
+                Error: \(lastError?.localizedDescription ?? "Unknown error")
+                """
+        }
+
+        throw ToolError.executionFailed(errorDetail, retryable: retries > 0)
     }
 }
 
@@ -184,6 +302,27 @@ private final class RedirectBlocker: NSObject, URLSessionTaskDelegate {
         newRequest request: URLRequest
     ) async -> URLRequest? {
         nil
+    }
+}
+
+private final class LockedFlag: @unchecked Sendable {
+    private let lock = NSLock()
+    private var _value: Bool
+
+    init(_ initialValue: Bool) {
+        self._value = initialValue
+    }
+
+    var value: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return _value
+    }
+
+    func setTrue() {
+        lock.lock()
+        _value = true
+        lock.unlock()
     }
 }
 

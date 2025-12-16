@@ -183,9 +183,14 @@ actor ToolExecutor {
             }
         }
 
-        // Execute
+        // Execute with orchestration-level timeout (STEP 2)
+        // Hard deadline: 300s for all tools, can be overridden per-tool later
+        let timeoutSeconds = 300
+        
         do {
-            let result = try await tool.execute(arguments: arguments, context: context)
+            let result = try await withTimeout(seconds: timeoutSeconds) {
+                try await tool.execute(arguments: arguments, context: context)
+            }
             metrics.markEnd()
 
             let finalResult = ToolResult(
@@ -215,6 +220,19 @@ actor ToolExecutor {
 
         } catch let error as ToolError {
             metrics.markEnd()
+            
+            // Handle timeout specifically
+            if case .timeout(let duration) = error {
+                metrics.errorClass = .timeout
+                logger.error("⏱️ \(call.name) timed out after \(duration)s")
+                let timeoutMessage = "Tool execution timed out after \(duration) seconds. The operation was cancelled."
+                return ToolCallResult(
+                    id: call.id,
+                    toolName: call.name,
+                    result: .failure(timeoutMessage, metrics: metrics, errorClass: .timeout)
+                )
+            }
+            
             metrics.errorClass = error.errorClass
             logger.error("❌ \(call.name) failed: \(error.localizedDescription)")
             return ToolCallResult(
@@ -349,5 +367,34 @@ actor ToolExecutor {
 
     private func releaseHeavySlot() {
         heavySlots = min(heavySlots + 1, maxHeavySlots)
+    }
+
+    // MARK: - Timeout Helper
+
+    /// Races an async operation against a timeout.
+    /// - Throws: ToolError.timeout if timeout is reached, or the operation's error.
+    private func withTimeout<T: Sendable>(
+        seconds: Int,
+        operation: @Sendable @escaping () async throws -> T
+    ) async throws -> T {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask {
+                try await operation()
+            }
+
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds) * 1_000_000_000)
+                throw ToolError.timeout(after: TimeInterval(seconds))
+            }
+
+            guard let result = try await group.next() else {
+                group.cancelAll()
+                throw ToolError.executionFailed(
+                    "Task group completed without result", retryable: true)
+            }
+
+            group.cancelAll()
+            return result
+        }
     }
 }

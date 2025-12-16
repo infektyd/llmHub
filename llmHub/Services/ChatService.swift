@@ -131,6 +131,40 @@ final class ChatService {
         self.memoryManagementService = memoryManagementService
     }
 
+    // MARK: - Timeout Helper
+
+    /// Races an async operation against a timeout.
+    /// - Parameters:
+    ///   - seconds: Timeout in seconds
+    ///   - operation: The async operation to execute
+    /// - Returns: The result of the operation if it completes before timeout
+    /// - Throws: ToolError.timeout if timeout is reached, or the operation's error
+    private func withTimeout<T: Sendable>(
+        seconds: Int,
+        operation: @Sendable @escaping () async throws -> T
+    ) async throws -> T {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask {
+                try await operation()
+            }
+
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds) * 1_000_000_000)
+                throw ToolError.timeout(after: TimeInterval(seconds))
+            }
+
+            // Return first result (either completion or timeout)
+            guard let result = try await group.next() else {
+                group.cancelAll()
+                throw ToolError.executionFailed(
+                    "Task group completed without result", retryable: true)
+            }
+
+            group.cancelAll()
+            return result
+        }
+    }
+
     // MARK: - Sessions
 
     /// Loads all chat sessions from storage, sorted by update time.
@@ -340,7 +374,8 @@ final class ChatService {
                             )
 
                             if !memories.isEmpty {
-                                logger.debug("Injected \(memories.count) memories into system prompt")
+                                logger.debug(
+                                    "Injected \(memories.count) memories into system prompt")
                                 let memoryXML = service.memoryRetrievalService
                                     .formatForSystemPrompt(memories)
 
@@ -408,7 +443,7 @@ final class ChatService {
                         )
 
                         // Use compacted messages for the request
-                        var messagesForRequest = compactedMessages
+                        let messagesForRequest = compactedMessages
 
                         let request = try await provider.buildRequest(
                             messages: messagesForRequest,
