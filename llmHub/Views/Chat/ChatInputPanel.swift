@@ -413,7 +413,7 @@ struct ChatInputPanel: View {
                 RoundedRectangle(cornerRadius: 14)
                     .glassEffect(
                         isInputFocused
-                            ? GlassEffect.regular.tint(.glassAccent).interactive()
+                            ? GlassEffect.regular.tint(theme.accent.opacity(0.25)).interactive()
                             : GlassEffect.regular.interactive(),
                         in: .rect(cornerRadius: 14)
                     )

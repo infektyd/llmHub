@@ -22,6 +22,7 @@ struct NeonMessageRow: View {
     let message: ChatMessageEntity
     let relatedToolCall: ToolCall?
     let relatedToolBlocks: [ToolCallBlock]
+    let toolCallStartedAt: Date?
     var interactionController: ChatInteractionController? = nil
     var isStreaming: Bool = false  // For typewriter animation during streaming
 
@@ -29,12 +30,14 @@ struct NeonMessageRow: View {
         message: ChatMessageEntity,
         relatedToolCall: ToolCall?,
         relatedToolBlocks: [ToolCallBlock] = [],
+        toolCallStartedAt: Date? = nil,
         interactionController: ChatInteractionController? = nil,
         isStreaming: Bool = false
     ) {
         self.message = message
         self.relatedToolCall = relatedToolCall
         self.relatedToolBlocks = relatedToolBlocks
+        self.toolCallStartedAt = toolCallStartedAt
         self.interactionController = interactionController
         self.isStreaming = isStreaming
     }
@@ -96,7 +99,11 @@ struct NeonMessageRow: View {
     private var contentBody: some View {
         switch role {
         case .tool:
-            ToolResultCard(message: message, relatedToolCall: relatedToolCall)
+            ToolResultCard(
+                message: message,
+                relatedToolCall: relatedToolCall,
+                toolCallStartedAt: toolCallStartedAt
+            )
                 .textSelection(.enabled)
 
         default:

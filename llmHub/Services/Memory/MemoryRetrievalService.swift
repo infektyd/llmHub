@@ -14,6 +14,17 @@ private let logger = AppLogger.category("Memory")
 /// Service for retrieving relevant memories for prompt injection.
 final class MemoryRetrievalService: Sendable {
 
+    struct MemorySnapshot: Sendable {
+        let confidence: Double
+        let scopeRaw: String
+        let isComplete: Bool
+        let summary: String
+        let facts: [FallbackFact]
+        let preferences: [FallbackPreference]
+        let decisions: [FallbackDecision]
+        let artifacts: [FallbackArtifact]
+    }
+
     // MARK: - Configuration
 
     /// Maximum memories to return (token budget safety).
@@ -97,6 +108,71 @@ final class MemoryRetrievalService: Sendable {
         }
     }
 
+    @MainActor
+    func retrieveRelevantXML(
+        for userMessage: String,
+        providerID: String?,
+        modelContext: ModelContext
+    ) async -> (count: Int, xml: String) {
+        let snapshots = await retrieveRelevantSnapshots(
+            for: userMessage,
+            providerID: providerID,
+            modelContext: modelContext
+        )
+
+        let xml = await Task.detached(priority: .utility) { [snapshots] in
+            MemoryRetrievalService.formatSnapshotsForSystemPrompt(snapshots)
+        }.value
+
+        return (snapshots.count, xml)
+    }
+
+    @MainActor
+    func retrieveRelevantSnapshots(
+        for userMessage: String,
+        providerID: String?,
+        modelContext: ModelContext
+    ) async -> [MemorySnapshot] {
+        let memories = await retrieveRelevant(
+            for: userMessage,
+            providerID: providerID,
+            modelContext: modelContext
+        )
+
+        return memories.map { memory in
+            let facts: [FallbackFact] = {
+                guard let data = memory.userFactsData else { return [] }
+                return (try? JSONDecoder().decode([FallbackFact].self, from: data)) ?? []
+            }()
+
+            let preferences: [FallbackPreference] = {
+                guard let data = memory.preferencesData else { return [] }
+                return (try? JSONDecoder().decode([FallbackPreference].self, from: data)) ?? []
+            }()
+
+            let decisions: [FallbackDecision] = {
+                guard let data = memory.decisionsData else { return [] }
+                return (try? JSONDecoder().decode([FallbackDecision].self, from: data)) ?? []
+            }()
+
+            let artifacts: [FallbackArtifact] = {
+                guard let data = memory.artifactsData else { return [] }
+                return (try? JSONDecoder().decode([FallbackArtifact].self, from: data)) ?? []
+            }()
+
+            return MemorySnapshot(
+                confidence: memory.confidence,
+                scopeRaw: memory.scopeRaw,
+                isComplete: memory.isComplete,
+                summary: memory.summary,
+                facts: facts,
+                preferences: preferences,
+                decisions: decisions,
+                artifacts: artifacts
+            )
+        }
+    }
+
     // MARK: - Formatting
 
     /// Formats memories as plain-text XML for system prompt injection.
@@ -173,14 +249,22 @@ final class MemoryRetrievalService: Sendable {
         xml += "</relevant_memories>"
 
         logger.debug("Formatted \(memories.count) memories as XML (\(xml.count) chars)")
+            }
+            xml += "    </decisions>\n"
+        }
 
-        return xml
-    }
-
-    // MARK: - Helpers
-
-    private func rank(memories: [MemoryEntity], queryKeywords: [String], providerID: String?) -> [MemoryEntity] {
-        var scored: [(MemoryEntity, Double)] = []
+        // Add artifacts if present
+        if let artifactsData = memory.artifactsData,
+            let artifacts = try? JSONDecoder().decode(
+                [FallbackArtifact].self, from: artifactsData),
+            !artifacts.isEmpty
+        {
+            xml += "    <artifacts>\n"
+            for artifact in artifacts {
+                let type = escapeXML(artifact.type)
+                let desc = escapeXML(artifact.description)
+                let langAttr = artifact.language.map { " language=\"\(escapeXML($0))\"" } ?? ""
+                xml += "      <artifact type=\"\(type)\"\(langAttr)>\(desc)</artifact>\n"
 
         for memory in memories {
             // Provider filter (nil means global)

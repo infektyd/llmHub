@@ -63,12 +63,12 @@ extension GlassCard where Content == EmptyView {
                 .padding()
         }
 
-        GlassCard(tint: .glassAccent, isInteractive: true) {
+        GlassCard(tint: Color.accentColor.opacity(0.25), isInteractive: true) {
             Text("Interactive Accent Card")
                 .padding()
         }
 
-        GlassCard(cornerRadius: 24, tint: .glassAI) {
+        GlassCard(cornerRadius: 24, tint: Color.purple.opacity(0.2)) {
             HStack {
                 Image(systemName: "sparkles")
                 Text("AI Response Card")

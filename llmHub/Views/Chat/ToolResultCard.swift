@@ -10,6 +10,7 @@ import SwiftUI
 struct ToolResultCard: View {
     let message: ChatMessageEntity
     let relatedToolCall: ToolCall?
+    let toolCallStartedAt: Date?
 
     @Environment(\.theme) private var theme
 
@@ -19,8 +20,11 @@ struct ToolResultCard: View {
     @State private var copiedAll: Bool = false
     @State private var copiedJSON: Bool = false
 
+    @State private var showingDetails: Bool = false
+
     private let previewLineLimit: Int = 6
     private let expandedMaxHeight: CGFloat = 260
+    private let largeOutputThresholdBytes: Int = 8_000
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -37,7 +41,7 @@ struct ToolResultCard: View {
             }
         }
         .glassEffect(
-            GlassEffect.regular.tint(Color.glassTool.opacity(0.2)),
+            GlassEffect.regular.tint(theme.accent.opacity(0.12)),
             in: RoundedRectangle(
                 cornerRadius: LiquidGlassTokens.Radius.toolCard,
                 style: .continuous
@@ -50,6 +54,9 @@ struct ToolResultCard: View {
             y: LiquidGlassTokens.Shadow.toolCard.y
         )
         .padding(.vertical, 6)
+        .sheet(isPresented: $showingDetails) {
+            toolDetailsSheet
+        }
     }
 
     // MARK: - Header
@@ -67,6 +74,16 @@ struct ToolResultCard: View {
                 Text(toolDisplayName)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(theme.textPrimary)
+
+                if let duration = durationLabel {
+                    Text(duration)
+                        .font(.caption2)
+                        .foregroundColor(theme.textSecondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(theme.textPrimary.opacity(0.05))
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                }
 
                 Spacer()
 
@@ -95,12 +112,36 @@ struct ToolResultCard: View {
                     .truncationMode(.tail)
             }
 
-            Text(collapsedOutputPreview)
-                .font(theme.monoFont)
-                .foregroundColor(theme.textPrimary.opacity(0.82))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .lineLimit(previewLineLimit)
-                .fixedSize(horizontal: false, vertical: true)
+            if isLargeOutput {
+                largeOutputRow
+            } else {
+                Text(collapsedOutputPreview)
+                    .font(theme.monoFont)
+                    .foregroundColor(theme.textPrimary.opacity(0.82))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .lineLimit(previewLineLimit)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            HStack(spacing: 10) {
+                Button("Open details") {
+                    showingDetails = true
+                }
+                .buttonStyle(.plain)
+                .font(.caption2.weight(.semibold))
+                .foregroundColor(theme.accent)
+
+                Spacer()
+
+                if isLargeOutput {
+                    Button("Copy all") {
+                        copyAllToClipboard()
+                    }
+                    .buttonStyle(.plain)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundColor(theme.textSecondary)
+                }
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
@@ -176,6 +217,68 @@ struct ToolResultCard: View {
         .padding(.vertical, 10)
     }
 
+    private var toolDetailsSheet: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                statusIcon
+                    .font(.system(size: 14, weight: .semibold))
+
+                Text(toolDisplayName)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(theme.textPrimary)
+
+                Spacer()
+
+                Button("Copy all") {
+                    copyAllToClipboard()
+                }
+                .buttonStyle(.plain)
+                .font(.caption.weight(.semibold))
+                .foregroundColor(theme.accent)
+
+                Button("Done") {
+                    showingDetails = false
+                }
+                .buttonStyle(.plain)
+                .font(.caption.weight(.semibold))
+                .foregroundColor(theme.textSecondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+
+            Divider().overlay(theme.textPrimary.opacity(0.08))
+
+            ScrollView([.vertical, .horizontal], showsIndicators: true) {
+                VStack(alignment: .leading, spacing: 12) {
+                    if let input = formattedToolInput {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Input")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundColor(theme.textSecondary)
+                            Text(input)
+                                .font(theme.monoFont)
+                                .foregroundColor(theme.textPrimary.opacity(0.78))
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Output")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundColor(theme.textSecondary)
+                        Text(message.content)
+                            .font(theme.monoFont)
+                            .foregroundColor(theme.textPrimary.opacity(0.82))
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+            }
+            .textSelection(.enabled)
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+    }
+
     private func section<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
@@ -190,6 +293,19 @@ struct ToolResultCard: View {
 
     private var toolDisplayName: String {
         relatedToolCall?.name ?? "Tool Result"
+    }
+
+    private var isLargeOutput: Bool {
+        message.content.utf8.count >= largeOutputThresholdBytes
+    }
+
+    private var durationLabel: String? {
+        guard let startedAt = toolCallStartedAt else { return nil }
+        let seconds = max(0, Int(message.createdAt.timeIntervalSince(startedAt)))
+        if seconds < 60 { return "\(seconds)s" }
+        let minutes = seconds / 60
+        let rem = seconds % 60
+        return String(format: "%dm %02ds", minutes, rem)
     }
 
     private var collapsedOutputPreview: String {
@@ -226,6 +342,36 @@ struct ToolResultCard: View {
         let raw = call.input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !raw.isEmpty, raw != "{}" else { return nil }
         return prettyPrintedJSON(from: raw) ?? raw
+    }
+
+    private var largeOutputRow: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "doc.text")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(theme.textSecondary)
+
+            Text("Large output")
+                .font(.caption)
+                .foregroundColor(theme.textPrimary)
+
+            Spacer()
+
+            Text(formatByteCount(message.content.utf8.count))
+                .font(.caption2)
+                .foregroundColor(theme.textSecondary)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(theme.textPrimary.opacity(0.035))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    private func formatByteCount(_ bytes: Int) -> String {
+        if bytes < 1024 { return "\(bytes) B" }
+        let kb = Double(bytes) / 1024.0
+        if kb < 1024 { return String(format: "%.1f KB", kb) }
+        let mb = kb / 1024.0
+        return String(format: "%.1f MB", mb)
     }
 
     private var isSuccess: Bool {
