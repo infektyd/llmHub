@@ -57,7 +57,7 @@ struct StreamingStatsCapsule: View {
                         .stroke(Color.white.opacity(0.3), lineWidth: 0.5)
                 )
                 .glassEffect(
-                    GlassEffect.regular,
+                    Glass.regular,
                     in: .capsule
                 )
         }
