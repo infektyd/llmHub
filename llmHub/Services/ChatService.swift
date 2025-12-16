@@ -369,12 +369,15 @@ final class ChatService {
                         let isFirstInteraction = llmMessages.filter { $0.role == .user }.count == 1
 
                         if isFirstInteraction {
-                            let snapshots = await service.memoryRetrievalService.retrieveRelevantSnapshots(
-                                for: userMessage,
-                                providerID: currentSession.providerID,
-                                modelContext: service.modelContext
-                            )
-                            let memoryXML = service.memoryRetrievalService.formatForSystemPrompt(snapshots)
+                            let snapshots = await service.memoryRetrievalService
+                                .retrieveRelevantSnapshots(
+                                    for: userMessage,
+                                    providerID: currentSession.providerID,
+                                    modelContext: service.modelContext
+                                )
+                            let memoryXML = await Task {
+                                MemoryRetrievalService.formatSnapshotsForSystemPrompt(snapshots)
+                            }.value
 
                             if !snapshots.isEmpty {
                                 logger.debug(
