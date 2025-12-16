@@ -368,7 +368,7 @@ extension NeonChatView {
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .glassEffect(GlassEffect.regular.tint(.glassAccent), in: .rect(cornerRadius: 12))
+                .glassEffect(GlassEffect.regular.tint(theme.accent.opacity(0.25)), in: .rect(cornerRadius: 12))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .strokeBorder(
@@ -394,10 +394,12 @@ extension NeonChatView {
             // Build maps for tool call/result lookup.
             let toolCallMap = buildToolCallMap(from: messages)
             let toolResultMap = buildToolResultMap(from: messages)
+            let toolCallStartMap = buildToolCallStartDateMap(from: messages)
 
             // Regular messages - not streaming
             ForEach(messages, id: \ChatMessageEntity.id) { (message: ChatMessageEntity) in
                 let relatedTool = message.toolCallID.flatMap { toolCallMap[$0] }
+                let relatedToolStartedAt = message.toolCallID.flatMap { toolCallStartMap[$0] }
 
                 let relatedBlocks: [ToolCallBlock] = {
                     guard message.role == MessageRole.assistant.rawValue,
@@ -421,6 +423,7 @@ extension NeonChatView {
                     message: message,
                     relatedToolCall: relatedTool,
                     relatedToolBlocks: relatedBlocks,
+                    toolCallStartedAt: relatedToolStartedAt,
                     interactionController: interactionController
                 )
                 .id(message.id.description)
@@ -441,20 +444,8 @@ extension NeonChatView {
                 .transition(.opacity)
             }
 
-            // Tool execution indicator
-            if !chatVM.executingToolNames.isEmpty {
-                HStack(spacing: 8) {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text("Running: \(chatVM.executingToolNames.sorted().joined(separator: ", "))")
-                        .font(.caption)
-                        .foregroundStyle(theme.textSecondary)
-                    Spacer()
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
+            // Pending tool calls (compact inline cards)
+            pendingToolCallsRow(messages: messages, toolResultMap: toolResultMap)
 
             // Streaming message (actively streaming)
             if let streaming = chatVM.streamingDisplayMessage {
@@ -462,6 +453,7 @@ extension NeonChatView {
                     NeonMessageRow(
                         message: ChatMessageEntity(message: streaming),
                         relatedToolCall: nil,
+                        toolCallStartedAt: nil,
                         interactionController: interactionController,
                         isStreaming: chatVM.isActivelyStreaming  // Enable typewriter animation
                     )
@@ -540,6 +532,87 @@ extension NeonChatView {
             map[toolCallID] = message
         }
         return map
+    }
+
+    private func buildToolCallStartDateMap(from messages: [ChatMessageEntity]) -> [String: Date] {
+        var map: [String: Date] = [:]
+        for message in messages {
+            guard message.role == MessageRole.assistant.rawValue,
+                let data = message.toolCallsData,
+                let calls = try? JSONDecoder().decode([ToolCall].self, from: data)
+            else { continue }
+
+            for call in calls {
+                map[call.id] = message.createdAt
+            }
+        }
+        return map
+    }
+
+    @ViewBuilder
+    private func pendingToolCallsRow(
+        messages: [ChatMessageEntity],
+        toolResultMap: [String: ChatMessageEntity]
+    ) -> some View {
+        if let latestToolBatch = latestAssistantToolBatch(in: messages) {
+            let pending = latestToolBatch.calls.filter { toolResultMap[$0.id] == nil }
+            if !pending.isEmpty {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(pending, id: \.id) { call in
+                            HStack(spacing: 10) {
+                                ProgressView()
+                                    .controlSize(.small)
+
+                                Text(call.name)
+                                    .font(.caption)
+                                    .foregroundStyle(theme.textPrimary)
+
+                                Spacer(minLength: 8)
+
+                                Text(elapsedString(since: latestToolBatch.createdAt, now: context.date))
+                                    .font(.caption2)
+                                    .foregroundStyle(theme.textSecondary)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .glassEffect(
+                                GlassEffect.regular.tint(theme.accent.opacity(0.12)),
+                                in: .rect(cornerRadius: 10)
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+            }
+        }
+    }
+
+    private func latestAssistantToolBatch(
+        in messages: [ChatMessageEntity]
+    ) -> (createdAt: Date, calls: [ToolCall])? {
+        let sorted = messages.sorted { $0.createdAt < $1.createdAt }
+        for message in sorted.reversed() {
+            guard message.role == MessageRole.assistant.rawValue,
+                let data = message.toolCallsData,
+                let calls = try? JSONDecoder().decode([ToolCall].self, from: data),
+                !calls.isEmpty
+            else { continue }
+            return (message.createdAt, calls)
+        }
+        return nil
+    }
+
+    private func elapsedString(since start: Date, now: Date) -> String {
+        let seconds = max(0, Int(now.timeIntervalSince(start)))
+        if seconds < 60 {
+            return "\(seconds)s"
+        }
+        let minutes = seconds / 60
+        let rem = seconds % 60
+        return String(format: "%dm %02ds", minutes, rem)
     }
 }
 

@@ -18,12 +18,14 @@ struct GlassToolbar<Content: View>: View {
     }
 
     var body: some View {
-        HStack(spacing: spacing) {
-            content
+        GlassEffectContainer {
+            HStack(spacing: spacing) {
+                content
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .environment(\.glassToolbarNamespace, toolbarNamespace)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .environment(\.glassToolbarNamespace, toolbarNamespace)
     }
 }
 
@@ -45,12 +47,21 @@ struct GlassToolbarItem: View {
     }
 
     var body: some View {
+        if let ns = namespace {
+            baseButton
+                .glassEffectID(id, in: ns)
+        } else {
+            baseButton
+        }
+    }
+
+    private var baseButton: some View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 16))
                 .frame(width: 36, height: 36)
                 .glassEffect(
-                    isActive ? .regular.tint(.glassAccent).interactive() : .regular.interactive(),
+                    isActive ? .regular.tint(Color.accentColor.opacity(0.25)).interactive() : .regular.interactive(),
                     in: .circle
                 )
         }

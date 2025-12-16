@@ -298,7 +298,9 @@ final class ChatService {
                         continueLoop = false
 
                         // Reload session to get updated history (including any tool results)
-                        let currentSession = try service.loadSession(id: sessionID)
+                        let currentSession = try await MainActor.run {
+                            try service.loadSession(id: sessionID)
+                        }
 
                         // Start from persisted history, but enrich the most recent user message
                         // with any inline images/attachments for this request only.
@@ -367,17 +369,16 @@ final class ChatService {
                         let isFirstInteraction = llmMessages.filter { $0.role == .user }.count == 1
 
                         if isFirstInteraction {
-                            let memories = await service.memoryRetrievalService.retrieveRelevant(
+                            let snapshots = await service.memoryRetrievalService.retrieveRelevantSnapshots(
                                 for: userMessage,
                                 providerID: currentSession.providerID,
                                 modelContext: service.modelContext
                             )
+                            let memoryXML = service.memoryRetrievalService.formatForSystemPrompt(snapshots)
 
-                            if !memories.isEmpty {
+                            if !snapshots.isEmpty {
                                 logger.debug(
-                                    "Injected \(memories.count) memories into system prompt")
-                                let memoryXML = service.memoryRetrievalService
-                                    .formatForSystemPrompt(memories)
+                                    "Injected \(snapshots.count) memories into system prompt")
 
                                 if var firstMsg = messagesForCompaction.first,
                                     firstMsg.role == .system
@@ -542,11 +543,15 @@ final class ChatService {
                                         // Keep existing parts; just attach tool calls
                                         assistantMsg.toolCalls = accumulatedToolCalls
                                     }
-                                    try service.appendMessage(assistantMsg, to: sessionID)
+                                    try await MainActor.run {
+                                        try service.appendMessage(assistantMsg, to: sessionID)
+                                    }
                                     didPersistAssistantMessage = true
                                 } else {
                                     // Normal completion - save and we're done
-                                    try service.appendMessage(msg, to: sessionID)
+                                    try await MainActor.run {
+                                        try service.appendMessage(msg, to: sessionID)
+                                    }
                                     continuation.yield(.completion(message: msg))
                                     didPersistAssistantMessage = true
                                 }
@@ -579,10 +584,14 @@ final class ChatService {
                                 if !accumulatedToolCalls.isEmpty {
                                     var assistantMsg = msg
                                     assistantMsg.toolCalls = accumulatedToolCalls
-                                    try service.appendMessage(assistantMsg, to: sessionID)
+                                    try await MainActor.run {
+                                        try service.appendMessage(assistantMsg, to: sessionID)
+                                    }
                                     didPersistAssistantMessage = true
                                 } else {
-                                    try service.appendMessage(msg, to: sessionID)
+                                    try await MainActor.run {
+                                        try service.appendMessage(msg, to: sessionID)
+                                    }
                                     continuation.yield(.truncated(message: msg))
                                     didPersistAssistantMessage = true
                                 }
@@ -613,7 +622,9 @@ final class ChatService {
                                     toolCallID: nil,
                                     toolCalls: accumulatedToolCalls
                                 )
-                                try service.appendMessage(assistantMsg, to: sessionID)
+                                try await MainActor.run {
+                                    try service.appendMessage(assistantMsg, to: sessionID)
+                                }
                             }
 
                             // Execute using ToolExecutor
@@ -660,7 +671,9 @@ final class ChatService {
                                     toolCallID: toolCallID
                                 )
 
-                                try service.appendMessage(toolResultMessage, to: sessionID)
+                                try await MainActor.run {
+                                    try service.appendMessage(toolResultMessage, to: sessionID)
+                                }
 
                             }
 
