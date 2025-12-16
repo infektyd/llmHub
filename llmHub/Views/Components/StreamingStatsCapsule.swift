@@ -27,12 +27,12 @@ struct StreamingStatsCapsule: View {
         HStack(spacing: 8) {
             // Token flow indicator
             HStack(spacing: 4) {
-                Text("\(inputTokens)")
+                Text("Reported: \(inputTokens)")
                     .fontWeight(.medium)
                 Image(systemName: "arrow.right")
                     .font(.system(size: 8, weight: .bold))
                     .foregroundStyle(.secondary)
-                Text("\(estimatedOutputTokens)")
+                Text("Est: \(estimatedOutputTokens)")
                     .fontWeight(.medium)
                     .contentTransition(.numericText())
             }
@@ -41,7 +41,7 @@ struct StreamingStatsCapsule: View {
                 .foregroundStyle(.tertiary)
 
             // Cost estimate
-            Text(formattedCost)
+            Text("Est: \(formattedCost)")
                 .fontWeight(.medium)
                 .contentTransition(.numericText())
         }
