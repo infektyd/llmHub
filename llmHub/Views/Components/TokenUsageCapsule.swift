@@ -37,18 +37,13 @@ struct TokenUsageCapsule: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Label for Estimate
-            if isEstimate {
-                Text("EST")
-                    .font(.caption2.bold())
-                    .foregroundStyle(.secondary)
-                    .padding(.trailing, -4)
-            }
-
             // Input Tokens (Context)
             HStack(spacing: 4) {
                 Text("❄️")
                     .font(.caption2)
+                Text(isEstimate ? "Est:" : "Reported:")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
                 Text("\(inputTokens)")
                     .fontWeight(.medium)
             }
@@ -60,6 +55,9 @@ struct TokenUsageCapsule: View {
             HStack(spacing: 4) {
                 Text("⚡️")
                     .font(.caption2)
+                Text(isEstimate ? "Est:" : "Reported:")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
                 Text("\(outputTokens)")
                     .fontWeight(.medium)
             }
@@ -69,8 +67,11 @@ struct TokenUsageCapsule: View {
 
             // Cost
             HStack(spacing: 4) {
-                Text(isEstimate ? "~" : "💲")
+                Text("💲")
                     .font(.caption2)
+                Text(isEstimate ? "Est:" : "Reported:")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
                 Text(formattedCost)
                     .fontWeight(.medium)
             }
@@ -87,7 +88,7 @@ struct TokenUsageCapsule: View {
                         .stroke(Color.white.opacity(0.5), lineWidth: 0.5)
                 )
                 .glassEffect(
-                    GlassEffect.regular,
+                    Glass.regular,
                     in: .capsule
                 )
         }
