@@ -20,6 +20,8 @@ struct OpenRouterProvider: LLMProvider {
 
     var supportsStreaming: Bool { true }
 
+    var supportsToolCalling: Bool { true }
+
     var availableModels: [LLMModel] { config.models }
 
     var defaultHeaders: [String: String] {

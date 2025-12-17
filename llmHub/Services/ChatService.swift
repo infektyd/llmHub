@@ -402,6 +402,47 @@ final class ChatService {
                             }
                         }
 
+                        // Build tool definitions for provider, filtered by user authorization.
+                        let availableTools = await registry.availableTools(in: env)
+
+                        var enabledTools: [any Tool] = []
+                        if let auth = service.toolAuthorizationService {
+                            for tool in availableTools {
+                                let status = auth.checkAccess(for: tool.name)
+                                if status == .authorized {
+                                    enabledTools.append(tool)
+                                }
+                            }
+                        } else {
+                            enabledTools = availableTools
+                        }
+
+                        let exportedToolDefs = enabledTools.compactMap { ToolDefinition(from: $0) }
+                        let allToolDefs: [ToolDefinition] = exportedToolDefs
+
+                        // Inject an authoritative tool manifest into the system prompt so models don't hallucinate tooling.
+                        let toolManifest = ToolManifest.systemPrompt(
+                            tools: allToolDefs,
+                            toolCallingAvailable: provider.supportsToolCalling
+                        )
+                        if var firstMsg = messagesForCompaction.first, firstMsg.role == .system {
+                            firstMsg.content = ToolManifest.upsert(
+                                into: firstMsg.content,
+                                toolManifest: toolManifest
+                            )
+                            messagesForCompaction[0] = firstMsg
+                        } else {
+                            let systemMsg = ChatMessage(
+                                id: UUID(),
+                                role: .system,
+                                content: toolManifest,
+                                parts: [],
+                                createdAt: Date(),
+                                codeBlocks: []
+                            )
+                            messagesForCompaction.insert(systemMsg, at: 0)
+                        }
+
                         let compactionResult = try await service.contextManager.compact(
                             messages: messagesForCompaction,
                             maxTokens: nil,  // Will use model's context window or config default
@@ -422,24 +463,8 @@ final class ChatService {
                         // Use compacted messages for the request
                         let compactedMessages = compactionResult.compactedMessages
 
-                        // Build tool definitions for provider, filtered by user authorization.
-                        let availableTools = await registry.availableTools(in: env)
-
-                        var enabledTools: [any Tool] = []
-                        if let auth = service.toolAuthorizationService {
-                            for tool in availableTools {
-                                let status = auth.checkAccess(for: tool.name)
-                                if status == .authorized {
-                                    enabledTools.append(tool)
-                                }
-                            }
-                        } else {
-                            enabledTools = availableTools
-                        }
-
-                        let exportedToolDefs = enabledTools.compactMap { ToolDefinition(from: $0) }
-                        let toolDefs: [ToolDefinition]? =
-                            exportedToolDefs.isEmpty ? nil : exportedToolDefs
+                        let toolDefsForProvider: [ToolDefinition]? =
+                            (provider.supportsToolCalling && !allToolDefs.isEmpty) ? allToolDefs : nil
 
                         let options = LLMRequestOptions(
                             thinkingPreference: currentSession.thinkingPreference,
@@ -452,7 +477,7 @@ final class ChatService {
                         let request = try await provider.buildRequest(
                             messages: messagesForRequest,
                             model: currentSession.model,
-                            tools: toolDefs,
+                            tools: toolDefsForProvider,
                             options: options
                         )
 

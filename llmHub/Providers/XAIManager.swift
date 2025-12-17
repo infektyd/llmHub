@@ -363,7 +363,7 @@ public struct XAIChatResponse: Decodable {
 }
 
 /// A chunk of a streamed response.
-public struct XAIChatStreamChunk: Decodable {
+public nonisolated struct XAIChatStreamChunk: Decodable, Sendable {
     /// The chunk ID.
     public let id: String?
     /// The model used.
@@ -374,7 +374,7 @@ public struct XAIChatStreamChunk: Decodable {
     public let choices: [Choice]
     
     /// A choice in the stream chunk.
-    public struct Choice: Decodable {
+    public struct Choice: Decodable, Sendable {
         /// The delta update.
         public let delta: Delta
         /// The finish reason.
@@ -382,7 +382,7 @@ public struct XAIChatStreamChunk: Decodable {
     }
     
     /// The delta update.
-    public struct Delta: Decodable {
+    public struct Delta: Decodable, Sendable {
         /// The content update.
         public let content: String?
         /// Optional reasoning content (provider-specific).
@@ -392,13 +392,13 @@ public struct XAIChatStreamChunk: Decodable {
         /// The tool calls update.
         public let tool_calls: [ToolCall]?
         
-        public struct ToolCall: Decodable {
+        public struct ToolCall: Decodable, Sendable {
             public let index: Int
             public let id: String?
             public let function: FunctionCall?
         }
         
-        public struct FunctionCall: Decodable {
+        public struct FunctionCall: Decodable, Sendable {
             public let name: String?
             public let arguments: String?
         }

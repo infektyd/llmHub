@@ -143,12 +143,14 @@ public class GeminiManager {
     ///   - history: Chat history.
     ///   - stream: Whether to request streaming.
     /// - Returns: A configured `URLRequest`.
-    public func makeGenerateContentRequest(
+    func makeGenerateContentRequest(
         prompt: String,
         files: [MediaFile] = [],
         model: String = "gemini-1.5-pro",
         thinkingLevel: ThinkingLevel = .off,
         history: [Content] = [],
+        tools: [ToolDefinition]? = nil,
+        maxOutputTokens: Int? = nil,
         stream: Bool = false
     ) throws -> URLRequest {
         let action = stream ? "streamGenerateContent" : "generateContent"
@@ -174,12 +176,28 @@ public class GeminiManager {
 
         // Config
         var config = GenerationConfig()
-        config.maxOutputTokens = 8192  // Ensure responses aren't cut off
+        config.maxOutputTokens = maxOutputTokens ?? 8192  // Ensure responses aren't cut off
         if thinkingLevel != .off {
             config.thinkingLevel = thinkingLevel.rawValue
         }
 
-        let payload = GenerateContentRequest(contents: contents, generationConfig: config)
+        let geminiTools: [GeminiTool]? = {
+            guard let tools, !tools.isEmpty else { return nil }
+            let declarations = tools.map { toolDef in
+                GeminiFunctionDeclaration(
+                    name: toolDef.name,
+                    description: toolDef.description,
+                    parameters: GeminiJSONValue.from(toolDef.inputSchema)
+                )
+            }
+            return [GeminiTool(functionDeclarations: declarations)]
+        }()
+
+        let payload = GenerateContentRequest(
+            contents: contents,
+            generationConfig: config,
+            tools: geminiTools
+        )
 
         guard let url = URL(string: endpoint) else { throw GeminiError.invalidURL }
 
@@ -440,10 +458,24 @@ struct GenerateContentRequest: Codable {
     let contents: [Content]
     /// Configuration for generation.
     let generationConfig: GenerationConfig?
+    /// Optional tool/function declarations for native tool calling.
+    let tools: [GeminiTool]?
+}
+
+/// A Gemini tool container (function declarations).
+struct GeminiTool: Codable {
+    let functionDeclarations: [GeminiFunctionDeclaration]
+}
+
+/// A Gemini function declaration.
+struct GeminiFunctionDeclaration: Codable {
+    let name: String
+    let description: String?
+    let parameters: GeminiJSONValue?
 }
 
 /// Represents a message content.
-public struct Content: Codable {
+public nonisolated struct Content: Codable, Sendable {
     /// The role of the message sender.
     public let role: String
     /// The parts of the message.
@@ -457,7 +489,7 @@ public struct Content: Codable {
 }
 
 /// A part of the message content.
-public enum Part: Codable {
+public nonisolated enum Part: Codable, Sendable {
     /// Text content.
     case text(String)
     /// Inline media data.
@@ -503,7 +535,7 @@ public enum Part: Codable {
 }
 
 /// Inline media data structure.
-public struct InlineData: Codable {
+public nonisolated struct InlineData: Codable, Sendable {
     /// The MIME type.
     public let mimeType: String
     /// The base64 encoded data.
@@ -523,7 +555,7 @@ struct GenerationConfig: Codable {
 }
 
 /// The response from a generation request.
-public struct GenerationResponse: Codable {
+public nonisolated struct GenerationResponse: Codable, Sendable {
     /// The generated candidates.
     public let candidates: [Candidate]?
 
@@ -533,6 +565,23 @@ public struct GenerationResponse: Codable {
             if case .text(let t) = part { return t }
             return nil
         }.joined()
+    }
+
+    /// Assembles text by concatenating *all* text parts for a specific candidate.
+    public func assembledText(candidateIndex: Int = 0) -> String {
+        guard let candidates, candidates.indices.contains(candidateIndex) else { return "" }
+        return candidates[candidateIndex].content.parts.compactMap { part -> String? in
+            if case .text(let t) = part { return t }
+            return nil
+        }.joined()
+    }
+
+    /// Candidate count convenience for logging/diagnostics.
+    public var candidateCount: Int { candidates?.count ?? 0 }
+
+    /// Part counts per candidate convenience for logging/diagnostics.
+    public var partCountsByCandidate: [Int] {
+        (candidates ?? []).map { $0.content.parts.count }
     }
 
     // Extracts thought signature to pass back for reasoning continuity
@@ -549,14 +598,14 @@ public struct GenerationResponse: Codable {
 }
 
 /// Token usage metadata.
-public struct UsageMetadata: Codable {
+public nonisolated struct UsageMetadata: Codable, Sendable {
     public let promptTokenCount: Int?
     public let candidatesTokenCount: Int?
     public let totalTokenCount: Int?
 }
 
 /// A generation candidate.
-public struct Candidate: Codable {
+public nonisolated struct Candidate: Codable, Sendable {
     /// The content of the candidate.
     public let content: Content
     /// The reason why generation finished.
@@ -565,18 +614,18 @@ public struct Candidate: Codable {
 
 // Placeholders for Tool Use (optional expansion)
 /// Represents a function call.
-public struct FunctionCall: Codable {
+public nonisolated struct FunctionCall: Codable, Sendable {
     public let name: String
     public let args: [String: GeminiJSONValue]?
 }
 /// Represents a function response.
-public struct FunctionResponse: Codable {
+public nonisolated struct FunctionResponse: Codable, Sendable {
     public let name: String
     public let response: [String: GeminiJSONValue]
 }
 
 /// A type-safe wrapper for JSON values in Gemini API.
-public enum GeminiJSONValue: Codable, Sendable {
+public nonisolated enum GeminiJSONValue: Codable, Sendable {
     case null
     case bool(Bool)
     case number(Double)
@@ -615,6 +664,30 @@ public enum GeminiJSONValue: Codable, Sendable {
         case .string(let v): try container.encode(v)
         case .array(let v): try container.encode(v)
         case .object(let v): try container.encode(v)
+        }
+    }
+
+    /// Converts an `Any` value to `GeminiJSONValue`.
+    public static func from(_ value: Any) -> GeminiJSONValue {
+        switch value {
+        case is NSNull:
+            return .null
+        case let b as Bool:
+            return .bool(b)
+        case let i as Int:
+            return .number(Double(i))
+        case let d as Double:
+            return .number(d)
+        case let n as NSNumber:
+            return .number(n.doubleValue)
+        case let s as String:
+            return .string(s)
+        case let arr as [Any]:
+            return .array(arr.map { from($0) })
+        case let dict as [String: Any]:
+            return .object(dict.mapValues { from($0) })
+        default:
+            return .null
         }
     }
 }

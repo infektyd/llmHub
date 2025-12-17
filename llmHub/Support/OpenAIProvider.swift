@@ -10,6 +10,8 @@ struct OpenAIProvider: LLMProvider {
     private let config: ProvidersConfig.OpenAI
     private nonisolated let logger = Logger(subsystem: "com.llmhub", category: "OpenAIProvider")
 
+    var supportsToolCalling: Bool { true }
+
     init(keychain: KeychainStore, config: ProvidersConfig.OpenAI) {
         self.keychain = keychain
         self.config = config

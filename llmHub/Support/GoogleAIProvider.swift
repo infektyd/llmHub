@@ -22,6 +22,8 @@ struct GoogleAIProvider: LLMProvider {
 
     var supportsStreaming: Bool { true }
 
+    var supportsToolCalling: Bool { true }
+
     var availableModels: [LLMModel] { config.models }
 
     var defaultHeaders: [String: String] { 
@@ -118,6 +120,16 @@ struct GoogleAIProvider: LLMProvider {
 
         let manager = GeminiManager(apiKey: apiKey)
 
+        // Build a mapping from toolCallID -> tool name for functionResponse parts.
+        var toolNameByCallID: [String: String] = [:]
+        for message in messages {
+            if let toolCalls = message.toolCalls {
+                for toolCall in toolCalls {
+                    toolNameByCallID[toolCall.id] = toolCall.name
+                }
+            }
+        }
+
         var prompt = ""
         var history: [Content] = []
 
@@ -136,6 +148,21 @@ struct GoogleAIProvider: LLMProvider {
                     case .assistant: role = "model"
                     case .tool: role = "user"  // tool responses feed as user content
                     }
+
+                    if msg.role == .tool,
+                        let toolCallID = msg.toolCallID,
+                        let toolName = toolNameByCallID[toolCallID]
+                    {
+                        let response: [String: GeminiJSONValue] = [
+                            "tool_call_id": .string(toolCallID),
+                            "result": .string(msg.content),
+                        ]
+                        return Content(
+                            role: role,
+                            parts: [.functionResponse(FunctionResponse(name: toolName, response: response))]
+                        )
+                    }
+
                     return Content(role: role, parts: [.text(msg.content)])
                 }
             }
@@ -172,9 +199,20 @@ struct GoogleAIProvider: LLMProvider {
                     }
 
                     var parts: [Part] = []
+                    if msg.role == .tool,
+                        let toolCallID = msg.toolCallID,
+                        let toolName = toolNameByCallID[toolCallID]
+                    {
+                        let response: [String: GeminiJSONValue] = [
+                            "tool_call_id": .string(toolCallID),
+                            "result": .string(msg.content),
+                        ]
+                        parts.append(.functionResponse(FunctionResponse(name: toolName, response: response)))
+                    } else {
                     // Text
                     if !msg.content.isEmpty {
                         parts.append(.text(msg.content))
+                    }
                     }
                     // Images
                     for part in msg.parts {
@@ -211,23 +249,28 @@ struct GoogleAIProvider: LLMProvider {
 
         // We build a non-streaming request by default.
         // streamResponse will convert it to a streaming request if needed.
+        let maxOutputTokens = config.models.first(where: { $0.id == model })?.maxOutputTokens
         return try manager.makeGenerateContentRequest(
             prompt: prompt,
             files: mediaFiles,  // Only new files attached to the current prompt
             model: model,
             thinkingLevel: requestedThinkingLevel,
             history: history,
+            tools: tools,
+            maxOutputTokens: maxOutputTokens,
             stream: false
         )
     }
 
     func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {
         AsyncThrowingStream(ProviderEvent.self) { continuation in
-            Task {
+            let baseRequest = request
+            let logger = self.logger
+            Task.detached {
                 do {
                     // Convert to streaming request
-                    var streamRequest = request
-                    if let url = request.url, url.absoluteString.contains(":generateContent") {
+                    var streamRequest = baseRequest
+                    if let url = baseRequest.url, url.absoluteString.contains(":generateContent") {
                         var newString =
                             url.absoluteString
                             .replacingOccurrences(
@@ -258,6 +301,11 @@ struct GoogleAIProvider: LLMProvider {
                     var fullText = ""
                     var accumulatedToolCalls: [ToolCall] = []
                     var stopDueToMalformedFunctionCall = false
+                    var chunkCount = 0
+                    var lastFinishReason: String? = nil
+                    var lastCandidateCount = 0
+                    var lastPartCounts: [Int] = []
+                    var didReceiveDone = false
 
                     // Rationale: Gemini SSE can emit multi-line data events and JSON may be split across TCP frames.
                     // Buffer until a full SSE event is available before decoding.
@@ -266,7 +314,10 @@ struct GoogleAIProvider: LLMProvider {
 
                     for try await byte in result {
                         for payload in sse.append(byte: byte) {
-                            if payload == "[DONE]" { break }
+                            if payload == "[DONE]" {
+                                didReceiveDone = true
+                                break
+                            }
 
                             guard let data = payload.data(using: .utf8) else { continue }
                             let chunk: GenerationResponse
@@ -279,9 +330,14 @@ struct GoogleAIProvider: LLMProvider {
                                 continue
                             }
 
-                            if let finishReason = chunk.candidates?.first?.finishReason,
-                                finishReason == "MALFORMED_FUNCTION_CALL"
-                            {
+                            chunkCount += 1
+                            lastCandidateCount = chunk.candidateCount
+                            lastPartCounts = chunk.partCountsByCandidate
+                            if let finishReason = chunk.candidates?.first?.finishReason {
+                                lastFinishReason = finishReason
+                            }
+
+                            if chunk.candidates?.first?.finishReason == "MALFORMED_FUNCTION_CALL" {
                                 // Rationale: Treat as model output error; surface a readable warning and skip tool execution.
                                 stopDueToMalformedFunctionCall = true
                                 accumulatedToolCalls.removeAll()
@@ -293,9 +349,10 @@ struct GoogleAIProvider: LLMProvider {
                                 break
                             }
 
-                            if let text = chunk.text, !text.isEmpty {
-                                fullText += text
-                                continuation.yield(.token(text: text))
+                            let deltaText = chunk.assembledText(candidateIndex: 0)
+                            if !deltaText.isEmpty {
+                                fullText += deltaText
+                                continuation.yield(.token(text: deltaText))
                             }
 
                             // Handle Function Calls even when text is nil/empty.
@@ -322,24 +379,37 @@ struct GoogleAIProvider: LLMProvider {
                             }
                         }
 
-                        if stopDueToMalformedFunctionCall { break }
+                        if didReceiveDone || stopDueToMalformedFunctionCall { break }
                     }
 
-	                    // Final completion event with full message
-	                    let message = ChatMessage(
-	                        id: UUID(),
-	                        role: .assistant,
-	                        content: fullText,
-	                        parts: fullText.isEmpty ? [] : [.text(fullText)],
-	                        createdAt: Date(),
-	                        codeBlocks: [],
-	                        tokenUsage: nil,
-	                        costBreakdown: nil,
-	                        toolCallID: nil,
-	                        toolCalls: accumulatedToolCalls.isEmpty ? nil : accumulatedToolCalls
-	                    )
-	                    continuation.yield(.completion(message: message))
-	                    continuation.finish()
+                    let partCountsStr = lastPartCounts.map(String.init).joined(separator: ",")
+                    logger.info(
+                        "Gemini stream finished finishReason=\(lastFinishReason ?? "nil", privacy: .public) chunks=\(chunkCount) candidates=\(lastCandidateCount) partCounts=[\(partCountsStr, privacy: .public)] assembledLength=\(fullText.count)"
+                    )
+
+                    // Final completion event with full message
+                    let message = ChatMessage(
+                        id: UUID(),
+                        role: .assistant,
+                        content: fullText,
+                        parts: fullText.isEmpty ? [] : [.text(fullText)],
+                        createdAt: Date(),
+                        codeBlocks: [],
+                        tokenUsage: nil,
+                        costBreakdown: nil,
+                        toolCallID: nil,
+                        toolCalls: accumulatedToolCalls.isEmpty ? nil : accumulatedToolCalls
+                    )
+
+                    if lastFinishReason == "MAX_TOKENS" {
+                        logger.warning(
+                            "Gemini response truncated by provider MAX_TOKENS assembledLength=\(fullText.count)"
+                        )
+                        continuation.yield(.truncated(message: message))
+                    } else {
+                        continuation.yield(.completion(message: message))
+                    }
+                    continuation.finish()
 
                 } catch {
                     continuation.yield(.error(.network(error as? URLError ?? URLError(.unknown))))

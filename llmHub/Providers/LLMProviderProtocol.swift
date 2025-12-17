@@ -18,6 +18,8 @@ protocol LLMProvider: Identifiable {
     var endpoint: URL { get }
     /// Indicates if the provider supports streaming responses.
     var supportsStreaming: Bool { get }
+    /// Indicates if the provider supports native tool calling in llmHub (tools/functions field).
+    var supportsToolCalling: Bool { get }
     /// The list of available models from this provider.
     var availableModels: [LLMModel] { get }
     /// The default HTTP headers to be included in requests.

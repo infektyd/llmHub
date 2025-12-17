@@ -22,6 +22,8 @@ struct XAIProvider: LLMProvider {
 
     var supportsStreaming: Bool { true }
 
+    var supportsToolCalling: Bool { true }
+
     var availableModels: [LLMModel] { config.models }
 
     var defaultHeaders: [String: String] {
@@ -101,31 +103,46 @@ struct XAIProvider: LLMProvider {
             }
         }
 
+        // Convert tool definitions to xAI (OpenAI-compatible) format.
+        let xaiTools: [XAITool]? = tools?.map { toolDef in
+            let params: [String: AnyEncodable] = toolDef.inputSchema.mapValues {
+                AnyEncodable(OpenAIJSONValue.from($0))
+            }
+            return XAITool(
+                type: "function",
+                function: XAIFunction(
+                    name: toolDef.name,
+                    description: toolDef.description,
+                    parameters: params
+                )
+            )
+        }
+
         // Default to non-streaming
         return try manager.makeChatRequest(
             messages: xaiMessages,
             model: model,
-            stream: false
+            stream: false,
+            tools: xaiTools
         )
     }
 
-	    func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {
-	        AsyncThrowingStream(ProviderEvent.self) { continuation in
-	            Task {
-	                do {
-	                    // 1. Modify request to enable streaming
-	                    var streamRequest = request
-                    if let bodyData = request.httpBody,
-                        var json = try? JSONSerialization.jsonObject(with: bodyData)
-                            as? [String: Any]
+    func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {
+        AsyncThrowingStream(ProviderEvent.self) { continuation in
+            let baseRequest = request
+            Task.detached {
+                do {
+                    // 1. Modify request to enable streaming
+                    var streamRequest = baseRequest
+                    if let bodyData = baseRequest.httpBody,
+                        var json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any]
                     {
                         json["stream"] = true
                         streamRequest.httpBody = try JSONSerialization.data(withJSONObject: json)
                     }
 
                     // 2. Execute
-                    let (result, response) = try await LLMURLSession.shared.bytes(
-                        for: streamRequest)
+                    let (result, response) = try await LLMURLSession.shared.bytes(for: streamRequest)
 
                     guard let http = response as? HTTPURLResponse,
                         (200...299).contains(http.statusCode)
@@ -134,8 +151,8 @@ struct XAIProvider: LLMProvider {
                         for try await line in result.lines { errorText += line }
                         continuation.yield(
                             .error(
-                                .server(
-                                    reason: errorText.isEmpty ? "Unknown stream error" : errorText))
+                                .server(reason: errorText.isEmpty ? "Unknown stream error" : errorText)
+                            )
                         )
                         continuation.finish()
                         return
@@ -150,56 +167,54 @@ struct XAIProvider: LLMProvider {
 
                     for try await line in result.lines {
                         let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if trimmed.hasPrefix("data: ") {
-                            let jsonStr = String(trimmed.dropFirst(6))
-                            if jsonStr == "[DONE]" { break }
+                        guard trimmed.hasPrefix("data: ") else { continue }
 
-                            guard let data = jsonStr.data(using: .utf8),
-                                let chunk = try? JSONDecoder().decode(
-                                    XAIChatStreamChunk.self, from: data),
-                                let choice = chunk.choices.first
-                            else { continue }
+                        let jsonStr = String(trimmed.dropFirst(6))
+                        if jsonStr == "[DONE]" { break }
 
-                            if let reasoning = choice.delta.reasoning_content, !reasoning.isEmpty {
-                                thoughtProcess += reasoning
-                                continuation.yield(.thinking(reasoning))
-                            }
+                        guard let data = jsonStr.data(using: .utf8),
+                            let chunk = try? JSONDecoder().decode(XAIChatStreamChunk.self, from: data),
+                            let choice = chunk.choices.first
+                        else { continue }
 
-                            if let content = choice.delta.content, !content.isEmpty {
-                                fullText += content
-                                continuation.yield(.token(text: content))
-                            }
+                        if let reasoning = choice.delta.reasoning_content, !reasoning.isEmpty {
+                            thoughtProcess += reasoning
+                            continuation.yield(.thinking(reasoning))
+                        }
 
-                            if let citations = chunk.citations, !citations.isEmpty {
-                                for citation in citations where !citation.isEmpty {
-                                    if emittedReferences.insert(citation).inserted {
-                                        continuation.yield(.reference(citation))
-                                    }
+                        if let content = choice.delta.content, !content.isEmpty {
+                            fullText += content
+                            continuation.yield(.token(text: content))
+                        }
+
+                        if let citations = chunk.citations, !citations.isEmpty {
+                            for citation in citations where !citation.isEmpty {
+                                if emittedReferences.insert(citation).inserted {
+                                    continuation.yield(.reference(citation))
                                 }
                             }
+                        }
 
-                            if let toolCalls = choice.delta.tool_calls {
-                                for tc in toolCalls {
-                                    toolAssembler.ingest(
-                                        index: tc.index,
-                                        id: tc.id,
-                                        name: tc.function?.name,
-                                        argumentsDelta: tc.function?.arguments
-                                    )
-                                }
+                        if let toolCalls = choice.delta.tool_calls {
+                            for tc in toolCalls {
+                                toolAssembler.ingest(
+                                    index: tc.index,
+                                    id: tc.id,
+                                    name: tc.function?.name,
+                                    argumentsDelta: tc.function?.arguments
+                                )
                             }
+                        }
 
-                            // Track the finish reason
-                            if let finishReason = choice.finish_reason {
-                                lastFinishReason = finishReason
-                            }
+                        if let finishReason = choice.finish_reason {
+                            lastFinishReason = finishReason
+                        }
 
-                            if choice.finish_reason == "tool_calls" {
-                                let calls = toolAssembler.finalizeAll()
-                                finalizedToolCalls.append(contentsOf: calls)
-                                for tc in calls {
-                                    continuation.yield(.toolUse(id: tc.id, name: tc.name, input: tc.input))
-                                }
+                        if choice.finish_reason == "tool_calls" {
+                            let calls = toolAssembler.finalizeAll()
+                            finalizedToolCalls.append(contentsOf: calls)
+                            for tc in calls {
+                                continuation.yield(.toolUse(id: tc.id, name: tc.name, input: tc.input))
                             }
                         }
                     }
@@ -227,7 +242,6 @@ struct XAIProvider: LLMProvider {
                         continuation.yield(.completion(message: message))
                     }
                     continuation.finish()
-
                 } catch {
                     continuation.yield(.error(.network(error as? URLError ?? URLError(.unknown))))
                     continuation.finish()
