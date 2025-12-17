@@ -22,6 +22,8 @@ struct AnthropicProvider: LLMProvider {
 
     var supportsStreaming: Bool { true }
 
+    var supportsToolCalling: Bool { true }
+
     var availableModels: [LLMModel] { config.models }
 
     var pricing: PricingMetadata {

@@ -26,6 +26,7 @@ struct NeonChatView: View {
     // Removed messageBottomPadding as safeAreaInset handles it
 
     @State private var showingSettings = false
+    @State private var showingToolsDebug = false
     @EnvironmentObject private var modelRegistry: ModelRegistry
 
     var body: some View {
@@ -39,7 +40,8 @@ struct NeonChatView: View {
                     scrollOffset: scrollOffset,
                     toolInspectorVisible: Bindable(workbenchVM).toolInspectorVisible,
                     columnVisibility: Bindable(workbenchVM).columnVisibility,
-                    showingSettings: $showingSettings
+                    showingSettings: $showingSettings,
+                    showingToolsDebug: $showingToolsDebug
                 )
             #endif
 
@@ -92,6 +94,16 @@ struct NeonChatView: View {
                 .environmentObject(modelRegistry)
                 .frame(width: 600, height: 500)
             }
+            #if DEBUG
+                .sheet(isPresented: $showingToolsDebug) {
+                    ToolsAvailableDebugSheet(
+                        providerID: session.providerID,
+                        modelID: session.model,
+                        toolToggles: chatVM.toolToggles
+                    )
+                    .frame(width: 520, height: 500)
+                }
+            #endif
         #endif
         .onAppear {
             #if os(iOS)
@@ -475,30 +487,36 @@ extension NeonChatView {
             // Continue Generating Button
             if chatVM.isTruncated && chatVM.truncatedSessionID == session.id && !chatVM.isGenerating
             {
-                Button {
-                    chatVM.continueGenerating(session: session, modelContext: modelContext)
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                            .fontWeight(.semibold)
-                        Text("Continue generating")
-                            .fontWeight(.medium)
+                VStack(spacing: 6) {
+                    Text("Truncated by provider limit")
+                        .font(.caption)
+                        .foregroundStyle(theme.textTertiary)
+
+                    Button {
+                        chatVM.continueGenerating(session: session, modelContext: modelContext)
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .fontWeight(.semibold)
+                            Text("Continue generating")
+                                .fontWeight(.medium)
+                        }
+                        .font(.system(size: 14))
+                        .foregroundStyle(theme.accent)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background {
+                            Capsule()
+                                .fill(theme.accent.opacity(0.10))
+                                .glassEffect()
+                                .overlay(
+                                    Capsule()
+                                        .stroke(theme.accent.opacity(0.22), lineWidth: 1)
+                                )
+                        }
                     }
-                    .font(.system(size: 14))
-                    .foregroundStyle(theme.accent)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background {
-                        Capsule()
-                            .fill(theme.accent.opacity(0.10))
-                            .glassEffect()
-                            .overlay(
-                                Capsule()
-                                    .stroke(theme.accent.opacity(0.22), lineWidth: 1)
-                            )
-                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
                 .padding(.vertical, 8)
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }

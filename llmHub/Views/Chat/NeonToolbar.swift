@@ -16,6 +16,7 @@ struct NeonToolbar: View {
     @Binding var toolInspectorVisible: Bool
     @Binding var columnVisibility: NavigationSplitViewVisibility
     @Binding var showingSettings: Bool
+    @Binding var showingToolsDebug: Bool
 
     private var toolbarOpacity: Double {
         // Fade toolbar when scrolling down
@@ -60,6 +61,16 @@ struct NeonToolbar: View {
                 selectedProvider: $selectedProvider,
                 selectedModel: $selectedModel
             )
+
+            #if DEBUG
+                GlassToolbarItem(
+                    id: "tools_debug",
+                    icon: "wrench.and.screwdriver",
+                    isActive: showingToolsDebug
+                ) {
+                    showingToolsDebug = true
+                }
+            #endif
             
             // Settings Button
             GlassToolbarItem(

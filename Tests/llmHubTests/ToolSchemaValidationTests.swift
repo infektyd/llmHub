@@ -12,6 +12,7 @@ final class ToolSchemaValidationTests: XCTestCase {
         nonisolated let name: String
         nonisolated let endpoint: URL = URL(string: "https://example.com")!
         nonisolated let supportsStreaming: Bool = false
+        nonisolated let supportsToolCalling: Bool = false
         nonisolated let availableModels: [LLMModel] = []
         nonisolated var defaultHeaders: [String: String] { get async { [:] } }
         nonisolated let pricing: PricingMetadata = PricingMetadata(

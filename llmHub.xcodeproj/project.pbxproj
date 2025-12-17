@@ -59,7 +59,6 @@
 
 /* Begin PBXFileReference section */
 		A3A5357C2EEB7F1B0075FBC4 /* llmHub_v1.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = llmHub_v1.icon; sourceTree = "<group>"; };
-		B3C0F0D12F0E1A9A00000001 /* StrictConcurrency.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = StrictConcurrency.xcconfig; sourceTree = "<group>"; };
 		A3C71F262ED9389A0088DF32 /* llmHub.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = llmHub.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3C71F372ED9389B0088DF32 /* llmHubTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = llmHubTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3C71F412ED9389B0088DF32 /* llmHubUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = llmHubUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -71,6 +70,7 @@
 		B3000015303030300001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B3000016303030300001 /* llmHubHelper.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = llmHubHelper.entitlements; sourceTree = "<group>"; };
 		B3000020303030300001 /* llmHubHelper.xpc */ = {isa = PBXFileReference; explicitFileType = "wrapper.xpc-service"; includeInIndex = 0; path = llmHubHelper.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
+		B3C0F0D12F0E1A9A00000001 /* StrictConcurrency.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = StrictConcurrency.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */

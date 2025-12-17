@@ -8,7 +8,7 @@
 import Foundation
 
 /// Incrementally assembles streamed tool call deltas and only finalizes calls once the JSON input is valid.
-struct PartialToolCallAssembler: Sendable {
+nonisolated struct PartialToolCallAssembler: Sendable {
     struct Partial: Sendable {
         var index: Int
         var id: String?
@@ -63,4 +63,3 @@ struct PartialToolCallAssembler: Sendable {
         return (try? JSONSerialization.jsonObject(with: data)) != nil
     }
 }
-

@@ -12,7 +12,7 @@ import Foundation
 /// Rationale: URLSession `AsyncBytes.lines` can deliver partial/fragmented payloads when the server
 /// emits multi-line `data:` fields or when JSON spans multiple TCP frames. This parser buffers
 /// until a full SSE event frame boundary is observed before yielding `data:` payloads.
-struct SSEEventParser: Sendable {
+nonisolated struct SSEEventParser: Sendable {
     private var buffer = Data()
 
     init() {}
@@ -108,7 +108,7 @@ struct SSEEventFrame: Sendable, Equatable {
 /// SSE parser that preserves the `event:` field when present.
 ///
 /// The returned `data` is the concatenation of all `data:` lines in a frame joined with `\n`.
-struct SSEEventFrameParser: Sendable {
+nonisolated struct SSEEventFrameParser: Sendable {
     private var buffer = Data()
 
     init() {}
