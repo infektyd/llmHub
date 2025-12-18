@@ -96,6 +96,7 @@
 		A3C71FC82EDB64EE0088DF32 /* Exceptions for "Tests" folder in "llmHub" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				llmHubTests/GeminiRequestEncodingTests.swift,
 				llmHubTests/llmHubTests.swift,
 				llmHubTests/OpenAIToolsInjectionIntegrationTests.swift,
 				llmHubTests/ToolSchemaValidationTests.swift,
@@ -107,6 +108,7 @@
 		A3C71FC92EDB64EE0088DF32 /* Exceptions for "Tests" folder in "llmHubTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				llmHubTests/GeminiRequestEncodingTests.swift,
 				llmHubTests/llmHubTests.swift,
 				llmHubTests/OpenAIToolsInjectionIntegrationTests.swift,
 				llmHubTests/ToolSchemaValidationTests.swift,

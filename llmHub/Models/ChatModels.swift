@@ -312,6 +312,8 @@ struct ToolCall: Codable, Sendable, Equatable {
     let name: String
     /// The JSON string representation of the arguments for the tool.
     let input: String
+    /// Gemini-only: thought signature that must be round-tripped for function calling (Gemini 3).
+    var geminiThoughtSignature: String? = nil
 }
 
 /// Defines the role of the message sender.
