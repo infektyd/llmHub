@@ -3,7 +3,7 @@
 //  llmHub
 //
 //  XPC-based execution backend for macOS
-//  Communicates with the non-sandboxed llmHubHelper XPC service
+//  Communicates with the sandboxed llmHubHelper XPC service (inherits parent App Sandbox)
 //
 
 #if os(macOS)

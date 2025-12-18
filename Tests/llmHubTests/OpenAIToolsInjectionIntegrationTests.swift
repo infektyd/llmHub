@@ -16,7 +16,7 @@ final class OpenAIToolsInjectionIntegrationTests: XCTestCase {
             apiKey = key
         } else {
             let keychain = KeychainStore()
-            guard let key = await keychain.apiKey(for: .openAI), !key.isEmpty else {
+            guard let key = await keychain.apiKey(for: .openai), !key.isEmpty else {
                 throw XCTSkip(
                     "OpenAI API key missing. Set OPENAI_API_KEY or configure it in llmHub Settings first."
                 )

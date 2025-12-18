@@ -409,7 +409,9 @@ final class ChatService {
                         if let auth = service.toolAuthorizationService {
                             for tool in availableTools {
                                 let status = auth.checkAccess(for: tool.name)
-                                if status == .authorized {
+                                // Include tools that are authorized OR not yet decided, so per-call consent works.
+                                // Denied tools are omitted to reduce repeated requests.
+                                if status != .denied {
                                     enabledTools.append(tool)
                                 }
                             }

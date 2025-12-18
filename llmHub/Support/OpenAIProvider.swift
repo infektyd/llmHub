@@ -28,7 +28,7 @@ struct OpenAIProvider: LLMProvider {
 
     var defaultHeaders: [String: String] {
         get async {
-            guard let key = await keychain.apiKey(for: .openAI) else { return [:] }
+            guard let key = await keychain.apiKey(for: .openai) else { return [:] }
             return [
                 "Authorization": "Bearer \(key)",
                 "Content-Type": "application/json",
@@ -43,12 +43,12 @@ struct OpenAIProvider: LLMProvider {
 
     var isConfigured: Bool {
         get async {
-            await keychain.apiKey(for: .openAI) != nil
+            await keychain.apiKey(for: .openai) != nil
         }
     }
 
     func fetchModels() async throws -> [LLMModel] {
-        guard let apiKey = await keychain.apiKey(for: .openAI) else { return [] }
+        guard let apiKey = await keychain.apiKey(for: .openai) else { return [] }
         let manager = OpenAIManager(apiKey: apiKey)
 
         do {
@@ -85,7 +85,7 @@ struct OpenAIProvider: LLMProvider {
         options: LLMRequestOptions,
         jsonMode: Bool
     ) async throws -> URLRequest {
-        guard let apiKey = await keychain.apiKey(for: .openAI) else {
+        guard let apiKey = await keychain.apiKey(for: .openai) else {
             throw LLMProviderError.authenticationMissing
         }
 

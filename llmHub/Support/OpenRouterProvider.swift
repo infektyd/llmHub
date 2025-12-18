@@ -26,7 +26,7 @@ struct OpenRouterProvider: LLMProvider {
 
     var defaultHeaders: [String: String] {
         get async {
-            guard let key = await keychain.apiKey(for: .openRouter) else { return [:] }
+            guard let key = await keychain.apiKey(for: .openrouter) else { return [:] }
             return [
                 "Authorization": "Bearer \(key)",
                 "Content-Type": "application/json",
@@ -40,12 +40,12 @@ struct OpenRouterProvider: LLMProvider {
 
     var isConfigured: Bool {
         get async {
-            await keychain.apiKey(for: .openRouter) != nil
+            await keychain.apiKey(for: .openrouter) != nil
         }
     }
 
     func fetchModels() async throws -> [LLMModel] {
-        guard let apiKey = await keychain.apiKey(for: .openRouter) else { return [] }
+        guard let apiKey = await keychain.apiKey(for: .openrouter) else { return [] }
         let manager = OpenRouterManager(apiKey: apiKey)
         let models = try await manager.listModels()
         return models.map {
@@ -64,7 +64,7 @@ struct OpenRouterProvider: LLMProvider {
         tools: [ToolDefinition]?,
         options: LLMRequestOptions
     ) async throws -> URLRequest {
-        guard let apiKey = await keychain.apiKey(for: .openRouter) else {
+        guard let apiKey = await keychain.apiKey(for: .openrouter) else {
             throw LLMProviderError.authenticationMissing
         }
 

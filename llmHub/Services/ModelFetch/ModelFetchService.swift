@@ -28,16 +28,16 @@ final class ModelFetchService {
         
         switch provider {
         case .anthropic:
-            return getCuratedAnthropicModels()
+            return try await fetchAnthropicModelsOfficial()
         case .xai:
-            return getCuratedXAIModels()
-        case .openAI:
+            return try await fetchXAIModelsOfficial()
+        case .openai:
             return try await fetchOpenAIModels()
         case .google:
             return try await fetchGoogleModels()
         case .mistral:
             return try await fetchMistralModels()
-        case .openRouter:
+        case .openrouter:
             return try await fetchOpenRouterModels()
         }
     }
@@ -184,7 +184,7 @@ final class ModelFetchService {
     
     /// Fetches available models from OpenAI API.
     private func fetchOpenAIModels() async throws -> [LLMModel] {
-        guard let apiKey = await keychainStore.apiKey(for: .openAI) else {
+        guard let apiKey = await keychainStore.apiKey(for: .openai) else {
             throw ModelFetchError.noAPIKey
         }
         
@@ -398,7 +398,7 @@ final class ModelFetchService {
     
     /// Fetches available models from OpenRouter API.
     private func fetchOpenRouterModels() async throws -> [LLMModel] {
-        guard let apiKey = await keychainStore.apiKey(for: .openRouter) else {
+        guard let apiKey = await keychainStore.apiKey(for: .openrouter) else {
             throw ModelFetchError.noAPIKey
         }
         
@@ -439,6 +439,161 @@ final class ModelFetchService {
         )
     }
     
+    // MARK: - Official Anthropic + xAI /models
+    
+    /// Fetches available models from Anthropic's official API.
+    ///
+    /// Endpoint: GET https://api.anthropic.com/v1/models
+    /// Required headers:
+    /// - x-api-key
+    /// - anthropic-version: 2023-06-01
+    /// - Accept: application/json
+    ///
+    /// Pagination:
+    /// - limit=100
+    /// - after_id cursor (defensive; stop on missing/unchanged cursor, has_more=false, or hard cap)
+    private func fetchAnthropicModelsOfficial() async throws -> [LLMModel] {
+        guard let apiKey = await keychainStore.apiKey(for: .anthropic) else {
+            throw ModelFetchError.noAPIKey
+        }
+
+        let baseURL = URL(string: "https://api.anthropic.com/v1/models")!
+
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+
+        var allModels: [FetchedAnthropicModel] = []
+        var afterID: String? = nil
+        var lastCursor: String? = nil
+
+        let limit = 100
+        let maxPages = 20
+
+        for pageIndex in 0..<maxPages {
+            var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)!
+            var queryItems: [URLQueryItem] = [URLQueryItem(name: "limit", value: String(limit))]
+            if let afterID {
+                queryItems.append(URLQueryItem(name: "after_id", value: afterID))
+            }
+            components.queryItems = queryItems
+            let url = components.url!
+
+            var request = URLRequest(url: url)
+            request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
+            request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+            request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+            logger.info("Anthropic /models request page=\(pageIndex) url=\(url.absoluteString)")
+
+            let (data, response) = try await LLMURLSession.shared.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw ModelFetchError.invalidResponse
+            }
+
+            guard httpResponse.statusCode == 200 else {
+                let preview = String(data: data.prefix(800), encoding: .utf8) ?? "<non-utf8>"
+                logger.error("Anthropic /models HTTP \(httpResponse.statusCode). Body preview: \(preview)")
+                throw ModelFetchError.httpError(statusCode: httpResponse.statusCode)
+            }
+
+            let page: FetchedAnthropicModelsResponse
+            do {
+                page = try decoder.decode(FetchedAnthropicModelsResponse.self, from: data)
+            } catch {
+                let preview = String(data: data.prefix(800), encoding: .utf8) ?? "<non-utf8>"
+                logger.error("Anthropic /models decode failed on page=\(pageIndex). Body preview: \(preview)")
+                throw ModelFetchError.decodingError(error)
+            }
+
+            allModels.append(contentsOf: page.data)
+
+            let lastIDString = page.lastID ?? "nil"
+            logger.info(
+                "Anthropic /models page=\(pageIndex) decoded=\(page.data.count) has_more=\(page.hasMore ?? false) last_id=\(lastIDString)"
+            )
+
+            let hasMore = page.hasMore ?? false
+            guard hasMore else { break }
+
+            guard let cursor = page.lastID, !cursor.isEmpty else {
+                logger.warning("Anthropic /models has_more=true but missing last_id; stopping pagination")
+                break
+            }
+
+            if cursor == lastCursor {
+                logger.warning("Anthropic /models cursor unchanged (\(cursor)); stopping pagination")
+                break
+            }
+
+            lastCursor = cursor
+            afterID = cursor
+        }
+
+        let models: [LLMModel] = allModels.map { apiModel in
+            LLMModel(
+                id: apiModel.id,
+                name: apiModel.displayName?.isEmpty == false ? apiModel.displayName! : formatModelName(apiModel.id),
+                maxOutputTokens: 8_192,
+                contextWindow: 200_000,
+                supportsToolUse: true
+            )
+        }
+
+        logger.info("Fetched \(models.count) Anthropic models from official API")
+        return models
+    }
+
+    /// Fetches available models from xAI's official OpenAI-compatible API.
+    /// Endpoint: GET https://api.x.ai/v1/models
+    private func fetchXAIModelsOfficial() async throws -> [LLMModel] {
+        guard let apiKey = await keychainStore.apiKey(for: .xai) else {
+            throw ModelFetchError.noAPIKey
+        }
+
+        let url = URL(string: "https://api.x.ai/v1/models")!
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        logger.info("xAI /models request url=\(url.absoluteString)")
+
+        let (data, response) = try await LLMURLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw ModelFetchError.invalidResponse
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            let preview = String(data: data.prefix(800), encoding: .utf8) ?? "<non-utf8>"
+            logger.error("xAI /models HTTP \(httpResponse.statusCode). Body preview: \(preview)")
+            throw ModelFetchError.httpError(statusCode: httpResponse.statusCode)
+        }
+
+        let decoder = JSONDecoder()
+        let modelResponse: FetchedOpenAIStyleModelsResponse
+        do {
+            modelResponse = try decoder.decode(FetchedOpenAIStyleModelsResponse.self, from: data)
+        } catch {
+            let preview = String(data: data.prefix(800), encoding: .utf8) ?? "<non-utf8>"
+            logger.error("xAI /models decode failed. Body preview: \(preview)")
+            throw ModelFetchError.decodingError(error)
+        }
+
+        let models = modelResponse.data.map { apiModel -> LLMModel in
+            LLMModel(
+                id: apiModel.id,
+                name: formatModelName(apiModel.id),
+                maxOutputTokens: 8_192,
+                contextWindow: 131_072,
+                supportsToolUse: true
+            )
+        }
+
+        logger.info("Fetched \(models.count) xAI models from official API")
+        return models
+    }
+
     // MARK: - Helper Methods
     
     /// Formats a model ID into a human-readable display name.
@@ -466,7 +621,7 @@ private struct FetchedOpenAIModel: Codable {
     let id: String
     let created: Int
     let ownedBy: String
-    
+
     enum CodingKeys: String, CodingKey {
         case id, created
         case ownedBy = "owned_by"
@@ -557,6 +712,38 @@ private struct FetchedOpenRouterArchitecture: Codable {
 
 private struct FetchedOpenRouterProvider: Codable {
     let maxCompletionTokens: Int?
+}
+
+// Anthropic
+struct FetchedAnthropicModelsResponse: Codable {
+    let data: [FetchedAnthropicModel]
+    let hasMore: Bool?
+    let lastID: String?
+
+    enum CodingKeys: String, CodingKey {
+        case data
+        case hasMore = "has_more"
+        case lastID = "last_id"
+    }
+}
+
+struct FetchedAnthropicModel: Codable {
+    let id: String
+    let displayName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case displayName = "display_name"
+    }
+}
+
+// OpenAI-style (xAI)
+struct FetchedOpenAIStyleModelsResponse: Codable {
+    let data: [FetchedOpenAIStyleModel]
+}
+
+struct FetchedOpenAIStyleModel: Codable {
+    let id: String
 }
 
 // MARK: - Errors
