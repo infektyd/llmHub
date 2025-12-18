@@ -70,10 +70,16 @@ nonisolated struct ShellTool: Tool {
             process.launchPath = "/bin/zsh"
             process.arguments = ["-lc", command]
 
-            if let wd = workingDirectory {
-                process.currentDirectoryURL = URL(fileURLWithPath: wd)
+            if let wd = workingDirectory, !wd.isEmpty {
+                // Sandbox-only: allow only workspace-relative working directories.
+                let wdURL = try ToolPathResolver.resolve(
+                    inputPath: wd,
+                    workspaceRoot: context.workspacePath,
+                    kind: .directory
+                )
+                process.currentDirectoryURL = wdURL
             } else {
-                // Use workspace path by default if not specified
+                // Use workspace path by default.
                 process.currentDirectoryURL = context.workspacePath
             }
 

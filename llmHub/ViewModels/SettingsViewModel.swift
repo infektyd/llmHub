@@ -48,7 +48,7 @@ final class SettingsViewModel: ObservableObject {
 
         static let allProviders: [ProviderInfo] = [
             ProviderInfo(
-                provider: .openAI,
+                provider: .openai,
                 name: "OpenAI",
                 icon: "sparkles",
                 description: "GPT-4, GPT-4o, o1, and more",
@@ -83,7 +83,7 @@ final class SettingsViewModel: ObservableObject {
                 docsURL: URL(string: "https://console.x.ai/")
             ),
             ProviderInfo(
-                provider: .openRouter,
+                provider: .openrouter,
                 name: "OpenRouter",
                 icon: "arrow.triangle.branch",
                 description: "Unified access to multiple providers",
@@ -97,12 +97,12 @@ final class SettingsViewModel: ObservableObject {
     /// Load all API keys from Keychain on view appear.
     func loadKeys() {
         Task { @MainActor in
-            openAIKey = await keychainStore.apiKey(for: .openAI) ?? ""
+            openAIKey = await keychainStore.apiKey(for: .openai) ?? ""
             anthropicKey = await keychainStore.apiKey(for: .anthropic) ?? ""
             googleKey = await keychainStore.apiKey(for: .google) ?? ""
             mistralKey = await keychainStore.apiKey(for: .mistral) ?? ""
             xaiKey = await keychainStore.apiKey(for: .xai) ?? ""
-            openRouterKey = await keychainStore.apiKey(for: .openRouter) ?? ""
+            openRouterKey = await keychainStore.apiKey(for: .openrouter) ?? ""
 
             // Also load tools
             await loadTools()
@@ -196,7 +196,7 @@ final class SettingsViewModel: ObservableObject {
     /// Get a binding for a specific provider's API key.
     func binding(for provider: KeychainStore.ProviderKey) -> Binding<String> {
         switch provider {
-        case .openAI:
+        case .openai:
             return Binding(
                 get: { self.openAIKey },
                 set: { self.openAIKey = $0 }
@@ -221,7 +221,7 @@ final class SettingsViewModel: ObservableObject {
                 get: { self.xaiKey },
                 set: { self.xaiKey = $0 }
             )
-        case .openRouter:
+        case .openrouter:
             return Binding(
                 get: { self.openRouterKey },
                 set: { self.openRouterKey = $0 }
@@ -316,23 +316,23 @@ final class SettingsViewModel: ObservableObject {
 
     private func keyValue(for provider: KeychainStore.ProviderKey) -> String {
         switch provider {
-        case .openAI: return openAIKey
+        case .openai: return openAIKey
         case .anthropic: return anthropicKey
         case .google: return googleKey
         case .mistral: return mistralKey
         case .xai: return xaiKey
-        case .openRouter: return openRouterKey
+        case .openrouter: return openRouterKey
         }
     }
 
     private func setKeyValue(_ value: String, for provider: KeychainStore.ProviderKey) {
         switch provider {
-        case .openAI: openAIKey = value
+        case .openai: openAIKey = value
         case .anthropic: anthropicKey = value
         case .google: googleKey = value
         case .mistral: mistralKey = value
         case .xai: xaiKey = value
-        case .openRouter: openRouterKey = value
+        case .openrouter: openRouterKey = value
         }
     }
 

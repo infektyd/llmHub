@@ -3,7 +3,7 @@
 //  llmHubHelper
 //
 //  Implements the XPC protocol for code execution
-//  This runs outside the app sandbox, allowing access to xcrun and interpreters
+//  This runs in the helper XPC service and inherits the parent app's App Sandbox
 //
 
 #if os(macOS)
@@ -11,7 +11,7 @@ import Foundation
 import OSLog
 
 /// Handler that implements the XPC protocol for code execution.
-/// Runs in the non-sandboxed XPC helper process.
+/// Runs in the helper XPC process.
 final class CodeExecutionHandler: NSObject, CodeExecutionXPCProtocol {
     
     private let logger = Logger(subsystem: "Syntra.llmHub.CodeExecutionHelper", category: "Handler")

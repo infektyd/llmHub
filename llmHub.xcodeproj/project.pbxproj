@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A3A5357D2EEB7F1B0075FBC4 /* llmHub_v1.icon in Resources */ = {isa = PBXBuildFile; fileRef = A3A5357C2EEB7F1B0075FBC4 /* llmHub_v1.icon */; };
 		B3000001303030300001 /* CodeExecutionXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000010303030300001 /* CodeExecutionXPCProtocol.swift */; };
 		B3000002303030300001 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000011303030300001 /* main.swift */; };
 		B3000003303030300001 /* CodeExecutionServiceDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000012303030300001 /* CodeExecutionServiceDelegate.swift */; };
@@ -77,11 +76,89 @@
 		A35358492EE678DA00E9B943 /* Exceptions for "Docs" folder in "llmHub" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				AGENTS.md,
 				Architecture/CODEBASE_ANALYSIS.md,
 				Architecture/COST_EFFICIENT_AI_DEV.md,
+				"Changelogs/2025-12.md",
+				CLAUDE.md,
+				CONVENTIONS.md,
+				"Error_Reports/Build llmHub_2025-12-14T14-38-56.txt",
+				http_request_diagnostics_and_timeouts.md,
 				iOS_Quick_Reference.md,
 				iOS_Test_Plan.md,
 				iOS_UI_Map.md,
+				"Legacy/BuildLogs/Analyze llmHub_2025-12-08T19-08-43.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-11-29T10-59-52.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-11-29T15-55-56.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-11-29T16-15-13.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-11-29T16-25-39.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-11-29T16-52-29.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-11-29T22-21-20.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-11-30T11-21-13.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-11-30T11-30-07.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-11-30T11-40-49.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-11-30T12-02-46.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-11.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-12-01T17-34-19.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-12-01T17-47-28.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-12-07T20-12-14.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-12-08T19-27-02.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-12-10T07-23-14.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-12-10T15-35-05.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-12-10T15-41-17.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-12-10T17-18-25.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-12-10T20-21-06.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-12-10T23-03-02.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-12-11T12-58-59.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-12-11T13-50-13.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-12-11T13-59-35.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-12-11T14-27-30.txt",
+				"Legacy/BuildLogs/Build llmHub_2025-12-11T17-19-32.txt",
+				Legacy/DevLogs/ALL_FIXES_APPLIED_DEC7.md,
+				Legacy/DevLogs/anthropic_TODO.md,
+				Legacy/DevLogs/BUILD_FIX_SUMMARY.md,
+				Legacy/DevLogs/CRITICAL_BUGS_ANALYSIS.md,
+				Legacy/DevLogs/FIXES_APPLIED.md,
+				Legacy/DevLogs/FIXES_NEEDED.md,
+				Legacy/DevLogs/gemini_TODO.md,
+				Legacy/DevLogs/GLASS_EFFECT_FIX_DEC11.md,
+				Legacy/DevLogs/GLASS_UI_UPDATE_DEC11.md,
+				Legacy/DevLogs/IMPLEMENTATION_SUMMARY_iOS_Settings_Keyboard.md,
+				Legacy/DevLogs/IOS_SETTINGS_KEYBOARD_IMPLEMENTATION.md,
+				Legacy/DevLogs/LIQUID_GLASS_MIGRATION.md,
+				Legacy/DevLogs/llmHub_codebase_analysis.md,
+				Legacy/DevLogs/MIGRATION_COMPLETE.md,
+				Legacy/DevLogs/mistral_TODO.md,
+				Legacy/DevLogs/openai_TODO.md,
+				Legacy/DevLogs/openrouter_TODO.md,
+				Legacy/DevLogs/PHASE_1_COMPLETE.md,
+				Legacy/DevLogs/PHASE_B_COMPLETE.md,
+				Legacy/DevLogs/PHASE_B_SETTINGS_MODEL_REFRESH.md,
+				Legacy/DevLogs/PHASE_C_COMPLETE.md,
+				Legacy/DevLogs/PROVIDER_REGISTRATION_FIX.md,
+				Legacy/DevLogs/QUICK_FIX_GUIDE.md,
+				Legacy/DevLogs/QUICK_FIXES_SUMMARY.md,
+				Legacy/DevLogs/UI_FIXES_SUMMARY.md,
+				Legacy/DevLogs/XAI_MODEL_FIX_AND_CACHE_REFRESH.md,
+				Legacy/DevLogs/xai_TODO.md,
+				LiquidGlass_Design_Spec.md,
+				LLMHub_UI_ToolWiring_Map.md,
+				llmHubHelper_Quick_Reference.txt,
+				llmHubHelper_README.md,
+				llmHubHelper_Security_Analysis.md,
+				llmHubHelper_Security_Examples.md,
+				llmHubHelper_SUMMARY.md,
+				Providers/additional_mistral_information.md,
+				Providers/anthropic_integration.md,
+				Providers/gemini_integration.md,
+				Providers/Mistral_Integration.md,
+				Providers/openai_integration.md,
+				Providers/openrouter_integration.md,
+				Providers/xAiGrok_integration.md,
+				raw_console_output.json,
+				README.md,
+				UNIFIED_TOOL_SYSTEM_IMPLEMENTATION.md,
+				VERIFICATION_CHECKLIST.md,
 			);
 			target = A3C71F252ED9389A0088DF32 /* llmHub */;
 		};
@@ -96,6 +173,8 @@
 		A3C71FC82EDB64EE0088DF32 /* Exceptions for "Tests" folder in "llmHub" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				llmHubTests/GeminiRequestEncodingTests.swift,
+				llmHubTests/KeychainStoreTests.swift,
 				llmHubTests/llmHubTests.swift,
 				llmHubTests/OpenAIToolsInjectionIntegrationTests.swift,
 				llmHubTests/ToolSchemaValidationTests.swift,
@@ -107,6 +186,8 @@
 		A3C71FC92EDB64EE0088DF32 /* Exceptions for "Tests" folder in "llmHubTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				llmHubTests/GeminiRequestEncodingTests.swift,
+				llmHubTests/KeychainStoreTests.swift,
 				llmHubTests/llmHubTests.swift,
 				llmHubTests/OpenAIToolsInjectionIntegrationTests.swift,
 				llmHubTests/ToolSchemaValidationTests.swift,
@@ -373,7 +454,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A3A5357D2EEB7F1B0075FBC4 /* llmHub_v1.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -452,32 +532,34 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = B3C0F0D12F0E1A9A00000001 /* StrictConcurrency.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = llmHub_v1.icon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				AUTOMATION_APPLE_EVENTS = NO;
+				CODE_SIGN_ENTITLEMENTS = llmHub/llmHub.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5BMZT525A2;
 				ENABLE_APP_SANDBOX = YES;
-				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readwrite;
-				ENABLE_FILE_ACCESS_MOVIES_FOLDER = readwrite;
-				ENABLE_FILE_ACCESS_MUSIC_FOLDER = readwrite;
-				ENABLE_FILE_ACCESS_PICTURE_FOLDER = readwrite;
+				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readonly;
+				ENABLE_FILE_ACCESS_MOVIES_FOLDER = readonly;
+				ENABLE_FILE_ACCESS_MUSIC_FOLDER = readonly;
+				ENABLE_FILE_ACCESS_PICTURE_FOLDER = readonly;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
-				ENABLE_RESOURCE_ACCESS_BLUETOOTH = YES;
-				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
-				ENABLE_RESOURCE_ACCESS_CAMERA = YES;
-				ENABLE_RESOURCE_ACCESS_CONTACTS = YES;
-				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
-				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = YES;
-				ENABLE_RESOURCE_ACCESS_PRINTING = YES;
-				ENABLE_RESOURCE_ACCESS_USB = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = llmHub/Info.plist;
@@ -506,7 +588,7 @@
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
 				RUNTIME_EXCEPTION_ALLOW_JIT = NO;
 				RUNTIME_EXCEPTION_ALLOW_UNSIGNED_EXECUTABLE_MEMORY = NO;
-				RUNTIME_EXCEPTION_DEBUGGING_TOOL = YES;
+				RUNTIME_EXCEPTION_DEBUGGING_TOOL = NO;
 				RUNTIME_EXCEPTION_DISABLE_EXECUTABLE_PAGE_PROTECTION = NO;
 				RUNTIME_EXCEPTION_DISABLE_LIBRARY_VALIDATION = NO;
 				SDKROOT = auto;
@@ -526,32 +608,34 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = B3C0F0D12F0E1A9A00000001 /* StrictConcurrency.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = llmHub_v1.icon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				AUTOMATION_APPLE_EVENTS = NO;
+				CODE_SIGN_ENTITLEMENTS = llmHub/llmHub.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5BMZT525A2;
 				ENABLE_APP_SANDBOX = YES;
-				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readwrite;
-				ENABLE_FILE_ACCESS_MOVIES_FOLDER = readwrite;
-				ENABLE_FILE_ACCESS_MUSIC_FOLDER = readwrite;
-				ENABLE_FILE_ACCESS_PICTURE_FOLDER = readwrite;
+				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readonly;
+				ENABLE_FILE_ACCESS_MOVIES_FOLDER = readonly;
+				ENABLE_FILE_ACCESS_MUSIC_FOLDER = readonly;
+				ENABLE_FILE_ACCESS_PICTURE_FOLDER = readonly;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
-				ENABLE_RESOURCE_ACCESS_BLUETOOTH = YES;
-				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
-				ENABLE_RESOURCE_ACCESS_CAMERA = YES;
-				ENABLE_RESOURCE_ACCESS_CONTACTS = YES;
-				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
-				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = YES;
-				ENABLE_RESOURCE_ACCESS_PRINTING = YES;
-				ENABLE_RESOURCE_ACCESS_USB = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = llmHub/Info.plist;
@@ -580,7 +664,7 @@
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
 				RUNTIME_EXCEPTION_ALLOW_JIT = NO;
 				RUNTIME_EXCEPTION_ALLOW_UNSIGNED_EXECUTABLE_MEMORY = NO;
-				RUNTIME_EXCEPTION_DEBUGGING_TOOL = YES;
+				RUNTIME_EXCEPTION_DEBUGGING_TOOL = NO;
 				RUNTIME_EXCEPTION_DISABLE_EXECUTABLE_PAGE_PROTECTION = NO;
 				RUNTIME_EXCEPTION_DISABLE_LIBRARY_VALIDATION = NO;
 				SDKROOT = auto;
@@ -838,8 +922,23 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5BMZT525A2;
-				ENABLE_APP_SANDBOX = NO;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readonly;
+				ENABLE_FILE_ACCESS_MOVIES_FOLDER = readonly;
+				ENABLE_FILE_ACCESS_MUSIC_FOLDER = readonly;
+				ENABLE_FILE_ACCESS_PICTURE_FOLDER = readonly;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
+				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = llmHubHelper/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = llmHubHelper;
@@ -863,8 +962,23 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5BMZT525A2;
-				ENABLE_APP_SANDBOX = NO;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readonly;
+				ENABLE_FILE_ACCESS_MOVIES_FOLDER = readonly;
+				ENABLE_FILE_ACCESS_MUSIC_FOLDER = readonly;
+				ENABLE_FILE_ACCESS_PICTURE_FOLDER = readonly;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
+				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = llmHubHelper/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = llmHubHelper;

@@ -6,13 +6,18 @@ import Foundation
 public class GeminiManager {
     /// The API key for authentication.
     private let apiKey: String
-    /// The base URL for the Gemini API.
-    private let baseURL = "https://generativelanguage.googleapis.com/v1beta"
+    /// The base URL for the Gemini Developer API (v1beta).
+    private let baseURL: URL
 
     /// Initializes a new `GeminiManager`.
     /// - Parameter apiKey: The API key for Gemini.
-    public init(apiKey: String) {
+    /// - Parameter baseURL: Override for Gemini API base URL (Developer API only).
+    public init(
+        apiKey: String,
+        baseURL: URL = URL(string: "https://generativelanguage.googleapis.com/v1beta")!
+    ) {
         self.apiKey = apiKey
+        self.baseURL = baseURL
     }
 
     // MARK: - 1. Text, Vision, & Thinking (Gemini 2.5/3.0)
@@ -32,11 +37,18 @@ public class GeminiManager {
         thinkingLevel: ThinkingLevel = .off,
         history: [Content] = []
     ) async throws -> GenerationResponse {
+        // Bridge legacy API to the new thinkingConfig-based request options.
+        // Rationale: Gemini Developer API uses generationConfig.thinkingConfig, and thinking is model-family specific.
+        let options = LLMRequestOptions(
+            thinkingPreference: thinkingLevel == .off ? .off : .on,
+            thinkingBudgetTokens: nil,
+            thinkingLevelHint: thinkingLevel == .off ? nil : thinkingLevel.rawValue
+        )
         let request = try makeGenerateContentRequest(
             prompt: prompt,
             files: files,
             model: model,
-            thinkingLevel: thinkingLevel,
+            options: options,
             history: history,
             stream: false
         )
@@ -73,11 +85,16 @@ public class GeminiManager {
         AsyncThrowingStream { continuation in
             Task {
                 do {
+                    let options = LLMRequestOptions(
+                        thinkingPreference: thinkingLevel == .off ? .off : .on,
+                        thinkingBudgetTokens: nil,
+                        thinkingLevelHint: thinkingLevel == .off ? nil : thinkingLevel.rawValue
+                    )
                     let request = try makeGenerateContentRequest(
                         prompt: prompt,
                         files: files,
                         model: model,
-                        thinkingLevel: thinkingLevel,
+                        options: options,
                         history: history,
                         stream: true
                     )
@@ -147,17 +164,21 @@ public class GeminiManager {
         prompt: String,
         files: [MediaFile] = [],
         model: String = "gemini-1.5-pro",
-        thinkingLevel: ThinkingLevel = .off,
+        options: LLMRequestOptions = .default,
         history: [Content] = [],
         tools: [ToolDefinition]? = nil,
         maxOutputTokens: Int? = nil,
         stream: Bool = false
     ) throws -> URLRequest {
         let action = stream ? "streamGenerateContent" : "generateContent"
-        var endpoint = "\(baseURL)/models/\(model):\(action)?key=\(apiKey)"
+        // NOTE: We intentionally build the URL string (instead of URLComponents + appendingPathComponent)
+        // because the Gemini REST path includes `:<method>` (e.g. `:generateContent`) and we must preserve
+        // the literal colon in the path.
+        var endpoint = "\(baseURL.absoluteString)/models/\(model):\(action)?key=\(apiKey)"
         if stream {
-            endpoint += "&alt=sse"  // Request SSE format
+            endpoint += "&alt=sse"
         }
+        guard let url = URL(string: endpoint) else { throw GeminiError.invalidURL }
 
         // Construct Request Parts
         var parts: [Part] = [.text(prompt)]
@@ -177,8 +198,9 @@ public class GeminiManager {
         // Config
         var config = GenerationConfig()
         config.maxOutputTokens = maxOutputTokens ?? 8192  // Ensure responses aren't cut off
-        if thinkingLevel != .off {
-            config.thinkingLevel = thinkingLevel.rawValue
+        config.thinkingConfig = try Self.buildThinkingConfig(model: model, options: options)
+        if let thinkingConfig = config.thinkingConfig {
+            try Self.validateThinkingConfig(thinkingConfig)
         }
 
         let geminiTools: [GeminiTool]? = {
@@ -199,14 +221,96 @@ public class GeminiManager {
             tools: geminiTools
         )
 
-        guard let url = URL(string: endpoint) else { throw GeminiError.invalidURL }
-
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONEncoder().encode(payload)
+        let encoder = JSONEncoder()
+        // Rationale: Gemini Developer API expects camelCase keys. Do not snake_case encode this payload.
+        request.httpBody = try encoder.encode(payload)
 
         return request
+    }
+
+    // MARK: - ThinkingConfig (Gemini Developer API)
+
+    /// Builds a Gemini Developer API `thinkingConfig` according to model-family rules.
+    ///
+    /// - Model rules (per current Gemini docs):
+    ///   - `gemini-3-*` uses `thinkingLevel`
+    ///   - `gemini-2.5-*` uses `thinkingBudget`
+    ///   - Other models omit thinking config unless explicitly supported
+    ///
+    /// Mutual exclusivity is enforced: `thinkingLevel` and `thinkingBudget` must never coexist.
+    internal static func buildThinkingConfig(model: String, options: LLMRequestOptions) throws
+        -> ThinkingConfig?
+    {
+        guard options.thinkingPreference != .off else { return nil }
+
+        let lower = model.lowercased()
+        if lower.hasPrefix("gemini-3-") {
+            let requested = options.thinkingLevelHint?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let normalized = (requested?.lowercased()).flatMap { $0.isEmpty ? nil : $0 }
+            let level = GeminiThinkingLevel(rawValue: normalized ?? "high")
+            try validateGemini3ThinkingLevel(level, model: lower)
+            let config = ThinkingConfig(
+                includeThoughts: nil,
+                thinkingBudget: nil,
+                thinkingLevel: level
+            )
+            try validateThinkingConfig(config)
+            return config
+        }
+
+        if lower.hasPrefix("gemini-2.5-") {
+            if let hint = options.thinkingLevelHint,
+                !hint.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            {
+                throw GeminiError.custom(
+                    "Invalid thinking config: thinkingLevel is not supported for Gemini 2.5 models; use thinkingBudget."
+                )
+            }
+            // Docs: -1 enables dynamic thinking; 0 disables thinking.
+            let budget = options.thinkingBudgetTokens ?? -1
+            let config = ThinkingConfig(
+                includeThoughts: nil,
+                thinkingBudget: budget,
+                thinkingLevel: nil
+            )
+            try validateThinkingConfig(config)
+            return config
+        }
+
+        return nil
+    }
+
+    internal static func validateGemini3ThinkingLevel(_ level: GeminiThinkingLevel, model: String) throws {
+        let value = level.rawValue.lowercased()
+
+        if model.contains("-pro") {
+            if value != "low" && value != "high" {
+                throw GeminiError.custom(
+                    "Invalid thinkingLevel '\(level.rawValue)' for Gemini 3 Pro. Allowed: low, high."
+                )
+            }
+            return
+        }
+
+        if model.contains("-flash") {
+            if value != "minimal" && value != "low" && value != "medium" && value != "high" {
+                throw GeminiError.custom(
+                    "Invalid thinkingLevel '\(level.rawValue)' for Gemini 3 Flash. Allowed: minimal, low, medium, high."
+                )
+            }
+            return
+        }
+    }
+
+    /// Validates mutual exclusivity of `thinkingLevel` vs `thinkingBudget`.
+    internal static func validateThinkingConfig(_ config: ThinkingConfig) throws {
+        if config.thinkingLevel != nil && config.thinkingBudget != nil {
+            throw GeminiError.custom(
+                "Invalid thinkingConfig: thinkingLevel and thinkingBudget are mutually exclusive.")
+        }
     }
 
     // MARK: - 2. Image Generation (Imagen 3)
@@ -222,7 +326,7 @@ public class GeminiManager {
         aspectRatio: String = "1:1",
         model: String = "imagen-3.0-generate-001"
     ) async throws -> Data {
-        let endpoint = "\(baseURL)/models/\(model):predict?key=\(apiKey)"
+        let endpoint = "\(baseURL.absoluteString)/models/\(model):predict?key=\(apiKey)"
 
         let payload: [String: Any] = [
             "instances": [
@@ -261,7 +365,7 @@ public class GeminiManager {
         prompt: String,
         model: String = "veo-2.0-generate-001"
     ) async throws -> String {
-        let endpoint = "\(baseURL)/models/\(model):predict?key=\(apiKey)"  // Using predict as generic entry point often used for Veo alpha
+        let endpoint = "\(baseURL.absoluteString)/models/\(model):predict?key=\(apiKey)"  // Using predict as generic entry point often used for Veo alpha
 
         let payload: [String: Any] = [
             "instances": [
@@ -302,7 +406,7 @@ public class GeminiManager {
     /// - Parameter name: The operation name.
     /// - Returns: The result URI.
     private func pollOperation(name: String) async throws -> String {
-        let pollEndpoint = "\(baseURL)/\(name)?key=\(apiKey)"
+        let pollEndpoint = "\(baseURL.absoluteString)/\(name)?key=\(apiKey)"
 
         // Poll for up to 60 seconds? Video gen can be slow.
         let maxAttempts = 30
@@ -440,14 +544,28 @@ public struct MediaFile {
     }
 }
 
-/// Defines the reasoning level for the model.
-public enum ThinkingLevel: String {
-    /// No thinking/reasoning.
+/// Legacy thinking level control for the public `GeminiManager` API.
+/// New code should prefer `LLMRequestOptions` + `GenerationConfig.thinkingConfig`.
+public enum ThinkingLevel: String, Codable {
     case off = "OFF"  // Not sent in config
-    /// Low level reasoning.
-    case low = "LOW"
-    /// High level reasoning (for complex tasks).
-    case high = "HIGH"
+    case low = "low"
+    case high = "high"
+}
+
+/// A forward-compatible thinking-level wrapper for Gemini 3 models.
+public struct GeminiThinkingLevel: RawRepresentable, Codable, Hashable, Sendable,
+    ExpressibleByStringLiteral
+{
+    public let rawValue: String
+
+    public init(rawValue: String) { self.rawValue = rawValue }
+
+    public init(stringLiteral value: StringLiteralType) { self.rawValue = value }
+
+    public static let minimal: Self = "minimal"
+    public static let low: Self = "low"
+    public static let medium: Self = "medium"
+    public static let high: Self = "high"
 }
 
 // MARK: - API Structs (Codable)
@@ -460,11 +578,22 @@ struct GenerateContentRequest: Codable {
     let generationConfig: GenerationConfig?
     /// Optional tool/function declarations for native tool calling.
     let tools: [GeminiTool]?
+
+    // Explicit coding keys to prevent accidental snake_case encoding.
+    enum CodingKeys: String, CodingKey {
+        case contents
+        case generationConfig
+        case tools
+    }
 }
 
 /// A Gemini tool container (function declarations).
 struct GeminiTool: Codable {
     let functionDeclarations: [GeminiFunctionDeclaration]
+
+    enum CodingKeys: String, CodingKey {
+        case functionDeclarations
+    }
 }
 
 /// A Gemini function declaration.
@@ -472,6 +601,12 @@ struct GeminiFunctionDeclaration: Codable {
     let name: String
     let description: String?
     let parameters: GeminiJSONValue?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case description
+        case parameters
+    }
 }
 
 /// Represents a message content.
@@ -488,49 +623,45 @@ public nonisolated struct Content: Codable, Sendable {
     }
 }
 
-/// A part of the message content.
-public nonisolated enum Part: Codable, Sendable {
-    /// Text content.
-    case text(String)
-    /// Inline media data.
-    case inlineData(InlineData)
-    /// Function call request.
-    case functionCall(FunctionCall)
-    /// Function response.
-    case functionResponse(FunctionResponse)
-    /// Thought signature (internal reasoning).
-    case thoughtSignature(String)  // Important for Gemini 3 reasoning chains
+/// A single Gemini `Part`.
+///
+/// Thought signatures can be present alongside other part payloads (for example, attached to a
+/// `functionCall` part). We model them as an optional field rather than as a separate sum-type case.
+public nonisolated struct Part: Codable, Sendable {
+    public var text: String?
+    public var inlineData: InlineData?
+    public var functionCall: FunctionCall?
+    public var functionResponse: FunctionResponse?
+    public var thoughtSignature: String?
 
-    enum CodingKeys: String, CodingKey {
-        case text, inlineData, functionCall, functionResponse, thoughtSignature
+    public init(
+        text: String? = nil,
+        inlineData: InlineData? = nil,
+        functionCall: FunctionCall? = nil,
+        functionResponse: FunctionResponse? = nil,
+        thoughtSignature: String? = nil
+    ) {
+        self.text = text
+        self.inlineData = inlineData
+        self.functionCall = functionCall
+        self.functionResponse = functionResponse
+        self.thoughtSignature = thoughtSignature
     }
 
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        switch self {
-        case .text(let s): try container.encode(s, forKey: .text)
-        case .inlineData(let d): try container.encode(d, forKey: .inlineData)
-        case .functionCall(let f): try container.encode(f, forKey: .functionCall)
-        case .functionResponse(let r): try container.encode(r, forKey: .functionResponse)
-        case .thoughtSignature(let t): try container.encode(t, forKey: .thoughtSignature)
-        }
+    public static func text(_ value: String, thoughtSignature: String? = nil) -> Part {
+        Part(text: value, thoughtSignature: thoughtSignature)
     }
 
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        if let t = try? container.decode(String.self, forKey: .text) {
-            self = .text(t)
-        } else if let d = try? container.decode(InlineData.self, forKey: .inlineData) {
-            self = .inlineData(d)
-        } else if let fc = try? container.decode(FunctionCall.self, forKey: .functionCall) {
-            self = .functionCall(fc)
-        } else if let fr = try? container.decode(FunctionResponse.self, forKey: .functionResponse) {
-            self = .functionResponse(fr)
-        } else if let ts = try? container.decode(String.self, forKey: .thoughtSignature) {
-            self = .thoughtSignature(ts)
-        } else {
-            throw GeminiError.parsingError
-        }
+    public static func inlineData(_ value: InlineData, thoughtSignature: String? = nil) -> Part {
+        Part(inlineData: value, thoughtSignature: thoughtSignature)
+    }
+
+    public static func functionCall(_ value: FunctionCall, thoughtSignature: String? = nil) -> Part {
+        Part(functionCall: value, thoughtSignature: thoughtSignature)
+    }
+
+    public static func functionResponse(_ value: FunctionResponse, thoughtSignature: String? = nil) -> Part {
+        Part(functionResponse: value, thoughtSignature: thoughtSignature)
     }
 }
 
@@ -546,12 +677,37 @@ public nonisolated struct InlineData: Codable, Sendable {
 struct GenerationConfig: Codable {
     /// Sampling temperature (0.0 - 2.0).
     var temperature: Float? = nil  // Default 1.0 is best for Gemini 3
-    /// Thinking level setting.
-    var thinkingLevel: String?
+    /// Model thinking configuration (Gemini Developer API).
+    var thinkingConfig: ThinkingConfig?
     /// Response modalities (e.g., TEXT, IMAGE).
     var responseModalities: [String]?  // ["TEXT", "IMAGE"]
     /// Maximum number of output tokens.
     var maxOutputTokens: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case temperature
+        case thinkingConfig
+        case responseModalities
+        case maxOutputTokens
+    }
+}
+
+/// Configuration for model thinking/reasoning behavior.
+///
+/// NOTE: `thinkingLevel` and `thinkingBudget` are mutually exclusive depending on model family.
+struct ThinkingConfig: Codable {
+    /// If true, include thought summaries when available.
+    let includeThoughts: Bool?
+    /// Thinking token budget (Gemini 2.5). -1 enables dynamic thinking; 0 disables thinking.
+    let thinkingBudget: Int?
+    /// Thinking level (Gemini 3).
+    let thinkingLevel: GeminiThinkingLevel?
+
+    enum CodingKeys: String, CodingKey {
+        case includeThoughts
+        case thinkingBudget
+        case thinkingLevel
+    }
 }
 
 /// The response from a generation request.
@@ -561,19 +717,13 @@ public nonisolated struct GenerationResponse: Codable, Sendable {
 
     /// Convenience property to get the text from the first candidate.
     public var text: String? {
-        candidates?.first?.content.parts.compactMap { part -> String? in
-            if case .text(let t) = part { return t }
-            return nil
-        }.joined()
+        candidates?.first?.content.parts.compactMap { $0.text }.joined()
     }
 
     /// Assembles text by concatenating *all* text parts for a specific candidate.
     public func assembledText(candidateIndex: Int = 0) -> String {
         guard let candidates, candidates.indices.contains(candidateIndex) else { return "" }
-        return candidates[candidateIndex].content.parts.compactMap { part -> String? in
-            if case .text(let t) = part { return t }
-            return nil
-        }.joined()
+        return candidates[candidateIndex].content.parts.compactMap { $0.text }.joined()
     }
 
     /// Candidate count convenience for logging/diagnostics.
@@ -587,10 +737,7 @@ public nonisolated struct GenerationResponse: Codable, Sendable {
     // Extracts thought signature to pass back for reasoning continuity
     /// The thought signature from the model's reasoning process.
     public var thoughtSignature: String? {
-        candidates?.first?.content.parts.compactMap { part -> String? in
-            if case .thoughtSignature(let s) = part { return s }
-            return nil
-        }.first
+        candidates?.first?.content.parts.compactMap { $0.thoughtSignature }.first
     }
 
     /// Usage metadata for the generation.

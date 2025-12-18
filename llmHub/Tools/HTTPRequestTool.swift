@@ -279,7 +279,7 @@ nonisolated struct HTTPRequestTool: Tool {
                 HTTP request failed after \(retries + 1) attempt(s). Time: \(elapsedMs)ms
                 Error: \(urlError.localizedDescription)
                 Domain: \(urlError.code.rawValue) (\(urlError.code))
-                URL: \(urlError.failureURLString ?? urlString)
+                URL: \(urlError.failingURL?.absoluteString ?? urlString)
                 """
         } else {
             errorDetail = """

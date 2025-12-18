@@ -2,7 +2,7 @@
 //  CodeExecutor.swift
 //  llmHubHelper
 //
-//  Core code execution logic running outside the sandbox
+//  Core code execution logic running inside the sandboxed helper
 //  Handles interpreter discovery and process management
 //
 
@@ -11,7 +11,7 @@ import Foundation
 import OSLog
 
 /// Executes code in various languages using system interpreters.
-/// Runs in the XPC helper process, outside the app sandbox.
+/// Runs in the sandboxed XPC helper process.
 actor CodeExecutor {
     
     private let logger = Logger(subsystem: "Syntra.llmHub.CodeExecutionHelper", category: "Executor")
