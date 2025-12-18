@@ -135,7 +135,10 @@ actor ToolExecutor {
         // Enforce user authorization if configured.
         if let auth = context.authorization {
             let status = await auth.checkAccess(for: tool.name)
-            if status != .authorized {
+            switch status {
+            case .authorized:
+                break
+            case .denied:
                 metrics.markEnd()
                 metrics.errorClass = .authorizationDenied
                 return ToolCallResult(
@@ -147,6 +150,22 @@ actor ToolExecutor {
                         errorClass: .authorizationDenied
                     )
                 )
+            case .notDetermined:
+                // Per-call consent: request access and await user decision via UI.
+                let resolved = await auth.requestAccessAsync(for: tool.name)
+                if resolved != .authorized {
+                    metrics.markEnd()
+                    metrics.errorClass = .authorizationDenied
+                    return ToolCallResult(
+                        id: call.id,
+                        toolName: call.name,
+                        result: .failure(
+                            "Unauthorized tool: \(call.name)",
+                            metrics: metrics,
+                            errorClass: .authorizationDenied
+                        )
+                    )
+                }
             }
         }
 

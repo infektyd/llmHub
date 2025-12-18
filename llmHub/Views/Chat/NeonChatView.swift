@@ -20,6 +20,7 @@ struct NeonChatView: View {
     @State private var chatVM = ChatViewModel()
     @StateObject private var interactionController = ChatInteractionController()
     @StateObject private var authService = ToolAuthorizationService()
+    @State private var pendingToolPromptID: String? = nil
     @State private var inputText: String = ""  // Lifted state for InputPanel
 
     @State private var scrollOffset: CGFloat = 0
@@ -118,6 +119,45 @@ struct NeonChatView: View {
                 workbenchVM: workbenchVM,
                 modelRegistry: modelRegistry
             )
+
+            // Ensure the execution layer uses the same auth service instance as the UI prompt.
+            chatVM.attachAuthorizationService(authService)
+        }
+        .onChange(of: authService.pendingAuthRequests) { _, newValue in
+            // Drive a simple per-call permission prompt.
+            if pendingToolPromptID == nil {
+                pendingToolPromptID = newValue.first
+            }
+        }
+        .alert(
+            "Tool permission required",
+            isPresented: Binding(
+                get: { pendingToolPromptID != nil },
+                set: { isPresented in
+                    if !isPresented { pendingToolPromptID = nil }
+                }
+            )
+        ) {
+            Button("Allow once") {
+                if let toolID = pendingToolPromptID {
+                    authService.allowOnce(for: toolID)
+                    pendingToolPromptID = nil
+                    Task { await chatVM.refreshToolToggles(modelContext: modelContext) }
+                }
+            }
+            Button("Deny", role: .destructive) {
+                if let toolID = pendingToolPromptID {
+                    authService.denyAccess(for: toolID)
+                    pendingToolPromptID = nil
+                    Task { await chatVM.refreshToolToggles(modelContext: modelContext) }
+                }
+            }
+        } message: {
+            if let toolID = pendingToolPromptID {
+                Text("Allow the tool '\(toolID)' to run? This can access the app workspace sandbox only.")
+            } else {
+                Text("Allow this tool to run?")
+            }
         }
         .onChange(of: workbenchVM.selectedModel) { _, newModel in
             chatVM.updateSessionModel(
@@ -319,8 +359,11 @@ extension NeonChatView {
                         let status = authService.checkAccess(for: id)
                         if status == .authorized {
                             await chatVM.setToolPermission(toolID: id, enabled: enabled)
+                        } else if status == .denied {
+                            // Keep denied unless user explicitly re-enables via Settings (or reset).
+                            await chatVM.setToolPermission(toolID: id, enabled: false)
                         } else {
-                            authService.grantAccess(for: id)  // Or prompt UI
+                            // Enabling from the UI counts as explicit consent.
                             await chatVM.setToolPermission(toolID: id, enabled: enabled)
                         }
                     }

@@ -68,6 +68,11 @@ struct LLMRequestOptions: Sendable {
     var thinkingPreference: ThinkingPreference = .auto
     /// Optional provider-specific thinking budget hint.
     var thinkingBudgetTokens: Int? = nil
+    /// Optional provider-specific thinking level hint (for Gemini 3 models).
+    ///
+    /// Expected values are model-dependent; see Gemini "Thinking levels" docs.
+    /// This is intentionally a free-form string to avoid over-restricting evolving model capabilities.
+    var thinkingLevelHint: String? = nil
 
     static let `default` = LLMRequestOptions()
 }

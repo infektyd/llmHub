@@ -132,4 +132,100 @@ final class llmHubTests: XCTestCase {
             assistantJson.contains("\"output_text\""),
             "Assistant role should produce 'output_text' type")
     }
+
+    func testGoogleLegacyGemini3FlashPreviewDisplayNameMigratesToModelID() throws {
+        let available: [(id: String, displayName: String)] = [
+            ("gemini-3-flash-preview", "Gemini 3 Flash Preview"),
+            ("gemini-2.5-flash", "Gemini 2.5 Flash"),
+        ]
+
+        let resolved = ChatViewModel.resolvePersistedModelID(
+            providerID: "google",
+            savedModelID: "Gemini 3 Flash Preview",
+            availableModels: available
+        )
+
+        XCTAssertEqual(resolved, "gemini-3-flash-preview")
+    }
+
+    func testGoogleLegacyGemini3ProPreviewDisplayNameMigratesToModelID() throws {
+        let available: [(id: String, displayName: String)] = [
+            ("gemini-3-pro-preview", "Gemini 3 Pro Preview"),
+            ("gemini-3-flash-preview", "Gemini 3 Flash Preview"),
+        ]
+
+        let resolved = ChatViewModel.resolvePersistedModelID(
+            providerID: "google",
+            savedModelID: "Gemini 3 Pro Preview",
+            availableModels: available
+        )
+
+        XCTAssertEqual(resolved, "gemini-3-pro-preview")
+    }
+
+    #if os(macOS)
+    func testWorkspaceRootIsNotHomeDirectoryOnMacOS() throws {
+        let root = WorkspaceResolver.resolve(platform: .macOS)
+        let home = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL
+        XCTAssertNotEqual(root.standardizedFileURL.path, home.path)
+        XCTAssertTrue(root.path.contains("Library") || root.path.contains("Containers"))
+    }
+    #endif
+
+    func testToolPathResolverRejectsAbsolutePaths() throws {
+        let fm = FileManager.default
+        let workspace = fm.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try fm.createDirectory(at: workspace, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: workspace) }
+
+        XCTAssertThrowsError(
+            try ToolPathResolver.resolve(inputPath: "/etc/passwd", workspaceRoot: workspace)
+        ) { error in
+            guard case ToolError.sandboxViolation = error else {
+                return XCTFail("Expected sandboxViolation, got: \(error)")
+            }
+        }
+    }
+
+    func testToolPathResolverRejectsDirectoryTraversal() throws {
+        let fm = FileManager.default
+        let workspace = fm.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try fm.createDirectory(at: workspace, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: workspace) }
+
+        XCTAssertThrowsError(
+            try ToolPathResolver.resolve(inputPath: "../outside.txt", workspaceRoot: workspace)
+        ) { error in
+            guard case ToolError.sandboxViolation = error else {
+                return XCTFail("Expected sandboxViolation, got: \(error)")
+            }
+        }
+    }
+
+    func testToolPathResolverRejectsSymlinkEscape() throws {
+        let fm = FileManager.default
+        let workspace = fm.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try fm.createDirectory(at: workspace, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: workspace) }
+
+        let outside = fm.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try fm.createDirectory(at: outside, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: outside) }
+
+        let link = workspace.appendingPathComponent("escape", isDirectory: true)
+        try fm.createSymbolicLink(at: link, withDestinationURL: outside)
+
+        XCTAssertThrowsError(
+            try ToolPathResolver.resolve(inputPath: "escape/secret.txt", workspaceRoot: workspace)
+        ) { error in
+            guard case ToolError.sandboxViolation = error else {
+                return XCTFail("Expected sandboxViolation, got: \(error)")
+            }
+        }
+    }
+
+    func testProviderIDCanonicalizationForAnthropicAliases() throws {
+        XCTAssertEqual(ProviderID.canonicalID(from: "anthropic"), "anthropic")
+        XCTAssertEqual(ProviderID.canonicalID(from: "Claude"), "anthropic")
+    }
 }

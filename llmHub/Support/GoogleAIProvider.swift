@@ -118,7 +118,7 @@ struct GoogleAIProvider: LLMProvider {
             throw LLMProviderError.authenticationMissing
         }
 
-        let manager = GeminiManager(apiKey: apiKey)
+        let manager = GeminiManager(apiKey: apiKey, baseURL: endpoint)
 
         // Build a mapping from toolCallID -> tool name for functionResponse parts.
         var toolNameByCallID: [String: String] = [:]
@@ -133,39 +133,12 @@ struct GoogleAIProvider: LLMProvider {
         var prompt = ""
         var history: [Content] = []
 
-        // Filter out empty messages just in case
-        let validMessages = messages.filter { !$0.content.isEmpty }
-
-        if let last = validMessages.last {
-            prompt = last.content
-
-            if validMessages.count > 1 {
-                let historyMessages = validMessages.dropLast()
-                history = historyMessages.map { msg in
-                    let role: String
-                    switch msg.role {
-                    case .user, .system: role = "user"  // Gemini 1.5 usually treats system prompts via config or user role
-                    case .assistant: role = "model"
-                    case .tool: role = "user"  // tool responses feed as user content
-                    }
-
-                    if msg.role == .tool,
-                        let toolCallID = msg.toolCallID,
-                        let toolName = toolNameByCallID[toolCallID]
-                    {
-                        let response: [String: GeminiJSONValue] = [
-                            "tool_call_id": .string(toolCallID),
-                            "result": .string(msg.content),
-                        ]
-                        return Content(
-                            role: role,
-                            parts: [.functionResponse(FunctionResponse(name: toolName, response: response))]
-                        )
-                    }
-
-                    return Content(role: role, parts: [.text(msg.content)])
-                }
-            }
+        // Keep assistant tool-call messages even when textual content is empty.
+        let validMessages = messages.filter { msg in
+            if !msg.content.isEmpty { return true }
+            if !(msg.toolCalls ?? []).isEmpty { return true }
+            if !msg.parts.isEmpty { return true }
+            return false
         }
 
         // Note: For now we default to no media files and thinking level off.
@@ -190,62 +163,12 @@ struct GoogleAIProvider: LLMProvider {
 
             if validMessages.count > 1 {
                 let historyMessages = validMessages.dropLast()
-                history = historyMessages.map { msg in
-                    let role: String
-                    switch msg.role {
-                    case .user, .system: role = "user"
-                    case .assistant: role = "model"
-                    case .tool: role = "user"
-                    }
-
-                    var parts: [Part] = []
-                    if msg.role == .tool,
-                        let toolCallID = msg.toolCallID,
-                        let toolName = toolNameByCallID[toolCallID]
-                    {
-                        let response: [String: GeminiJSONValue] = [
-                            "tool_call_id": .string(toolCallID),
-                            "result": .string(msg.content),
-                        ]
-                        parts.append(.functionResponse(FunctionResponse(name: toolName, response: response)))
-                    } else {
-                    // Text
-                    if !msg.content.isEmpty {
-                        parts.append(.text(msg.content))
-                    }
-                    }
-                    // Images
-                    for part in msg.parts {
-                        if case .image(let data, let mime) = part {
-                            let base64 = data.base64EncodedString()
-                            parts.append(.inlineData(InlineData(mimeType: mime, data: base64)))
-                        }
-                    }
-
-                    // Fallback if empty (shouldn't happen with filter)
-                    if parts.isEmpty { parts.append(.text("...")) }
-
-                    return Content(role: role, parts: parts)
-                }
+                history = Self.buildHistoryContents(
+                    historyMessages: historyMessages,
+                    toolNameByCallID: toolNameByCallID
+                )
             }
         }
-
-        let requestedThinkingLevel: ThinkingLevel = {
-            switch options.thinkingPreference {
-            case .off:
-                return .off
-            case .on:
-                return .high
-            case .auto:
-                // Gemini thinking is only supported on select model families; default off otherwise.
-                let lower = model.lowercased()
-                let supportsThinking =
-                    lower.contains("gemini-2.5")
-                    || lower.contains("gemini-3")
-                    || lower.contains("gemini-2.")
-                return supportsThinking ? .high : .off
-            }
-        }()
 
         // We build a non-streaming request by default.
         // streamResponse will convert it to a streaming request if needed.
@@ -254,7 +177,7 @@ struct GoogleAIProvider: LLMProvider {
             prompt: prompt,
             files: mediaFiles,  // Only new files attached to the current prompt
             model: model,
-            thinkingLevel: requestedThinkingLevel,
+            options: options,
             history: history,
             tools: tools,
             maxOutputTokens: maxOutputTokens,
@@ -361,7 +284,7 @@ struct GoogleAIProvider: LLMProvider {
                                 let first = candidates.first
                             {
                                 for part in first.content.parts {
-                                    if case .functionCall(let fc) = part {
+                                    if let fc = part.functionCall {
                                         let encoder = JSONEncoder()
                                         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
                                         let argsObject = fc.args ?? [:]
@@ -369,7 +292,11 @@ struct GoogleAIProvider: LLMProvider {
                                         if let argsStr = String(data: argsData, encoding: .utf8) {
                                             let callId = "call_\(UUID().uuidString.prefix(8))"
                                             let toolCall = ToolCall(
-                                                id: callId, name: fc.name, input: argsStr)
+                                                id: callId,
+                                                name: fc.name,
+                                                input: argsStr,
+                                                geminiThoughtSignature: part.thoughtSignature
+                                            )
                                             accumulatedToolCalls.append(toolCall)
                                             continuation.yield(
                                                 .toolUse(id: callId, name: fc.name, input: argsStr))
@@ -421,5 +348,64 @@ struct GoogleAIProvider: LLMProvider {
 
     func parseTokenUsage(from response: Data) throws -> TokenUsage? {
         return nil
+    }
+}
+
+extension GoogleAIProvider {
+    nonisolated static func buildHistoryContents(
+        historyMessages: ArraySlice<ChatMessage>,
+        toolNameByCallID: [String: String]
+    ) -> [Content] {
+        historyMessages.map { msg in
+            let role: String
+            switch msg.role {
+            case .user, .system: role = "user"
+            case .assistant: role = "model"
+            case .tool: role = "user"
+            }
+
+            var parts: [Part] = []
+
+            if msg.role != .tool, !msg.content.isEmpty {
+                parts.append(.text(msg.content))
+            }
+
+            if msg.role == .assistant, let toolCalls = msg.toolCalls {
+                for toolCall in toolCalls {
+                    let args: [String: GeminiJSONValue]
+                    if let data = toolCall.input.data(using: .utf8),
+                        let decoded = try? JSONDecoder().decode([String: GeminiJSONValue].self, from: data)
+                    {
+                        args = decoded
+                    } else {
+                        args = [:]
+                    }
+
+                    let fc = FunctionCall(name: toolCall.name, args: args.isEmpty ? nil : args)
+                    parts.append(.functionCall(fc, thoughtSignature: toolCall.geminiThoughtSignature))
+                }
+            }
+
+            if msg.role == .tool,
+                let toolCallID = msg.toolCallID,
+                let toolName = toolNameByCallID[toolCallID]
+            {
+                let response: [String: GeminiJSONValue] = [
+                    "result": .string(msg.content)
+                ]
+                parts.append(.functionResponse(FunctionResponse(name: toolName, response: response)))
+            }
+
+            for part in msg.parts {
+                if case .image(let data, let mime) = part {
+                    let base64 = data.base64EncodedString()
+                    parts.append(.inlineData(InlineData(mimeType: mime, data: base64)))
+                }
+            }
+
+            if parts.isEmpty { parts.append(.text("...")) }
+
+            return Content(role: role, parts: parts)
+        }
     }
 }

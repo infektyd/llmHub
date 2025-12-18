@@ -10,6 +10,10 @@ enum ToolManifest {
 
         Tool access is provided ONLY by llmHub and is limited to the tools listed in this message.
         Do not claim access to external tools (e.g. web browser, Python, filesystem, shell) unless you call an llmHub tool that provides that capability.
+
+        Security constraints:
+        - Sensitive tools (especially filesystem + shell) require explicit user authorization at runtime; access may be denied.
+        - Filesystem tools are sandboxed to the app workspace. Absolute paths and paths outside the workspace are rejected.
         """
 
         let toolCallingLine: String =

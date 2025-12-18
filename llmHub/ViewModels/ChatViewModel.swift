@@ -194,7 +194,8 @@ class ChatViewModel {
 
         // Initialize Actors
         let workspace = LightweightWorkspace()
-        let authService = ToolAuthorizationService()
+        // If the UI already provided an authorization service, reuse it so prompts/decisions are consistent.
+        let authService = self.authService ?? ToolAuthorizationService()
         self.workspace = workspace
         self.authService = authService
 
@@ -229,6 +230,12 @@ class ChatViewModel {
 
         self.chatService = service
         return service
+    }
+
+    /// Allows the UI to provide a shared ToolAuthorizationService instance so prompts and permission
+    /// state are consistent across the view and the execution layer.
+    func attachAuthorizationService(_ service: ToolAuthorizationService) {
+        self.authService = service
     }
 
     /// Refresh tool toggles and authorized tool list, ensuring registry is loaded.
@@ -370,38 +377,40 @@ class ChatViewModel {
             "Hydrating state from session: \(savedProviderID) → \(canonicalSavedProviderID) / \(savedModelID)"
         )
 
+        func makeUIProvider(providerName: String) -> UILLMProvider {
+            let models = modelRegistry.models(for: providerName).map { model in
+                UILLMModel(
+                    id: UUID(),
+                    modelID: model.id,
+                    name: model.displayName,
+                    contextWindow: model.contextWindow
+                )
+            }
+
+            let icon: String
+            switch providerName.lowercased() {
+            case "openai": icon = "sparkles"
+            case "anthropic": icon = "brain.head.profile"
+            case "google": icon = "cloud.fill"
+            case "mistral": icon = "wind"
+            case "xai": icon = "x.circle.fill"
+            default: icon = "server.rack"
+            }
+
+            return UILLMProvider(
+                id: UUID(),
+                name: providerName,
+                icon: icon,
+                models: models,
+                isActive: false
+            )
+        }
+
         let targetProvider = modelRegistry.availableProviders()
             .filter { providerName in
                 ProviderID.canonicalID(from: providerName) == canonicalSavedProviderID
             }
-            .map { providerName -> UILLMProvider in
-                let models = modelRegistry.models(for: providerName).map { model in
-                    UILLMModel(
-                        id: UUID(),
-                        modelID: model.id,
-                        name: model.displayName,
-                        contextWindow: model.contextWindow
-                    )
-                }
-
-                let icon: String
-                switch providerName.lowercased() {
-                case "openai": icon = "sparkles"
-                case "anthropic": icon = "brain.head.profile"
-                case "google": icon = "cloud.fill"
-                case "mistral": icon = "wind"
-                case "xai": icon = "x.circle.fill"
-                default: icon = "server.rack"
-                }
-
-                return UILLMProvider(
-                    id: UUID(),
-                    name: providerName,
-                    icon: icon,
-                    models: models,
-                    isActive: false
-                )
-            }
+            .map { providerName in makeUIProvider(providerName: providerName) }
             .first
 
         if let provider = targetProvider {
@@ -410,6 +419,17 @@ class ChatViewModel {
             if let model = provider.models.first(where: { $0.modelID == savedModelID }) {
                 workbenchVM.selectedModel = model
                 logger.info("Hydration successful: \(provider.name) -> \(model.name)")
+            } else if let resolvedModelID = Self.resolvePersistedModelID(
+                providerID: canonicalSavedProviderID,
+                savedModelID: savedModelID,
+                availableModels: provider.models.map { ($0.modelID, $0.name) }
+            ),
+                let migrated = provider.models.first(where: { $0.modelID == resolvedModelID })
+            {
+                logger.info(
+                    "Migrated persisted model '\(savedModelID)' -> '\(resolvedModelID)' for provider \(provider.name)"
+                )
+                workbenchVM.selectedModel = migrated
             } else {
                 let key = "\(savedProviderID):\(savedModelID)"
                 if !Self.loggedMissingModels.contains(key) {
@@ -422,15 +442,76 @@ class ChatViewModel {
                 }
             }
         } else {
+            let knownCanonicalIDs = Set(ProviderID.legacyAliasesByLookupKey.values)
+            let isKnownProvider = knownCanonicalIDs.contains(canonicalSavedProviderID)
+
+            let availableProviderNames = modelRegistry.availableProviders()
             let key = "provider:\(canonicalSavedProviderID)"
+
             if !Self.loggedMissingModels.contains(key) {
-                let available = modelRegistry.availableProviders().joined(separator: ", ")
-                logger.warning(
-                    "Could not find provider for ID: \(savedProviderID) (canonical: \(canonicalSavedProviderID)). Available: \(available)"
-                )
+                let available = availableProviderNames.joined(separator: ", ")
+                if isKnownProvider {
+                    logger.warning(
+                        "Provider '\(savedProviderID)' (canonical: \(canonicalSavedProviderID)) is registered, but models are not loaded/available. Available providers with models: \(available). Falling back."
+                    )
+                } else {
+                    logger.warning(
+                        "Could not find provider for ID: \(savedProviderID) (canonical: \(canonicalSavedProviderID)). Available providers with models: \(available). Falling back."
+                    )
+                }
                 Self.loggedMissingModels.insert(key)
             }
+
+            // Fallback to first available provider+model (and let onChange persist migration).
+            if let fallbackProviderName = availableProviderNames.first {
+                let fallbackProvider = makeUIProvider(providerName: fallbackProviderName)
+                workbenchVM.selectedProvider = fallbackProvider
+                if let fallbackModel = fallbackProvider.models.first {
+                    workbenchVM.selectedModel = fallbackModel
+                }
+            }
         }
+    }
+
+    // MARK: - Persisted Model ID Migration
+
+    /// Resolves a persisted/legacy model identifier into a real model id present in `availableModels`.
+    ///
+    /// - Rationale: Earlier builds may have persisted UI display names (e.g. "Gemini 3 Flash Preview")
+    ///   instead of API model IDs (e.g. "gemini-3-flash-preview"). We migrate deterministically.
+    ///
+    /// - Rules:
+    ///   - Prefer explicit alias maps for known historical values.
+    ///   - Fall back to a conservative display-name match only if it maps uniquely.
+    static func resolvePersistedModelID(
+        providerID: String,
+        savedModelID: String,
+        availableModels: [(id: String, displayName: String)]
+    ) -> String? {
+        let providerKey = ProviderID.canonicalID(from: providerID)
+        let savedKey = ProviderID.lookupKey(from: savedModelID)
+
+        // Known historical aliases (display-ish strings -> real API model IDs).
+        // Keys are lookupKey-normalized (lowercased alphanumerics only).
+        let aliasesByProvider: [String: [String: String]] = [
+            "google": [
+                ProviderID.lookupKey(from: "Gemini 3 Flash Preview"): "gemini-3-flash-preview",
+                ProviderID.lookupKey(from: "Gemini 3 Pro Preview"): "gemini-3-pro-preview"
+            ]
+        ]
+
+        if let mapped = aliasesByProvider[providerKey]?[savedKey] {
+            if availableModels.contains(where: { $0.id == mapped }) {
+                return mapped
+            }
+        }
+
+        // Conservative fallback: match against displayName lookup key, but only if unique.
+        let matches = availableModels.filter { ProviderID.lookupKey(from: $0.displayName) == savedKey }
+        if matches.count == 1 {
+            return matches[0].id
+        }
+        return nil
     }
 
     // (rest unchanged from your current file)
