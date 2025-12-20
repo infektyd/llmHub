@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import LocalAuthentication
 import OSLog
 import Security
 
@@ -80,7 +81,9 @@ final class KeychainStore: Sendable {
                     account: account,
                     accessGroup: accessGroup
                 )
-                query[kSecUseAuthenticationUI as String] = kSecUseAuthenticationUIFail
+                let context = LAContext()
+                context.interactionNotAllowed = true
+                query[kSecUseAuthenticationContext as String] = context
 
                 let status = backend.delete(query as CFDictionary)
                 guard status == errSecSuccess || status == errSecItemNotFound else {
@@ -123,7 +126,9 @@ final class KeychainStore: Sendable {
         var query = baseQuery(service: service, account: account, accessGroup: accessGroup)
         query[kSecReturnData as String] = kCFBooleanTrue
         query[kSecMatchLimit as String] = kSecMatchLimitOne
-        query[kSecUseAuthenticationUI as String] = kSecUseAuthenticationUIFail
+        let context = LAContext()
+        context.interactionNotAllowed = true
+        query[kSecUseAuthenticationContext as String] = context
 
         var item: CFTypeRef?
         let status = backend.copyMatching(query as CFDictionary, result: &item)
@@ -207,7 +212,9 @@ final class KeychainStore: Sendable {
 
     private func deleteLegacyKey(service: String, account: String, accessGroup: String?) throws {
         var query = baseQuery(service: service, account: account, accessGroup: accessGroup)
-        query[kSecUseAuthenticationUI as String] = kSecUseAuthenticationUIFail
+        let context = LAContext()
+        context.interactionNotAllowed = true
+        query[kSecUseAuthenticationContext as String] = context
         let status = backend.delete(query as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else {
             throw KeychainError.operationFailed(status)
