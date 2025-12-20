@@ -241,13 +241,21 @@ final class KeychainStore: Sendable {
     }
 
     private func configuredAccessGroups() -> [String] {
-        guard let task = SecTaskCreateFromSelf(nil) else { return [] }
+        #if os(macOS)
+        guard let task = SecTaskCreateFromSelf(nil as CFAllocator?) else { return [] }
         let entitlement = SecTaskCopyValueForEntitlement(
             task,
             "keychain-access-groups" as CFString,
             nil
         )
         return entitlement as? [String] ?? []
+        #else
+        // On iOS, tvOS, watchOS, visionOS - read from entitlements via Bundle
+        guard let entitlements = Bundle.main.object(forInfoDictionaryKey: "keychain-access-groups") as? [String] else {
+            return []
+        }
+        return entitlements
+        #endif
     }
 
     private func logDiagnosticsOnce(for provider: ProviderKey) {
@@ -337,7 +345,7 @@ protocol KeychainBacking: Sendable {
 
 struct SystemKeychainBacking: KeychainBacking {
     func add(_ query: CFDictionary) -> OSStatus {
-        SecItemAdd(query, nil)
+        SecItemAdd(query, nil as UnsafeMutablePointer<CFTypeRef?>?)
     }
 
     func copyMatching(_ query: CFDictionary, result: UnsafeMutablePointer<CFTypeRef?>?) -> OSStatus {
