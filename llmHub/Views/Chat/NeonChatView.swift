@@ -353,6 +353,9 @@ extension NeonChatView {
                         selectedModel: workbenchVM.selectedModel
                     )
                 },
+                onStop: {
+                    await chatVM.stopGeneration()
+                },
                 tools: chatVM.toolToggles,
                 onToggleTool: { id, enabled in
                     Task {

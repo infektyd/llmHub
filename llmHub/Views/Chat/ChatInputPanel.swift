@@ -17,6 +17,7 @@ struct ChatInputPanel: View {
     @Binding var thinkingPreference: ThinkingPreference
     let isSending: Bool
     let onSend: (String) -> Void
+    let onStop: () async -> Void
     let tools: [UIToolToggleItem]
     let onToggleTool: (String, Bool) -> Void
     let onToolsAppear: () -> Void
@@ -114,6 +115,16 @@ struct ChatInputPanel: View {
     private func send() {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty || !stagedAttachments.isEmpty || !stagedReferences.isEmpty else {
+            return
+        }
+
+        if isSending {
+            Task { @MainActor in
+                await onStop()
+                try? await Task.sleep(nanoseconds: 100_000_000)
+                onSend(trimmed)
+                text = ""  // Clear input field after send
+            }
             return
         }
 
@@ -242,21 +253,29 @@ struct ChatInputPanel: View {
     }
 
     private var sendButton: some View {
-        let isDisabled =
-            isSending
-            || (text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                && stagedAttachments.isEmpty
-                && stagedReferences.isEmpty)
+        let canSend =
+            !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !stagedAttachments.isEmpty
+            || !stagedReferences.isEmpty
 
-        return Button(action: { send() }) {
+        let isDisabled = !isSending && !canSend
+
+        return Button(action: {
+            if isSending {
+                if canSend {
+                    send()
+                } else {
+                    Task { await onStop() }
+                }
+            } else {
+                send()
+            }
+        }) {
             ZStack {
                 if isSending {
-                    ProgressView()
-                        .progressViewStyle(.circular)
-                        #if os(macOS)
-                            .controlSize(.small)
-                        #endif
-                        .tint(theme.textPrimary)
+                    Image(systemName: "stop.circle.fill")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(theme.textPrimary)
                 } else {
                     Image(systemName: "arrow.up")
                         .font(.system(size: 16, weight: .bold))

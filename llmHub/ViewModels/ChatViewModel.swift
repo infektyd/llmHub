@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import FoundationModels
 import OSLog
 import SwiftData
 import SwiftUI
@@ -112,6 +113,12 @@ class ChatViewModel {
     private var streamingMessageID: UUID?
     /// Timestamp for the streaming message.
     private var streamingStartedAt: Date?
+    /// Task handle for the active streaming pipeline.
+    private var currentStreamTask: Task<Void, Never>?
+    /// Session ID associated with the active streaming task.
+    private var currentStreamingSessionID: UUID?
+    /// Model context used for the active streaming task.
+    private var currentStreamingModelContext: ModelContext?
 
     // MARK: - Tool Execution Timing (STEP 3)
 
@@ -625,8 +632,10 @@ class ChatViewModel {
         let streamingID = UUID()
         let streamingStart = Date()
         let domainSession = session.asDomain()
+        currentStreamingSessionID = sessionID
+        currentStreamingModelContext = modelContext
 
-        Task { @MainActor in
+        currentStreamTask = Task { @MainActor in
             let (uiStream, uiContinuation) = AsyncStream<String>.makeStream()
 
             let updateTask = Task { @MainActor in
@@ -637,6 +646,9 @@ class ChatViewModel {
             }
 
             do {
+                defer {
+                    currentStreamTask = nil
+                }
                 await streamAccumulator.reset()
                 await streamAccumulator.begin(token: streamToken)
 
@@ -657,6 +669,11 @@ class ChatViewModel {
                 )
 
                 for try await event in stream {
+                    if Task.isCancelled {
+                        logger.info("Stream cancelled by user")
+                        break
+                    }
+
                     switch event {
                     case .token(let text):
                         if let updated = await streamAccumulator.append(
@@ -760,6 +777,21 @@ class ChatViewModel {
                     }
                 }
 
+                if Task.isCancelled {
+                    uiContinuation.finish()
+                    _ = await updateTask.result
+                    await streamAccumulator.reset()
+                    logger.info("Stream task cancelled before completion")
+                    if isGenerating {
+                        isGenerating = false
+                        resetStreamingState()
+                        executingToolNames.removeAll()
+                        isTruncated = false
+                        truncatedSessionID = nil
+                    }
+                    return
+                }
+
                 await streamAccumulator.reset()
 
                 isGenerating = false
@@ -769,6 +801,19 @@ class ChatViewModel {
             } catch {
                 uiContinuation.finish()
                 _ = await updateTask.result
+
+                if Task.isCancelled {
+                    await streamAccumulator.reset()
+                    logger.info("Stream task cancelled during stream error")
+                    if isGenerating {
+                        isGenerating = false
+                        resetStreamingState()
+                        executingToolNames.removeAll()
+                        isTruncated = false
+                        truncatedSessionID = nil
+                    }
+                    return
+                }
 
                 await streamAccumulator.fail(token: streamToken, error: error)
                 await streamAccumulator.reset()
@@ -784,12 +829,91 @@ class ChatViewModel {
         }
     }
 
+    func stopGeneration() async {
+        guard let task = currentStreamTask else { return }
+        logger.info("Stop generation requested by user")
+
+        let textSnapshot = streamingText ?? ""
+        let messageIDSnapshot = streamingMessageID
+        let startedAtSnapshot = streamingStartedAt
+        let sessionIDSnapshot = currentStreamingSessionID
+        let modelContextSnapshot = currentStreamingModelContext
+
+        task.cancel()
+        currentStreamTask = nil
+
+        isGenerating = false
+        streamingText = nil
+        streamingMessageID = nil
+        streamingStartedAt = nil
+        isTruncated = false
+        truncatedSessionID = nil
+        executingToolNames.removeAll()
+        currentStreamingSessionID = nil
+        currentStreamingModelContext = nil
+
+        guard
+            let messageID = messageIDSnapshot,
+            let sessionID = sessionIDSnapshot,
+            let modelContext = modelContextSnapshot
+        else { return }
+
+        let emote = await generateInterruptionEmote()
+        let trimmed = textSnapshot.trimmingCharacters(in: .whitespacesAndNewlines)
+        let finalText = trimmed.isEmpty ? emote : "\(textSnapshot) \(emote)"
+
+        let interruptedMessage = ChatMessage(
+            id: messageID,
+            role: .assistant,
+            content: finalText,
+            thoughtProcess: nil,
+            parts: [.text(finalText)],
+            createdAt: startedAtSnapshot ?? Date(),
+            codeBlocks: [],
+            tokenUsage: nil,
+            costBreakdown: nil,
+            toolCallID: nil,
+            toolCalls: nil
+        )
+
+        let service = await ensureChatService(modelContext: modelContext)
+        try? service.appendMessage(interruptedMessage, to: sessionID)
+        setLastVisibleMessage(to: messageID)
+    }
+
+    private func generateInterruptionEmote() async -> String {
+        let fallback = "⏸️"
+
+        do {
+            // Create a session with simple instructions
+            let session = LanguageModelSession(
+                instructions: "You are a helpful assistant. Always respond with exactly one emoji."
+            )
+            
+            let prompt = """
+            Generate a single emoji that represents an interrupted thought or \
+            paused conversation. Respond with only the emoji, nothing else.
+            """
+            
+            let response = try await session.respond(to: prompt)
+
+            if let firstEmoji = response.content.unicodeScalars.first(where: { $0.properties.isEmoji })
+            {
+                return String(firstEmoji)
+            }
+        } catch {
+            logger.warning(
+                "AFM emote generation failed: \(error.localizedDescription)")
+        }
+
+        return fallback
+    }
+
     private func mapUISelectionToProviderModel(
         selectedProvider: UILLMProvider?,
         selectedModel: UILLMModel?,
         sessionEntity: ChatSessionEntity
     ) -> (providerID: String, modelID: String) {
-
         if let provider = selectedProvider, let model = selectedModel {
             logger.info("UI Selection - Provider: \(provider.name), Model: \(model.name)")
 
@@ -957,6 +1081,8 @@ class ChatViewModel {
         streamingText = nil
         streamingMessageID = nil
         streamingStartedAt = nil
+        currentStreamingSessionID = nil
+        currentStreamingModelContext = nil
     }
 
     private func handleStreamCompletion(
@@ -1106,3 +1232,4 @@ class ChatViewModel {
         }
     }
 }
+
