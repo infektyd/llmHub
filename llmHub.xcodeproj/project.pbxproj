@@ -532,9 +532,9 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = B3C0F0D12F0E1A9A00000001 /* StrictConcurrency.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = llmHub_v1.icon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = llmHub_v1;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				AUTOMATION_APPLE_EVENTS = NO;
 				CODE_SIGN_ENTITLEMENTS = llmHub/llmHub.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
@@ -608,9 +608,9 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = B3C0F0D12F0E1A9A00000001 /* StrictConcurrency.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = llmHub_v1.icon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = llmHub_v1;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				AUTOMATION_APPLE_EVENTS = NO;
 				CODE_SIGN_ENTITLEMENTS = llmHub/llmHub.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
