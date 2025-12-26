@@ -89,6 +89,7 @@ struct NeonChatView: View {
                 }
 
         }
+        .environment(chatVM)
         #if os(macOS)
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
@@ -276,6 +277,11 @@ extension NeonChatView {
         return GlassTranscriptSurface {
             ScrollViewReader { proxy in
                 ScrollView {
+                    if CommandLine.arguments.contains("-AFMDiagnostics") {
+                        AFMDiagnosticsView()
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 8)
+                    }
                     messagesStack(messages)
                         .padding(LiquidGlassTokens.Spacing.transcriptPadding)  // Now 0 for infinite scroll
                         .background(

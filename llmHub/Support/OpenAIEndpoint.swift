@@ -30,6 +30,7 @@ struct ModelRouter: Sendable {
         // - gpt-4.1*
         // - o-series reasoning models (o1/o3/o4-*)
         if lower.contains("gpt-5") { return .responses }
+        if lower.contains("-o1") || lower.contains("-o3") { return .responses }
         if lower.hasPrefix("gpt-4.1") { return .responses }
         if lower.hasPrefix("o"), lower.dropFirst().first?.isNumber == true { return .responses }
 

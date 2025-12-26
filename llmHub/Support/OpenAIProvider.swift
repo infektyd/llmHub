@@ -255,6 +255,15 @@ struct OpenAIProvider: LLMProvider {
                             return nil
                         }
 
+                        func jsonString(from value: Any) -> String? {
+                            if let s = value as? String { return s }
+                            guard JSONSerialization.isValidJSONObject(value) else { return nil }
+                            guard let data = try? JSONSerialization.data(withJSONObject: value) else {
+                                return nil
+                            }
+                            return String(data: data, encoding: .utf8)
+                        }
+
                         func isValidJSONObjectString(_ s: String) -> Bool {
                             guard let data = s.data(using: .utf8) else { return false }
                             return (try? JSONSerialization.jsonObject(with: data)) != nil
@@ -262,6 +271,7 @@ struct OpenAIProvider: LLMProvider {
 
                         var fullText = ""
                         var thinkingSummary = ""
+                        var didYieldError = false
 
                         // Tool call assembly (best-effort; Responses schema varies by event type).
                         struct PartialCall {
@@ -272,6 +282,7 @@ struct OpenAIProvider: LLMProvider {
                         var partialCallsByID: [String: PartialCall] = [:]
                         var emittedToolCallIDs: Set<String> = []
                         var finalizedToolCalls: [ToolCall] = []
+                        var contentBlockIDByIndex: [Int: String] = [:]
 
                         func upsertToolCall(id: String, name: String?, argsDelta: String?) {
                             var existing = partialCallsByID[id] ?? PartialCall(id: id, name: nil, arguments: "")
@@ -293,6 +304,19 @@ struct OpenAIProvider: LLMProvider {
                             partialCallsByID[id] = call
                         }
 
+                        func resolveToolCallID(from dict: [String: Any], fallbackIndex: Int?) -> String {
+                            if let id = firstString(dict, keys: ["id", "tool_call_id", "call_id", "item_id"]) {
+                                return id
+                            }
+                            if let index = fallbackIndex, let mapped = contentBlockIDByIndex[index] {
+                                return mapped
+                            }
+                            if let index = fallbackIndex {
+                                return "call_\(index)"
+                            }
+                            return "call_0"
+                        }
+
                         var sse = SSEEventFrameParser()
                         for try await byte in bytes {
                             for frame in sse.append(byte: byte) {
@@ -303,6 +327,70 @@ struct OpenAIProvider: LLMProvider {
                                 let typeName = (dict?["type"] as? String) ?? eventName ?? ""
 
                                 switch typeName {
+                                case "content_block_start":
+                                    guard let dict, let block = dict["content_block"] as? [String: Any] else { break }
+                                    let blockType = (block["type"] as? String) ?? ""
+                                    let index = dict["index"] as? Int
+                                    if blockType == "text" {
+                                        if let text = firstString(block, keys: ["text", "content", "value"]) {
+                                            if !text.isEmpty {
+                                                fullText += text
+                                                continuation.yield(.token(text: text))
+                                            }
+                                        }
+                                    } else if blockType == "tool_use" {
+                                        let callID = resolveToolCallID(from: block, fallbackIndex: index)
+                                        if let index { contentBlockIDByIndex[index] = callID }
+                                        let name = firstString(block, keys: ["name", "tool_name", "function_name"])
+                                        let input = block["input"].flatMap { jsonString(from: $0) }
+                                        upsertToolCall(id: callID, name: name, argsDelta: input)
+                                        finalizeToolCallIfReady(id: callID)
+                                    }
+
+                                case "content_block_delta":
+                                    guard let dict else { break }
+                                    let index = dict["index"] as? Int
+                                    let delta = dict["delta"] as? [String: Any]
+                                    let deltaType = delta.flatMap { firstString($0, keys: ["type"]) } ?? ""
+                                    if deltaType == "text_delta" {
+                                        if let text = delta.flatMap({ firstString($0, keys: ["text", "delta", "value"]) }) {
+                                            if !text.isEmpty {
+                                                fullText += text
+                                                continuation.yield(.token(text: text))
+                                            }
+                                        }
+                                    } else if deltaType == "input_json_delta" {
+                                        let callID = resolveToolCallID(from: dict, fallbackIndex: index)
+                                        let jsonDelta = delta.flatMap({ firstString($0, keys: ["partial_json", "delta", "arguments"]) })
+                                        upsertToolCall(id: callID, name: nil, argsDelta: jsonDelta)
+                                        finalizeToolCallIfReady(id: callID)
+                                    }
+
+                                case "message_delta":
+                                    if let dict,
+                                        let usageDict = dict["usage"] as? [String: Any]
+                                    {
+                                        let inputTokens = firstInt(usageDict, keys: ["input_tokens", "prompt_tokens"]) ?? 0
+                                        let outputTokens = firstInt(usageDict, keys: ["output_tokens", "completion_tokens"]) ?? 0
+                                        let cachedTokens = firstInt(usageDict, keys: ["cached_tokens"]) ?? 0
+                                        continuation.yield(.usage(TokenUsage(inputTokens: inputTokens, outputTokens: outputTokens, cachedTokens: cachedTokens)))
+                                    }
+
+                                case "message_stop":
+                                    // Finalization event; remaining frames may still follow.
+                                    break
+
+                                case "error":
+                                    if let dict,
+                                        let errorDict = dict["error"] as? [String: Any]
+                                    {
+                                        let message =
+                                            firstString(errorDict, keys: ["message", "error", "type"])
+                                            ?? "Unknown error"
+                                        continuation.yield(.error(.server(reason: message)))
+                                        didYieldError = true
+                                    }
+
                                 case "response.output_text.delta":
                                     if let delta = dict.flatMap({ firstString($0, keys: ["delta", "text"]) }) {
                                         if !delta.isEmpty {
@@ -364,7 +452,14 @@ struct OpenAIProvider: LLMProvider {
                                 default:
                                     break
                                 }
+                                if didYieldError { break }
                             }
+                            if didYieldError { break }
+                        }
+
+                        if didYieldError {
+                            continuation.finish()
+                            return
                         }
 
                         let message = ChatMessage(
