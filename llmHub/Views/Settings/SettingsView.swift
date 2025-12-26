@@ -256,11 +256,11 @@ struct LiquidThemeCard: View {
         VStack(spacing: 8) {
             ZStack {
                 // Background Preview
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: 06)
                     .fill(theme.backgroundPrimary)
                     .frame(width: 100, height: 70)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
+                        RoundedRectangle(cornerRadius: 06)
                             .strokeBorder(isSelected ? theme.accent : .clear, lineWidth: 2)
                     )
                     .shadow(color: isSelected ? theme.accent.opacity(0.5) : .clear, radius: 10)
@@ -546,10 +546,10 @@ struct ProviderKeyRow: View {
         }
         .padding(16)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 06)
                 .fill(Color.black.opacity(0.2))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: 06)
                         .stroke(
                             hasKey ? Color.green.opacity(0.3) : Color.neonGray.opacity(0.2),
                             lineWidth: 1)
@@ -647,7 +647,7 @@ struct GeneralSettingsView: View {
                 }
             }
             .background(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: 06)
                     .fill(Color.black.opacity(0.2))
                     .glassEffect(GlassEffect.regular, in: .rect(cornerRadius: 12))
             )
@@ -686,7 +686,7 @@ struct GeneralSettingsView: View {
                 }
                 .padding(12)
                 .background(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: 06)
                         .fill(Color.black.opacity(0.2))
                         .glassEffect(GlassEffect.regular, in: .rect(cornerRadius: 12))
                 )

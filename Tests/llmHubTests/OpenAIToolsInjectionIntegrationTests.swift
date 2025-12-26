@@ -1,3 +1,4 @@
+#if canImport(XCTest)
 import XCTest
 
 @testable import llmHub
@@ -63,3 +64,4 @@ final class OpenAIToolsInjectionIntegrationTests: XCTestCase {
         }
     }
 }
+#endif

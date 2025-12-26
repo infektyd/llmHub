@@ -38,6 +38,7 @@ extension Color {
     // Keep these temporarily, but prefer glass tints for new code
 
     static let neonElectricBlue = Color(red: 0.0, green: 0.7, blue: 1.0)
+    static let neonCyan = Color(red: 0.0, green: 0.9, blue: 0.9)
     static let neonFuchsia = Color(red: 1.0, green: 0.0, blue: 0.6)
     static let neonMidnight = Color(red: 0.05, green: 0.05, blue: 0.1)
     static let neonCharcoal = Color(red: 0.12, green: 0.12, blue: 0.15)

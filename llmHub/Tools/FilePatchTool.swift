@@ -61,11 +61,10 @@ nonisolated struct FilePatchTool: Tool {
         let dryRun = arguments.bool("dry_run") ?? false
 
         // Resolve file path safely
-        let fileURL = try ToolPathResolver.resolve(
-            inputPath: filePath,
-            workspaceRoot: context.workspacePath,
-            kind: .file
-        )
+        let fileURL = context.workspacePath.appendingPathComponent(filePath).standardizedFileURL
+        if !fileURL.path.hasPrefix(context.workspacePath.path) {
+            throw ToolError.sandboxViolation("File must be within workspace")
+        }
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
             throw ToolError.executionFailed("File not found: \(filePath)")
         }

@@ -290,10 +290,10 @@ extension EnvironmentValues {
 ```swift
 // FIND (approximately lines 69-77):
 .background(
-    RoundedRectangle(cornerRadius: 12)
+    RoundedRectangle(cornerRadius: 06)
         .fill(Color.neonCharcoal.opacity(0.6))
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 06)
                 .stroke(
                     isInputFocused
                         ? Color.neonElectricBlue.opacity(0.5)

@@ -8,26 +8,21 @@
 import SwiftData
 import SwiftUI
 
-#if canImport(MarkdownUI)
-    import MarkdownUI
-#endif
-
 struct NeonChatView: View {
     let session: ChatSessionEntity
     @Environment(WorkbenchViewModel.self) private var workbenchVM
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.theme) private var theme
     @State private var chatVM = ChatViewModel()
-    @StateObject private var interactionController = ChatInteractionController()
-    @StateObject private var authService = ToolAuthorizationService()
-    @State private var pendingToolPromptID: String? = nil
     @State private var inputText: String = ""  // Lifted state for InputPanel
+    @State private var showingToolsDebug = false  // Debug view for tools
+    @State private var thinkingPreference: ThinkingPreference = .auto  // Thinking mode preference
+
+    @AppStorage("windowBackgroundOpacity") private var windowBackgroundOpacity: Double = 1.0
 
     @State private var scrollOffset: CGFloat = 0
     // Removed messageBottomPadding as safeAreaInset handles it
 
     @State private var showingSettings = false
-    @State private var showingToolsDebug = false
     @EnvironmentObject private var modelRegistry: ModelRegistry
 
     var body: some View {
@@ -46,10 +41,48 @@ struct NeonChatView: View {
                 )
             #endif
 
-            transcriptSheet
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+            // Main Content with Safe Area Inset for Input
+            messageList
+                .safeAreaInset(edge: .bottom) {
+                    ChatInputPanel(
+                        text: $inputText,
+                        thinkingPreference: $thinkingPreference,
+                        isSending: chatVM.isGenerating,
+                        onSend: { messageText in
+                            chatVM.sendMessage(
+                                messageText: messageText,
+                                attachments: nil, // Use staged attachments from VM
+                                session: session,
+                                modelContext: modelContext,
+                                selectedProvider: workbenchVM.selectedProvider,
+                                selectedModel: workbenchVM.selectedModel
+                            )
+                        },
+                        onStop: {
+                            // Stop generation logic
+                            await chatVM.stopGeneration()
+                        },
+                        tools: chatVM.toolToggles,
+                        onToggleTool: { id, enabled in
+                            Task { await chatVM.setToolPermission(toolID: id, enabled: enabled) }
+                        },
+                        onToolsAppear: {
+                            Task { await chatVM.refreshToolToggles(modelContext: modelContext) }
+                        },
+                        stagedAttachments: chatVM.stagedAttachments,
+                        onAddAttachment: { chatVM.addAttachment($0) },
+                        onRemoveAttachment: { chatVM.removeAttachment(at: $0) },
+                        stagedReferences: chatVM.stagedReferences,
+                        onRemoveReference: { chatVM.removeReference(at: $0) }
+                    )
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background {
+                        AdaptiveGlassBackground(target: .chatArea)
+                    }
+                }
                 .overlay(alignment: .top) {
+                    // Context Compaction Notification
                     if chatVM.showContextCompactionNotification,
                         let message = chatVM.contextCompactionMessage
                     {
@@ -57,55 +90,13 @@ struct NeonChatView: View {
                             .transition(.move(edge: .top).combined(with: .opacity))
                     }
                 }
-                .overlay(alignment: .bottomTrailing) {
-                    // Show streaming stats during active generation
-                    if chatVM.isActivelyStreaming {
-                        StreamingStatsCapsule(
-                            inputTokens: session.lastTokenUsageInputTokens ?? 0,
-                            estimatedOutputTokens: chatVM.streamingTokenEstimate,
-                            estimatedCost: 0.00  // Stub cost - calculate from model rates if needed
-                        )
-                        .padding(.trailing, 14)
-                        .padding(.bottom, 120)
-                        .transition(.opacity.combined(with: .scale(scale: 0.9)))
-                        .animation(.easeInOut(duration: 0.2), value: chatVM.isActivelyStreaming)
-                    }
-                    // Show static token usage after completion
-                    else if let inputTokens = session.lastTokenUsageInputTokens,
-                        let outputTokens = session.lastTokenUsageOutputTokens
-                    {
-                        TokenUsageCapsule(
-                            inputTokens: inputTokens,
-                            outputTokens: outputTokens,
-                            cachedTokens: session.lastTokenUsageCachedTokens ?? 0,
-                            totalCost: session.totalCostUSD,
-                            contextLimit: 128000,
-                            isEstimate: false  // Values in session are considered authoritative
-                        )
-                        .padding(.trailing, 14)
-                        .padding(.bottom, 120)
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
-                    }
-                }
-
         }
-        .environment(chatVM)
         #if os(macOS)
-            .sheet(isPresented: $showingSettings) {
-                SettingsView()
+        .sheet(isPresented: $showingSettings) {
+            SettingsView()
                 .environmentObject(modelRegistry)
                 .frame(width: 600, height: 500)
-            }
-            #if DEBUG
-                .sheet(isPresented: $showingToolsDebug) {
-                    ToolsAvailableDebugSheet(
-                        providerID: session.providerID,
-                        modelID: session.model,
-                        toolToggles: chatVM.toolToggles
-                    )
-                    .frame(width: 520, height: 500)
-                }
-            #endif
+        }
         #endif
         .onAppear {
             #if os(iOS)
@@ -113,68 +104,6 @@ struct NeonChatView: View {
             #else
                 print("🔴 LIFECYCLE: [macOS] NeonChatView.onAppear - session: \(session.id)")
             #endif
-
-            // Hydrate persistence state
-            chatVM.hydrateState(
-                from: session,
-                workbenchVM: workbenchVM,
-                modelRegistry: modelRegistry
-            )
-
-            // Ensure the execution layer uses the same auth service instance as the UI prompt.
-            chatVM.attachAuthorizationService(authService)
-        }
-        .onChange(of: authService.pendingAuthRequests) { _, newValue in
-            // Drive a simple per-call permission prompt.
-            if pendingToolPromptID == nil {
-                pendingToolPromptID = newValue.first
-            }
-        }
-        .alert(
-            "Tool permission required",
-            isPresented: Binding(
-                get: { pendingToolPromptID != nil },
-                set: { isPresented in
-                    if !isPresented { pendingToolPromptID = nil }
-                }
-            )
-        ) {
-            Button("Allow once") {
-                if let toolID = pendingToolPromptID {
-                    authService.allowOnce(for: toolID)
-                    pendingToolPromptID = nil
-                    Task { await chatVM.refreshToolToggles(modelContext: modelContext) }
-                }
-            }
-            Button("Deny", role: .destructive) {
-                if let toolID = pendingToolPromptID {
-                    authService.denyAccess(for: toolID)
-                    pendingToolPromptID = nil
-                    Task { await chatVM.refreshToolToggles(modelContext: modelContext) }
-                }
-            }
-        } message: {
-            if let toolID = pendingToolPromptID {
-                Text("Allow the tool '\(toolID)' to run? This can access the app workspace sandbox only.")
-            } else {
-                Text("Allow this tool to run?")
-            }
-        }
-        .onChange(of: workbenchVM.selectedModel) { _, newModel in
-            chatVM.updateSessionModel(
-                session: session,
-                provider: workbenchVM.selectedProvider,
-                model: newModel,
-                modelContext: modelContext
-            )
-        }
-        .onChange(of: workbenchVM.selectedProvider) { _, newProvider in
-            chatVM.updateSessionModel(
-                session: session,
-                provider: newProvider,
-                model: workbenchVM.selectedModel,
-                modelContext: modelContext
-            )
         }
         .onDisappear {
             #if os(iOS)
@@ -182,18 +111,6 @@ struct NeonChatView: View {
             #else
                 print("🔴 LIFECYCLE: [macOS] NeonChatView.onDisappear - session: \(session.id)")
             #endif
-            // Break retain cycle by nilling the closure
-            interactionController.onAddReference = nil
-
-            // Phase 2 Memory: treat view disappearance as session deactivation.
-            // This reliably fires when switching conversations in the sidebar.
-            chatVM.onSessionDeactivated(session: session, modelContext: modelContext)
-        }
-        .onAppear {
-            // Wire up controller interactions
-            interactionController.onAddReference = { [weak chatVM] reference in
-                chatVM?.addReference(reference)
-            }
         }
         #if os(iOS)
             .navigationTitle(session.title)
@@ -205,7 +122,7 @@ struct NeonChatView: View {
                     } label: {
                         Image(systemName: "gearshape")
                         .font(.system(size: 18))
-                        .foregroundColor(theme.accent)
+                        .foregroundColor(.neonElectricBlue)
                     }
                 }
 
@@ -219,18 +136,18 @@ struct NeonChatView: View {
                         }) {
                             Image(systemName: "sidebar.right")
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(theme.accent)
+                            .foregroundColor(.neonElectricBlue)
                             .padding(8)
                             .background(
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                                     .fill(
-                                        theme.accent.opacity(
+                                        Color.neonElectricBlue.opacity(
                                             workbenchVM.toolInspectorVisible ? 0.18 : 0.08)
                                     )
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 10, style: .continuous)
                                             .stroke(
-                                                theme.accent.opacity(
+                                                Color.neonElectricBlue.opacity(
                                                     workbenchVM.toolInspectorVisible ? 0.35 : 0.18),
                                                 lineWidth: 1)
                                     )
@@ -256,7 +173,7 @@ struct NeonChatView: View {
                             Button("Done") {
                                 showingSettings = false
                             }
-                            .foregroundColor(theme.accent)
+                            .foregroundColor(.neonElectricBlue)
                         }
                     }
                     .environmentObject(modelRegistry)
@@ -271,126 +188,52 @@ struct NeonChatView: View {
 // MARK: - Subviews
 
 extension NeonChatView {
-    private var transcriptSheet: some View {
-        let messages = Array(session.messages)
+    private var messageList: some View {
+        AnyView(
+            {
+                let messages = Array(session.messages)
 
-        return GlassTranscriptSurface {
-            ScrollViewReader { proxy in
-                ScrollView {
-                    if CommandLine.arguments.contains("-AFMDiagnostics") {
-                        AFMDiagnosticsView()
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 8)
-                    }
-                    messagesStack(messages)
-                        .padding(LiquidGlassTokens.Spacing.transcriptPadding)  // Now 0 for infinite scroll
-                        .background(
-                            GeometryReader { geo in
-                                Color.clear
-                                    .preference(
-                                        key: NeonScrollOffsetPreferenceKey.self,
-                                        value: geo.frame(in: .named("scroll")).minY
-                                    )
+                return AnyView(
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            messagesStack(messages)
+                                .padding(20)
+                                // Bottom padding handled by safeAreaInset
+                                .background(
+                                    GeometryReader { geo in
+                                        Color.clear
+                                            .preference(
+                                                key: NeonScrollOffsetPreferenceKey.self,
+                                                value: geo.frame(in: .named("scroll")).minY
+                                            )
+                                    }
+                                )
+                        }
+                        .coordinateSpace(name: "scroll")
+                        .onPreferenceChange(NeonScrollOffsetPreferenceKey.self) { value in
+                            scrollOffset = value
+                        }
+                        #if os(iOS)
+                            .scrollDismissesKeyboard(.interactively)
+                        #endif
+                        .background(AdaptiveGlassBackground(target: .chatArea))
+                        .onChange(of: chatVM.lastVisibleMessageID) { _, newValue in
+                            guard let id = newValue else { return }
+                            scrollToLatest(id: id, proxy: proxy)
+                        }
+                        .onChange(of: session.messages.count) { _, _ in
+                            if let lastID = messages.last?.id {
+                                scrollToLatest(id: lastID, proxy: proxy, animated: false)
                             }
-                        )
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .coordinateSpace(name: "scroll")
-                .onPreferenceChange(NeonScrollOffsetPreferenceKey.self) { value in
-                    scrollOffset = value
-                }
-                #if os(iOS)
-                    .scrollDismissesKeyboard(.interactively)
-                #endif
-                .onChange(of: chatVM.lastVisibleMessageID) { _, newValue in
-                    guard let id = newValue else { return }
-                    scrollToLatest(id: id, proxy: proxy)
-                }
-                .onChange(of: session.messages.count) { _, _ in
-                    if let lastID = messages.last?.id {
-                        scrollToLatest(id: lastID, proxy: proxy, animated: false)
-                    }
-                }
-                .onAppear {
-                    if let lastID = messages.last?.id {
-                        scrollToLatest(id: lastID, proxy: proxy, animated: false)
-                    }
-                }
-            }
-        } footer: {
-            composerFooter
-        }
-    }
-
-    private var composerFooter: some View {
-        VStack(spacing: 0) {
-            Rectangle()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            .white.opacity(0.10),
-                            .white.opacity(0.02),
-                            .clear,
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .frame(height: 1)
-                .opacity(0.9)
-
-            ChatInputPanel(
-                text: $inputText,
-                thinkingPreference: Binding(
-                    get: { session.thinkingPreference },
-                    set: { newValue in
-                        session.thinkingPreference = newValue
-                        try? modelContext.save()
-                    }
-                ),
-                isSending: chatVM.isGenerating,
-                onSend: { messageText in
-                    chatVM.sendMessage(
-                        messageText: messageText,
-                        attachments: nil,
-                        session: session,
-                        modelContext: modelContext,
-                        selectedProvider: workbenchVM.selectedProvider,
-                        selectedModel: workbenchVM.selectedModel
-                    )
-                },
-                onStop: {
-                    await chatVM.stopGeneration()
-                },
-                tools: chatVM.toolToggles,
-                onToggleTool: { id, enabled in
-                    Task {
-                        let status = authService.checkAccess(for: id)
-                        if status == .authorized {
-                            await chatVM.setToolPermission(toolID: id, enabled: enabled)
-                        } else if status == .denied {
-                            // Keep denied unless user explicitly re-enables via Settings (or reset).
-                            await chatVM.setToolPermission(toolID: id, enabled: false)
-                        } else {
-                            // Enabling from the UI counts as explicit consent.
-                            await chatVM.setToolPermission(toolID: id, enabled: enabled)
+                        }
+                        .onAppear {
+                            if let lastID = messages.last?.id {
+                                scrollToLatest(id: lastID, proxy: proxy, animated: false)
+                            }
                         }
                     }
-                },
-                onToolsAppear: {
-                    Task { await chatVM.refreshToolToggles(modelContext: modelContext) }
-                },
-                stagedAttachments: chatVM.stagedAttachments,
-                onAddAttachment: { chatVM.addAttachment($0) },
-                onRemoveAttachment: { chatVM.removeAttachment(at: $0) },
-                stagedReferences: chatVM.stagedReferences,
-                onRemoveReference: { chatVM.removeReference(at: $0) }
-            )
-            .environmentObject(authService)  // Inject here
-            .padding(.horizontal, LiquidGlassTokens.Spacing.sheetInset)
-            .padding(.top, 10)
-            .padding(.bottom, 12)
-        }
+                )
+            }())
     }
 
     private func scrollToLatest(id: UUID, proxy: ScrollViewProxy, animated: Bool = true) {
@@ -409,7 +252,7 @@ extension NeonChatView {
         HStack(spacing: 8) {
             Image(systemName: "sparkles")
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(theme.accent)
+                .foregroundStyle(Color.neonElectricBlue)
 
             Text(message)
                 .font(.system(size: 13, weight: .medium))
@@ -431,14 +274,14 @@ extension NeonChatView {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .glassEffect(GlassEffect.regular.tint(theme.accent.opacity(0.25)), in: .rect(cornerRadius: 12))
+            RoundedRectangle(cornerRadius: 06)
+                .glassEffect(.regular.tint(.glassAccent), in: .rect(cornerRadius: 12))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: 06)
                         .strokeBorder(
                             LinearGradient(
                                 colors: [
-                                    theme.accent.opacity(0.35), theme.accent.opacity(0.12),
+                                    .neonElectricBlue.opacity(0.5), .neonElectricBlue.opacity(0.2),
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -447,242 +290,53 @@ extension NeonChatView {
                         )
                 )
         )
-        .shadow(color: theme.accent.opacity(0.18), radius: 10, x: 0, y: 4)
+        .shadow(color: .neonElectricBlue.opacity(0.3), radius: 10, x: 0, y: 4)
         .padding(.horizontal, 16)
         .padding(.top, 12)
     }
 
     @ViewBuilder
     private func messagesStack(_ messages: [ChatMessageEntity]) -> some View {
-        LazyVStack(spacing: 0) {  // 0 spacing, row has its own rhythm padding
-            // Build maps for tool call/result lookup.
-            let toolCallMap = buildToolCallMap(from: messages)
-            let toolResultMap = buildToolResultMap(from: messages)
-            let toolCallStartMap = buildToolCallStartDateMap(from: messages)
-
+        LazyVStack(spacing: 20) {
             // Regular messages - not streaming
-            ForEach(messages, id: \ChatMessageEntity.id) { (message: ChatMessageEntity) in
-                let relatedTool = message.toolCallID.flatMap { toolCallMap[$0] }
-                let relatedToolStartedAt = message.toolCallID.flatMap { toolCallStartMap[$0] }
-
-                let relatedBlocks: [ToolCallBlock] = {
-                    guard message.role == MessageRole.assistant.rawValue,
-                        let toolCallsData = message.toolCallsData,
-                        let toolCalls = try? JSONDecoder().decode(
-                            [ToolCall].self, from: toolCallsData),
-                        !toolCalls.isEmpty
-                    else { return [] }
-
-                    return toolCalls.map { call in
-                        ToolCallBlock(
-                            id: call.id,
-                            name: call.name,
-                            input: call.input,
-                            output: toolResultMap[call.id]?.content
-                        )
-                    }
-                }()
-
-                NeonMessageRow(
-                    message: message,
-                    relatedToolCall: relatedTool,
-                    relatedToolBlocks: relatedBlocks,
-                    toolCallStartedAt: relatedToolStartedAt,
-                    interactionController: interactionController
-                )
-                .id(message.id.description)
+            ForEach(messages, id: \.id) { message in
+                NeonMessageBubble(message: message, isStreaming: false)
+                    .equatable()
+                    .id(message.id)
             }
 
             // Thinking indicator (before streaming starts)
             if chatVM.isThinking {
-                HStack {
-                    Image(systemName: "sparkles")
-                        .foregroundStyle(theme.textTertiary)
+                HStack(spacing: 12) {
+                    Circle()
+                        .frame(width: 32, height: 32)
+                        .glassEffect(.regular.tint(.glassAI), in: .circle)
+                        .overlay(
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.white)
+                        )
+
                     Text("Thinking...")
-                        .font(.caption)
-                        .foregroundStyle(theme.textTertiary)
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                        .padding(.leading, 4)
+
                     Spacer()
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .transition(.opacity)
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
-
-            // Pending tool calls (compact inline cards)
-            pendingToolCallsRow(messages: messages, toolResultMap: toolResultMap)
 
             // Streaming message (actively streaming)
             if let streaming = chatVM.streamingDisplayMessage {
-                Group {
-                    NeonMessageRow(
-                        message: ChatMessageEntity(message: streaming),
-                        relatedToolCall: nil,
-                        toolCallStartedAt: nil,
-                        interactionController: interactionController,
-                        isStreaming: chatVM.isActivelyStreaming  // Enable typewriter animation
-                    )
-                    // Add "active streaming" affordance (cursor) overlay to the row
-                    .overlay(alignment: .bottomTrailing) {
-                        if chatVM.isActivelyStreaming {
-                            Circle()
-                                .fill(theme.accent)
-                                .frame(width: 8, height: 8)
-                                .opacity(0.8)
-                                .padding(16)
-                                .offset(x: 4, y: -4)  // Approximate position near end of text
-                        }
-                    }
-                }
-                .id(streaming.id.description)
-            }
-
-            // Continue Generating Button
-            if chatVM.isTruncated && chatVM.truncatedSessionID == session.id && !chatVM.isGenerating
-            {
-                VStack(spacing: 6) {
-                    Text("Truncated by provider limit")
-                        .font(.caption)
-                        .foregroundStyle(theme.textTertiary)
-
-                    Button {
-                        chatVM.continueGenerating(session: session, modelContext: modelContext)
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "arrow.triangle.2.circlepath")
-                                .fontWeight(.semibold)
-                            Text("Continue generating")
-                                .fontWeight(.medium)
-                        }
-                        .font(.system(size: 14))
-                        .foregroundStyle(theme.accent)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background {
-                            Capsule()
-                                .fill(theme.accent.opacity(0.10))
-                                .glassEffect()
-                                .overlay(
-                                    Capsule()
-                                        .stroke(theme.accent.opacity(0.22), lineWidth: 1)
-                                )
-                        }
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(.vertical, 8)
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                NeonMessageBubble(
+                    message: ChatMessageEntity(message: streaming),
+                    isStreaming: true
+                )
+                .id(streaming.id)
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
-        .textSelection(.enabled)
-    }
-
-    private func buildToolCallMap(from messages: [ChatMessageEntity]) -> [String: ToolCall] {
-        var map: [String: ToolCall] = [:]
-        for message in messages {
-            guard message.role == MessageRole.assistant.rawValue,
-                let data = message.toolCallsData,
-                let calls = try? JSONDecoder().decode([ToolCall].self, from: data)
-            else { continue }
-
-            for call in calls {
-                map[call.id] = call
-            }
-        }
-        return map
-    }
-
-    private func buildToolResultMap(from messages: [ChatMessageEntity]) -> [String:
-        ChatMessageEntity]
-    {
-        var map: [String: ChatMessageEntity] = [:]
-        for message in messages {
-            guard message.role == MessageRole.tool.rawValue,
-                let toolCallID = message.toolCallID
-            else { continue }
-            map[toolCallID] = message
-        }
-        return map
-    }
-
-    private func buildToolCallStartDateMap(from messages: [ChatMessageEntity]) -> [String: Date] {
-        var map: [String: Date] = [:]
-        for message in messages {
-            guard message.role == MessageRole.assistant.rawValue,
-                let data = message.toolCallsData,
-                let calls = try? JSONDecoder().decode([ToolCall].self, from: data)
-            else { continue }
-
-            for call in calls {
-                map[call.id] = message.createdAt
-            }
-        }
-        return map
-    }
-
-    @ViewBuilder
-    private func pendingToolCallsRow(
-        messages: [ChatMessageEntity],
-        toolResultMap: [String: ChatMessageEntity]
-    ) -> some View {
-        if let latestToolBatch = latestAssistantToolBatch(in: messages) {
-            let pending = latestToolBatch.calls.filter { toolResultMap[$0.id] == nil }
-            if !pending.isEmpty {
-                TimelineView(.periodic(from: .now, by: 1)) { context in
-                    VStack(alignment: .leading, spacing: 8) {
-                        ForEach(pending, id: \.id) { call in
-                            HStack(spacing: 10) {
-                                ProgressView()
-                                    .controlSize(.small)
-
-                                Text(call.name)
-                                    .font(.caption)
-                                    .foregroundStyle(theme.textPrimary)
-
-                                Spacer(minLength: 8)
-
-                                Text(elapsedString(since: latestToolBatch.createdAt, now: context.date))
-                                    .font(.caption2)
-                                    .foregroundStyle(theme.textSecondary)
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .glassEffect(
-                                GlassEffect.regular.tint(theme.accent.opacity(0.12)),
-                                in: .rect(cornerRadius: 10)
-                            )
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-            }
-        }
-    }
-
-    private func latestAssistantToolBatch(
-        in messages: [ChatMessageEntity]
-    ) -> (createdAt: Date, calls: [ToolCall])? {
-        let sorted = messages.sorted { $0.createdAt < $1.createdAt }
-        for message in sorted.reversed() {
-            guard message.role == MessageRole.assistant.rawValue,
-                let data = message.toolCallsData,
-                let calls = try? JSONDecoder().decode([ToolCall].self, from: data),
-                !calls.isEmpty
-            else { continue }
-            return (message.createdAt, calls)
-        }
-        return nil
-    }
-
-    private func elapsedString(since start: Date, now: Date) -> String {
-        let seconds = max(0, Int(now.timeIntervalSince(start)))
-        if seconds < 60 {
-            return "\(seconds)s"
-        }
-        let minutes = seconds / 60
-        let rem = seconds % 60
-        return String(format: "%dm %02ds", minutes, rem)
     }
 }
 

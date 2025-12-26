@@ -7,15 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A3F5589C2EFEEBAC00AC1AFE /* ComplexModule in Frameworks */ = {isa = PBXBuildFile; productRef = A3F5589B2EFEEBAC00AC1AFE /* ComplexModule */; };
+		A3F5589E2EFEEBAC00AC1AFE /* Numerics in Frameworks */ = {isa = PBXBuildFile; productRef = A3F5589D2EFEEBAC00AC1AFE /* Numerics */; };
+		A3F558A02EFEEBAC00AC1AFE /* RealModule in Frameworks */ = {isa = PBXBuildFile; productRef = A3F5589F2EFEEBAC00AC1AFE /* RealModule */; };
 		B3000001303030300001 /* CodeExecutionXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000010303030300001 /* CodeExecutionXPCProtocol.swift */; };
 		B3000002303030300001 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000011303030300001 /* main.swift */; };
 		B3000003303030300001 /* CodeExecutionServiceDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000012303030300001 /* CodeExecutionServiceDelegate.swift */; };
 		B3000004303030300001 /* CodeExecutionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000013303030300001 /* CodeExecutionHandler.swift */; };
 		B3000005303030300001 /* CodeExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000014303030300001 /* CodeExecutor.swift */; };
 		B3000006303030300001 /* llmHubHelper.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = B3000020303030300001 /* llmHubHelper.xpc */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		B3MARKDOWNBLD0000001 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = B3MARKDOWNPROD000001 /* MarkdownUI */; };
-		B3NUMBLD000000000001 /* Numerics in Frameworks */ = {isa = PBXBuildFile; productRef = B3NUMPROD000000000001 /* Numerics */; };
-		B3SPLASHBLD000000001 /* Splash in Frameworks */ = {isa = PBXBuildFile; productRef = B3SPLASHPROD00000001 /* Splash */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,7 +57,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		A3A5357C2EEB7F1B0075FBC4 /* llmHub_v1.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = llmHub_v1.icon; sourceTree = "<group>"; };
 		A3C71F262ED9389A0088DF32 /* llmHub.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = llmHub.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3C71F372ED9389B0088DF32 /* llmHubTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = llmHubTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3C71F412ED9389B0088DF32 /* llmHubUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = llmHubUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -69,96 +68,14 @@
 		B3000015303030300001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B3000016303030300001 /* llmHubHelper.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = llmHubHelper.entitlements; sourceTree = "<group>"; };
 		B3000020303030300001 /* llmHubHelper.xpc */ = {isa = PBXFileReference; explicitFileType = "wrapper.xpc-service"; includeInIndex = 0; path = llmHubHelper.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
-		B3C0F0D12F0E1A9A00000001 /* StrictConcurrency.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = StrictConcurrency.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
 		A35358492EE678DA00E9B943 /* Exceptions for "Docs" folder in "llmHub" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				AGENTS.md,
 				Architecture/CODEBASE_ANALYSIS.md,
 				Architecture/COST_EFFICIENT_AI_DEV.md,
-				"Changelogs/2025-12.md",
-				CLAUDE.md,
-				CONVENTIONS.md,
-				"Error_Reports/Build llmHub_2025-12-14T14-38-56.txt",
-				http_request_diagnostics_and_timeouts.md,
-				iOS_Quick_Reference.md,
-				iOS_Test_Plan.md,
-				iOS_UI_Map.md,
-				"Legacy/BuildLogs/Analyze llmHub_2025-12-08T19-08-43.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-11-29T10-59-52.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-11-29T15-55-56.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-11-29T16-15-13.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-11-29T16-25-39.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-11-29T16-52-29.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-11-29T22-21-20.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-11-30T11-21-13.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-11-30T11-30-07.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-11-30T11-40-49.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-11-30T12-02-46.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-11.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-12-01T17-34-19.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-12-01T17-47-28.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-12-07T20-12-14.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-12-08T19-27-02.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-12-10T07-23-14.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-12-10T15-35-05.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-12-10T15-41-17.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-12-10T17-18-25.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-12-10T20-21-06.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-12-10T23-03-02.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-12-11T12-58-59.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-12-11T13-50-13.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-12-11T13-59-35.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-12-11T14-27-30.txt",
-				"Legacy/BuildLogs/Build llmHub_2025-12-11T17-19-32.txt",
-				Legacy/DevLogs/ALL_FIXES_APPLIED_DEC7.md,
-				Legacy/DevLogs/anthropic_TODO.md,
-				Legacy/DevLogs/BUILD_FIX_SUMMARY.md,
-				Legacy/DevLogs/CRITICAL_BUGS_ANALYSIS.md,
-				Legacy/DevLogs/FIXES_APPLIED.md,
-				Legacy/DevLogs/FIXES_NEEDED.md,
-				Legacy/DevLogs/gemini_TODO.md,
-				Legacy/DevLogs/GLASS_EFFECT_FIX_DEC11.md,
-				Legacy/DevLogs/GLASS_UI_UPDATE_DEC11.md,
-				Legacy/DevLogs/IMPLEMENTATION_SUMMARY_iOS_Settings_Keyboard.md,
-				Legacy/DevLogs/IOS_SETTINGS_KEYBOARD_IMPLEMENTATION.md,
-				Legacy/DevLogs/LIQUID_GLASS_MIGRATION.md,
-				Legacy/DevLogs/llmHub_codebase_analysis.md,
-				Legacy/DevLogs/MIGRATION_COMPLETE.md,
-				Legacy/DevLogs/mistral_TODO.md,
-				Legacy/DevLogs/openai_TODO.md,
-				Legacy/DevLogs/openrouter_TODO.md,
-				Legacy/DevLogs/PHASE_1_COMPLETE.md,
-				Legacy/DevLogs/PHASE_B_COMPLETE.md,
-				Legacy/DevLogs/PHASE_B_SETTINGS_MODEL_REFRESH.md,
-				Legacy/DevLogs/PHASE_C_COMPLETE.md,
-				Legacy/DevLogs/PROVIDER_REGISTRATION_FIX.md,
-				Legacy/DevLogs/QUICK_FIX_GUIDE.md,
-				Legacy/DevLogs/QUICK_FIXES_SUMMARY.md,
-				Legacy/DevLogs/UI_FIXES_SUMMARY.md,
-				Legacy/DevLogs/XAI_MODEL_FIX_AND_CACHE_REFRESH.md,
-				Legacy/DevLogs/xai_TODO.md,
-				LiquidGlass_Design_Spec.md,
-				LLMHub_UI_ToolWiring_Map.md,
-				llmHubHelper_Quick_Reference.txt,
-				llmHubHelper_README.md,
-				llmHubHelper_Security_Analysis.md,
-				llmHubHelper_Security_Examples.md,
-				llmHubHelper_SUMMARY.md,
-				Providers/additional_mistral_information.md,
-				Providers/anthropic_integration.md,
-				Providers/gemini_integration.md,
-				Providers/Mistral_Integration.md,
-				Providers/openai_integration.md,
-				Providers/openrouter_integration.md,
-				Providers/xAiGrok_integration.md,
-				raw_console_output.json,
-				README.md,
-				UNIFIED_TOOL_SYSTEM_IMPLEMENTATION.md,
-				VERIFICATION_CHECKLIST.md,
 			);
 			target = A3C71F252ED9389A0088DF32 /* llmHub */;
 		};
@@ -166,18 +83,13 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				Support/ModelRouterTests.swift,
 			);
 			target = A3C71F252ED9389A0088DF32 /* llmHub */;
 		};
 		A3C71FC82EDB64EE0088DF32 /* Exceptions for "Tests" folder in "llmHub" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				llmHubTests/GeminiRequestEncodingTests.swift,
-				llmHubTests/KeychainStoreTests.swift,
 				llmHubTests/llmHubTests.swift,
-				llmHubTests/OpenAIToolsInjectionIntegrationTests.swift,
-				llmHubTests/ToolSchemaValidationTests.swift,
 				llmHubUITests/llmHubUITests.swift,
 				llmHubUITests/llmHubUITestsLaunchTests.swift,
 			);
@@ -186,11 +98,7 @@
 		A3C71FC92EDB64EE0088DF32 /* Exceptions for "Tests" folder in "llmHubTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				llmHubTests/GeminiRequestEncodingTests.swift,
-				llmHubTests/KeychainStoreTests.swift,
 				llmHubTests/llmHubTests.swift,
-				llmHubTests/OpenAIToolsInjectionIntegrationTests.swift,
-				llmHubTests/ToolSchemaValidationTests.swift,
 			);
 			target = A3C71F362ED9389B0088DF32 /* llmHubTests */;
 		};
@@ -238,9 +146,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B3NUMBLD000000000001 /* Numerics in Frameworks */,
-				B3MARKDOWNBLD0000001 /* MarkdownUI in Frameworks */,
-				B3SPLASHBLD000000001 /* Splash in Frameworks */,
+				A3F5589E2EFEEBAC00AC1AFE /* Numerics in Frameworks */,
+				A3F5589C2EFEEBAC00AC1AFE /* ComplexModule in Frameworks */,
+				A3F558A02EFEEBAC00AC1AFE /* RealModule in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -271,8 +179,6 @@
 		A3C71F1D2ED9389A0088DF32 = {
 			isa = PBXGroup;
 			children = (
-				A3A5357C2EEB7F1B0075FBC4 /* llmHub_v1.icon */,
-				B3C0F0D12F0E1A9A00000001 /* StrictConcurrency.xcconfig */,
 				A3C71F282ED9389A0088DF32 /* llmHub */,
 				B3000021303030300001 /* llmHubHelper */,
 				A3C71F272ED9389A0088DF32 /* Products */,
@@ -330,9 +236,9 @@
 			);
 			name = llmHub;
 			packageProductDependencies = (
-				B3NUMPROD000000000001 /* Numerics */,
-				B3MARKDOWNPROD000001 /* MarkdownUI */,
-				B3SPLASHPROD00000001 /* Splash */,
+				A3F5589B2EFEEBAC00AC1AFE /* ComplexModule */,
+				A3F5589D2EFEEBAC00AC1AFE /* Numerics */,
+				A3F5589F2EFEEBAC00AC1AFE /* RealModule */,
 			);
 			productName = llmHub;
 			productReference = A3C71F262ED9389A0088DF32 /* llmHub.app */;
@@ -432,9 +338,7 @@
 			mainGroup = A3C71F1D2ED9389A0088DF32;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				B3NUMPKG000000000001 /* XCRemoteSwiftPackageReference "swift-numerics" */,
-				B3MARKDOWNPKG0000001 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
-				B3SPLASHPKG000000001 /* XCRemoteSwiftPackageReference "Splash" */,
+				A3F5589A2EFEEBAC00AC1AFE /* XCRemoteSwiftPackageReference "swift-numerics" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A3C71F272ED9389A0088DF32 /* Products */;
@@ -530,40 +434,34 @@
 /* Begin XCBuildConfiguration section */
 		A3C71F4B2ED9389B0088DF32 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = B3C0F0D12F0E1A9A00000001 /* StrictConcurrency.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = llmHub_v1;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				AUTOMATION_APPLE_EVENTS = NO;
-				CODE_SIGN_ENTITLEMENTS = llmHub/llmHub.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5BMZT525A2;
 				ENABLE_APP_SANDBOX = YES;
-				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readonly;
-				ENABLE_FILE_ACCESS_MOVIES_FOLDER = readonly;
-				ENABLE_FILE_ACCESS_MUSIC_FOLDER = readonly;
-				ENABLE_FILE_ACCESS_PICTURE_FOLDER = readonly;
+				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readwrite;
+				ENABLE_FILE_ACCESS_MOVIES_FOLDER = readwrite;
+				ENABLE_FILE_ACCESS_MUSIC_FOLDER = readwrite;
+				ENABLE_FILE_ACCESS_PICTURE_FOLDER = readwrite;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
-				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
-				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
-				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
-				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
-				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
-				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
-				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
-				ENABLE_RESOURCE_ACCESS_USB = NO;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = YES;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
+				ENABLE_RESOURCE_ACCESS_CAMERA = YES;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = YES;
+				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
+				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = YES;
+				ENABLE_RESOURCE_ACCESS_PRINTING = YES;
+				ENABLE_RESOURCE_ACCESS_USB = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = llmHub/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = llmHub;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -571,7 +469,6 @@
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
-				INFOPLIST_KEY_UILaunchStoryboardName = "";
 				INFOPLIST_KEY_UIStatusBarStyle = "";
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
@@ -588,10 +485,10 @@
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
 				RUNTIME_EXCEPTION_ALLOW_JIT = NO;
 				RUNTIME_EXCEPTION_ALLOW_UNSIGNED_EXECUTABLE_MEMORY = NO;
-				RUNTIME_EXCEPTION_DEBUGGING_TOOL = NO;
+				RUNTIME_EXCEPTION_DEBUGGING_TOOL = YES;
 				RUNTIME_EXCEPTION_DISABLE_EXECUTABLE_PAGE_PROTECTION = NO;
 				RUNTIME_EXCEPTION_DISABLE_LIBRARY_VALIDATION = NO;
-				SDKROOT = macosx26.2;
+				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -606,40 +503,34 @@
 		};
 		A3C71F4C2ED9389B0088DF32 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = B3C0F0D12F0E1A9A00000001 /* StrictConcurrency.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = llmHub_v1;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				AUTOMATION_APPLE_EVENTS = NO;
-				CODE_SIGN_ENTITLEMENTS = llmHub/llmHub.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=*]" = "$(CODE_SIGN_IDENTITY_$(_DEVELOPMENT_TEAM_IS_EMPTY))";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5BMZT525A2;
 				ENABLE_APP_SANDBOX = YES;
-				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readonly;
-				ENABLE_FILE_ACCESS_MOVIES_FOLDER = readonly;
-				ENABLE_FILE_ACCESS_MUSIC_FOLDER = readonly;
-				ENABLE_FILE_ACCESS_PICTURE_FOLDER = readonly;
+				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readwrite;
+				ENABLE_FILE_ACCESS_MOVIES_FOLDER = readwrite;
+				ENABLE_FILE_ACCESS_MUSIC_FOLDER = readwrite;
+				ENABLE_FILE_ACCESS_PICTURE_FOLDER = readwrite;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
-				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
-				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
-				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
-				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
-				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
-				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
-				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
-				ENABLE_RESOURCE_ACCESS_USB = NO;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = YES;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
+				ENABLE_RESOURCE_ACCESS_CAMERA = YES;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = YES;
+				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
+				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = YES;
+				ENABLE_RESOURCE_ACCESS_PRINTING = YES;
+				ENABLE_RESOURCE_ACCESS_USB = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = llmHub/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = llmHub;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -647,7 +538,6 @@
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
-				INFOPLIST_KEY_UILaunchStoryboardName = "";
 				INFOPLIST_KEY_UIStatusBarStyle = "";
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
@@ -664,10 +554,10 @@
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
 				RUNTIME_EXCEPTION_ALLOW_JIT = NO;
 				RUNTIME_EXCEPTION_ALLOW_UNSIGNED_EXECUTABLE_MEMORY = NO;
-				RUNTIME_EXCEPTION_DEBUGGING_TOOL = NO;
+				RUNTIME_EXCEPTION_DEBUGGING_TOOL = YES;
 				RUNTIME_EXCEPTION_DISABLE_EXECUTABLE_PAGE_PROTECTION = NO;
 				RUNTIME_EXCEPTION_DISABLE_LIBRARY_VALIDATION = NO;
-				SDKROOT = macosx26.2;
+				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -714,7 +604,6 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 5BMZT525A2;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -738,10 +627,7 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				SDKROOT = macosx26.2;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
-				SWIFT_ENABLED_OPAQUE_TYPE_ERASURE = no;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 6.0;
 			};
@@ -781,7 +667,6 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 5BMZT525A2;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -798,22 +683,17 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
-				SDKROOT = macosx26.2;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_ENABLED_OPAQUE_TYPE_ERASURE = no;
 				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
 		};
 		A3C71F502ED9389B0088DF32 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = B3C0F0D12F0E1A9A00000001 /* StrictConcurrency.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5BMZT525A2;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
@@ -836,12 +716,10 @@
 		};
 		A3C71F512ED9389B0088DF32 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = B3C0F0D12F0E1A9A00000001 /* StrictConcurrency.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5BMZT525A2;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
@@ -864,11 +742,9 @@
 		};
 		A3C71F532ED9389B0088DF32 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = B3C0F0D12F0E1A9A00000001 /* StrictConcurrency.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5BMZT525A2;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
@@ -891,11 +767,9 @@
 		};
 		A3C71F542ED9389B0088DF32 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = B3C0F0D12F0E1A9A00000001 /* StrictConcurrency.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5BMZT525A2;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
@@ -922,25 +796,9 @@
 				CODE_SIGN_ENTITLEMENTS = llmHubHelper/llmHubHelper.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5BMZT525A2;
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readonly;
-				ENABLE_FILE_ACCESS_MOVIES_FOLDER = readonly;
-				ENABLE_FILE_ACCESS_MUSIC_FOLDER = readonly;
-				ENABLE_FILE_ACCESS_PICTURE_FOLDER = readonly;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
-				ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO;
-				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
-				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
-				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
-				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
-				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
-				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
-				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
-				ENABLE_RESOURCE_ACCESS_USB = NO;
-				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = llmHubHelper/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = llmHubHelper;
@@ -962,25 +820,9 @@
 				CODE_SIGN_ENTITLEMENTS = llmHubHelper/llmHubHelper.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5BMZT525A2;
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readonly;
-				ENABLE_FILE_ACCESS_MOVIES_FOLDER = readonly;
-				ENABLE_FILE_ACCESS_MUSIC_FOLDER = readonly;
-				ENABLE_FILE_ACCESS_PICTURE_FOLDER = readonly;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
-				ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO;
-				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
-				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
-				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
-				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
-				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
-				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
-				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
-				ENABLE_RESOURCE_ACCESS_USB = NO;
-				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = llmHubHelper/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = llmHubHelper;
@@ -1006,7 +848,7 @@
 				A3C71F4E2ED9389B0088DF32 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Debug;
+			defaultConfigurationName = Release;
 		};
 		A3C71F4A2ED9389B0088DF32 /* Build configuration list for PBXNativeTarget "llmHub" */ = {
 			isa = XCConfigurationList;
@@ -1015,7 +857,7 @@
 				A3C71F4C2ED9389B0088DF32 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Debug;
+			defaultConfigurationName = Release;
 		};
 		A3C71F4F2ED9389B0088DF32 /* Build configuration list for PBXNativeTarget "llmHubTests" */ = {
 			isa = XCConfigurationList;
@@ -1024,7 +866,7 @@
 				A3C71F512ED9389B0088DF32 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Debug;
+			defaultConfigurationName = Release;
 		};
 		A3C71F522ED9389B0088DF32 /* Build configuration list for PBXNativeTarget "llmHubUITests" */ = {
 			isa = XCConfigurationList;
@@ -1033,7 +875,7 @@
 				A3C71F542ED9389B0088DF32 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Debug;
+			defaultConfigurationName = Release;
 		};
 		B3000050303030300001 /* Build configuration list for PBXNativeTarget "llmHubHelper" */ = {
 			isa = XCConfigurationList;
@@ -1042,52 +884,36 @@
 				B3000052303030300001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Debug;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		B3MARKDOWNPKG0000001 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.4.0;
-			};
-		};
-		B3NUMPKG000000000001 /* XCRemoteSwiftPackageReference "swift-numerics" */ = {
+		A3F5589A2EFEEBAC00AC1AFE /* XCRemoteSwiftPackageReference "swift-numerics" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/apple/swift-numerics.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 1.0.0;
-			};
-		};
-		B3SPLASHPKG000000001 /* XCRemoteSwiftPackageReference "Splash" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/JohnSundell/Splash.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.16.0;
+				minimumVersion = 1.1.1;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		B3MARKDOWNPROD000001 /* MarkdownUI */ = {
+		A3F5589B2EFEEBAC00AC1AFE /* ComplexModule */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = B3MARKDOWNPKG0000001 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
-			productName = MarkdownUI;
+			package = A3F5589A2EFEEBAC00AC1AFE /* XCRemoteSwiftPackageReference "swift-numerics" */;
+			productName = ComplexModule;
 		};
-		B3NUMPROD000000000001 /* Numerics */ = {
+		A3F5589D2EFEEBAC00AC1AFE /* Numerics */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = B3NUMPKG000000000001 /* XCRemoteSwiftPackageReference "swift-numerics" */;
+			package = A3F5589A2EFEEBAC00AC1AFE /* XCRemoteSwiftPackageReference "swift-numerics" */;
 			productName = Numerics;
 		};
-		B3SPLASHPROD00000001 /* Splash */ = {
+		A3F5589F2EFEEBAC00AC1AFE /* RealModule */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = B3SPLASHPKG000000001 /* XCRemoteSwiftPackageReference "Splash" */;
-			productName = Splash;
+			package = A3F5589A2EFEEBAC00AC1AFE /* XCRemoteSwiftPackageReference "swift-numerics" */;
+			productName = RealModule;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

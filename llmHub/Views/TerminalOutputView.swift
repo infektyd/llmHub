@@ -257,7 +257,7 @@ struct TerminalOutputView: View {
         }
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 06)
                 #if os(macOS)
                 .fill(Color(nsColor: .textBackgroundColor))
                 #else
@@ -265,7 +265,7 @@ struct TerminalOutputView: View {
                 #endif
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 06)
                 .strokeBorder(Color.secondary.opacity(0.2), lineWidth: 1)
         )
     }
@@ -475,7 +475,7 @@ struct CodeExecutionPreview: View {
         }
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 06)
                 #if os(macOS)
                 .fill(Color(nsColor: .controlBackgroundColor))
                 #else
@@ -483,7 +483,7 @@ struct CodeExecutionPreview: View {
                 #endif
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 06)
                 .strokeBorder(Color.orange.opacity(0.5), lineWidth: 2)
         )
     }

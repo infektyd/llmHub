@@ -84,18 +84,9 @@ struct WorkspaceResolver: Sendable {
 
     private nonisolated static func resolveMacOSWorkspace() -> URL {
         #if os(macOS)
-            // Rationale: Tools should operate within an app-controlled workspace root, never $HOME.
-            // When App Sandbox is enabled, this directory resolves inside the app container.
-            let fm = FileManager.default
-            let appSupport =
-                fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-                ?? fm.temporaryDirectory
-
-            let workspace = appSupport.appendingPathComponent("llmHub/Workspace", isDirectory: true)
-            if !fm.fileExists(atPath: workspace.path) {
-                try? fm.createDirectory(at: workspace, withIntermediateDirectories: true)
-            }
-            return workspace.standardizedFileURL
+            // Prefer home directory on macOS (no sandboxing by default)
+            let home = FileManager.default.homeDirectoryForCurrentUser
+            return home.standardizedFileURL
         #else
             // Fallback for non-macOS platforms
             return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
