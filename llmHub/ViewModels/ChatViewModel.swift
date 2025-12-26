@@ -6,10 +6,35 @@
 //
 
 import Foundation
-import FoundationModels
 import OSLog
 import SwiftData
 import SwiftUI
+
+/// Diagnostics information for Apple Foundation Models availability
+struct AFMDiagnostics {
+    var isAvailable: Bool = false
+    var lastCheckTime: Date = Date()
+    var reason: String = "Not yet checked"
+    
+    var statusColor: Color {
+        isAvailable ? .green : .orange
+    }
+    
+    var reasonText: String {
+        reason
+    }
+    
+    var timeSinceCheck: String {
+        let interval = Date().timeIntervalSince(lastCheckTime)
+        if interval < 60 {
+            return "\(Int(interval))s ago"
+        } else if interval < 3600 {
+            return "\(Int(interval / 60))m ago"
+        } else {
+            return "\(Int(interval / 3600))h ago"
+        }
+    }
+}
 
 /// ViewModel managing the chat interface and interaction logic.
 @Observable
@@ -30,8 +55,9 @@ class ChatViewModel {
 
     /// Indicates whether the view model is currently streaming/generating a response.
     var isGenerating: Bool = false
-    /// AFM diagnostics state for runtime availability checks.
-    var afmDiagnostics: AFMDiagnosticsState = AFMDiagnosticsState()
+    
+    /// AFM diagnostics information
+    var afmDiagnostics: AFMDiagnostics = AFMDiagnostics()
 
     // ... existing properties ...
 
@@ -115,12 +141,6 @@ class ChatViewModel {
     private var streamingMessageID: UUID?
     /// Timestamp for the streaming message.
     private var streamingStartedAt: Date?
-    /// Task handle for the active streaming pipeline.
-    private var currentStreamTask: Task<Void, Never>?
-    /// Session ID associated with the active streaming task.
-    private var currentStreamingSessionID: UUID?
-    /// Model context used for the active streaming task.
-    private var currentStreamingModelContext: ModelContext?
 
     // MARK: - Tool Execution Timing (STEP 3)
 
@@ -203,8 +223,7 @@ class ChatViewModel {
 
         // Initialize Actors
         let workspace = LightweightWorkspace()
-        // If the UI already provided an authorization service, reuse it so prompts/decisions are consistent.
-        let authService = self.authService ?? ToolAuthorizationService()
+        let authService = ToolAuthorizationService()
         self.workspace = workspace
         self.authService = authService
 
@@ -239,12 +258,6 @@ class ChatViewModel {
 
         self.chatService = service
         return service
-    }
-
-    /// Allows the UI to provide a shared ToolAuthorizationService instance so prompts and permission
-    /// state are consistent across the view and the execution layer.
-    func attachAuthorizationService(_ service: ToolAuthorizationService) {
-        self.authService = service
     }
 
     /// Refresh tool toggles and authorized tool list, ensuring registry is loaded.
@@ -386,40 +399,38 @@ class ChatViewModel {
             "Hydrating state from session: \(savedProviderID) → \(canonicalSavedProviderID) / \(savedModelID)"
         )
 
-        func makeUIProvider(providerName: String) -> UILLMProvider {
-            let models = modelRegistry.models(for: providerName).map { model in
-                UILLMModel(
-                    id: UUID(),
-                    modelID: model.id,
-                    name: model.displayName,
-                    contextWindow: model.contextWindow
-                )
-            }
-
-            let icon: String
-            switch providerName.lowercased() {
-            case "openai": icon = "sparkles"
-            case "anthropic": icon = "brain.head.profile"
-            case "google": icon = "cloud.fill"
-            case "mistral": icon = "wind"
-            case "xai": icon = "x.circle.fill"
-            default: icon = "server.rack"
-            }
-
-            return UILLMProvider(
-                id: UUID(),
-                name: providerName,
-                icon: icon,
-                models: models,
-                isActive: false
-            )
-        }
-
         let targetProvider = modelRegistry.availableProviders()
             .filter { providerName in
                 ProviderID.canonicalID(from: providerName) == canonicalSavedProviderID
             }
-            .map { providerName in makeUIProvider(providerName: providerName) }
+            .map { providerName -> UILLMProvider in
+                let models = modelRegistry.models(for: providerName).map { model in
+                    UILLMModel(
+                        id: UUID(),
+                        modelID: model.id,
+                        name: model.displayName,
+                        contextWindow: model.contextWindow
+                    )
+                }
+
+                let icon: String
+                switch providerName.lowercased() {
+                case "openai": icon = "sparkles"
+                case "anthropic": icon = "brain.head.profile"
+                case "google": icon = "cloud.fill"
+                case "mistral": icon = "wind"
+                case "xai": icon = "x.circle.fill"
+                default: icon = "server.rack"
+                }
+
+                return UILLMProvider(
+                    id: UUID(),
+                    name: providerName,
+                    icon: icon,
+                    models: models,
+                    isActive: false
+                )
+            }
             .first
 
         if let provider = targetProvider {
@@ -428,17 +439,6 @@ class ChatViewModel {
             if let model = provider.models.first(where: { $0.modelID == savedModelID }) {
                 workbenchVM.selectedModel = model
                 logger.info("Hydration successful: \(provider.name) -> \(model.name)")
-            } else if let resolvedModelID = Self.resolvePersistedModelID(
-                providerID: canonicalSavedProviderID,
-                savedModelID: savedModelID,
-                availableModels: provider.models.map { ($0.modelID, $0.name) }
-            ),
-                let migrated = provider.models.first(where: { $0.modelID == resolvedModelID })
-            {
-                logger.info(
-                    "Migrated persisted model '\(savedModelID)' -> '\(resolvedModelID)' for provider \(provider.name)"
-                )
-                workbenchVM.selectedModel = migrated
             } else {
                 let key = "\(savedProviderID):\(savedModelID)"
                 if !Self.loggedMissingModels.contains(key) {
@@ -451,99 +451,15 @@ class ChatViewModel {
                 }
             }
         } else {
-            let knownCanonicalIDs = Set(ProviderID.legacyAliasesByLookupKey.values)
-            let isKnownProvider = knownCanonicalIDs.contains(canonicalSavedProviderID)
-
-            let availableProviderNames = modelRegistry.availableProviders()
             let key = "provider:\(canonicalSavedProviderID)"
-
             if !Self.loggedMissingModels.contains(key) {
-                let available = availableProviderNames.joined(separator: ", ")
-                if isKnownProvider {
-                    logger.warning(
-                        "Provider '\(savedProviderID)' (canonical: \(canonicalSavedProviderID)) is registered, but models are not loaded/available. Available providers with models: \(available). Falling back."
-                    )
-                } else {
-                    logger.warning(
-                        "Could not find provider for ID: \(savedProviderID) (canonical: \(canonicalSavedProviderID)). Available providers with models: \(available). Falling back."
-                    )
-                }
+                let available = modelRegistry.availableProviders().joined(separator: ", ")
+                logger.warning(
+                    "Could not find provider for ID: \(savedProviderID) (canonical: \(canonicalSavedProviderID)). Available: \(available)"
+                )
                 Self.loggedMissingModels.insert(key)
             }
-
-            // Fallback to first available provider+model (and let onChange persist migration).
-            if let fallbackProviderName = availableProviderNames.first {
-                let fallbackProvider = makeUIProvider(providerName: fallbackProviderName)
-                workbenchVM.selectedProvider = fallbackProvider
-                if let fallbackModel = fallbackProvider.models.first {
-                    workbenchVM.selectedModel = fallbackModel
-                }
-            }
         }
-    }
-
-    // MARK: - Persisted Model ID Migration
-
-    /// Resolves a persisted/legacy model identifier into a real model id present in `availableModels`.
-    ///
-    /// - Rationale: Earlier builds may have persisted UI display names (e.g. "Gemini 3 Flash Preview")
-    ///   instead of API model IDs (e.g. "gemini-3-flash-preview"). We migrate deterministically.
-    ///
-    /// - Rules:
-    ///   - Prefer explicit alias maps for known historical values.
-    ///   - Fall back to a conservative display-name match only if it maps uniquely.
-    static func resolvePersistedModelID(
-        providerID: String,
-        savedModelID: String,
-        availableModels: [(id: String, displayName: String)]
-    ) -> String? {
-        let providerKey = ProviderID.canonicalID(from: providerID)
-        let savedKey = ProviderID.lookupKey(from: savedModelID)
-
-        // Known historical aliases (display-ish strings -> real API model IDs).
-        // Keys are lookupKey-normalized (lowercased alphanumerics only).
-        let aliasesByProvider: [String: [String: String]] = [
-            "google": [
-                ProviderID.lookupKey(from: "Gemini 3 Flash Preview"): "gemini-3-flash-preview",
-                ProviderID.lookupKey(from: "Gemini 3 Pro Preview"): "gemini-3-pro-preview"
-            ],
-            // Anthropic: sometimes users have old display names persisted.
-            "anthropic": [
-                ProviderID.lookupKey(from: "Claude 3.5 Sonnet"): "claude-3-5-sonnet-20241022",
-                ProviderID.lookupKey(from: "Claude 3.5 Haiku"): "claude-3-5-haiku-20241022",
-                ProviderID.lookupKey(from: "Claude 3 Opus"): "claude-3-opus-20240229",
-                ProviderID.lookupKey(from: "Claude Sonnet 4"): "claude-sonnet-4-20250514",
-                ProviderID.lookupKey(from: "Claude Sonnet 4.5"): "claude-sonnet-4-5-20250929",
-                ProviderID.lookupKey(from: "Claude Opus 4.5"): "claude-opus-4-5-20251101"
-            ],
-            // xAI: map common UI-ish names to canonical IDs.
-            "xai": [
-                ProviderID.lookupKey(from: "Grok 4"): "grok-4",
-                ProviderID.lookupKey(from: "Grok 3"): "grok-3",
-                ProviderID.lookupKey(from: "Grok 3 Mini"): "grok-3-mini",
-                ProviderID.lookupKey(from: "Grok 2"): "grok-2-1212",
-                ProviderID.lookupKey(from: "Grok 2 Vision"): "grok-2-vision-1212"
-            ]
-        ]
-
-        if let mapped = aliasesByProvider[providerKey]?[savedKey] {
-            if availableModels.contains(where: { $0.id == mapped }) {
-                return mapped
-            }
-        }
-
-        // Conservative fallback: match against displayName lookup key, but only if unique.
-        let matches = availableModels.filter { ProviderID.lookupKey(from: $0.displayName) == savedKey }
-        if matches.count == 1 {
-            return matches[0].id
-        }
-
-        // Final fallback: case-insensitive direct ID match.
-        if let direct = availableModels.first(where: { $0.id.caseInsensitiveCompare(savedModelID) == .orderedSame }) {
-            return direct.id
-        }
-
-        return nil
     }
 
     // (rest unchanged from your current file)
@@ -634,10 +550,8 @@ class ChatViewModel {
         let streamingID = UUID()
         let streamingStart = Date()
         let domainSession = session.asDomain()
-        currentStreamingSessionID = sessionID
-        currentStreamingModelContext = modelContext
 
-        currentStreamTask = Task { @MainActor in
+        Task { @MainActor in
             let (uiStream, uiContinuation) = AsyncStream<String>.makeStream()
 
             let updateTask = Task { @MainActor in
@@ -648,9 +562,6 @@ class ChatViewModel {
             }
 
             do {
-                defer {
-                    currentStreamTask = nil
-                }
                 await streamAccumulator.reset()
                 await streamAccumulator.begin(token: streamToken)
 
@@ -671,11 +582,6 @@ class ChatViewModel {
                 )
 
                 for try await event in stream {
-                    if Task.isCancelled {
-                        logger.info("Stream cancelled by user")
-                        break
-                    }
-
                     switch event {
                     case .token(let text):
                         if let updated = await streamAccumulator.append(
@@ -779,21 +685,6 @@ class ChatViewModel {
                     }
                 }
 
-                if Task.isCancelled {
-                    uiContinuation.finish()
-                    _ = await updateTask.result
-                    await streamAccumulator.reset()
-                    logger.info("Stream task cancelled before completion")
-                    if isGenerating {
-                        isGenerating = false
-                        resetStreamingState()
-                        executingToolNames.removeAll()
-                        isTruncated = false
-                        truncatedSessionID = nil
-                    }
-                    return
-                }
-
                 await streamAccumulator.reset()
 
                 isGenerating = false
@@ -803,19 +694,6 @@ class ChatViewModel {
             } catch {
                 uiContinuation.finish()
                 _ = await updateTask.result
-
-                if Task.isCancelled {
-                    await streamAccumulator.reset()
-                    logger.info("Stream task cancelled during stream error")
-                    if isGenerating {
-                        isGenerating = false
-                        resetStreamingState()
-                        executingToolNames.removeAll()
-                        isTruncated = false
-                        truncatedSessionID = nil
-                    }
-                    return
-                }
 
                 await streamAccumulator.fail(token: streamToken, error: error)
                 await streamAccumulator.reset()
@@ -831,91 +709,12 @@ class ChatViewModel {
         }
     }
 
-    func stopGeneration() async {
-        guard let task = currentStreamTask else { return }
-        logger.info("Stop generation requested by user")
-
-        let textSnapshot = streamingText ?? ""
-        let messageIDSnapshot = streamingMessageID
-        let startedAtSnapshot = streamingStartedAt
-        let sessionIDSnapshot = currentStreamingSessionID
-        let modelContextSnapshot = currentStreamingModelContext
-
-        task.cancel()
-        currentStreamTask = nil
-
-        isGenerating = false
-        streamingText = nil
-        streamingMessageID = nil
-        streamingStartedAt = nil
-        isTruncated = false
-        truncatedSessionID = nil
-        executingToolNames.removeAll()
-        currentStreamingSessionID = nil
-        currentStreamingModelContext = nil
-
-        guard
-            let messageID = messageIDSnapshot,
-            let sessionID = sessionIDSnapshot,
-            let modelContext = modelContextSnapshot
-        else { return }
-
-        let emote = await generateInterruptionEmote()
-        let trimmed = textSnapshot.trimmingCharacters(in: .whitespacesAndNewlines)
-        let finalText = trimmed.isEmpty ? emote : "\(textSnapshot) \(emote)"
-
-        let interruptedMessage = ChatMessage(
-            id: messageID,
-            role: .assistant,
-            content: finalText,
-            thoughtProcess: nil,
-            parts: [.text(finalText)],
-            createdAt: startedAtSnapshot ?? Date(),
-            codeBlocks: [],
-            tokenUsage: nil,
-            costBreakdown: nil,
-            toolCallID: nil,
-            toolCalls: nil
-        )
-
-        let service = await ensureChatService(modelContext: modelContext)
-        try? service.appendMessage(interruptedMessage, to: sessionID)
-        setLastVisibleMessage(to: messageID)
-    }
-
-    private func generateInterruptionEmote() async -> String {
-        let fallback = "⏸️"
-
-        do {
-            // Create a session with simple instructions
-            let session = LanguageModelSession(
-                instructions: "You are a helpful assistant. Always respond with exactly one emoji."
-            )
-            
-            let prompt = """
-            Generate a single emoji that represents an interrupted thought or \
-            paused conversation. Respond with only the emoji, nothing else.
-            """
-            
-            let response = try await session.respond(to: prompt)
-
-            if let firstEmoji = response.content.unicodeScalars.first(where: { $0.properties.isEmoji })
-            {
-                return String(firstEmoji)
-            }
-        } catch {
-            logger.warning(
-                "AFM emote generation failed: \(error.localizedDescription)")
-        }
-
-        return fallback
-    }
-
     private func mapUISelectionToProviderModel(
         selectedProvider: UILLMProvider?,
         selectedModel: UILLMModel?,
         sessionEntity: ChatSessionEntity
     ) -> (providerID: String, modelID: String) {
+
         if let provider = selectedProvider, let model = selectedModel {
             logger.info("UI Selection - Provider: \(provider.name), Model: \(model.name)")
 
@@ -1083,8 +882,6 @@ class ChatViewModel {
         streamingText = nil
         streamingMessageID = nil
         streamingStartedAt = nil
-        currentStreamingSessionID = nil
-        currentStreamingModelContext = nil
     }
 
     private func handleStreamCompletion(
@@ -1178,42 +975,6 @@ class ChatViewModel {
         }
     }
 
-    nonisolated func checkAFMAvailability(retryDelay: TimeInterval = 0) {
-        Task { @MainActor [weak self] in
-            guard let self = self else { return }
-            let timestamp = Date()
-            let model = SystemLanguageModel.default
-            let availability = model.availability
-
-            afmDiagnostics.lastCheckTime = timestamp
-            afmDiagnostics.availability = availability
-            afmDiagnostics.isAvailable = (availability == .available)
-            afmDiagnostics.checkCount += 1
-
-            switch availability {
-            case .available:
-                afmDiagnostics.reasonText = "✅ AFM Available"
-                logger.info("AFM: ✅ Available at \(timestamp)")
-            case .unavailable(let reason):
-                let reasonText = "\(reason)"
-                afmDiagnostics.reasonText = "❌ \(reasonText)"
-                logger.info("AFM: ❌ Unavailable - \(reasonText) at \(timestamp)")
-            @unknown default:
-                afmDiagnostics.reasonText = "❓ Unknown state"
-                logger.warning("AFM: Unknown availability at \(timestamp)")
-            }
-
-            if retryDelay > 0 {
-                try? await Task.sleep(nanoseconds: UInt64(retryDelay * 1_000_000_000))
-                checkAFMAvailability(retryDelay: 0)
-            }
-        }
-    }
-
-    func retryAFMCheck() {
-        checkAFMAvailability(retryDelay: 2.0)
-    }
-
     func continueGenerating(session: ChatSessionEntity, modelContext: ModelContext) {
         guard let sessionID = truncatedSessionID,
             isTruncated,
@@ -1226,6 +987,60 @@ class ChatViewModel {
             session: session,
             modelContext: modelContext
         )
+    }
+    
+    /// Stops the current generation if one is in progress
+    func stopGeneration() async {
+        guard isGenerating else { return }
+        
+        // Cancel all tool executions
+        let toolCallIDs = Array(toolExecutionCancelHandlers.keys)
+        for toolCallID in toolCallIDs {
+            cancelToolExecution(toolCallID: toolCallID)
+        }
+        
+        // Reset generation state
+        isGenerating = false
+        resetStreamingState()
+        executingToolNames.removeAll()
+        
+        logger.info("Generation stopped by user")
+    }
+    
+    // MARK: - AFM Diagnostics
+    
+    /// Check if Apple Foundation Models are available
+    func checkAFMAvailability(retryDelay: TimeInterval = 0) {
+        Task {
+            if retryDelay > 0 {
+                try? await Task.sleep(nanoseconds: UInt64(retryDelay * 1_000_000_000))
+            }
+            
+            // Check if Foundation Models framework is available
+            // This is a placeholder - actual implementation would check for the framework
+            let isAvailable = await checkFoundationModelsAvailability()
+            
+            await MainActor.run {
+                afmDiagnostics.isAvailable = isAvailable
+                afmDiagnostics.lastCheckTime = Date()
+                afmDiagnostics.reason = isAvailable
+                    ? "Foundation Models available"
+                    : "Foundation Models not available on this system"
+            }
+        }
+    }
+    
+    /// Retry AFM check with exponential backoff
+    func retryAFMCheck() {
+        checkAFMAvailability(retryDelay: 2.0)
+    }
+    
+    /// Check if Foundation Models are available (placeholder implementation)
+    private func checkFoundationModelsAvailability() async -> Bool {
+        // This is a placeholder implementation
+        // In a real app, you would check if the Foundation Models framework is available
+        // For now, return false as it's not generally available yet
+        return false
     }
     
     // MARK: - Tool Execution Timing (STEP 3)

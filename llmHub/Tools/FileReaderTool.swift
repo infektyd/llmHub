@@ -88,14 +88,24 @@ nonisolated struct FileReaderTool: Tool {
             }
         }()
 
-        // Resolve path via workspace root with strict sandbox enforcement.
-        let fileURL = try ToolPathResolver.resolve(
-            inputPath: path,
-            workspaceRoot: context.workspacePath,
-            kind: .file
-        )
+        // Resolve path via context.workspacePath
+        let fileURL: URL
+        if path.hasPrefix("/") {
+            fileURL = URL(fileURLWithPath: path)
+        } else {
+            fileURL = context.workspacePath.appendingPathComponent(path)
+        }
 
         context.logger.debug("Reading file: \(fileURL.path)")
+
+        // Sandbox check (implicit in ToolEnvironment support check, but explicit here for safety)
+        #if os(iOS)
+            // Assuming context.workspacePath is the sandbox root or allowed dir
+            // Strict check: must start with workspacePath
+            if !fileURL.path.hasPrefix(context.workspacePath.path) {
+                throw ToolError.sandboxViolation("Access denied: File outside workspace sandbox")
+            }
+        #endif
 
         var isDirectory = ObjCBool(false)
         guard FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDirectory) else {

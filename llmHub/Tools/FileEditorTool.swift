@@ -56,11 +56,10 @@ nonisolated final class FileEditorTool: Tool {
             throw ToolError.invalidArguments("path is required")
         }
 
-        let fileURL = try ToolPathResolver.resolve(
-            inputPath: path,
-            workspaceRoot: context.workspacePath,
-            kind: .any
-        )
+        let fileURL = context.workspacePath.appendingPathComponent(path).standardizedFileURL
+        if !fileURL.path.hasPrefix(context.workspacePath.path) {
+            throw ToolError.sandboxViolation("File must be within workspace")
+        }
 
         let operations: [String] = ["create", "edit", "append", "delete", "rename", "move", "copy"]
         guard operations.contains(operationStr) else {
@@ -113,11 +112,7 @@ nonisolated final class FileEditorTool: Tool {
             guard let dest = arguments.string("destination") else {
                 throw ToolError.invalidArguments("destination required")
             }
-            let destURL = try ToolPathResolver.resolve(
-                inputPath: dest,
-                workspaceRoot: context.workspacePath,
-                kind: .any
-            )
+            let destURL = context.workspacePath.appendingPathComponent(dest).standardizedFileURL
             try fm.moveItem(at: fileURL, to: destURL)
             return ToolResult.success("Moved to \(dest)")
 
@@ -125,11 +120,7 @@ nonisolated final class FileEditorTool: Tool {
             guard let dest = arguments.string("destination") else {
                 throw ToolError.invalidArguments("destination required")
             }
-            let destURL = try ToolPathResolver.resolve(
-                inputPath: dest,
-                workspaceRoot: context.workspacePath,
-                kind: .any
-            )
+            let destURL = context.workspacePath.appendingPathComponent(dest).standardizedFileURL
             try fm.copyItem(at: fileURL, to: destURL)
             return ToolResult.success("Copied to \(dest)")
 

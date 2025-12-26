@@ -1,3 +1,4 @@
+#if canImport(XCTest)
 import XCTest
 
 @testable import llmHub
@@ -147,3 +148,5 @@ final class ToolSchemaValidationTests: XCTestCase {
         add(attachment)
     }
 }
+
+#endif

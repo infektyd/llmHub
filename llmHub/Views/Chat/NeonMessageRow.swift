@@ -118,18 +118,29 @@ struct NeonMessageRow: View {
                         .foregroundColor(theme.textTertiary)
                         .textSelection(.enabled)
                         .fixedSize(horizontal: false, vertical: true)
-                } else if role == .assistant && isStreaming {
-                    // Typewriter animation for streaming assistant messages
-                    Markdown(message.content)
-                        .markdownTheme(.llmHubLiquid(theme: theme))
-                        .font(LiquidGlassTokens.messageFont(role: role, theme: theme))
-                        .foregroundColor(theme.textPrimary)
-                        .textSelection(.enabled)
                 } else {
-                    Markdown(message.content)
-                        .markdownTheme(.llmHubLiquid(theme: theme))
-                        .font(LiquidGlassTokens.messageFont(role: role, theme: theme))
-                        .textSelection(.enabled)
+                    #if canImport(MarkdownUI)
+                        if role == .assistant && isStreaming {
+                            // Typewriter animation for streaming assistant messages
+                            Markdown(message.content)
+                                .markdownTheme(.llmHubLiquid(theme: theme))
+                                .font(LiquidGlassTokens.messageFont(role: role, theme: theme))
+                                .foregroundColor(theme.textPrimary)
+                                .textSelection(.enabled)
+                        } else {
+                            Markdown(message.content)
+                                .markdownTheme(.llmHubLiquid(theme: theme))
+                                .font(LiquidGlassTokens.messageFont(role: role, theme: theme))
+                                .textSelection(.enabled)
+                        }
+                    #else
+                        // Fallback if MarkdownUI isn't available in this build.
+                        Text(message.content)
+                            .font(LiquidGlassTokens.messageFont(role: role, theme: theme))
+                            .foregroundColor(role == .assistant ? theme.textPrimary : theme.textSecondary)
+                            .textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
+                    #endif
                 }
             }
 

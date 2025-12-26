@@ -71,7 +71,7 @@ struct ToolsAvailableDebugSheet: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(10)
                                 .background(
-                                    RoundedRectangle(cornerRadius: 12)
+                                    RoundedRectangle(cornerRadius: 06)
                                         .fill(theme.surface.opacity(0.25))
                                         .glassEffect(GlassEffect.regular, in: .rect(cornerRadius: 12))
                                 )
@@ -94,7 +94,7 @@ struct ToolsAvailableDebugSheet: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(12)
                         .background(
-                            RoundedRectangle(cornerRadius: 12)
+                            RoundedRectangle(cornerRadius: 06)
                                 .fill(theme.surface.opacity(0.20))
                                 .glassEffect(GlassEffect.regular, in: .rect(cornerRadius: 12))
                         )

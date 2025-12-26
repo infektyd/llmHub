@@ -5,7 +5,9 @@
 //  Created by AI Assistant on 2025-12-13.
 //
 
+#if canImport(MarkdownUI)
 import MarkdownUI
+#endif
 import SwiftUI
 
 struct NeonDarkTranscriptPreview: View {

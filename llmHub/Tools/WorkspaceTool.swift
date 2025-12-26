@@ -56,11 +56,12 @@ nonisolated struct WorkspaceTool: Tool {
             throw ToolError.invalidArguments("operation is required")
         }
         let relativePath = arguments.string("path") ?? "."
-        let targetURL = try ToolPathResolver.resolve(
-            inputPath: relativePath,
-            workspaceRoot: context.workspacePath,
-            kind: .directory
-        )
+        let targetURL = context.workspacePath.appendingPathComponent(relativePath)
+            .standardizedFileURL
+
+        if !targetURL.path.hasPrefix(context.workspacePath.path) {
+            throw ToolError.sandboxViolation("Path must be within workspace")
+        }
 
         switch operation {
         case "list_files":

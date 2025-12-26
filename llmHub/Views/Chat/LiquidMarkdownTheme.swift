@@ -5,9 +5,12 @@
 //  Claude-level Markdown typography tuned for the unified Liquid Glass transcript.
 //
 
+#if canImport(MarkdownUI)
 import MarkdownUI
+#endif
 import SwiftUI
 
+#if canImport(MarkdownUI)
 extension MarkdownUI.Theme {
     static func llmHubLiquid(theme appTheme: AppTheme) -> MarkdownUI.Theme {
         MarkdownUI.Theme()
@@ -156,4 +159,4 @@ extension MarkdownUI.Theme {
             }
     }
 }
-
+#endif
