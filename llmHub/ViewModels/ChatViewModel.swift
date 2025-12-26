@@ -30,6 +30,8 @@ class ChatViewModel {
 
     /// Indicates whether the view model is currently streaming/generating a response.
     var isGenerating: Bool = false
+    /// AFM diagnostics state for runtime availability checks.
+    var afmDiagnostics: AFMDiagnosticsState = AFMDiagnosticsState()
 
     // ... existing properties ...
 
@@ -1176,6 +1178,42 @@ class ChatViewModel {
         }
     }
 
+    nonisolated func checkAFMAvailability(retryDelay: TimeInterval = 0) {
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            let timestamp = Date()
+            let model = SystemLanguageModel.default
+            let availability = model.availability
+
+            afmDiagnostics.lastCheckTime = timestamp
+            afmDiagnostics.availability = availability
+            afmDiagnostics.isAvailable = (availability == .available)
+            afmDiagnostics.checkCount += 1
+
+            switch availability {
+            case .available:
+                afmDiagnostics.reasonText = "✅ AFM Available"
+                logger.info("AFM: ✅ Available at \(timestamp)")
+            case .unavailable(let reason):
+                let reasonText = "\(reason)"
+                afmDiagnostics.reasonText = "❌ \(reasonText)"
+                logger.info("AFM: ❌ Unavailable - \(reasonText) at \(timestamp)")
+            @unknown default:
+                afmDiagnostics.reasonText = "❓ Unknown state"
+                logger.warning("AFM: Unknown availability at \(timestamp)")
+            }
+
+            if retryDelay > 0 {
+                try? await Task.sleep(nanoseconds: UInt64(retryDelay * 1_000_000_000))
+                checkAFMAvailability(retryDelay: 0)
+            }
+        }
+    }
+
+    func retryAFMCheck() {
+        checkAFMAvailability(retryDelay: 2.0)
+    }
+
     func continueGenerating(session: ChatSessionEntity, modelContext: ModelContext) {
         guard let sessionID = truncatedSessionID,
             isTruncated,
@@ -1232,4 +1270,3 @@ class ChatViewModel {
         }
     }
 }
-
