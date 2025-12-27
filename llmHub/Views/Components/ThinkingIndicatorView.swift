@@ -20,10 +20,10 @@ struct ThinkingIndicatorView: View {
             // AI Avatar with sparkles
             Circle()
                 .frame(width: 32, height: 32)
-                .glassEffect(GlassEffect.regular.tint(Color.purple.opacity(0.4)), in: .circle)
+                .glassEffect(GlassEffect.regular.tint(Color.blue.opacity(0.9)), in: .circle)
                 .overlay(
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 14, weight: .semibold))
+                    Image(systemName: "brain.head.profile")
+                        .font(.system(size: 14, weight: .heavy))
                         .foregroundColor(.white)
                         .symbolEffect(
                             .pulse.byLayer,
@@ -75,7 +75,7 @@ struct ThinkingIndicatorView: View {
 
 #Preview {
     ZStack {
-        Color.black.ignoresSafeArea()
+        Color.clear.ignoresSafeArea()
 
         VStack(spacing: 20) {
             ThinkingIndicatorView(isThinking: true)

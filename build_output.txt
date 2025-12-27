@@ -1,0 +1,819 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project llmHub.xcodeproj -scheme llmHub -destination platform=macOS build
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  swift-numerics: https://github.com/apple/swift-numerics.git @ 1.1.1
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00008132-000C253001C1801C, name:My Mac }
+{ platform:macOS, arch:x86_64, id:00008132-000C253001C1801C, name:My Mac }
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (9 targets)
+    Target 'llmHub' in project 'llmHub'
+        ➜ Explicit dependency on target 'llmHubHelper' in project 'llmHub'
+        ➜ Explicit dependency on target 'Numerics' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'ComplexModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'RealModule' in project 'swift-numerics'
+    Target 'RealModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'RealModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+    Target 'ComplexModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'ComplexModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'RealModule' in project 'swift-numerics'
+    Target 'Numerics' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'Numerics' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'RealModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'ComplexModule' in project 'swift-numerics'
+    Target 'Numerics' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'RealModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'ComplexModule' in project 'swift-numerics'
+    Target 'ComplexModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'RealModule' in project 'swift-numerics'
+    Target 'RealModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+    Target '_NumericsShims' in project 'swift-numerics' (no dependencies)
+    Target 'llmHubHelper' in project 'llmHub' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+ReadFileContents /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/share/docc/features.json
+
+Build description signature: 16c43d031e70a38ddd66c8a8965c2e75
+Build description path: /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/XCBuildData/16c43d031e70a38ddd66c8a8965c2e75.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx26.2-25C57-3885c01c3e6b6a337905948deab2002e00fa09913b459cbbc988d1f6730289ae.sdkstatcache
+    cd /Users/hansaxelsson/llmHub/llmHub.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -o /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx26.2-25C57-3885c01c3e6b6a337905948deab2002e00fa09913b459cbbc988d1f6730289ae.sdkstatcache
+
+ProcessProductPackaging /Users/hansaxelsson/llmHub/llmHubHelper/llmHubHelper.entitlements /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHubHelper.build/llmHubHelper.xpc.xcent (in target 'llmHubHelper' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+    Entitlements:
+    
+    {
+    "com.apple.security.app-sandbox" = 1;
+    "com.apple.security.get-task-allow" = 1;
+    "com.apple.security.inherit" = 1;
+}
+    
+    builtin-productPackagingUtility /Users/hansaxelsson/llmHub/llmHubHelper/llmHubHelper.entitlements -entitlements -format xml -o /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHubHelper.build/llmHubHelper.xpc.xcent
+
+ProcessProductPackagingDER /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHubHelper.build/llmHubHelper.xpc.xcent /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHubHelper.build/llmHubHelper.xpc.xcent.der (in target 'llmHubHelper' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    /usr/bin/derq query -f xml -i /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHubHelper.build/llmHubHelper.xpc.xcent -o /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHubHelper.build/llmHubHelper.xpc.xcent.der --raw
+
+ProcessInfoPlistFile /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/llmHubHelper.xpc/Contents/Info.plist /Users/hansaxelsson/llmHub/llmHubHelper/Info.plist (in target 'llmHubHelper' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    builtin-infoPlistUtility /Users/hansaxelsson/llmHub/llmHubHelper/Info.plist -producttype com.apple.product-type.xpc-service -expandbuildsettings -platform macosx -o /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/llmHubHelper.xpc/Contents/Info.plist
+
+ProcessProductPackaging "" /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/llmHub.app.xcent (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+    Entitlements:
+    
+    {
+    "com.apple.security.app-sandbox" = 1;
+    "com.apple.security.assets.movies.read-write" = 1;
+    "com.apple.security.assets.music.read-write" = 1;
+    "com.apple.security.assets.pictures.read-write" = 1;
+    "com.apple.security.cs.debugger" = 1;
+    "com.apple.security.device.audio-input" = 1;
+    "com.apple.security.device.bluetooth" = 1;
+    "com.apple.security.device.camera" = 1;
+    "com.apple.security.device.usb" = 1;
+    "com.apple.security.files.downloads.read-write" = 1;
+    "com.apple.security.files.user-selected.read-write" = 1;
+    "com.apple.security.get-task-allow" = 1;
+    "com.apple.security.network.client" = 1;
+    "com.apple.security.network.server" = 1;
+    "com.apple.security.personal-information.addressbook" = 1;
+    "com.apple.security.personal-information.calendars" = 1;
+    "com.apple.security.personal-information.location" = 1;
+    "com.apple.security.personal-information.photos-library" = 1;
+    "com.apple.security.print" = 1;
+}
+    
+    builtin-productPackagingUtility -entitlements -format xml -o /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/llmHub.app.xcent
+
+CodeSign /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/llmHubHelper.xpc (in target 'llmHubHelper' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+    Signing Identity:     "Apple Development: Hans Olof Axelson (D6X49C7M74)"
+    
+    /usr/bin/codesign --force --sign 3A67D2FB09871AF3EFCF60645425D61840588FA7 -o runtime --entitlements /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHubHelper.build/llmHubHelper.xpc.xcent --timestamp\=none --generate-entitlement-der /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/llmHubHelper.xpc
+/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/llmHubHelper.xpc: replacing existing signature
+
+ProcessProductPackagingDER /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/llmHub.app.xcent /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/llmHub.app.xcent.der (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    /usr/bin/derq query -f xml -i /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/llmHub.app.xcent -o /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/llmHub.app.xcent.der --raw
+
+SwiftDriver llmHub normal arm64 com.apple.xcode.tools.swift.compiler (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name llmHub -Onone -enforce-exclusivity\=checked @/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/llmHub.SwiftFileList -DDEBUG -default-isolation\=MainActor -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-macos26.2 -g -module-cache-path /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug -F /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/PackageFrameworks -F /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/PackageFrameworks -F /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/PackageFrameworks -F /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/PackageFrameworks -F /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug -emit-localized-strings -emit-localized-strings-path /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx26.2-25C57-3885c01c3e6b6a337905948deab2002e00fa09913b459cbbc988d1f6730289ae.sdkstatcache -output-file-map /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/llmHub-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/llmHub.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/llmHub_const_extract_protocols.json -Xcc -iquote -Xcc /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/llmHub-generated-files.hmap -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/llmHub-own-target-headers.hmap -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/llmHub-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub-b47a1df6698d69dd120fff2bd4c843ba-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/llmHub-project-headers.hmap -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/include -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/DerivedSources-normal/arm64 -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/DerivedSources/arm64 -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/llmHub-Swift.h -working-directory /Users/hansaxelsson/llmHub -experimental-emit-module-separately -disable-cmo
+
+SwiftCompile normal arm64 Compiling\ ContentView.swift,\ llmHubApp.swift,\ AFMDiagnosticsState.swift,\ ChatModels.swift,\ ChatSessionEntity+Memory.swift,\ CodeExecutionModels.swift,\ ContextConfig.swift,\ FileOperationModels.swift,\ MemoryModels.swift,\ ModelsDevModel.swift,\ SharedTypes.swift /Users/hansaxelsson/llmHub/llmHub/App/ContentView.swift /Users/hansaxelsson/llmHub/llmHub/App/llmHubApp.swift /Users/hansaxelsson/llmHub/llmHub/Models/AFMDiagnosticsState.swift /Users/hansaxelsson/llmHub/llmHub/Models/ChatModels.swift /Users/hansaxelsson/llmHub/llmHub/Models/ChatSessionEntity+Memory.swift /Users/hansaxelsson/llmHub/llmHub/Models/CodeExecutionModels.swift /Users/hansaxelsson/llmHub/llmHub/Models/ContextConfig.swift /Users/hansaxelsson/llmHub/llmHub/Models/FileOperationModels.swift /Users/hansaxelsson/llmHub/llmHub/Models/MemoryModels.swift /Users/hansaxelsson/llmHub/llmHub/Models/ModelsDevModel.swift /Users/hansaxelsson/llmHub/llmHub/Models/SharedTypes.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/App/ContentView.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/App/llmHubApp.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Models/AFMDiagnosticsState.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Models/ChatModels.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Models/ChatSessionEntity+Memory.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Models/CodeExecutionModels.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Models/ContextConfig.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Models/FileOperationModels.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Models/MemoryModels.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Models/ModelsDevModel.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Models/SharedTypes.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ llmHub (in target 'llmHub' from project 'llmHub')
+EmitSwiftModule normal arm64 (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ NeonModelPickerButton.swift,\ NeonModelPickerPanel.swift,\ NeonModelPickerSheet.swift,\ NeonToolInspector.swift,\ NeonWelcomeView.swift,\ StreamingStatsCapsule.swift,\ ThinkingIndicatorView.swift,\ TokenUsageCapsule.swift,\ ToolIconToggle.swift,\ WindowBackgroundStyle.swift /Users/hansaxelsson/llmHub/llmHub/Views/Components/NeonModelPickerButton.swift /Users/hansaxelsson/llmHub/llmHub/Views/Components/NeonModelPickerPanel.swift /Users/hansaxelsson/llmHub/llmHub/Views/Components/NeonModelPickerSheet.swift /Users/hansaxelsson/llmHub/llmHub/Views/Components/NeonToolInspector.swift /Users/hansaxelsson/llmHub/llmHub/Views/Components/NeonWelcomeView.swift /Users/hansaxelsson/llmHub/llmHub/Views/Components/StreamingStatsCapsule.swift /Users/hansaxelsson/llmHub/llmHub/Views/Components/ThinkingIndicatorView.swift /Users/hansaxelsson/llmHub/llmHub/Views/Components/TokenUsageCapsule.swift /Users/hansaxelsson/llmHub/llmHub/Views/Components/ToolIconToggle.swift /Users/hansaxelsson/llmHub/llmHub/Views/Components/WindowBackgroundStyle.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Components/NeonModelPickerButton.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Components/NeonModelPickerPanel.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Components/NeonModelPickerSheet.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Components/NeonToolInspector.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Components/NeonWelcomeView.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Components/StreamingStatsCapsule.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Components/ThinkingIndicatorView.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Components/TokenUsageCapsule.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Components/ToolIconToggle.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Components/WindowBackgroundStyle.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ ModelFavoritesManager.swift,\ SettingsViewModel.swift,\ SidebarViewModel.swift,\ WorkbenchViewModel.swift,\ ChatInputPanel.swift,\ GlassTranscriptSurface.swift,\ LiquidMarkdownTheme.swift,\ NeonChatView.swift,\ NeonMessageRow.swift,\ NeonToolbar.swift,\ SelectableMessageText.swift /Users/hansaxelsson/llmHub/llmHub/ViewModels/ModelFavoritesManager.swift /Users/hansaxelsson/llmHub/llmHub/ViewModels/SettingsViewModel.swift /Users/hansaxelsson/llmHub/llmHub/ViewModels/SidebarViewModel.swift /Users/hansaxelsson/llmHub/llmHub/ViewModels/WorkbenchViewModel.swift /Users/hansaxelsson/llmHub/llmHub/Views/Chat/ChatInputPanel.swift /Users/hansaxelsson/llmHub/llmHub/Views/Chat/GlassTranscriptSurface.swift /Users/hansaxelsson/llmHub/llmHub/Views/Chat/LiquidMarkdownTheme.swift /Users/hansaxelsson/llmHub/llmHub/Views/Chat/NeonChatView.swift /Users/hansaxelsson/llmHub/llmHub/Views/Chat/NeonMessageRow.swift /Users/hansaxelsson/llmHub/llmHub/Views/Chat/NeonToolbar.swift /Users/hansaxelsson/llmHub/llmHub/Views/Chat/SelectableMessageText.swift (in target 'llmHub' from project 'llmHub')
+Failed frontend command:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend -frontend -c -filelist /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/sources-1 -primary-file /Users/hansaxelsson/llmHub/llmHub/ViewModels/ModelFavoritesManager.swift -primary-file /Users/hansaxelsson/llmHub/llmHub/ViewModels/SettingsViewModel.swift -primary-file /Users/hansaxelsson/llmHub/llmHub/ViewModels/SidebarViewModel.swift -primary-file /Users/hansaxelsson/llmHub/llmHub/ViewModels/WorkbenchViewModel.swift -primary-file /Users/hansaxelsson/llmHub/llmHub/Views/Chat/ChatInputPanel.swift -primary-file /Users/hansaxelsson/llmHub/llmHub/Views/Chat/GlassTranscriptSurface.swift -primary-file /Users/hansaxelsson/llmHub/llmHub/Views/Chat/LiquidMarkdownTheme.swift -primary-file /Users/hansaxelsson/llmHub/llmHub/Views/Chat/NeonChatView.swift -primary-file /Users/hansaxelsson/llmHub/llmHub/Views/Chat/NeonMessageRow.swift -primary-file /Users/hansaxelsson/llmHub/llmHub/Views/Chat/NeonToolbar.swift -primary-file /Users/hansaxelsson/llmHub/llmHub/Views/Chat/SelectableMessageText.swift -supplementary-output-file-map /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/supplementaryOutputs-7 -emit-localized-strings -emit-localized-strings-path /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64 -target arm64-apple-macos26.2 -module-can-import-version AppKit 2685.30.107 2685.30.107 -module-can-import-version DeveloperToolsSupport 23.0.4 23.0.4 -module-can-import-version SwiftUI 7.2.5.1 7.2.5 -disable-cross-import-overlay-search -swift-module-cross-import LocalAuthentication /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/LocalAuthentication.framework/Modules/LocalAuthentication.swiftcrossimport/SwiftUI.swiftoverlay -swift-module-cross-import LocalAuthentication /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk/System/Library/Frameworks/LocalAuthentication.framework/Modules/LocalAuthentication.swiftcrossimport/SwiftUI.swiftoverlay -swift-module-cross-import SwiftData /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk/System/Library/Frameworks/SwiftData.framework/Modules/SwiftData.swiftcrossimport/CoreData.swiftoverlay -swift-module-cross-import SwiftData /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk/System/Library/Frameworks/SwiftData.framework/Modules/SwiftData.swiftcrossimport/SwiftUI.swiftoverlay -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libFoundationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#FoundationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libFoundationModelsMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#FoundationModelsMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libObservationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#ObservationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libPreviewsMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#PreviewsMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libSwiftDataMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#SwiftDataMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libSwiftMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#SwiftMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libSwiftUIMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#SwiftUIMacros -disable-implicit-swift-modules -Xcc -fno-implicit-modules -Xcc -fno-implicit-module-maps -explicit-swift-module-map-file /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/llmHub-dependencies-1.json -Xllvm -aarch64-use-tbi -enable-objc-interop -stack-check -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -I /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug -F /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/PackageFrameworks -F /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/PackageFrameworks -F /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/PackageFrameworks -F /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/PackageFrameworks -F /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug -no-color-diagnostics -Xcc -fno-color-diagnostics -enable-testing -g -debug-info-format\=dwarf -dwarf-version\=5 -module-cache-path /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -profile-generate -profile-coverage-mapping -swift-version 6 -enforce-exclusivity\=checked -Onone -D DEBUG -serialize-debugging-options -const-gather-protocols-file /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/llmHub_const_extract_protocols.json -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -default-isolation\=MainActor -empty-abi-descriptor -validate-clang-modules-once -clang-build-session-file /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -working-directory -Xcc /Users/hansaxelsson/llmHub -enable-anonymous-context-mangled-names -file-compilation-dir /Users/hansaxelsson/llmHub -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -Xcc -ivfsstatcache -Xcc /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx26.2-25C57-3885c01c3e6b6a337905948deab2002e00fa09913b459cbbc988d1f6730289ae.sdkstatcache -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/swift-overrides.hmap -Xcc -iquote -Xcc /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/llmHub-generated-files.hmap -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/llmHub-own-target-headers.hmap -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/llmHub-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub-b47a1df6698d69dd120fff2bd4c843ba-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/llmHub-project-headers.hmap -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/include -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/DerivedSources-normal/arm64 -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/DerivedSources/arm64 -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/DerivedSources -Xcc -DDEBUG\=1 -no-auto-bridging-header-chaining -module-name llmHub -frontend-parseable-output -disable-clang-spi -target-sdk-version 26.2 -target-sdk-name macosx26.2 -clang-target arm64-apple-macos26.2 -in-process-plugin-server-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/libSwiftInProcPluginServer.dylib -o /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/ModelFavoritesManager.o -o /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/SettingsViewModel.o -o /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/SidebarViewModel.o -o /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/WorkbenchViewModel.o -o /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/ChatInputPanel.o -o /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/GlassTranscriptSurface.o -o /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/LiquidMarkdownTheme.o -o /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/NeonChatView.o -o /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/NeonMessageRow.o -o /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/NeonToolbar.o -o /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/SelectableMessageText.o -index-unit-output-path /llmHub.build/Debug/llmHub.build/Objects-normal/arm64/ModelFavoritesManager.o -index-unit-output-path /llmHub.build/Debug/llmHub.build/Objects-normal/arm64/SettingsViewModel.o -index-unit-output-path /llmHub.build/Debug/llmHub.build/Objects-normal/arm64/SidebarViewModel.o -index-unit-output-path /llmHub.build/Debug/llmHub.build/Objects-normal/arm64/WorkbenchViewModel.o -index-unit-output-path /llmHub.build/Debug/llmHub.build/Objects-normal/arm64/ChatInputPanel.o -index-unit-output-path /llmHub.build/Debug/llmHub.build/Objects-normal/arm64/GlassTranscriptSurface.o -index-unit-output-path /llmHub.build/Debug/llmHub.build/Objects-normal/arm64/LiquidMarkdownTheme.o -index-unit-output-path /llmHub.build/Debug/llmHub.build/Objects-normal/arm64/NeonChatView.o -index-unit-output-path /llmHub.build/Debug/llmHub.build/Objects-normal/arm64/NeonMessageRow.o -index-unit-output-path /llmHub.build/Debug/llmHub.build/Objects-normal/arm64/NeonToolbar.o -index-unit-output-path /llmHub.build/Debug/llmHub.build/Objects-normal/arm64/SelectableMessageText.o -index-store-path /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Index.noindex/DataStore -index-system-modules
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/ViewModels/ModelFavoritesManager.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/ViewModels/SettingsViewModel.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/ViewModels/SidebarViewModel.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/ViewModels/WorkbenchViewModel.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Chat/ChatInputPanel.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Chat/GlassTranscriptSurface.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Chat/LiquidMarkdownTheme.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Chat/NeonChatView.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+/Users/hansaxelsson/llmHub/llmHub/Views/Chat/NeonChatView.swift:32:28: error: missing arguments for parameters 'showingSettings', 'showingToolsDebug' in call
+                NeonToolbar(
+                           ^
+/Users/hansaxelsson/llmHub/llmHub/Views/Chat/NeonToolbar.swift:11:12: note: 'init(session:selectedProvider:selectedModel:scrollOffset:toolInspectorVisible:columnVisibility:showingSettings:showingToolsDebug:onOpenSettings:)' declared here
+    struct NeonToolbar: View {
+           ^
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Chat/NeonMessageRow.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Chat/NeonToolbar.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Chat/SelectableMessageText.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ GlassCard.swift,\ SettingsView.swift,\ CleanupBannerView.swift,\ CleanupReviewSheet.swift,\ NeonSidebar.swift,\ SidebarComponents.swift,\ NeonWorkbenchWindow.swift,\ FileOperationApprovalView.swift,\ TerminalOutputView.swift,\ GeneratedAssetSymbols.swift /Users/hansaxelsson/llmHub/llmHub/Views/Legacy/GlassCard.swift /Users/hansaxelsson/llmHub/llmHub/Views/Settings/SettingsView.swift /Users/hansaxelsson/llmHub/llmHub/Views/Sidebar/CleanupBannerView.swift /Users/hansaxelsson/llmHub/llmHub/Views/Sidebar/CleanupReviewSheet.swift /Users/hansaxelsson/llmHub/llmHub/Views/Sidebar/NeonSidebar.swift /Users/hansaxelsson/llmHub/llmHub/Views/Sidebar/SidebarComponents.swift /Users/hansaxelsson/llmHub/llmHub/Views/Workbench/NeonWorkbenchWindow.swift /Users/hansaxelsson/llmHub/llmHub/Views/FileOperationApprovalView.swift /Users/hansaxelsson/llmHub/llmHub/Views/TerminalOutputView.swift /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'llmHub' from project 'llmHub')
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Legacy/GlassCard.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Settings/SettingsView.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Sidebar/CleanupBannerView.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Sidebar/CleanupReviewSheet.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Sidebar/NeonSidebar.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Sidebar/SidebarComponents.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Workbench/NeonWorkbenchWindow.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/FileOperationApprovalView.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/TerminalOutputView.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ MistralProvider.swift,\ ModelRouterTests.swift,\ OpenAIEndpoint.swift,\ OpenAIProvider.swift,\ OpenRouterProvider.swift,\ ProvidersConfig.swift,\ ReferenceFormatter.swift,\ ProviderHelpers.swift,\ WindowAccessor.swift,\ ChatInteractionController.swift,\ ChatViewModel.swift /Users/hansaxelsson/llmHub/llmHub/Support/MistralProvider.swift /Users/hansaxelsson/llmHub/llmHub/Support/ModelRouterTests.swift /Users/hansaxelsson/llmHub/llmHub/Support/OpenAIEndpoint.swift /Users/hansaxelsson/llmHub/llmHub/Support/OpenAIProvider.swift /Users/hansaxelsson/llmHub/llmHub/Support/OpenRouterProvider.swift /Users/hansaxelsson/llmHub/llmHub/Support/ProvidersConfig.swift /Users/hansaxelsson/llmHub/llmHub/Support/ReferenceFormatter.swift /Users/hansaxelsson/llmHub/llmHub/Utilities/ProviderHelpers.swift /Users/hansaxelsson/llmHub/llmHub/Utilities/WindowAccessor.swift /Users/hansaxelsson/llmHub/llmHub/ViewModels/ChatInteractionController.swift /Users/hansaxelsson/llmHub/llmHub/ViewModels/ChatViewModel.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Support/MistralProvider.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Support/ModelRouterTests.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Support/OpenAIEndpoint.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Support/OpenAIProvider.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Support/OpenRouterProvider.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Support/ProvidersConfig.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Support/ReferenceFormatter.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Utilities/ProviderHelpers.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Utilities/WindowAccessor.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/ViewModels/ChatInteractionController.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/ViewModels/ChatViewModel.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ XAIManager.swift,\ ContextCompactor.swift,\ ContextManagementService.swift,\ TokenEstimator.swift,\ ConversationDistillationService.swift,\ MemoryManagementService.swift,\ MemoryRetrievalService.swift,\ ModelFetchService.swift,\ ModelRegistry.swift,\ ModelsDevService.swift,\ ChatService.swift /Users/hansaxelsson/llmHub/llmHub/Providers/XAIManager.swift /Users/hansaxelsson/llmHub/llmHub/Services/ContextManagement/ContextCompactor.swift /Users/hansaxelsson/llmHub/llmHub/Services/ContextManagement/ContextManagementService.swift /Users/hansaxelsson/llmHub/llmHub/Services/ContextManagement/TokenEstimator.swift /Users/hansaxelsson/llmHub/llmHub/Services/Memory/ConversationDistillationService.swift /Users/hansaxelsson/llmHub/llmHub/Services/Memory/MemoryManagementService.swift /Users/hansaxelsson/llmHub/llmHub/Services/Memory/MemoryRetrievalService.swift /Users/hansaxelsson/llmHub/llmHub/Services/ModelFetch/ModelFetchService.swift /Users/hansaxelsson/llmHub/llmHub/Services/ModelFetch/ModelRegistry.swift /Users/hansaxelsson/llmHub/llmHub/Services/ModelFetch/ModelsDevService.swift /Users/hansaxelsson/llmHub/llmHub/Services/ChatService.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Providers/XAIManager.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/ContextManagement/ContextCompactor.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/ContextManagement/ContextManagementService.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/ContextManagement/TokenEstimator.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/Memory/ConversationDistillationService.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/Memory/MemoryManagementService.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/Memory/MemoryRetrievalService.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/ModelFetch/ModelFetchService.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/ModelFetch/ModelRegistry.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/ModelFetch/ModelsDevService.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/ChatService.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ ExecutionBackend.swift,\ LightweightWorkspace.swift,\ MCPClient.swift,\ ToolTypes.swift,\ UIToolProtocol.swift,\ WorkspaceResolver.swift,\ XPCExecutionBackend.swift,\ AnthropicProvider.swift,\ EnvironmentValues+Keychain.swift,\ GoogleAIProvider.swift,\ KeychainStore.swift /Users/hansaxelsson/llmHub/llmHub/Services/ExecutionBackend.swift /Users/hansaxelsson/llmHub/llmHub/Services/LightweightWorkspace.swift /Users/hansaxelsson/llmHub/llmHub/Services/MCPClient.swift /Users/hansaxelsson/llmHub/llmHub/Services/ToolTypes.swift /Users/hansaxelsson/llmHub/llmHub/Services/UIToolProtocol.swift /Users/hansaxelsson/llmHub/llmHub/Services/WorkspaceResolver.swift /Users/hansaxelsson/llmHub/llmHub/Services/XPCExecutionBackend.swift /Users/hansaxelsson/llmHub/llmHub/Support/AnthropicProvider.swift /Users/hansaxelsson/llmHub/llmHub/Support/EnvironmentValues+Keychain.swift /Users/hansaxelsson/llmHub/llmHub/Support/GoogleAIProvider.swift /Users/hansaxelsson/llmHub/llmHub/Support/KeychainStore.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/ExecutionBackend.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/LightweightWorkspace.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/MCPClient.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/ToolTypes.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/UIToolProtocol.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/WorkspaceResolver.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/XPCExecutionBackend.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Support/AnthropicProvider.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Support/EnvironmentValues+Keychain.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Support/GoogleAIProvider.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Support/KeychainStore.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ CodeExecutionEngine.swift,\ CodeExecutionXPCProtocol.swift,\ ConversationClassificationService.swift,\ GeminiStreamingTests.swift,\ KeychainStoreTests.swift,\ OpenAIToolsInjectionIntegrationTests.swift,\ ProviderRegistryTests.swift,\ ToolCallValidationTests.swift,\ ToolSchemaValidationTests.swift,\ ConversationLifecycleService.swift,\ CostCalculator.swift /Users/hansaxelsson/llmHub/llmHub/Services/CodeExecutionEngine.swift /Users/hansaxelsson/llmHub/llmHub/Services/CodeExecutionXPCProtocol.swift /Users/hansaxelsson/llmHub/llmHub/Services/ConversationClassificationService.swift /Users/hansaxelsson/llmHub/Tests/llmHubTests/GeminiStreamingTests.swift /Users/hansaxelsson/llmHub/Tests/llmHubTests/KeychainStoreTests.swift /Users/hansaxelsson/llmHub/Tests/llmHubTests/OpenAIToolsInjectionIntegrationTests.swift /Users/hansaxelsson/llmHub/Tests/llmHubTests/ProviderRegistryTests.swift /Users/hansaxelsson/llmHub/Tests/llmHubTests/ToolCallValidationTests.swift /Users/hansaxelsson/llmHub/Tests/llmHubTests/ToolSchemaValidationTests.swift /Users/hansaxelsson/llmHub/llmHub/Services/ConversationLifecycleService.swift /Users/hansaxelsson/llmHub/llmHub/Services/CostCalculator.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/CodeExecutionEngine.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/CodeExecutionXPCProtocol.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/ConversationClassificationService.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/Tests/llmHubTests/GeminiStreamingTests.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/Tests/llmHubTests/KeychainStoreTests.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/Tests/llmHubTests/OpenAIToolsInjectionIntegrationTests.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/Tests/llmHubTests/ProviderRegistryTests.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/Tests/llmHubTests/ToolCallValidationTests.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/Tests/llmHubTests/ToolSchemaValidationTests.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/ConversationLifecycleService.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/CostCalculator.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ ToolResultCard.swift,\ ToolsAvailableDebugSheet.swift,\ AdaptiveGlassBackground.swift,\ AFMDiagnosticsView.swift,\ ArtifactCard.swift,\ GlassColors.swift,\ GlassToolbar.swift,\ LiquidGlassTokens.swift,\ NeonMessageBubble.swift,\ NeonModelPicker.swift /Users/hansaxelsson/llmHub/llmHub/Views/Chat/ToolResultCard.swift /Users/hansaxelsson/llmHub/llmHub/Views/Chat/ToolsAvailableDebugSheet.swift /Users/hansaxelsson/llmHub/llmHub/Views/Components/AdaptiveGlassBackground.swift /Users/hansaxelsson/llmHub/llmHub/Views/Components/AFMDiagnosticsView.swift /Users/hansaxelsson/llmHub/llmHub/Views/Components/ArtifactCard.swift /Users/hansaxelsson/llmHub/llmHub/Views/Components/GlassColors.swift /Users/hansaxelsson/llmHub/llmHub/Views/Components/GlassToolbar.swift /Users/hansaxelsson/llmHub/llmHub/Views/Components/LiquidGlassTokens.swift /Users/hansaxelsson/llmHub/llmHub/Views/Components/NeonMessageBubble.swift /Users/hansaxelsson/llmHub/llmHub/Views/Components/NeonModelPicker.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Chat/ToolResultCard.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Chat/ToolsAvailableDebugSheet.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Components/AdaptiveGlassBackground.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Components/AFMDiagnosticsView.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Components/ArtifactCard.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Components/GlassColors.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Components/GlassToolbar.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Components/LiquidGlassTokens.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Components/NeonMessageBubble.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Components/NeonModelPicker.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ ToolDefinition.swift,\ UIModels.swift,\ WorkspaceItem.swift,\ NeonDarkTranscriptPreview.swift,\ LiquidGlassLightTranscriptPreview.swift,\ AnthropicManager.swift,\ GeminiManager.swift,\ LLMProviderProtocol.swift,\ MistralManager.swift,\ OpenAIManager.swift,\ OpenRouterManager.swift /Users/hansaxelsson/llmHub/llmHub/Models/ToolDefinition.swift /Users/hansaxelsson/llmHub/llmHub/Models/UIModels.swift /Users/hansaxelsson/llmHub/llmHub/Models/WorkspaceItem.swift /Users/hansaxelsson/llmHub/llmHub/Preview\ Content/NeonDarkTranscriptPreview.swift /Users/hansaxelsson/llmHub/llmHub/Previews/LiquidGlassLightTranscriptPreview.swift /Users/hansaxelsson/llmHub/llmHub/Providers/AnthropicManager.swift /Users/hansaxelsson/llmHub/llmHub/Providers/GeminiManager.swift /Users/hansaxelsson/llmHub/llmHub/Providers/LLMProviderProtocol.swift /Users/hansaxelsson/llmHub/llmHub/Providers/MistralManager.swift /Users/hansaxelsson/llmHub/llmHub/Providers/OpenAIManager.swift /Users/hansaxelsson/llmHub/llmHub/Providers/OpenRouterManager.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Models/ToolDefinition.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Models/UIModels.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Models/WorkspaceItem.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Preview\ Content/NeonDarkTranscriptPreview.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Previews/LiquidGlassLightTranscriptPreview.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Providers/AnthropicManager.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Providers/GeminiManager.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Providers/LLMProviderProtocol.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Providers/MistralManager.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Providers/OpenAIManager.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Providers/OpenRouterManager.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling CodeExecutionEngine.swift, CodeExecutionXPCProtocol.swift, ConversationClassificationService.swift, GeminiStreamingTests.swift, KeychainStoreTests.swift, OpenAIToolsInjectionIntegrationTests.swift, ProviderRegistryTests.swift, ToolCallValidationTests.swift, ToolSchemaValidationTests.swift, ConversationLifecycleService.swift, CostCalculator.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 Compiling\ SandboxManager.swift /Users/hansaxelsson/llmHub/llmHub/Services/SandboxManager.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/SandboxManager.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling ExecutionBackend.swift, LightweightWorkspace.swift, MCPClient.swift, ToolTypes.swift, UIToolProtocol.swift, WorkspaceResolver.swift, XPCExecutionBackend.swift, AnthropicProvider.swift, EnvironmentValues+Keychain.swift, GoogleAIProvider.swift, KeychainStore.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 Compiling\ ToolExecutor.swift /Users/hansaxelsson/llmHub/llmHub/Services/ToolExecutor.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/ToolExecutor.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling SandboxManager.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 Compiling\ FileReaderTool.swift,\ HTTPRequestTool.swift,\ ImageGenerationTool.swift /Users/hansaxelsson/llmHub/llmHub/Tools/FileReaderTool.swift /Users/hansaxelsson/llmHub/llmHub/Tools/HTTPRequestTool.swift /Users/hansaxelsson/llmHub/llmHub/Tools/ImageGenerationTool.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Tools/FileReaderTool.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Tools/HTTPRequestTool.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Tools/ImageGenerationTool.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling ToolExecutor.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 Compiling\ AppLogger.swift,\ NeonPreviewAssets.swift /Users/hansaxelsson/llmHub/llmHub/Utilities/AppLogger.swift /Users/hansaxelsson/llmHub/llmHub/Utilities/NeonPreviewAssets.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Utilities/AppLogger.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Utilities/NeonPreviewAssets.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ ThinkTagStreamExtractor.swift,\ ToolContext.swift,\ ToolEnvironment.swift /Users/hansaxelsson/llmHub/llmHub/Services/ThinkTagStreamExtractor.swift /Users/hansaxelsson/llmHub/llmHub/Services/ToolContext.swift /Users/hansaxelsson/llmHub/llmHub/Services/ToolEnvironment.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/ThinkTagStreamExtractor.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/ToolContext.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/ToolEnvironment.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ StreamAccumulator.swift /Users/hansaxelsson/llmHub/llmHub/Services/StreamAccumulator.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/StreamAccumulator.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ ToolAuthorizationService.swift /Users/hansaxelsson/llmHub/llmHub/Services/ToolAuthorizationService.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/ToolAuthorizationService.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ ProviderRegistry.swift /Users/hansaxelsson/llmHub/llmHub/Services/ProviderRegistry.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/ProviderRegistry.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ CodeInterpreterTool.swift /Users/hansaxelsson/llmHub/llmHub/Tools/CodeInterpreterTool.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Tools/CodeInterpreterTool.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ ShellSession.swift /Users/hansaxelsson/llmHub/llmHub/Tools/ShellSession.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Tools/ShellSession.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ MCPToolBridge.swift /Users/hansaxelsson/llmHub/llmHub/Tools/MCPToolBridge.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Tools/MCPToolBridge.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ CalculatorTool.swift,\ DatabaseQueryTool.swift,\ DataVisualizationTool.swift /Users/hansaxelsson/llmHub/llmHub/Tools/CalculatorTool.swift /Users/hansaxelsson/llmHub/llmHub/Tools/DatabaseQueryTool.swift /Users/hansaxelsson/llmHub/llmHub/Tools/DataVisualizationTool.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Tools/CalculatorTool.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Tools/DatabaseQueryTool.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Tools/DataVisualizationTool.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ ToolManifest.swift,\ ToolProtocol.swift,\ ToolResultCache.swift /Users/hansaxelsson/llmHub/llmHub/Services/ToolManifest.swift /Users/hansaxelsson/llmHub/llmHub/Services/ToolProtocol.swift /Users/hansaxelsson/llmHub/llmHub/Services/ToolResultCache.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/ToolManifest.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/ToolProtocol.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/ToolResultCache.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ ToolRegistry.swift /Users/hansaxelsson/llmHub/llmHub/Services/ToolRegistry.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/ToolRegistry.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ XAIProvider.swift,\ ThemeManager.swift,\ BrowserAutomationTool.swift /Users/hansaxelsson/llmHub/llmHub/Support/XAIProvider.swift /Users/hansaxelsson/llmHub/llmHub/Theme/ThemeManager.swift /Users/hansaxelsson/llmHub/llmHub/Tools/BrowserAutomationTool.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Support/XAIProvider.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Theme/ThemeManager.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Tools/BrowserAutomationTool.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ EmailNotificationTool.swift,\ FileEditorTool.swift,\ FilePatchTool.swift /Users/hansaxelsson/llmHub/llmHub/Tools/EmailNotificationTool.swift /Users/hansaxelsson/llmHub/llmHub/Tools/FileEditorTool.swift /Users/hansaxelsson/llmHub/llmHub/Tools/FilePatchTool.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Tools/EmailNotificationTool.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Tools/FileEditorTool.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Tools/FilePatchTool.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ ShellTool.swift,\ TaskSchedulerTool.swift /Users/hansaxelsson/llmHub/llmHub/Tools/ShellTool.swift /Users/hansaxelsson/llmHub/llmHub/Tools/TaskSchedulerTool.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Tools/ShellTool.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Tools/TaskSchedulerTool.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ MCPTypes.swift,\ PartialToolCallAssembler.swift,\ SSEEventParser.swift /Users/hansaxelsson/llmHub/llmHub/Services/MCPTypes.swift /Users/hansaxelsson/llmHub/llmHub/Services/PartialToolCallAssembler.swift /Users/hansaxelsson/llmHub/llmHub/Services/SSEEventParser.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/MCPTypes.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/PartialToolCallAssembler.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Services/SSEEventParser.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 Compiling\ WebSearchTool.swift,\ WorkspaceTool.swift /Users/hansaxelsson/llmHub/llmHub/Tools/WebSearchTool.swift /Users/hansaxelsson/llmHub/llmHub/Tools/WorkspaceTool.swift (in target 'llmHub' from project 'llmHub')
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Tools/WebSearchTool.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Tools/WorkspaceTool.swift (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    
+
+SwiftDriver\ Compilation llmHub normal arm64 com.apple.xcode.tools.swift.compiler (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name llmHub -Onone -enforce-exclusivity\=checked @/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/llmHub.SwiftFileList -DDEBUG -default-isolation\=MainActor -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-macos26.2 -g -module-cache-path /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug -F /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/PackageFrameworks -F /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/PackageFrameworks -F /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/PackageFrameworks -F /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/PackageFrameworks -F /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug -emit-localized-strings -emit-localized-strings-path /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx26.2-25C57-3885c01c3e6b6a337905948deab2002e00fa09913b459cbbc988d1f6730289ae.sdkstatcache -output-file-map /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/llmHub-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/llmHub.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/llmHub_const_extract_protocols.json -Xcc -iquote -Xcc /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/llmHub-generated-files.hmap -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/llmHub-own-target-headers.hmap -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/llmHub-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub-b47a1df6698d69dd120fff2bd4c843ba-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/llmHub-project-headers.hmap -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/include -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/DerivedSources-normal/arm64 -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/DerivedSources/arm64 -Xcc -I/Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/Objects-normal/arm64/llmHub-Swift.h -working-directory /Users/hansaxelsson/llmHub -experimental-emit-module-separately -disable-cmo
+
+Copy /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/llmHub.app/Contents/XPCServices/llmHubHelper.xpc /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/llmHubHelper.xpc (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks -remove-static-executable /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/llmHubHelper.xpc /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/llmHub.app/Contents/XPCServices
+
+ProcessInfoPlistFile /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/llmHub.app/Contents/Info.plist /Users/hansaxelsson/llmHub/llmHub/Info.plist (in target 'llmHub' from project 'llmHub')
+    cd /Users/hansaxelsson/llmHub
+    builtin-infoPlistUtility /Users/hansaxelsson/llmHub/llmHub/Info.plist -producttype com.apple.product-type.application -genpkginfo /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/llmHub.app/Contents/PkgInfo -expandbuildsettings -platform macosx -additionalcontentfile /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Intermediates.noindex/llmHub.build/Debug/llmHub.build/assetcatalog_generated_info.plist -scanforprivacyfile /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/llmHub.app/Contents/XPCServices/llmHubHelper.xpc -o /Users/hansaxelsson/Library/Developer/Xcode/DerivedData/llmHub-cgsuarxtczjfbvagtomvytclukfr/Build/Products/Debug/llmHub.app/Contents/Info.plist
+removing value "audio" for "UIBackgroundModes" - not supported on macOS
+removing value "bluetooth-peripheral" for "UIBackgroundModes" - only supported on iOS
+removing value "external-accessory" for "UIBackgroundModes" - only supported on iOS
+removing value "fetch" for "UIBackgroundModes" - not supported on macOS
+removing value "processing" for "UIBackgroundModes" - not supported on macOS
+removing value "remote-notification" for "UIBackgroundModes" - not supported on macOS
+removing value "voip" for "UIBackgroundModes" - not supported on macOS
+
+** BUILD FAILED **
+
+
+The following build commands failed:
+	SwiftCompile normal arm64 Compiling\ ModelFavoritesManager.swift,\ SettingsViewModel.swift,\ SidebarViewModel.swift,\ WorkbenchViewModel.swift,\ ChatInputPanel.swift,\ GlassTranscriptSurface.swift,\ LiquidMarkdownTheme.swift,\ NeonChatView.swift,\ NeonMessageRow.swift,\ NeonToolbar.swift,\ SelectableMessageText.swift /Users/hansaxelsson/llmHub/llmHub/ViewModels/ModelFavoritesManager.swift /Users/hansaxelsson/llmHub/llmHub/ViewModels/SettingsViewModel.swift /Users/hansaxelsson/llmHub/llmHub/ViewModels/SidebarViewModel.swift /Users/hansaxelsson/llmHub/llmHub/ViewModels/WorkbenchViewModel.swift /Users/hansaxelsson/llmHub/llmHub/Views/Chat/ChatInputPanel.swift /Users/hansaxelsson/llmHub/llmHub/Views/Chat/GlassTranscriptSurface.swift /Users/hansaxelsson/llmHub/llmHub/Views/Chat/LiquidMarkdownTheme.swift /Users/hansaxelsson/llmHub/llmHub/Views/Chat/NeonChatView.swift /Users/hansaxelsson/llmHub/llmHub/Views/Chat/NeonMessageRow.swift /Users/hansaxelsson/llmHub/llmHub/Views/Chat/NeonToolbar.swift /Users/hansaxelsson/llmHub/llmHub/Views/Chat/SelectableMessageText.swift (in target 'llmHub' from project 'llmHub')
+	SwiftCompile normal arm64 /Users/hansaxelsson/llmHub/llmHub/Views/Chat/NeonChatView.swift (in target 'llmHub' from project 'llmHub')
+	Building project llmHub with scheme llmHub
+(3 failures)

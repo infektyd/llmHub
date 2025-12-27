@@ -45,7 +45,7 @@ struct GlassTranscriptSurface<Content: View, Footer: View>: View {
                         colors: [
                             .white.opacity(LiquidGlassTokens.Stroke.highlightTop),
                             .white.opacity(LiquidGlassTokens.Stroke.highlightBottom),
-                            .black.opacity(LiquidGlassTokens.Stroke.border),
+                            .clear.opacity(LiquidGlassTokens.Stroke.border),
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing

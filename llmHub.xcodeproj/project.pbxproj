@@ -10,6 +10,7 @@
 		A3F5589C2EFEEBAC00AC1AFE /* ComplexModule in Frameworks */ = {isa = PBXBuildFile; productRef = A3F5589B2EFEEBAC00AC1AFE /* ComplexModule */; };
 		A3F5589E2EFEEBAC00AC1AFE /* Numerics in Frameworks */ = {isa = PBXBuildFile; productRef = A3F5589D2EFEEBAC00AC1AFE /* Numerics */; };
 		A3F558A02EFEEBAC00AC1AFE /* RealModule in Frameworks */ = {isa = PBXBuildFile; productRef = A3F5589F2EFEEBAC00AC1AFE /* RealModule */; };
+		A3F558C22EFF5E1600AC1AFE /* llmHub_v1.icon in Resources */ = {isa = PBXBuildFile; fileRef = A3F558C12EFF5E1600AC1AFE /* llmHub_v1.icon */; };
 		B3000001303030300001 /* CodeExecutionXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000010303030300001 /* CodeExecutionXPCProtocol.swift */; };
 		B3000002303030300001 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000011303030300001 /* main.swift */; };
 		B3000003303030300001 /* CodeExecutionServiceDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000012303030300001 /* CodeExecutionServiceDelegate.swift */; };
@@ -60,6 +61,7 @@
 		A3C71F262ED9389A0088DF32 /* llmHub.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = llmHub.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3C71F372ED9389B0088DF32 /* llmHubTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = llmHubTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3C71F412ED9389B0088DF32 /* llmHubUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = llmHubUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A3F558C12EFF5E1600AC1AFE /* llmHub_v1.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = llmHub_v1.icon; sourceTree = "<group>"; };
 		B3000010303030300001 /* CodeExecutionXPCProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeExecutionXPCProtocol.swift; sourceTree = "<group>"; };
 		B3000011303030300001 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		B3000012303030300001 /* CodeExecutionServiceDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeExecutionServiceDelegate.swift; sourceTree = "<group>"; };
@@ -179,6 +181,7 @@
 		A3C71F1D2ED9389A0088DF32 = {
 			isa = PBXGroup;
 			children = (
+				A3F558C12EFF5E1600AC1AFE /* llmHub_v1.icon */,
 				A3C71F282ED9389A0088DF32 /* llmHub */,
 				B3000021303030300001 /* llmHubHelper */,
 				A3C71F272ED9389A0088DF32 /* Products */,
@@ -358,6 +361,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A3F558C22EFF5E1600AC1AFE /* llmHub_v1.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

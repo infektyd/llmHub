@@ -9,6 +9,8 @@ import SwiftUI
 
 /// A message bubble view with neon-style glass effects for the chat interface
 struct NeonMessageBubble: View, Equatable {
+    @Environment(\.theme) private var theme
+
     let message: ChatMessageEntity
     let isStreaming: Bool
 
@@ -46,7 +48,7 @@ struct NeonMessageBubble: View, Equatable {
 
     private var roleIndicator: some View {
         Circle()
-            .fill(isUserMessage ? Color.neonElectricBlue : Color.neonCyan)
+            .fill(isUserMessage ? theme.accent : theme.accentSecondary)
             .frame(width: 8, height: 8)
             .padding(.top, 8)
     }
@@ -79,7 +81,7 @@ struct NeonMessageBubble: View, Equatable {
             HStack(spacing: 4) {
                 ForEach(0..<3) { index in
                     Circle()
-                        .fill(Color.neonCyan)
+                        .fill(theme.accentSecondary)
                         .frame(width: 4, height: 4)
                         .opacity(0.6)
                         .animation(
@@ -97,15 +99,15 @@ struct NeonMessageBubble: View, Equatable {
     }
 
     private var bubbleBackground: some View {
-        RoundedRectangle(cornerRadius: 06)
-            .fill(Color.black.opacity(0.2))
+        RoundedRectangle(cornerRadius: theme.cornerRadius)
+            .fill(theme.usesGlassEffect ? Color.black.opacity(0.2) : theme.surface)
             .overlay {
-                RoundedRectangle(cornerRadius: 06)
+                RoundedRectangle(cornerRadius: theme.cornerRadius)
                     .stroke(
                         isUserMessage
-                            ? Color.neonElectricBlue.opacity(0.3)
-                            : Color.neonCyan.opacity(0.3),
-                        lineWidth: 1
+                            ? theme.accent.opacity(0.3)
+                            : theme.accentSecondary.opacity(0.3),
+                        lineWidth: theme.borderWidth
                     )
             }
     }
