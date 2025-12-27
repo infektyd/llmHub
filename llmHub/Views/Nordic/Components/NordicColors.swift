@@ -14,9 +14,9 @@ struct NordicColors {
     // MARK: - Light Mode
 
     struct Light {
-        static let canvas = Color(red: 0.98, green: 0.976, blue: 0.969)  // FAF9F7
-        static let surface = Color.white
-        static let sidebar = Color(red: 0.941, green: 0.933, blue: 0.922)  // F0EEEB
+        static let canvas = Color(red: 0.961, green: 0.953, blue: 0.941)  // F5F3F0 - Warm light gray
+        static let surface = Color.white  // Pure white for raised elements
+        static let sidebar = Color.white  // Sidebar uses surface color (raised panel)
         static let border = Color(red: 0.906, green: 0.898, blue: 0.894)  // E7E5E4
 
         static let textPrimary = Color(red: 0.11, green: 0.098, blue: 0.09)  // 1C1917
@@ -30,9 +30,9 @@ struct NordicColors {
     // MARK: - Dark Mode
 
     struct Dark {
-        static let canvas = Color(red: 0.11, green: 0.098, blue: 0.09)  // 1C1917
-        static let surface = Color(red: 0.161, green: 0.145, blue: 0.141)  // 292524
-        static let sidebar = Color(red: 0.11, green: 0.098, blue: 0.09)  // 1C1917
+        static let canvas = Color(red: 0.11, green: 0.098, blue: 0.09)  // 1C1917 - Warm charcoal
+        static let surface = Color(red: 0.161, green: 0.145, blue: 0.141)  // 292524 - Slightly lighter for raised
+        static let sidebar = Color(red: 0.161, green: 0.145, blue: 0.141)  // 292524 - Sidebar uses surface color
         static let border = Color(red: 0.267, green: 0.251, blue: 0.235)  // 44403C
 
         static let textPrimary = Color(red: 0.98, green: 0.98, blue: 0.976)  // FAFAF9

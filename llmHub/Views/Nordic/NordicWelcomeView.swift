@@ -35,7 +35,7 @@ struct NordicWelcomeView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(NordicColors.canvas(colorScheme))
+        // NO .background() - floats on canvas
     }
 }
 

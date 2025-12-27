@@ -36,28 +36,39 @@ struct NordicChatView: View {
     ]
 
     var body: some View {
-        HSplitView {
-            NordicSidebar()
-                .frame(minWidth: 220, idealWidth: 260, maxWidth: 320)
-
-            // Main chat area
-            VStack(spacing: 0) {
-                // Header
-                chatHeader
-
-                Divider()
-                    .background(colorScheme == .dark ? Color(hex: "44403C") : Color(hex: "E7E5E4"))
-
-                // Messages
-                messagesArea
-
-                // Input
-                NordicInputBar(text: $inputText) {
-                    sendMessage()
-                }
+        #if os(macOS)
+            HSplitView {
+                sidebarAndChat
             }
-            .background(colorScheme == .dark ? Color(hex: "1C1917") : Color(hex: "FAF9F7"))
+        #else
+            HStack(spacing: 0) {
+                sidebarAndChat
+            }
+        #endif
+    }
+
+    @ViewBuilder
+    private var sidebarAndChat: some View {
+        NordicSidebar()
+            .frame(minWidth: 220, idealWidth: 260, maxWidth: 320)
+
+        // Main chat area
+        VStack(spacing: 0) {
+            // Header
+            chatHeader
+
+            Divider()
+                .background(colorScheme == .dark ? Color(hex: "44403C") : Color(hex: "E7E5E4"))
+
+            // Messages
+            messagesArea
+
+            // Input
+            NordicInputBar(text: $inputText) {
+                sendMessage()
+            }
         }
+        .background(colorScheme == .dark ? Color(hex: "1C1917") : Color(hex: "FAF9F7"))
     }
 
     private var chatHeader: some View {
