@@ -102,3 +102,24 @@ enum LiquidGlassTokens {
         }
     }
 }
+
+// MARK: - Adaptive Glass Modifier
+
+extension View {
+    /// Applies glass effect if theme supports it, otherwise uses solid background with border
+    @ViewBuilder
+    func adaptiveGlass(theme: AppTheme, cornerRadius: CGFloat? = nil) -> some View {
+        let radius = cornerRadius ?? theme.cornerRadius
+        if theme.usesGlassEffect {
+            self.glassEffect(.regular, in: .rect(cornerRadius: radius))
+        } else {
+            self
+                .background(theme.surface)
+                .clipShape(RoundedRectangle(cornerRadius: radius))
+                .overlay(
+                    RoundedRectangle(cornerRadius: radius)
+                        .stroke(theme.textTertiary.opacity(0.15), lineWidth: theme.borderWidth)
+                )
+        }
+    }
+}

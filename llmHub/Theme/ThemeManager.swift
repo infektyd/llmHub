@@ -34,6 +34,8 @@ final class ThemeManager {
         LiquidGlassLightTheme(),  // New Light Theme
         NeonGlassTheme(),
         WarmPaperTheme(),
+        ClaudeFlatTheme(),
+        NordicTheme(),
     ]
 
     /// Convenience computed property for binding to theme name

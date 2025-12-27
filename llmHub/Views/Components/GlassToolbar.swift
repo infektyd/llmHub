@@ -33,6 +33,7 @@ struct GlassToolbar<Content: View>: View {
 
 struct GlassToolbarItem: View {
     @Environment(\.glassToolbarNamespace) private var namespace
+    @Environment(\.theme) private var theme
 
     let id: String
     let icon: String
@@ -55,15 +56,35 @@ struct GlassToolbarItem: View {
         }
     }
 
+    @ViewBuilder
     private var baseButton: some View {
         Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 16))
-                .frame(width: 36, height: 36)
-                .glassEffect(
-                    isActive ? .regular.tint(Color.accentColor.opacity(0.25)).interactive() : .regular.interactive(),
-                    in: .circle
-                )
+            if theme.usesGlassEffect {
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .frame(width: 36, height: 36)
+                    .glassEffect(
+                        isActive
+                            ? .regular.tint(Color.accentColor.opacity(0.25)).interactive()
+                            : .regular.interactive(),
+                        in: .circle
+                    )
+            } else {
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .frame(width: 36, height: 36)
+                    .background(isActive ? theme.accent.opacity(0.2) : theme.surface)
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(
+                                isActive
+                                    ? theme.accent.opacity(0.4)
+                                    : theme.textTertiary.opacity(0.15),
+                                lineWidth: theme.borderWidth
+                            )
+                    )
+            }
         }
         .buttonStyle(.plain)
     }

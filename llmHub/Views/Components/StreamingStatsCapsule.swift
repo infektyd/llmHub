@@ -69,7 +69,7 @@ struct StreamingStatsCapsule: View {
 
 #Preview {
     ZStack {
-        Color.black.ignoresSafeArea()
+        Color.clear.ignoresSafeArea()
 
         VStack(spacing: 20) {
             StreamingStatsCapsule(

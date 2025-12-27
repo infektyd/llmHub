@@ -9,6 +9,8 @@ import SwiftData
 import SwiftUI
 
 struct NeonChatView: View {
+    @Environment(\.theme) private var theme
+
     let session: ChatSessionEntity
     @Environment(WorkbenchViewModel.self) private var workbenchVM
     @Environment(\.modelContext) private var modelContext
@@ -37,7 +39,12 @@ struct NeonChatView: View {
                     toolInspectorVisible: Bindable(workbenchVM).toolInspectorVisible,
                     columnVisibility: Bindable(workbenchVM).columnVisibility,
                     showingSettings: $showingSettings,
-                    showingToolsDebug: $showingToolsDebug
+                    showingToolsDebug: $showingToolsDebug,
+                    onOpenSettings: {
+                        #if os(macOS)
+                            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+                        #endif
+                    }
                 )
             #endif
 
@@ -51,7 +58,7 @@ struct NeonChatView: View {
                         onSend: { messageText in
                             chatVM.sendMessage(
                                 messageText: messageText,
-                                attachments: nil, // Use staged attachments from VM
+                                attachments: nil,  // Use staged attachments from VM
                                 session: session,
                                 modelContext: modelContext,
                                 selectedProvider: workbenchVM.selectedProvider,
@@ -91,13 +98,6 @@ struct NeonChatView: View {
                     }
                 }
         }
-        #if os(macOS)
-        .sheet(isPresented: $showingSettings) {
-            SettingsView()
-                .environmentObject(modelRegistry)
-                .frame(width: 600, height: 500)
-        }
-        #endif
         .onAppear {
             #if os(iOS)
                 print("🔴 LIFECYCLE: [iOS] NeonChatView.onAppear - session: \(session.id)")
@@ -122,7 +122,7 @@ struct NeonChatView: View {
                     } label: {
                         Image(systemName: "gearshape")
                         .font(.system(size: 18))
-                        .foregroundColor(.neonElectricBlue)
+                        .foregroundColor(theme.accent)
                     }
                 }
 
@@ -136,18 +136,18 @@ struct NeonChatView: View {
                         }) {
                             Image(systemName: "sidebar.right")
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.neonElectricBlue)
+                            .foregroundColor(theme.accent)
                             .padding(8)
                             .background(
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                                     .fill(
-                                        Color.neonElectricBlue.opacity(
+                                        theme.accent.opacity(
                                             workbenchVM.toolInspectorVisible ? 0.18 : 0.08)
                                     )
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 10, style: .continuous)
                                             .stroke(
-                                                Color.neonElectricBlue.opacity(
+                                                theme.accent.opacity(
                                                     workbenchVM.toolInspectorVisible ? 0.35 : 0.18),
                                                 lineWidth: 1)
                                     )
@@ -173,7 +173,7 @@ struct NeonChatView: View {
                             Button("Done") {
                                 showingSettings = false
                             }
-                            .foregroundColor(.neonElectricBlue)
+                            .foregroundColor(theme.accent)
                         }
                     }
                     .environmentObject(modelRegistry)
@@ -246,13 +246,12 @@ extension NeonChatView {
         }
     }
 
-    /// Creates a notification banner for context compaction.
     @ViewBuilder
     private func contextCompactionNotification(message: String) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "sparkles")
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(Color.neonElectricBlue)
+                .foregroundStyle(theme.accent)
 
             Text(message)
                 .font(.system(size: 13, weight: .medium))
@@ -274,23 +273,27 @@ extension NeonChatView {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(
-            RoundedRectangle(cornerRadius: 06)
-                .glassEffect(.regular.tint(.glassAccent), in: .rect(cornerRadius: 12))
+            RoundedRectangle(cornerRadius: theme.cornerRadius)
+                .fill(theme.usesGlassEffect ? Color.clear : theme.surface)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 06)
+                    RoundedRectangle(cornerRadius: theme.cornerRadius)
                         .strokeBorder(
                             LinearGradient(
                                 colors: [
-                                    .neonElectricBlue.opacity(0.5), .neonElectricBlue.opacity(0.2),
+                                    theme.accent.opacity(0.5), theme.accent.opacity(0.2),
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
-                            lineWidth: 1
+                            lineWidth: theme.borderWidth
                         )
                 )
         )
-        .shadow(color: .neonElectricBlue.opacity(0.3), radius: 10, x: 0, y: 4)
+        .if(theme.usesGlassEffect) { view in
+            view.glassEffect(
+                .regular.tint(.glassAccent), in: .rect(cornerRadius: theme.cornerRadius))
+        }
+        .shadow(color: theme.accent.opacity(0.3), radius: 10, x: 0, y: 4)
         .padding(.horizontal, 16)
         .padding(.top, 12)
     }

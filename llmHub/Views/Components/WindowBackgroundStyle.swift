@@ -53,7 +53,7 @@ struct NativeWindowBackground: View {
         case .grounded:
             // Native frosted glass pane
             Color.clear
-                .glassEffect(.regular, in: Rectangle())
+                .glassEffect(.regular, in: .rect(cornerRadius: 04))
                 .ignoresSafeArea()
         }
     }
@@ -72,6 +72,8 @@ struct NativeWindowBackground: View {
 #if os(macOS)
     /// A picker component for Settings to switch between Airy and Grounded modes
     struct WindowStylePicker: View {
+        @Environment(\.theme) private var theme
+
         @AppStorage("windowBackgroundStyle") private var selectedStyleRaw: String =
             WindowBackgroundStyle.grounded.rawValue
 
@@ -104,20 +106,20 @@ struct NativeWindowBackground: View {
                                     .fontWeight(isSelected ? .semibold : .medium)
                             }
                             .foregroundStyle(isSelected ? .white : .secondary)
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 16)
-                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 04)
+                            .padding(.horizontal, 08)
+                            .frame(maxWidth: 100)
                             .background(
-                                RoundedRectangle(cornerRadius: 8)
+                                RoundedRectangle(cornerRadius: 04)
                                     .fill(
                                         isSelected
-                                            ? Color.neonElectricBlue.opacity(0.3) : Color.clear
+                                            ? theme.accent.opacity(0.3) : Color.clear
                                     )
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 8)
                                             .stroke(
                                                 isSelected
-                                                    ? Color.neonElectricBlue.opacity(0.6) : .clear,
+                                                    ? theme.accent.opacity(0.6) : .clear,
                                                 lineWidth: 1)
                                     )
                             )
@@ -128,10 +130,10 @@ struct NativeWindowBackground: View {
                 }
                 .padding(4)
                 .background(
-                    RoundedRectangle(cornerRadius: 10)
+                    RoundedRectangle(cornerRadius: 05)
                         .fill(.ultraThinMaterial)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 10)
+                            RoundedRectangle(cornerRadius: 5)
                                 .stroke(.white.opacity(0.05), lineWidth: 1)
                         )
                 )

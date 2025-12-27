@@ -24,18 +24,20 @@ struct ToolIconToggle: View {
             }
         } label: {
             Image(systemName: iconName)
-                .font(.system(size: 18, weight: .medium))
-                .foregroundColor(isEnabled ? .orange : .gray.opacity(0.5))
+                .font(.system(size: 18, weight: .heavy))
+                .foregroundColor(isEnabled ? .orange : .blue.opacity(0.5))
                 .frame(width: 40, height: 40)
                 .background {
                     Circle()
                         .fill(isEnabled ? Color.orange.opacity(0.15) : Color.clear)
                         .overlay(
-                            Circle()
-                                .stroke(
-                                    isEnabled ? Color.orange.opacity(0.5) : Color.gray.opacity(0.2),
-                                    lineWidth: 1)
-                        )
+                                Circle()
+                                    .stroke(
+                                        isEnabled
+                                            ? Color.orange.opacity(0.4) : Color.gray.opacity(0.2),
+                                        lineWidth: 1
+                                    )
+                            )
                 }
                 .symbolEffect(.bounce, value: didBounce)
                 .shadow(color: isEnabled ? .cyan.opacity(0.4) : .clear, radius: 8)

@@ -55,18 +55,28 @@ struct SelectableMessageText: View {
         let theme: AppTheme
 
         func makeNSView(context: Context) -> InternalTextView {
-            let scrollView = InternalTextView.scrollableTextView()
-            let textView = scrollView.documentView as! InternalTextView
-
+            let textView = InternalTextView()
+            
             textView.textContainerInset = NSSize(width: 0, height: 0)
             textView.drawsBackground = false
             textView.isEditable = false
             textView.isSelectable = true
             textView.isRichText = true
             textView.allowsUndo = false
-
-            // Remove standard styling to let us control it
+            
+            // Disable Auto Layout to avoid ambiguity warnings
+            textView.translatesAutoresizingMaskIntoConstraints = false
+            
+            // Configure text container to grow with content
+            textView.textContainer?.widthTracksTextView = true
+            textView.textContainer?.heightTracksTextView = false
             textView.textContainer?.lineFragmentPadding = 0
+            
+            // Set max size to allow proper layout
+            textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+            textView.isVerticallyResizable = true
+            textView.isHorizontallyResizable = false
+            textView.autoresizingMask = [.width]
 
             textView.delegate = context.coordinator
             textView.interactionController = interactionController

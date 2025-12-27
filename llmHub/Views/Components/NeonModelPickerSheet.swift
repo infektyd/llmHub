@@ -11,30 +11,31 @@ struct NeonModelPickerSheet: View {
     @Binding var selectedProvider: UILLMProvider?
     @Binding var selectedModel: UILLMModel?
     @Binding var isPresented: Bool
-    
+
     @EnvironmentObject private var modelRegistry: ModelRegistry
     @Environment(\.keychainStore) private var keychainStore
     @Environment(\.dismiss) private var dismiss
     @Environment(\.theme) private var theme
-    
+
     @State private var searchText = ""
     @State private var favoritesManager = ModelFavoritesManager()
     @State private var configuredProviders: Set<String> = []
     @State private var expandedProviders: Set<UUID> = []
-    
+
     var body: some View {
         NavigationStack {
             ZStack {
                 // Background
-                Color.neonMidnight
+                theme.backgroundPrimary
                     .ignoresSafeArea()
-                
+
                 List {
                     // Favorites section
                     if !favoriteModels.isEmpty {
                         Section {
                             ForEach(favoriteModels, id: \.model.id) { item in
-                                modelRowButton(provider: item.provider, model: item.model, isFavorite: true)
+                                modelRowButton(
+                                    provider: item.provider, model: item.model, isFavorite: true)
                             }
                         } header: {
                             HStack(spacing: 6) {
@@ -47,7 +48,7 @@ struct NeonModelPickerSheet: View {
                             }
                         }
                     }
-                    
+
                     // Provider sections with DisclosureGroup
                     ForEach(filteredProviders, id: \.id) { provider in
                         Section {
@@ -64,13 +65,15 @@ struct NeonModelPickerSheet: View {
                                 )
                             ) {
                                 ForEach(provider.models, id: \.id) { model in
-                                    let isFavorite = favoritesManager.isFavorite(modelID: model.modelID)
-                                    modelRowButton(provider: provider, model: model, isFavorite: isFavorite)
+                                    let isFavorite = favoritesManager.isFavorite(
+                                        modelID: model.modelID)
+                                    modelRowButton(
+                                        provider: provider, model: model, isFavorite: isFavorite)
                                 }
                             } label: {
                                 providerHeader(provider: provider)
                             }
-                            .tint(.neonElectricBlue)
+                            .tint(theme.accent)
                         }
                     }
                 }
@@ -79,7 +82,7 @@ struct NeonModelPickerSheet: View {
             }
             .navigationTitle("Select Model")
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -87,7 +90,7 @@ struct NeonModelPickerSheet: View {
                         isPresented = false
                         dismiss()
                     }
-                    .foregroundColor(.neonElectricBlue)
+                    .foregroundColor(theme.accent)
                     .fontWeight(.semibold)
                 }
             }
@@ -100,27 +103,27 @@ struct NeonModelPickerSheet: View {
             }
         }
         #if os(macOS)
-        .frame(width: 450, height: 600)
+            .frame(width: 450, height: 600)
         #endif
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }
-    
+
     // MARK: - Subviews
-    
+
     private func providerHeader(provider: UILLMProvider) -> some View {
         HStack(spacing: 10) {
             Image(systemName: provider.icon)
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.neonElectricBlue)
+                .foregroundColor(theme.accent)
                 .frame(width: 24)
-            
+
             Text(provider.name)
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundColor(.white)
-            
+
             Spacer()
-            
+
             Text("\(provider.models.count)")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(.white.opacity(0.5))
@@ -133,11 +136,13 @@ struct NeonModelPickerSheet: View {
         }
         .padding(.vertical, 4)
     }
-    
-    private func modelRowButton(provider: UILLMProvider, model: UILLMModel, isFavorite: Bool) -> some View {
+
+    private func modelRowButton(provider: UILLMProvider, model: UILLMModel, isFavorite: Bool)
+        -> some View
+    {
         let isSelected = selectedModel?.id == model.id
         let hasKey = hasAPIKey(for: provider.name)
-        
+
         return Button(action: {
             selectedProvider = provider
             selectedModel = model
@@ -149,30 +154,30 @@ struct NeonModelPickerSheet: View {
                 ZStack {
                     if isSelected {
                         Circle()
-                            .fill(Color.neonElectricBlue)
+                            .fill(theme.accent)
                             .frame(width: 8, height: 8)
                     }
                 }
                 .frame(width: 16)
-                
+
                 // Icon for model
                 Image(systemName: "brain")
                     .font(.system(size: 12))
-                    .foregroundColor(.neonGray)
-                
+                    .foregroundColor(theme.textSecondary)
+
                 // Model info
                 VStack(alignment: .leading, spacing: 4) {
                     Text(model.name)
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(isSelected ? .neonElectricBlue : .white)
+                        .foregroundColor(isSelected ? theme.accent : .white)
                         .lineLimit(1)
-                    
+
                     HStack(spacing: 10) {
                         // Context window
                         Label(formatContextWindow(model.contextWindow), systemImage: "doc.text")
                             .font(.system(size: 11))
                             .foregroundColor(.white.opacity(0.6))
-                        
+
                         // Pricing tier
                         if let tier = model.pricingTier {
                             Label(tier.displayName, systemImage: tier.icon)
@@ -181,9 +186,9 @@ struct NeonModelPickerSheet: View {
                         }
                     }
                 }
-                
+
                 Spacer()
-                
+
                 // Badges
                 HStack(spacing: 8) {
                     // No Key badge
@@ -198,7 +203,7 @@ struct NeonModelPickerSheet: View {
                                     .fill(Color.orange.opacity(0.2))
                             )
                     }
-                    
+
                     // Favorite star
                     Button(action: {
                         toggleFavorite(modelID: model.modelID)
@@ -216,14 +221,14 @@ struct NeonModelPickerSheet: View {
         .padding(.vertical, 4)
         .opacity(hasKey ? 1.0 : 0.6)
     }
-    
+
     // MARK: - Data Helpers
-    
+
     private var availableProviders: [UILLMProvider] {
         modelRegistry.availableProviders().compactMap { providerID in
             let models = modelRegistry.models(for: providerID)
             guard !models.isEmpty else { return nil }
-            
+
             let uiModels = models.map { model in
                 UILLMModel(
                     id: stableUUID(for: model.id),
@@ -232,7 +237,7 @@ struct NeonModelPickerSheet: View {
                     contextWindow: model.contextWindow
                 )
             }
-            
+
             return UILLMProvider(
                 id: stableUUID(for: providerID),
                 name: providerDisplayName(for: providerID),
@@ -242,24 +247,24 @@ struct NeonModelPickerSheet: View {
             )
         }
     }
-    
+
     private var filteredProviders: [UILLMProvider] {
         if searchText.isEmpty {
             return availableProviders
         }
-        
+
         let searchLower = searchText.lowercased()
         return availableProviders.compactMap { provider in
             let matchedModels = provider.models.filter { model in
-                model.name.lowercased().contains(searchLower) ||
-                model.modelID.lowercased().contains(searchLower) ||
-                provider.name.lowercased().contains(searchLower)
+                model.name.lowercased().contains(searchLower)
+                    || model.modelID.lowercased().contains(searchLower)
+                    || provider.name.lowercased().contains(searchLower)
             }
-            
+
             if matchedModels.isEmpty {
                 return nil
             }
-            
+
             return UILLMProvider(
                 id: provider.id,
                 name: provider.name,
@@ -269,18 +274,19 @@ struct NeonModelPickerSheet: View {
             )
         }
     }
-    
+
     private var favoriteModels: [(provider: UILLMProvider, model: UILLMModel)] {
         var results: [(UILLMProvider, UILLMModel)] = []
-        
+
         for provider in availableProviders {
             for model in provider.models {
                 if favoritesManager.isFavorite(modelID: model.modelID) {
                     // Apply search filter
                     if !searchText.isEmpty {
                         let searchLower = searchText.lowercased()
-                        if !model.name.lowercased().contains(searchLower) &&
-                           !model.modelID.lowercased().contains(searchLower) {
+                        if !model.name.lowercased().contains(searchLower)
+                            && !model.modelID.lowercased().contains(searchLower)
+                        {
                             continue
                         }
                     }
@@ -288,12 +294,12 @@ struct NeonModelPickerSheet: View {
                 }
             }
         }
-        
+
         return results
     }
-    
+
     // MARK: - Configuration Check
-    
+
     private func loadConfiguredProviders() {
         Task { @MainActor in
             configuredProviders.removeAll()
@@ -304,15 +310,15 @@ struct NeonModelPickerSheet: View {
             }
         }
     }
-    
+
     private func hasAPIKey(for providerName: String) -> Bool {
         configuredProviders.contains { configuredName in
             configuredName.lowercased() == providerName.lowercased()
         }
     }
-    
+
     // MARK: - Actions
-    
+
     private func toggleFavorite(modelID: String) {
         if favoritesManager.isFavorite(modelID: modelID) {
             favoritesManager.removeFavorite(modelID: modelID)
@@ -320,9 +326,9 @@ struct NeonModelPickerSheet: View {
             favoritesManager.addFavorite(modelID: modelID)
         }
     }
-    
+
     // MARK: - Formatters
-    
+
     private func formatContextWindow(_ tokens: Int) -> String {
         if tokens >= 1_000_000 {
             return "\(tokens / 1_000_000)M tokens"

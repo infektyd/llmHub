@@ -27,7 +27,7 @@
                     if let provider = selectedProvider {
                         Image(systemName: provider.icon)
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(hasAPIKey ? .neonElectricBlue : .orange)
+                            .foregroundColor(hasAPIKey ? theme.accent : .orange)
                     } else if availableProviders.isEmpty {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .font(.system(size: 14, weight: .semibold))
@@ -35,7 +35,7 @@
                     } else {
                         Image(systemName: "cpu")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.neonElectricBlue)
+                            .foregroundColor(theme.accent)
                     }
 
                     // Model name (abbreviated)
@@ -120,13 +120,13 @@
                     Capsule()
                         .stroke(
                             hasAPIKey || selectedModel == nil
-                                ? Color.neonElectricBlue.opacity(0.4) : Color.orange.opacity(0.6),
+                                ? theme.accent.opacity(0.4) : Color.orange.opacity(0.6),
                             lineWidth: 1.5
                         )
                 )
                 .shadow(
                     color: hasAPIKey
-                        ? Color.neonElectricBlue.opacity(0.2) : Color.orange.opacity(0.2),
+                        ? theme.accent.opacity(0.2) : Color.orange.opacity(0.2),
                     radius: 8,
                     x: 0,
                     y: 2

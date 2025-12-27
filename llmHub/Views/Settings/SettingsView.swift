@@ -11,6 +11,7 @@ import SwiftUI
 struct SettingsView: View {
     @StateObject private var viewModel = SettingsViewModel()
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.theme) private var theme
     @EnvironmentObject private var modelRegistry: ModelRegistry
 
     var body: some View {
@@ -39,7 +40,7 @@ struct SettingsView: View {
         #if os(macOS)
             .frame(width: 700, height: 550)
         #endif
-        .background(Color.neonMidnight.opacity(0.5))
+        .background(LiquidGlassTokens.surfaceBackground)
         .onAppear {
             viewModel.modelRegistry = modelRegistry
         }
@@ -50,6 +51,7 @@ struct SettingsView: View {
 
 struct AppearanceSettingsView: View {
     @State private var themeManager = ThemeManager.shared
+    @AppStorage("uiMode") private var uiMode: String = "neon"
 
     var body: some View {
         ScrollView {
@@ -67,6 +69,67 @@ struct AppearanceSettingsView: View {
                 }
                 .padding(.horizontal)
                 .padding(.top, 16)
+
+                // MARK: - UI Mode Selector
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("UI Style", systemImage: "sparkles.rectangle.stack")
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                        .padding(.horizontal)
+
+                    Text(
+                        "Choose between Neon Glass (modern, vibrant) or Nordic (minimal, clean) interface."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal)
+
+                    HStack(spacing: 12) {
+                        // Neon/Glass Mode
+                        UIModeCard(
+                            title: "Neon Glass",
+                            icon: "sparkles",
+                            description: "Modern UI with glass effects",
+                            isSelected: uiMode == "neon"
+                        ) {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                                uiMode = "neon"
+                            }
+                        }
+
+                        // Nordic Mode
+                        UIModeCard(
+                            title: "Nordic",
+                            icon: "leaf",
+                            description: "Minimal Scandinavian design",
+                            isSelected: uiMode == "nordic"
+                        ) {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                                uiMode = "nordic"
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+
+                    // Restart notice
+                    if uiMode == "nordic" {
+                        HStack(spacing: 8) {
+                            Image(systemName: "info.circle.fill")
+                                .foregroundColor(.blue)
+                            Text(
+                                "Nordic mode uses a completely separate UI. Restart the app to apply changes."
+                            )
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        }
+                        .padding(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.blue.opacity(0.1))
+                        )
+                        .padding(.horizontal)
+                    }
+                }
 
                 // MARK: - Theme Engine
                 VStack(alignment: .leading, spacing: 12) {
@@ -116,10 +179,12 @@ struct AppearanceSettingsView: View {
                                     .padding(.horizontal, 16)
                                     .frame(maxWidth: .infinity)
                                     .background(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(
-                                                isSelected
-                                                    ? Color.accentColor.opacity(0.3) : Color.clear)
+                                        RoundedRectangle(
+                                            cornerRadius: LiquidGlassTokens.Radius.control
+                                        )
+                                        .fill(
+                                            isSelected
+                                                ? Color.accentColor.opacity(0.3) : Color.clear)
                                     )
                                     .contentShape(Rectangle())
                             }
@@ -128,7 +193,7 @@ struct AppearanceSettingsView: View {
                     }
                     .padding(4)
                     .background(
-                        RoundedRectangle(cornerRadius: 10)
+                        RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control)
                             .fill(.ultraThinMaterial)
                     )
                     .padding(.horizontal)
@@ -166,6 +231,8 @@ struct AppearanceSettingsView: View {
 
 /// A slider with a liquid glass aesthetic.
 struct LiquidSlider: View {
+    @Environment(\.theme) private var theme
+
     @Binding var value: Double
     var range: ClosedRange<Double> = 0...100
 
@@ -199,7 +266,7 @@ struct LiquidSlider: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color.neonElectricBlue.opacity(0.6), Color.neonFuchsia.opacity(0.6),
+                                theme.accent.opacity(0.6), theme.error.opacity(0.6),
                             ],
                             startPoint: .leading,
                             endPoint: .trailing
@@ -222,7 +289,7 @@ struct LiquidSlider: View {
                         Circle().stroke(.white.opacity(0.8), lineWidth: 1)
                     )
                     .shadow(
-                        color: Color.neonElectricBlue.opacity(isDragging ? 0.8 : 0.4),
+                        color: theme.accent.opacity(isDragging ? 0.8 : 0.4),
                         radius: isDragging ? 10 : 5
                     )
                     .frame(width: height, height: height)
@@ -286,6 +353,8 @@ struct LiquidThemeCard: View {
 
 /// An animated orb that reacts to intensity.
 struct OrbPreview: View {
+    @Environment(\.theme) private var theme
+
     let intensity: Double  // 0.0 to 1.0 (ish)
 
     @State private var phase: Double = 0
@@ -297,7 +366,7 @@ struct OrbPreview: View {
                 .fill(
                     AngularGradient(
                         colors: [
-                            Color.neonElectricBlue, Color.neonFuchsia, Color.neonElectricBlue,
+                            theme.accent, theme.error, theme.accent,
                         ],
                         center: .center,
                         startAngle: .degrees(phase),
@@ -329,10 +398,57 @@ struct OrbPreview: View {
     }
 }
 
+/// A card for UI mode selection (Neon vs Nordic)
+struct UIModeCard: View {
+    let title: String
+    let icon: String
+    let description: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 12) {
+                // Icon
+                Image(systemName: icon)
+                    .font(.system(size: 32))
+                    .foregroundColor(isSelected ? .white : .secondary)
+
+                // Title
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(isSelected ? .white : .primary)
+
+                // Description
+                Text(description)
+                    .font(.caption)
+                    .foregroundColor(isSelected ? .white.opacity(0.8) : .secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 20)
+            .padding(.horizontal, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? Color.accentColor : Color.secondary.opacity(0.1))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
+            )
+            .shadow(color: isSelected ? Color.accentColor.opacity(0.3) : .clear, radius: 8)
+        }
+        .buttonStyle(.plain)
+        .scaleEffect(isSelected ? 1.02 : 1.0)
+        .animation(.spring(response: 0.3), value: isSelected)
+    }
+}
+
 // MARK: - Legacy Components (Preserved for compatibility)
 
 struct APIKeysSettingsView: View {
     @ObservedObject var viewModel: SettingsViewModel
+    @Environment(\.theme) private var theme
 
     var body: some View {
         ScrollView {
@@ -347,14 +463,14 @@ struct APIKeysSettingsView: View {
                         "Configure API keys for each LLM provider. Keys are securely stored in the system Keychain."
                     )
                     .font(.system(size: 13))
-                    .foregroundColor(Color.neonGray)
+                    .foregroundColor(theme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.bottom, 8)
 
                 Divider()
-                    .background(Color.neonGray.opacity(0.3))
+                    .background(theme.textSecondary.opacity(0.3))
 
                 // Provider Key Rows
                 ForEach(SettingsViewModel.ProviderInfo.allProviders, id: \.provider) { info in
@@ -375,11 +491,11 @@ struct APIKeysSettingsView: View {
                             systemName: viewModel.isError
                                 ? "exclamationmark.triangle.fill" : "checkmark.circle.fill"
                         )
-                        .foregroundColor(viewModel.isError ? Color.neonFuchsia : .green)
+                        .foregroundColor(viewModel.isError ? theme.error : .green)
 
                         Text(message)
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(viewModel.isError ? Color.neonFuchsia : .green)
+                            .foregroundColor(viewModel.isError ? theme.error : .green)
                     }
                     .padding(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -387,14 +503,14 @@ struct APIKeysSettingsView: View {
                         RoundedRectangle(cornerRadius: 8)
                             .fill(
                                 viewModel.isError
-                                    ? Color.neonFuchsia.opacity(0.1) : Color.green.opacity(0.1))
+                                    ? theme.error.opacity(0.1) : Color.green.opacity(0.1))
                     )
                     .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
             .padding(24)
         }
-        .background(Color.neonMidnight)
+        .background(LiquidGlassTokens.surfaceBackground)
         .onAppear {
             viewModel.loadKeys()
         }
@@ -408,6 +524,7 @@ struct ProviderKeyRow: View {
     let isSaving: Bool
     let onSave: () -> Void
     let onDelete: () -> Void
+    @Environment(\.theme) private var theme
 
     @State private var isSecure: Bool = true
     @FocusState private var isFocused: Bool
@@ -418,7 +535,7 @@ struct ProviderKeyRow: View {
             HStack(spacing: 12) {
                 Image(systemName: info.icon)
                     .font(.system(size: 18))
-                    .foregroundColor(Color.neonElectricBlue)
+                    .foregroundColor(theme.accent)
                     .frame(width: 24, height: 24)
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -429,7 +546,7 @@ struct ProviderKeyRow: View {
                     if let description = info.description {
                         Text(description)
                             .font(.system(size: 11))
-                            .foregroundColor(Color.neonGray)
+                            .foregroundColor(theme.textSecondary)
                     }
                 }
 
@@ -464,13 +581,15 @@ struct ProviderKeyRow: View {
                 }
                 .padding(10)
                 .background(
-                    RoundedRectangle(cornerRadius: 6)
+                    RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control / 2)
                         .fill(Color.black.opacity(0.3))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 6)
+                            RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control / 2)
                                 .stroke(
                                     isFocused
-                                        ? Color.neonElectricBlue : Color.neonGray.opacity(0.3),
+                                        ? theme.accent
+                                        : theme.textPrimary.opacity(
+                                            LiquidGlassTokens.Stroke.border),
                                     lineWidth: 1)
                         )
                 )
@@ -479,10 +598,10 @@ struct ProviderKeyRow: View {
                 Button(action: { isSecure.toggle() }) {
                     Image(systemName: isSecure ? "eye.slash.fill" : "eye.fill")
                         .font(.system(size: 12))
-                        .foregroundColor(Color.neonGray)
+                        .foregroundColor(theme.textSecondary)
                         .frame(width: 32, height: 32)
                         .background(
-                            RoundedRectangle(cornerRadius: 6)
+                            RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control / 2)
                                 .fill(Color.black.opacity(0.3))
                         )
                 }
@@ -506,10 +625,10 @@ struct ProviderKeyRow: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .background(
-                        RoundedRectangle(cornerRadius: 6)
+                        RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control / 2)
                             .fill(
                                 apiKey.isEmpty
-                                    ? Color.neonGray.opacity(0.3) : Color.neonElectricBlue)
+                                    ? theme.textSecondary.opacity(0.3) : theme.accent)
                     )
                 }
                 .buttonStyle(.plain)
@@ -520,11 +639,11 @@ struct ProviderKeyRow: View {
                     Button(action: onDelete) {
                         Image(systemName: "trash.fill")
                             .font(.system(size: 12))
-                            .foregroundColor(Color.neonFuchsia)
+                            .foregroundColor(theme.error)
                             .frame(width: 32, height: 32)
                             .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(Color.neonFuchsia.opacity(0.1))
+                                RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control / 2)
+                                    .fill(theme.error.opacity(0.1))
                             )
                     }
                     .buttonStyle(.plain)
@@ -538,20 +657,29 @@ struct ProviderKeyRow: View {
                         Image(systemName: "arrow.up.right.square")
                             .font(.system(size: 10))
                         Text("Get API key from \(info.name)")
-                            .font(.system(size: 11))
+                            .font(.system(size: 11, weight: .medium))
                     }
-                    .foregroundColor(Color.neonElectricBlue)
+                    .foregroundColor(theme.accent)
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 8)
+                    .background(theme.accent.opacity(0.1))
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .onHover { isHovering in
+                    // Native Link doesn't support easy hover transforms without a wrapper,
+                    // but we can rely on standard button style behavior if needed.
                 }
             }
         }
         .padding(16)
         .background(
-            RoundedRectangle(cornerRadius: 06)
+            RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control)
                 .fill(Color.black.opacity(0.2))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 06)
+                    RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control)
                         .stroke(
-                            hasKey ? Color.green.opacity(0.3) : Color.neonGray.opacity(0.2),
+                            hasKey ? theme.success.opacity(0.3) : theme.textPrimary.opacity(0.1),
                             lineWidth: 1)
                 )
         )
@@ -560,6 +688,7 @@ struct ProviderKeyRow: View {
 
 struct GeneralSettingsView: View {
     @ObservedObject var viewModel: SettingsViewModel
+    @Environment(\.theme) private var theme
     @State private var contextConfig = UserDefaults.standard.loadContextConfig()
     @State private var showSaveConfirmation = false
 
@@ -574,13 +703,13 @@ struct GeneralSettingsView: View {
 
                     Text("Configure app behavior, tools, and performance optimizations.")
                         .font(.system(size: 13))
-                        .foregroundColor(Color.neonGray)
+                        .foregroundColor(theme.textSecondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.bottom, 8)
 
                 Divider()
-                    .background(Color.neonGray.opacity(0.3))
+                    .background(theme.textSecondary.opacity(0.3))
 
                 // Tool Selection Section
                 toolSelectionSection
@@ -612,7 +741,7 @@ struct GeneralSettingsView: View {
             }
             .padding(24)
         }
-        .background(Color.neonMidnight)
+        .background(LiquidGlassTokens.surfaceBackground)
         .onAppear {
             Task {
                 await viewModel.loadTools()
@@ -626,7 +755,7 @@ struct GeneralSettingsView: View {
             HStack(spacing: 8) {
                 Image(systemName: "hammer.fill")
                     .font(.system(size: 18))
-                    .foregroundColor(Color.neonElectricBlue)
+                    .foregroundColor(theme.accent)
 
                 Text("Available Tools")
                     .font(.system(size: 17, weight: .semibold))
@@ -647,9 +776,11 @@ struct GeneralSettingsView: View {
                 }
             }
             .background(
-                RoundedRectangle(cornerRadius: 06)
+                RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control)
                     .fill(Color.black.opacity(0.2))
-                    .glassEffect(GlassEffect.regular, in: .rect(cornerRadius: 12))
+                    .glassEffect(
+                        GlassEffect.regular,
+                        in: .rect(cornerRadius: LiquidGlassTokens.Radius.control))
             )
         }
     }
@@ -660,7 +791,7 @@ struct GeneralSettingsView: View {
             HStack(spacing: 8) {
                 Image(systemName: "cursorarrow.click.2")
                     .font(.system(size: 18))
-                    .foregroundColor(Color.neonElectricBlue)
+                    .foregroundColor(theme.accent)
 
                 Text("Text Selection")
                     .font(.system(size: 17, weight: .semibold))
@@ -676,19 +807,21 @@ struct GeneralSettingsView: View {
                             set: { UserDefaults.standard.set($0, forKey: "chatAutoCopyEnabled") }
                         )
                     )
-                    .toggleStyle(SwitchToggleStyle(tint: Color.neonElectricBlue))
+                    .toggleStyle(SwitchToggleStyle(tint: theme.accent))
 
                     Text(
                         "Automatically copy text to clipboard when selecting (Assistant/Tool messages only)."
                     )
                     .font(.caption)
-                    .foregroundColor(Color.neonGray)
+                    .foregroundColor(theme.textSecondary)
                 }
                 .padding(12)
                 .background(
-                    RoundedRectangle(cornerRadius: 06)
+                    RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control)
                         .fill(Color.black.opacity(0.2))
-                        .glassEffect(GlassEffect.regular, in: .rect(cornerRadius: 12))
+                        .glassEffect(
+                            GlassEffect.regular,
+                            in: .rect(cornerRadius: LiquidGlassTokens.Radius.control))
                 )
             #else
                 Text("Text selection settings are available on macOS.")
@@ -705,7 +838,7 @@ struct GeneralSettingsView: View {
             HStack(spacing: 8) {
                 Image(systemName: "sparkles")
                     .font(.system(size: 18))
-                    .foregroundColor(Color.neonElectricBlue)
+                    .foregroundColor(theme.accent)
 
                 Text("Context Management")
                     .font(.system(size: 17, weight: .semibold))
@@ -714,7 +847,7 @@ struct GeneralSettingsView: View {
 
             Text("Automatically optimize conversation history to reduce token usage and costs.")
                 .font(.system(size: 12))
-                .foregroundColor(Color.neonGray)
+                .foregroundColor(theme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 4)
 
@@ -741,17 +874,17 @@ struct GeneralSettingsView: View {
 
                     Text("Automatically removes old messages when context limit is reached")
                         .font(.system(size: 11))
-                        .foregroundColor(Color.neonGray)
+                        .foregroundColor(theme.textSecondary)
                 }
             }
-            .toggleStyle(SwitchToggleStyle(tint: Color.neonElectricBlue))
+            .toggleStyle(SwitchToggleStyle(tint: theme.accent))
             .padding(12)
             .background(
-                RoundedRectangle(cornerRadius: 10)
+                RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control)
                     .fill(Color.black.opacity(0.2))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.neonGray.opacity(0.2), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control)
+                            .stroke(theme.textPrimary.opacity(0.1), lineWidth: 1)
                     )
             )
 
@@ -767,7 +900,7 @@ struct GeneralSettingsView: View {
                             Spacer()
                             Text("\(contextConfig.defaultMaxTokens.formatted()) tokens")
                                 .font(.system(size: 12, design: .monospaced))
-                                .foregroundColor(Color.neonElectricBlue)
+                                .foregroundColor(theme.accent)
                         }
 
                         Slider(
@@ -792,11 +925,11 @@ struct GeneralSettingsView: View {
                                 }
                             }
                         )
-                        .tint(Color.neonElectricBlue)
+                        .tint(theme.accent)
 
                         Text("Conversations exceeding this limit will be automatically compacted")
                             .font(.system(size: 10))
-                            .foregroundColor(Color.neonGray)
+                            .foregroundColor(theme.textSecondary)
                     }
 
                     // Recent Messages Slider
@@ -808,7 +941,7 @@ struct GeneralSettingsView: View {
                             Spacer()
                             Text("\(contextConfig.preserveRecentMessages) messages")
                                 .font(.system(size: 12, design: .monospaced))
-                                .foregroundColor(Color.neonElectricBlue)
+                                .foregroundColor(theme.accent)
                         }
 
                         Slider(
@@ -832,11 +965,11 @@ struct GeneralSettingsView: View {
                                 }
                             }
                         )
-                        .tint(Color.neonElectricBlue)
+                        .tint(theme.accent)
 
                         Text("The most recent messages will always be kept in the context")
                             .font(.system(size: 10))
-                            .foregroundColor(Color.neonGray)
+                            .foregroundColor(theme.textSecondary)
                     }
 
                     // Preserve System Prompt Toggle
@@ -862,10 +995,10 @@ struct GeneralSettingsView: View {
 
                             Text("Keep the system instructions even when compacting context")
                                 .font(.system(size: 11))
-                                .foregroundColor(Color.neonGray)
+                                .foregroundColor(theme.textSecondary)
                         }
                     }
-                    .toggleStyle(SwitchToggleStyle(tint: Color.neonElectricBlue))
+                    .toggleStyle(SwitchToggleStyle(tint: theme.accent))
                 }
                 .padding(12)
                 .background(
@@ -873,7 +1006,7 @@ struct GeneralSettingsView: View {
                         .fill(Color.black.opacity(0.2))
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.neonGray.opacity(0.2), lineWidth: 1)
+                                .stroke(theme.textSecondary.opacity(0.2), lineWidth: 1)
                         )
                 )
                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -883,23 +1016,23 @@ struct GeneralSettingsView: View {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "info.circle.fill")
                     .font(.system(size: 14))
-                    .foregroundColor(Color.neonElectricBlue.opacity(0.8))
+                    .foregroundColor(theme.accent.opacity(0.8))
                     .frame(width: 20, height: 20)
 
                 Text(
                     "Context compaction can reduce token costs by 40-70% in long conversations by intelligently removing older messages while preserving important context."
                 )
                 .font(.system(size: 11))
-                .foregroundColor(Color.neonGray)
+                .foregroundColor(theme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             }
             .padding(12)
             .background(
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.neonElectricBlue.opacity(0.05))
+                    .fill(theme.accent.opacity(0.05))
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.neonElectricBlue.opacity(0.2), lineWidth: 1)
+                            .stroke(theme.accent.opacity(0.2), lineWidth: 1)
                     )
             )
         }
