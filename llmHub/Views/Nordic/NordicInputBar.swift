@@ -19,40 +19,34 @@ struct NordicInputBar: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Text field
-            TextField("Type a message...", text: $text, axis: .vertical)
+            // Text field - plain, no individual background
+            TextField("Message...", text: $text, axis: .vertical)
                 .textFieldStyle(.plain)
                 .font(.system(size: 15))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .lineLimit(1...6)
-                .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(NordicColors.surface(colorScheme))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(
-                            isFocused
-                                ? NordicColors.accentPrimary(colorScheme)
-                                : NordicColors.border(colorScheme),
-                            lineWidth: isFocused ? 2 : 1
-                        )
-                )
                 .focused($isFocused)
+                .lineLimit(1...6)
+                .frame(maxWidth: .infinity, alignment: .leading)  // FIX: Expand to full width
+                .contentShape(Rectangle())  // Better hit testing
+                .onTapGesture {  // Explicit focus on tap
+                    isFocused = true
+                }
                 .onSubmit {
                     if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         onSend()
+                        // Don't clear focus - let user keep typing
                     }
                 }
 
             // Send button
-            Button(action: onSend) {
+            Button(action: {
+                onSend()
+                isFocused = true  // Keep focus after sending
+            }) {
                 Image(systemName: "arrow.up.circle.fill")
                     .font(.system(size: 28))
                     .foregroundColor(
                         text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                            ? NordicColors.textMuted(colorScheme)
+                            ? NordicColors.textSecondary(colorScheme)
                             : NordicColors.accentSecondary(colorScheme)
                     )
             }
@@ -61,7 +55,23 @@ struct NordicInputBar: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(NordicColors.canvas(colorScheme))
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(NordicColors.surface(colorScheme))
+                .shadow(
+                    color: .black.opacity(colorScheme == .dark ? 0.24 : 0.12),
+                    radius: 12,
+                    y: 4
+                )
+        )
+        .padding(.horizontal, 20)
+        .padding(.bottom, 16)
+        .onAppear {
+            // Auto-focus on appear
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                isFocused = true
+            }
+        }
     }
 }
 

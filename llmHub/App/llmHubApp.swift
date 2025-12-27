@@ -39,14 +39,7 @@ struct llmHubApp: App {
                         .environment(\.theme, themeManager.current)
                 }
             }
-            .background(
-                GeometryReader { geo in
-                    Color.clear
-                        .onChange(of: geo.size) { oldSize, newSize in
-                            print("📐 Window resize: \(oldSize) → \(newSize)")
-                        }
-                }
-            )
+
             .task {
                 // TEMPORARY: Clear all model caches to force fresh fetch
                 // This ensures updated model IDs (Anthropic, xAI) are loaded

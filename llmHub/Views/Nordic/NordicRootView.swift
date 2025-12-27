@@ -23,29 +23,45 @@ struct NordicRootView: View {
     @State private var workbenchViewModel: WorkbenchViewModel?
 
     var body: some View {
-        HSplitView {
-            // Sidebar
-            NordicSidebarView(
-                sessions: sessions,
-                selectedSession: $selectedSession,
-                viewModel: sidebarViewModel
-            )
-            .frame(minWidth: 220, idealWidth: 260, maxWidth: 320)
+        ZStack(alignment: .leading) {
+            // Z-0: Continuous background (edge-to-edge)
+            NordicColors.canvas(colorScheme)
+                .ignoresSafeArea()
 
-            // Main chat area
-            Group {
-                if let session = selectedSession {
-                    NordicChatContainerView(
-                        session: session,
-                        workbenchViewModel: workbenchViewModel
-                            ?? createWorkbenchViewModel(for: session)
-                    )
-                } else {
-                    NordicWelcomeView()
+            // Content layers on top
+            HStack(spacing: 0) {
+                // Z-2: Sidebar as raised panel with shadow
+                NordicSidebarView(
+                    sessions: sessions,
+                    selectedSession: $selectedSession,
+                    viewModel: sidebarViewModel
+                )
+                .frame(minWidth: 220, idealWidth: 260, maxWidth: 320)
+                .background(
+                    Rectangle()
+                        .fill(NordicColors.surface(colorScheme))
+                        .shadow(
+                            color: .black.opacity(colorScheme == .dark ? 0.16 : 0.08),
+                            radius: 8,
+                            x: 2,
+                            y: 0
+                        )
+                )
+
+                // Z-1: Chat area - NO background, content sits on canvas
+                Group {
+                    if let session = selectedSession {
+                        NordicChatContainerView(
+                            session: session,
+                            workbenchViewModel: workbenchViewModel
+                                ?? createWorkbenchViewModel(for: session)
+                        )
+                    } else {
+                        NordicWelcomeView()
+                    }
                 }
             }
         }
-        .background(NordicColors.canvas(colorScheme))
         .onChange(of: selectedSession) { _, newSession in
             if let session = newSession {
                 workbenchViewModel = createWorkbenchViewModel(for: session)
@@ -97,7 +113,7 @@ struct NordicSidebarView: View {
                 .padding(.horizontal, 8)
             }
         }
-        .background(NordicColors.sidebar(colorScheme))
+        // NO .background() - applied in NordicRootView as raised panel
     }
 
     private var sidebarHeader: some View {
@@ -217,7 +233,7 @@ struct NordicChatContainerView: View {
 
     let session: ChatSessionEntity
     var workbenchViewModel: WorkbenchViewModel
-    
+
     @State private var inputText = ""
 
     var body: some View {
@@ -243,9 +259,9 @@ struct NordicChatContainerView: View {
                 }
             )
         }
-        .background(NordicColors.canvas(colorScheme))
+        // NO .background() - transparent, shows canvas
     }
-    
+
     private func sendMessage() async {
         // TODO: Implement actual message sending logic
         print("Sending message: \(inputText)")
@@ -268,6 +284,17 @@ struct NordicChatContainerView: View {
 
             Spacer()
 
+            // Settings button
+            #if os(macOS)
+            SettingsLink {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 16))
+                    .foregroundColor(NordicColors.textSecondary(colorScheme))
+            }
+            .buttonStyle(.plain)
+            .help("Settings")
+            #endif
+
             // Nordic theme indicator
             Text("Nordic")
                 .font(.system(size: 11))
@@ -285,7 +312,7 @@ struct NordicChatContainerView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 14)
-        .background(NordicColors.canvas(colorScheme))
+        // NO .background() - transparent, shows canvas
     }
 
     private var messagesArea: some View {
@@ -293,7 +320,7 @@ struct NordicChatContainerView: View {
             ScrollView {
                 LazyVStack(spacing: 0) {
                     ForEach(session.messages) { message in
-                        NordicMessageBubble(
+                        NordicMessageRow(
                             message: message.asDomain()
                         )
                         .id(message.id)
@@ -319,23 +346,20 @@ struct NordicStreamingMessage: View {
     let text: String
 
     var body: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("AI Assistant")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(NordicColors.textPrimary(colorScheme))
+        HStack(alignment: .top, spacing: 0) {
+            HStack(alignment: .top, spacing: 12) {
+                // Left accent bar
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(NordicColors.accentSecondary(colorScheme))
+                    .frame(width: 3)
 
-                HStack(spacing: 0) {
-                    // Left accent bar
-                    Rectangle()
-                        .fill(NordicColors.accentSecondary(colorScheme))
-                        .frame(width: 3)
-
-                    // Content with cursor
+                VStack(alignment: .leading, spacing: 4) {
+                    // Content with cursor - NO background
                     HStack(spacing: 4) {
                         Text(text)
                             .font(.system(size: 15))
                             .foregroundColor(NordicColors.textPrimary(colorScheme))
+                            .textSelection(.enabled)
 
                         // Blinking cursor
                         Text("▊")
@@ -343,23 +367,13 @@ struct NordicStreamingMessage: View {
                             .foregroundColor(NordicColors.accentSecondary(colorScheme))
                             .opacity(0.7)
                     }
-                    .padding(16)
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(NordicColors.surface(colorScheme))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(NordicColors.border(colorScheme), lineWidth: 1)
-                        )
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 12))
             }
+            // NO .background() — text floats on canvas
 
-            Spacer(minLength: 60)
+            Spacer(minLength: 80)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 24)
         .padding(.vertical, 8)
     }
 }
