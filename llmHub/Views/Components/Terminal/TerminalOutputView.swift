@@ -17,20 +17,21 @@ struct ANSIParser {
     static func parse(_ text: String) -> AttributedString {
         var result = AttributedString()
         var currentAttributes = ANSIAttributes()
-        
+
         // Regex to match ANSI escape sequences
         let pattern = "\u{001B}\\[([0-9;]*)m"
         let regex = try? NSRegularExpression(pattern: pattern, options: [])
-        
+
         var currentIndex = text.startIndex
         let nsText = text as NSString
-        
-        let matches = regex?.matches(
-            in: text,
-            options: [],
-            range: NSRange(location: 0, length: nsText.length)
-        ) ?? []
-        
+
+        let matches =
+            regex?.matches(
+                in: text,
+                options: [],
+                range: NSRange(location: 0, length: nsText.length)
+            ) ?? []
+
         for match in matches {
             // Get text before this escape sequence
             if let range = Range(match.range, in: text), range.lowerBound > currentIndex {
@@ -39,19 +40,19 @@ struct ANSIParser {
                 currentAttributes.apply(to: &attributed)
                 result.append(attributed)
             }
-            
+
             // Parse the escape codes
             if let codeRange = Range(match.range(at: 1), in: text) {
                 let codes = String(text[codeRange])
                 currentAttributes.parse(codes: codes)
             }
-            
+
             // Move past this escape sequence
             if let range = Range(match.range, in: text) {
                 currentIndex = range.upperBound
             }
         }
-        
+
         // Append remaining text
         if currentIndex < text.endIndex {
             let remainingText = String(text[currentIndex...])
@@ -59,7 +60,7 @@ struct ANSIParser {
             currentAttributes.apply(to: &attributed)
             result.append(attributed)
         }
-        
+
         return result
     }
 }
@@ -74,12 +75,12 @@ struct ANSIAttributes {
     var isItalic = false
     var isUnderline = false
     var isDim = false
-    
+
     /// Updates attributes based on ANSI escape codes.
     /// - Parameter codes: The ANSI code string (e.g., "1;31").
     mutating func parse(codes: String) {
         let codeList = codes.split(separator: ";").compactMap { Int($0) }
-        
+
         for code in codeList.isEmpty ? [0] : codeList {
             switch code {
             case 0:
@@ -99,7 +100,7 @@ struct ANSIAttributes {
                 isItalic = false
             case 24:
                 isUnderline = false
-                
+
             // Standard foreground colors
             case 30: foregroundColor = .black
             case 31: foregroundColor = .red
@@ -110,7 +111,7 @@ struct ANSIAttributes {
             case 36: foregroundColor = .cyan
             case 37: foregroundColor = .white
             case 39: foregroundColor = .primary
-                
+
             // Bright foreground colors
             case 90: foregroundColor = Color(white: 0.5)
             case 91: foregroundColor = Color.red.opacity(0.8)
@@ -120,7 +121,7 @@ struct ANSIAttributes {
             case 95: foregroundColor = Color.purple.opacity(0.8)
             case 96: foregroundColor = Color.cyan.opacity(0.8)
             case 97: foregroundColor = .white
-                
+
             // Standard background colors
             case 40: backgroundColor = .black
             case 41: backgroundColor = Color.red.opacity(0.3)
@@ -131,13 +132,13 @@ struct ANSIAttributes {
             case 46: backgroundColor = Color.cyan.opacity(0.3)
             case 47: backgroundColor = Color.white.opacity(0.3)
             case 49: backgroundColor = .clear
-                
+
             default:
                 break
             }
         }
     }
-    
+
     /// Resets all attributes to default.
     mutating func reset() {
         foregroundColor = .primary
@@ -147,16 +148,16 @@ struct ANSIAttributes {
         isUnderline = false
         isDim = false
     }
-    
+
     /// Applies the current attributes to an AttributedString.
     /// - Parameter attributedString: The string to modify.
     func apply(to attributedString: inout AttributedString) {
         attributedString.foregroundColor = isDim ? foregroundColor.opacity(0.6) : foregroundColor
-        
+
         if backgroundColor != .clear {
             attributedString.backgroundColor = backgroundColor
         }
-        
+
         if isBold {
             attributedString.font = .system(.body, design: .monospaced).bold()
         } else if isItalic {
@@ -164,7 +165,7 @@ struct ANSIAttributes {
         } else {
             attributedString.font = .system(.body, design: .monospaced)
         }
-        
+
         if isUnderline {
             attributedString.underlineStyle = .single
         }
@@ -178,30 +179,30 @@ struct TerminalOutputView: View {
     /// The result of the code execution.
     let result: CodeExecutionResult
     @State private var showRawOutput = false
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
             HStack {
                 Image(systemName: "terminal")
                     .font(.system(size: 14, weight: .semibold))
-                
+
                 Text("Execution Result")
                     .font(.headline)
-                
+
                 Spacer()
-                
+
                 // Status indicator
                 HStack(spacing: 6) {
                     Circle()
                         .fill(result.isSuccess ? Color.green : Color.red)
                         .frame(width: 8, height: 8)
-                    
+
                     Text(result.isSuccess ? "Success" : "Failed")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                
+
                 // Execution time
                 Text("\(result.executionTimeMs)ms")
                     .font(.caption.monospacedDigit())
@@ -211,20 +212,20 @@ struct TerminalOutputView: View {
                     .background(.ultraThinMaterial)
                     .clipShape(Capsule())
             }
-            
+
             // Language and exit code
             HStack(spacing: 16) {
                 Label(result.language.displayName, systemImage: languageIcon)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                
+
                 Text("Exit: \(result.exitCode)")
                     .font(.caption.monospaced())
                     .foregroundStyle(result.isSuccess ? Color.secondary : Color.red)
             }
-            
+
             Divider()
-            
+
             // Output content
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
@@ -232,12 +233,12 @@ struct TerminalOutputView: View {
                     if !result.stdout.isEmpty {
                         outputSection(title: "stdout", content: result.stdout, isError: false)
                     }
-                    
+
                     // STDERR
                     if !result.stderr.isEmpty {
                         outputSection(title: "stderr", content: result.stderr, isError: true)
                     }
-                    
+
                     // Empty output message
                     if result.stdout.isEmpty && result.stderr.isEmpty {
                         Text("(No output)")
@@ -249,7 +250,7 @@ struct TerminalOutputView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .frame(maxHeight: 300)
-            
+
             // Toggle for raw view
             Toggle("Show raw output", isOn: $showRawOutput)
                 .font(.caption)
@@ -259,9 +260,9 @@ struct TerminalOutputView: View {
         .background(
             RoundedRectangle(cornerRadius: 06)
                 #if os(macOS)
-                .fill(Color(nsColor: .textBackgroundColor))
+                    .fill(Color(nsColor: .textBackgroundColor))
                 #else
-                .fill(Color(uiColor: .tertiarySystemBackground))
+                    .fill(Color(uiColor: .tertiarySystemBackground))
                 #endif
         )
         .overlay(
@@ -269,7 +270,7 @@ struct TerminalOutputView: View {
                 .strokeBorder(Color.secondary.opacity(0.2), lineWidth: 1)
         )
     }
-    
+
     private var languageIcon: String {
         switch result.language {
         case .swift: return "swift"
@@ -278,14 +279,14 @@ struct TerminalOutputView: View {
         case .dart: return "arrow.trianglehead.branch"
         }
     }
-    
+
     @ViewBuilder
     private func outputSection(title: String, content: String, isError: Bool) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
                 .font(.caption.bold())
                 .foregroundStyle(isError ? .red : .green)
-            
+
             if showRawOutput {
                 Text(content)
                     .font(.system(.body, design: .monospaced))
@@ -311,7 +312,7 @@ struct CompactTerminalView: View {
     /// The result of the code execution.
     let result: CodeExecutionResult
     @State private var isExpanded = false
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Collapsed header
@@ -323,12 +324,12 @@ struct CompactTerminalView: View {
                 HStack {
                     Image(systemName: "terminal.fill")
                         .foregroundStyle(result.isSuccess ? .green : .red)
-                    
+
                     Text(result.language.displayName)
                         .font(.caption.bold())
-                    
+
                     Spacer()
-                    
+
                     if result.isSuccess {
                         Text("✓")
                             .foregroundStyle(.green)
@@ -337,11 +338,11 @@ struct CompactTerminalView: View {
                             .font(.caption.monospaced())
                             .foregroundStyle(.red)
                     }
-                    
+
                     Text("\(result.executionTimeMs)ms")
                         .font(.caption2.monospacedDigit())
                         .foregroundStyle(.secondary)
-                    
+
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -350,11 +351,11 @@ struct CompactTerminalView: View {
                 .padding(.vertical, 8)
             }
             .buttonStyle(.plain)
-            
+
             // Expanded content
             if isExpanded {
                 Divider()
-                
+
                 ScrollView {
                     Text(ANSIParser.parse(result.combinedOutput))
                         .font(.system(size: 12, design: .monospaced))
@@ -368,9 +369,9 @@ struct CompactTerminalView: View {
         .background(
             RoundedRectangle(cornerRadius: 8)
                 #if os(macOS)
-                .fill(Color(nsColor: .controlBackgroundColor))
+                    .fill(Color(nsColor: .controlBackgroundColor))
                 #else
-                .fill(Color(uiColor: .secondarySystemBackground))
+                    .fill(Color(uiColor: .secondarySystemBackground))
                 #endif
         )
         .overlay(
@@ -395,9 +396,9 @@ struct CodeExecutionPreview: View {
     let onExecute: () -> Void
     /// Action to cancel execution.
     let onCancel: () -> Void
-    
+
     @State private var showFullCode = false
-    
+
     private var previewLines: String {
         let lines = code.components(separatedBy: .newlines)
         if lines.count <= 10 {
@@ -405,19 +406,19 @@ struct CodeExecutionPreview: View {
         }
         return lines.prefix(10).joined(separator: "\n") + "\n... (\(lines.count - 10) more lines)"
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
             HStack {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
-                
+
                 Text("Code Execution Request")
                     .font(.headline)
-                
+
                 Spacer()
-                
+
                 Text(language.displayName)
                     .font(.caption)
                     .padding(.horizontal, 8)
@@ -425,7 +426,7 @@ struct CodeExecutionPreview: View {
                     .background(.ultraThinMaterial)
                     .clipShape(Capsule())
             }
-            
+
             // Code preview
             VStack(alignment: .leading, spacing: 4) {
                 ScrollView {
@@ -439,12 +440,12 @@ struct CodeExecutionPreview: View {
                 .background(
                     RoundedRectangle(cornerRadius: 8)
                         #if os(macOS)
-                .fill(Color(nsColor: .textBackgroundColor))
-                #else
-                .fill(Color(uiColor: .tertiarySystemBackground))
-                #endif
+                            .fill(Color(nsColor: .textBackgroundColor))
+                        #else
+                            .fill(Color(uiColor: .tertiarySystemBackground))
+                        #endif
                 )
-                
+
                 if code.components(separatedBy: .newlines).count > 10 {
                     Button(showFullCode ? "Show less" : "Show full code") {
                         withAnimation {
@@ -454,16 +455,16 @@ struct CodeExecutionPreview: View {
                     .font(.caption)
                 }
             }
-            
+
             // Action buttons
             HStack {
                 Button("Cancel") {
                     onCancel()
                 }
                 .buttonStyle(.bordered)
-                
+
                 Spacer()
-                
+
                 Button {
                     onExecute()
                 } label: {
@@ -477,9 +478,9 @@ struct CodeExecutionPreview: View {
         .background(
             RoundedRectangle(cornerRadius: 06)
                 #if os(macOS)
-                .fill(Color(nsColor: .controlBackgroundColor))
+                    .fill(Color(nsColor: .controlBackgroundColor))
                 #else
-                .fill(Color(uiColor: .secondarySystemBackground))
+                    .fill(Color(uiColor: .secondarySystemBackground))
                 #endif
         )
         .overlay(
@@ -495,24 +496,27 @@ struct CodeExecutionPreview: View {
 struct InterpreterStatusView: View {
     /// List of interpreter information.
     let interpreters: [InterpreterInfo]
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Available Interpreters")
                 .font(.headline)
-            
+
             ForEach(SupportedLanguage.allCases, id: \.self) { language in
                 let info = interpreters.first { $0.language == language }
-                
+
                 HStack {
-                    Image(systemName: info?.isAvailable == true ? "checkmark.circle.fill" : "xmark.circle.fill")
-                        .foregroundStyle(info?.isAvailable == true ? .green : .red)
-                    
+                    Image(
+                        systemName: info?.isAvailable == true
+                            ? "checkmark.circle.fill" : "xmark.circle.fill"
+                    )
+                    .foregroundStyle(info?.isAvailable == true ? .green : .red)
+
                     Text(language.displayName)
                         .font(.body)
-                    
+
                     Spacer()
-                    
+
                     if let version = info?.version {
                         Text(version)
                             .font(.caption)
@@ -535,30 +539,34 @@ struct InterpreterStatusView: View {
 
 #Preview {
     VStack {
-        TerminalOutputView(result: CodeExecutionResult(
-            id: UUID(),
-            language: .python,
-            code: "print('Hello, World!')",
-            stdout: "Hello, World!\n\u{001B}[32mGreen text\u{001B}[0m\n\u{001B}[1;31mBold red\u{001B}[0m",
-            stderr: "",
-            exitCode: 0,
-            executionTimeMs: 42,
-            timestamp: Date(),
-            sandboxPath: nil
-        ))
-        
-        CompactTerminalView(result: CodeExecutionResult(
-            id: UUID(),
-            language: .swift,
-            code: "print(\"Test\")",
-            stdout: "Test",
-            stderr: "warning: something",
-            exitCode: 0,
-            executionTimeMs: 156,
-            timestamp: Date(),
-            sandboxPath: nil
-        ))
+        TerminalOutputView(
+            result: CodeExecutionResult(
+                id: UUID(),
+                language: .python,
+                code: "print('Hello, World!')",
+                stdout:
+                    "Hello, World!\n\u{001B}[32mGreen text\u{001B}[0m\n\u{001B}[1;31mBold red\u{001B}[0m",
+                stderr: "",
+                exitCode: 0,
+                executionTimeMs: 42,
+                timestamp: Date(),
+                sandboxPath: nil
+            ))
+
+        CompactTerminalView(
+            result: CodeExecutionResult(
+                id: UUID(),
+                language: .swift,
+                code: "print(\"Test\")",
+                stdout: "Test",
+                stderr: "warning: something",
+                exitCode: 0,
+                executionTimeMs: 156,
+                timestamp: Date(),
+                sandboxPath: nil
+            ))
     }
     .padding()
     .frame(width: 500)
+    .previewEnvironment()
 }

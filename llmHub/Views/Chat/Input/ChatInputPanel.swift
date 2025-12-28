@@ -562,7 +562,8 @@ struct ToolsListView: View {
                 return "General"
             }
         }
-        return groups
+        return
+            groups
             .sorted { $0.key < $1.key }
             .map { (category: $0.key, items: $0.value) }
     }
@@ -614,4 +615,82 @@ struct ToolsListView: View {
                 .glassEffect(.regular, in: Rectangle())
         }
     }
+}
+
+// MARK: - Previews
+
+#Preview("Empty State") {
+    ChatInputPanel(
+        text: .constant(""),
+        thinkingPreference: .constant(.off),
+        isSending: false,
+        onSend: { _ in },
+        onStop: {},
+        tools: [],
+        onToggleTool: { _, _ in },
+        onToolsAppear: {},
+        stagedAttachments: [],
+        onAddAttachment: { _ in },
+        onRemoveAttachment: { _ in },
+        stagedReferences: [],
+        onRemoveReference: { _ in }
+    )
+    .padding()
+    .previewEnvironment()
+}
+
+#Preview("With Attachments") {
+    ChatInputPanel(
+        text: .constant("Check this file out"),
+        thinkingPreference: .constant(.auto),
+        isSending: false,
+        onSend: { _ in },
+        onStop: {},
+        tools: [
+            UIToolToggleItem(
+                id: "1", name: "Browser", icon: "safari", description: "Browse the web",
+                isEnabled: true),
+            UIToolToggleItem(
+                id: "2", name: "Calculator", icon: "plus.minus",
+                description: "Perform calculations", isEnabled: false),
+        ],
+        onToggleTool: { _, _ in },
+        onToolsAppear: {},
+        stagedAttachments: [
+            Attachment(
+                filename: "report.pdf", url: URL(string: "file:///tmp/report.pdf")!, type: .pdf),
+            Attachment(
+                filename: "script.py", url: URL(string: "file:///tmp/script.py")!, type: .code),
+        ],
+        onAddAttachment: { _ in },
+        onRemoveAttachment: { _ in },
+        stagedReferences: [
+            ChatReference(
+                id: UUID(), text: "Some referenced text from previous message",
+                sourceMessageID: UUID(), role: .assistant)
+        ],
+        onRemoveReference: { _ in }
+    )
+    .padding()
+    .previewEnvironment()
+}
+
+#Preview("Sending State") {
+    ChatInputPanel(
+        text: .constant("I'm waiting..."),
+        thinkingPreference: .constant(.off),
+        isSending: true,
+        onSend: { _ in },
+        onStop: {},
+        tools: [],
+        onToggleTool: { _, _ in },
+        onToolsAppear: {},
+        stagedAttachments: [],
+        onAddAttachment: { _ in },
+        onRemoveAttachment: { _ in },
+        stagedReferences: [],
+        onRemoveReference: { _ in }
+    )
+    .padding()
+    .previewEnvironment()
 }

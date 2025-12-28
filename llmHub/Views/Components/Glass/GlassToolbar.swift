@@ -12,7 +12,7 @@ struct GlassToolbar<Content: View>: View {
     let spacing: CGFloat
     @ViewBuilder let content: Content
 
-    init(spacing: CGFloat = 12, @ViewBuilder content: () -> Content) {
+    init(spacing: CGFloat = 06, @ViewBuilder content: () -> Content) {
         self.spacing = spacing
         self.content = content()
     }
@@ -22,8 +22,8 @@ struct GlassToolbar<Content: View>: View {
             HStack(spacing: spacing) {
                 content
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 08)
+            .padding(.vertical, 05)
             .environment(\.glassToolbarNamespace, toolbarNamespace)
         }
     }
@@ -95,8 +95,8 @@ struct GlassToolbarItem: View {
 struct GlassToolbarDivider: View {
     var body: some View {
         Rectangle()
-            .fill(Color.white.opacity(0.2))
-            .frame(width: 1, height: 24)
+            .fill(Color.white.opacity(0.4))
+            .frame(width: 1.5, height: 30)
     }
 }
 
@@ -129,14 +129,11 @@ extension View {
 // MARK: - Preview
 
 #Preview("Glass Toolbar") {
-    VStack {
-        GlassToolbar {
-            GlassToolbarItem(id: "home", icon: "house.fill", isActive: true) {}
-            GlassToolbarItem(id: "search", icon: "magnifyingglass") {}
-            GlassToolbarDivider()
-            GlassToolbarItem(id: "settings", icon: "gearshape.fill") {}
-        }
+    GlassToolbar {
+        GlassToolbarItem(id: "home", icon: "house.fill", isActive: true) {}
+        GlassToolbarItem(id: "search", icon: "magnifyingglass") {}
+        GlassToolbarDivider()
+        GlassToolbarItem(id: "settings", icon: "gearshape.fill") {}
     }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .background(Color.black)
+    .previewEnvironment()
 }

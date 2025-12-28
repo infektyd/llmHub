@@ -433,3 +433,9 @@ private struct IconButton: View {
         .buttonStyle(.plain)
     }
 }
+// MARK: - Previews
+
+#Preview("Cleanup Review") {
+    CleanupReviewSheet(sidebarViewModel: MockData.sidebarViewModel())
+        .previewEnvironment()
+}

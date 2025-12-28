@@ -31,7 +31,7 @@ struct AdaptiveGlassBackground: View {
             // Glass implementation
             let (style, overlay) = intensity.asGlassIntensity
             Color.clear
-                .overlay(Color.black.opacity(overlay))
+                .overlay(Color.gray.opacity(overlay))
                 .glassEffect(
                     style, in: RoundedRectangle(cornerRadius: target == .sidebar ? 06 : 08)
                 )
@@ -48,4 +48,42 @@ struct AdaptiveGlassBackground: View {
                 )
         }
     }
+}
+
+// MARK: - Previews
+
+#Preview("Sidebar Background") {
+    AdaptiveGlassBackground(target: .sidebar)
+        .frame(width: 250, height: 600)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Chat Area Background") {
+    AdaptiveGlassBackground(target: .chatArea)
+        .frame(width: 700, height: 500)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Input Bar Background") {
+    AdaptiveGlassBackground(target: .inputBar)
+        .frame(width: 600, height: 60)
+        .preferredColorScheme(.light)
+}
+
+#Preview("Tool Inspector Background") {
+    AdaptiveGlassBackground(target: .toolInspector)
+        .frame(width: 300, height: 500)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Messages Background") {
+    AdaptiveGlassBackground(target: .messages)
+        .frame(width: 500, height: 100)
+        .preferredColorScheme(.light)
+}
+
+#Preview("Model Picker Background") {
+    AdaptiveGlassBackground(target: .modelPicker)
+        .frame(width: 300, height: 200)
+        .preferredColorScheme(.dark)
 }

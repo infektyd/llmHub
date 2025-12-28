@@ -5,10 +5,11 @@
 //  Collapsible artifact renderer for large pastes and attachments.
 //
 
-#if canImport(Splash)
-import Splash
-#endif
 import SwiftUI
+
+#if canImport(Splash)
+    import Splash
+#endif
 
 struct ArtifactCard: View {
     let artifact: ArtifactMetadata
@@ -38,11 +39,11 @@ struct ArtifactCard: View {
             }
         }
         .background {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 07, style: .continuous)
                 .fill(Color.purple.opacity(0.10))
         }
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 07, style: .continuous)
                 .stroke(Color.purple.opacity(0.30), lineWidth: 1)
         )
         .shadow(color: Color.purple.opacity(0.10), radius: 10, x: 0, y: 4)
@@ -61,8 +62,8 @@ struct ArtifactCard: View {
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: "paperclip")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.purple.opacity(0.85))
+                    .font(.system(size: 6.5, weight: .semibold))
+                    .foregroundStyle(Color.green.opacity(0.85))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(artifact.filename)
@@ -115,11 +116,11 @@ struct ArtifactCard: View {
             }
             .frame(maxHeight: maxHeight)
             .background {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: 05, style: .continuous)
                     .fill(Color.purple.opacity(0.08))
             }
             .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: 05, style: .continuous)
                     .stroke(Color.purple.opacity(0.22), lineWidth: 1)
             )
             .padding(.horizontal, 12)
@@ -168,7 +169,8 @@ struct ArtifactCard: View {
 
     private var truncationWarning: String? {
         guard artifact.sizeBytes > maxRenderBytes else { return nil }
-        return "Large artifact (\(formatFileSize(artifact.sizeBytes))). Showing first \(formatFileSize(maxRenderBytes))."
+        return
+            "Large artifact (\(formatFileSize(artifact.sizeBytes))). Showing first \(formatFileSize(maxRenderBytes))."
     }
 
     private var languageLabel: String {
@@ -176,7 +178,8 @@ struct ArtifactCard: View {
     }
 
     private var isJSONLike: Bool {
-        artifact.language == .json || displayContent.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("{")
+        artifact.language == .json
+            || displayContent.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("{")
             || displayContent.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("[")
     }
 
@@ -194,14 +197,15 @@ struct ArtifactCard: View {
         }
 
         #if canImport(Splash)
-        // Splash only ships with Swift grammar; we still use it for everything.
-        // It provides decent highlighting for JSON-like text (strings/numbers) too.
-        let splashTheme = Theme.wwdc18(withFont: Font(size: 13))
-        let highlighter = SyntaxHighlighter(format: AttributedStringOutputFormat(theme: splashTheme))
-        let highlighted = highlighter.highlight(code)
-        highlightedContent = AttributedString(highlighted)
+            // Splash only ships with Swift grammar; we still use it for everything.
+            // It provides decent highlighting for JSON-like text (strings/numbers) too.
+            let splashTheme = Theme.wwdc18(withFont: Font(size: 13))
+            let highlighter = SyntaxHighlighter(
+                format: AttributedStringOutputFormat(theme: splashTheme))
+            let highlighted = highlighter.highlight(code)
+            highlightedContent = AttributedString(highlighted)
         #else
-        highlightedContent = nil
+            highlightedContent = nil
         #endif
     }
 
@@ -232,7 +236,7 @@ struct ArtifactCard: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(Color.purple.opacity(0.10))
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 03, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -298,11 +302,11 @@ struct ArtifactCard: View {
 
     private func copyToClipboard(text: String) {
         #if os(macOS)
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(text, forType: .string)
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.setString(text, forType: .string)
         #else
-        UIPasteboard.general.string = text
+            UIPasteboard.general.string = text
         #endif
     }
 
@@ -312,7 +316,10 @@ struct ArtifactCard: View {
             return nil
         }
         guard JSONSerialization.isValidJSONObject(object) else { return nil }
-        guard let prettyData = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted]) else {
+        guard
+            let prettyData = try? JSONSerialization.data(
+                withJSONObject: object, options: [.prettyPrinted])
+        else {
             return nil
         }
         return String(data: prettyData, encoding: .utf8)
@@ -336,4 +343,20 @@ struct ArtifactCard: View {
         let mb = kb / 1024.0
         return String(format: "%.1f MB", mb)
     }
+}
+
+// MARK: - Previews
+
+#Preview("Artifact Card") {
+    ArtifactCard(
+        artifact: ArtifactMetadata(
+            id: UUID(),
+            filename: "example.json",
+            content: "{\n  \"name\": \"llmHub\",\n  \"version\": \"1.0.0\"\n}",
+            language: .json,
+            sizeBytes: 42
+        )
+    )
+    .padding()
+    .previewEnvironment()
 }

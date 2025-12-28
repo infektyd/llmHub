@@ -58,7 +58,7 @@ struct NordicCard<Content: View>: View {
     }
     .padding()
     .frame(width: 300)
-    .preferredColorScheme(.light)
+    .previewEnvironment()
 }
 
 #Preview("Card with Text - Dark") {
@@ -75,8 +75,7 @@ struct NordicCard<Content: View>: View {
     }
     .padding()
     .frame(width: 300)
-    .background(NordicColors.Dark.canvas)
-    .preferredColorScheme(.dark)
+    .previewEnvironment()
 }
 
 #Preview("Multiple Cards") {
@@ -103,4 +102,5 @@ struct NordicCard<Content: View>: View {
     }
     .padding()
     .frame(width: 350)
+    .previewEnvironment()
 }

@@ -77,51 +77,50 @@ struct NordicButton: View {
     VStack(spacing: 20) {
         Text("Nordic Buttons - Light Mode")
             .font(.title2.bold())
-        
+
         VStack(spacing: 16) {
             NordicButton("Primary Button", style: .primary) {
                 print("Primary tapped")
             }
-            
+
             NordicButton("Secondary Button", style: .secondary) {
                 print("Secondary tapped")
             }
-            
+
             NordicButton("Ghost Button", style: .ghost) {
                 print("Ghost tapped")
             }
         }
     }
     .padding()
-    .preferredColorScheme(.light)
+    .previewEnvironment()
 }
 
 #Preview("All Variants - Dark") {
     VStack(spacing: 20) {
         Text("Nordic Buttons - Dark Mode")
             .font(.title2.bold())
-            .foregroundColor(.white)
-        
+
         VStack(spacing: 16) {
             NordicButton("Primary Button", style: .primary) {
                 print("Primary tapped")
             }
-            
+
             NordicButton("Secondary Button", style: .secondary) {
                 print("Secondary tapped")
             }
-            
+
             NordicButton("Ghost Button", style: .ghost) {
                 print("Ghost tapped")
             }
         }
     }
     .padding()
-    .background(Color(red: 0.11, green: 0.098, blue: 0.09))
-    .preferredColorScheme(.dark)
+    .previewEnvironment()
 }
 
 #Preview("Primary Only") {
     NordicButton("Click Me", style: .primary) {}
         .padding()
+        .previewEnvironment()
 }

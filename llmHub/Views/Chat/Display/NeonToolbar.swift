@@ -97,3 +97,30 @@ import SwiftUI
         }
     }
 #endif
+// MARK: - Previews
+
+#if os(macOS)
+    #Preview("Neon Toolbar") {
+        @Previewable @State var provider = MockData.uiLLMProvider()
+        @Previewable @State var model = MockData.uiLLMModel()
+        @Previewable @State var inspectorVisible = false
+        @Previewable @State var columnVisibility: NavigationSplitViewVisibility = .all
+        @Previewable @State var showingSettings = false
+        @Previewable @State var showingToolsDebug = false
+
+        NeonToolbar(
+            session: MockData.chatSession(),
+            selectedProvider: $provider,
+            selectedModel: $model,
+            scrollOffset: 0,
+            toolInspectorVisible: $inspectorVisible,
+            columnVisibility: $columnVisibility,
+            showingSettings: $showingSettings,
+            showingToolsDebug: $showingToolsDebug,
+            onOpenSettings: {}
+        )
+        .padding()
+        .frame(width: 800)
+        .previewEnvironment()
+    }
+#endif

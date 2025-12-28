@@ -62,20 +62,20 @@ struct GlassTranscriptSurface<Content: View, Footer: View>: View {
     }
 }
 
-#Preview {
-    ZStack {
-        Color.gray
-        GlassTranscriptSurface {
-            ScrollView {
-                VStack(alignment: .leading) {
-                    Text("Chat Content")
-                        .padding()
-                }
+// MARK: - Previews
+
+#Preview("Transcript Surface") {
+    GlassTranscriptSurface {
+        ScrollView {
+            VStack(alignment: .leading) {
+                Text("Chat Content")
+                    .padding()
             }
-        } footer: {
-            Text("Composer")
-                .padding()
         }
-        .padding(24)
+    } footer: {
+        Text("Composer")
+            .padding()
     }
+    .padding(24)
+    .previewEnvironment()
 }

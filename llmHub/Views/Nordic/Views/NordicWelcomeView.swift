@@ -43,12 +43,12 @@ struct NordicWelcomeView: View {
 
 #Preview("Light Mode") {
     NordicWelcomeView()
-        .preferredColorScheme(.light)
         .frame(width: 600, height: 400)
+        .previewEnvironment()
 }
 
 #Preview("Dark Mode") {
     NordicWelcomeView()
-        .preferredColorScheme(.dark)
         .frame(width: 600, height: 400)
+        .previewEnvironment()
 }

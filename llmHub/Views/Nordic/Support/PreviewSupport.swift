@@ -30,3 +30,41 @@ struct PreviewData {
 
     static let sampleTimestamp = Date()
 }
+
+// MARK: - Previews
+
+#Preview("Nordic Sample Data") {
+    VStack(alignment: .leading, spacing: 20) {
+        Text("Nordic Sample Data")
+            .font(.headline)
+            .padding(.bottom, 4)
+
+        Group {
+            DataRow(label: "Short User", text: PreviewData.shortUserMessage)
+            DataRow(label: "Short Assistant", text: PreviewData.shortAssistantMessage)
+            DataRow(label: "Long User", text: PreviewData.longUserMessage)
+            DataRow(label: "Long Assistant", text: PreviewData.longAssistantMessage)
+        }
+    }
+    .padding()
+    .frame(width: 400)
+}
+
+private struct DataRow: View {
+    let label: String
+    let text: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            Text(text)
+                .font(.body)
+                .padding(8)
+                .background(Color.secondary.opacity(0.1))
+                .cornerRadius(8)
+        }
+    }
+}

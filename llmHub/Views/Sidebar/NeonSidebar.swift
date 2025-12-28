@@ -391,3 +391,10 @@ struct NeonSidebar: View {
         }
     }
 }
+// MARK: - Previews
+
+#Preview("Neon Sidebar") {
+    NeonSidebar()
+        .frame(width: 260)
+        .previewEnvironment()
+}

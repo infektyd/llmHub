@@ -104,30 +104,30 @@ struct TokenUsageCapsule: View {
     }
 }
 
-// MARK: - Preview
+// MARK: - Previews
 
-#Preview {
-    ZStack {
-        Color.black.ignoresSafeArea()
+#Preview("Reported Usage") {
+    TokenUsageCapsule(
+        inputTokens: 1532,
+        outputTokens: 489,
+        cachedTokens: 0,
+        totalCost: 0.02,
+        contextLimit: 128000,
+        isEstimate: false
+    )
+    .padding()
+    .previewEnvironment()
+}
 
-        VStack(spacing: 20) {
-            TokenUsageCapsule(
-                inputTokens: 1532,
-                outputTokens: 489,
-                cachedTokens: 0,
-                totalCost: 0.02,
-                contextLimit: 128000,
-                isEstimate: false
-            )
-
-            TokenUsageCapsule(
-                inputTokens: 85000,
-                outputTokens: 12000,
-                cachedTokens: 5000,
-                totalCost: 1.45,
-                contextLimit: 128000,
-                isEstimate: true
-            )
-        }
-    }
+#Preview("Estimated Usage") {
+    TokenUsageCapsule(
+        inputTokens: 85000,
+        outputTokens: 12000,
+        cachedTokens: 5000,
+        totalCost: 1.45,
+        contextLimit: 128000,
+        isEstimate: true
+    )
+    .padding()
+    .previewEnvironment()
 }

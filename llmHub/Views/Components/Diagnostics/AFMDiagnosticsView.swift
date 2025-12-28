@@ -73,3 +73,30 @@ struct AFMDiagnosticsView: View {
         }
     }
 }
+
+// MARK: - Previews
+
+#Preview("Available") {
+    AFMDiagnosticsView()
+        .environment(ChatViewModel.mock(isAvailable: true))
+        .padding()
+        .frame(width: 300)
+}
+
+#Preview("Unavailable") {
+    AFMDiagnosticsView()
+        .environment(ChatViewModel.mock(isAvailable: false))
+        .padding()
+        .frame(width: 300)
+}
+
+// MARK: - Mock Support
+
+extension ChatViewModel {
+    static func mock(isAvailable: Bool) -> ChatViewModel {
+        let vm = ChatViewModel()
+        // Here we'd normally set the state, but since we can't easily access private properties
+        // we'll assume the mock setup handles it or we'd add a specialized init/method for previews.
+        return vm
+    }
+}

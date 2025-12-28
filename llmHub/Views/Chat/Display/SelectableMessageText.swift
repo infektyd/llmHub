@@ -44,6 +44,27 @@ struct SelectableMessageText: View {
     }
 }
 
+// MARK: - Previews
+
+#Preview("Selectable Message Text") {
+    SelectableMessageText(
+        content: "This is a **selectable** message with `markdown` support.",
+        messageID: UUID(),
+        role: .assistant,
+        interactionController: ChatInteractionController.mock()
+    )
+    .padding()
+    .previewEnvironment()
+}
+
+// MARK: - Mocks for Selectable Text
+
+extension ChatInteractionController {
+    static func mock() -> ChatInteractionController {
+        ChatInteractionController()
+    }
+}
+
 // MARK: - macOS Implementation
 
 #if os(macOS)
@@ -56,24 +77,25 @@ struct SelectableMessageText: View {
 
         func makeNSView(context: Context) -> InternalTextView {
             let textView = InternalTextView()
-            
+
             textView.textContainerInset = NSSize(width: 0, height: 0)
             textView.drawsBackground = false
             textView.isEditable = false
             textView.isSelectable = true
             textView.isRichText = true
             textView.allowsUndo = false
-            
+
             // Disable Auto Layout to avoid ambiguity warnings
             textView.translatesAutoresizingMaskIntoConstraints = false
-            
+
             // Configure text container to grow with content
             textView.textContainer?.widthTracksTextView = true
             textView.textContainer?.heightTracksTextView = false
             textView.textContainer?.lineFragmentPadding = 0
-            
+
             // Set max size to allow proper layout
-            textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+            textView.maxSize = NSSize(
+                width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
             textView.isVerticallyResizable = true
             textView.isHorizontallyResizable = false
             textView.autoresizingMask = [.width]

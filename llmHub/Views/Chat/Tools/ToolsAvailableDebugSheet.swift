@@ -73,7 +73,8 @@ struct ToolsAvailableDebugSheet: View {
                                 .background(
                                     RoundedRectangle(cornerRadius: 06)
                                         .fill(theme.surface.opacity(0.25))
-                                        .glassEffect(GlassEffect.regular, in: .rect(cornerRadius: 12))
+                                        .glassEffect(
+                                            GlassEffect.regular, in: .rect(cornerRadius: 12))
                                 )
                             }
                         }
@@ -106,4 +107,32 @@ struct ToolsAvailableDebugSheet: View {
         .padding(16)
         .background(theme.backgroundPrimary)
     }
+}
+// MARK: - Previews
+
+#Preview("Tools Available Debug") {
+    ToolsAvailableDebugSheet(
+        providerID: "openai",
+        modelID: "gpt-4o",
+        toolToggles: [
+            UIToolToggleItem(
+                id: "calculator",
+                name: "Calculator",
+                icon: "function",
+                description: "Perform math calculations",
+                isEnabled: true,
+                isAvailable: true
+            ),
+            UIToolToggleItem(
+                id: "read_file",
+                name: "Read File",
+                icon: "doc.text",
+                description: "Read file contents",
+                isEnabled: false,
+                isAvailable: true
+            ),
+        ]
+    )
+    .frame(width: 500, height: 600)
+    .previewEnvironment()
 }

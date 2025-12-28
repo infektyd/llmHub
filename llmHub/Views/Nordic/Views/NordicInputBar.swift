@@ -56,11 +56,11 @@ struct NordicInputBar: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 08)
                 .fill(NordicColors.surface(colorScheme))
                 .shadow(
                     color: .black.opacity(colorScheme == .dark ? 0.24 : 0.12),
-                    radius: 12,
+                    radius: 06,
                     y: 4
                 )
         )
@@ -98,11 +98,13 @@ private struct InputBarPreviewWrapper: View {
 #Preview("Empty") {
     InputBarPreviewWrapper()
         .frame(width: 500)
+        .previewEnvironment()
 }
 
 #Preview("With Text") {
     InputBarPreviewWrapper(initialText: "Hello, this is a sample message")
         .frame(width: 500)
+        .previewEnvironment()
 }
 
 #Preview("Long Text") {
@@ -111,6 +113,7 @@ private struct InputBarPreviewWrapper: View {
             "This is a much longer message that will wrap to multiple lines to demonstrate how the input bar handles multi-line text input."
     )
     .frame(width: 500)
+    .previewEnvironment()
 }
 
 #Preview("Dark Mode") {
@@ -119,6 +122,5 @@ private struct InputBarPreviewWrapper: View {
         InputBarPreviewWrapper(initialText: "Dark mode message")
     }
     .frame(width: 500, height: 400)
-    .background(NordicColors.Dark.canvas)
-    .preferredColorScheme(.dark)
+    .previewEnvironment()
 }

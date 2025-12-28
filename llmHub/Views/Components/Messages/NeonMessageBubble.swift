@@ -5,6 +5,7 @@
 //  Created by AI Assistant on 12/26/25.
 //
 
+import SwiftData
 import SwiftUI
 
 /// A message bubble view with neon-style glass effects for the chat interface
@@ -111,4 +112,24 @@ struct NeonMessageBubble: View, Equatable {
                     )
             }
     }
+}
+
+// MARK: - Previews
+
+#Preview("User Message") {
+    NeonMessageBubble(
+        message: MockData.userMessage(),
+        isStreaming: false
+    )
+    .padding()
+    .previewEnvironment()
+}
+
+#Preview("Assistant Streaming") {
+    NeonMessageBubble(
+        message: MockData.assistantMessage(content: "I'm thinking..."),
+        isStreaming: true
+    )
+    .padding()
+    .previewEnvironment()
 }

@@ -69,8 +69,6 @@ struct StreamingStatsCapsule: View {
 
 #Preview {
     ZStack {
-        Color.clear.ignoresSafeArea()
-
         VStack(spacing: 20) {
             StreamingStatsCapsule(
                 inputTokens: 1532,
@@ -84,5 +82,7 @@ struct StreamingStatsCapsule: View {
                 estimatedCost: 0.02
             )
         }
+        .padding()
+        .previewEnvironment()
     }
 }

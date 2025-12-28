@@ -228,3 +228,17 @@ struct SimplifiedNordicMessageRow: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
+
+// MARK: - Previews
+
+#Preview("Nordic Chat - Light") {
+    NordicChatView()
+        .previewEnvironment()
+        .preferredColorScheme(.light)
+}
+
+#Preview("Nordic Chat - Dark") {
+    NordicChatView()
+        .previewEnvironment()
+        .preferredColorScheme(.dark)
+}

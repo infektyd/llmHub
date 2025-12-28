@@ -24,20 +24,20 @@ struct ToolIconToggle: View {
             }
         } label: {
             Image(systemName: iconName)
-                .font(.system(size: 18, weight: .heavy))
+                .font(.system(size: 12, weight: .heavy))
                 .foregroundColor(isEnabled ? .orange : .blue.opacity(0.5))
-                .frame(width: 40, height: 40)
+                .frame(width: 28, height: 30)
                 .background {
                     Circle()
                         .fill(isEnabled ? Color.orange.opacity(0.15) : Color.clear)
                         .overlay(
-                                Circle()
-                                    .stroke(
-                                        isEnabled
-                                            ? Color.orange.opacity(0.4) : Color.gray.opacity(0.2),
-                                        lineWidth: 1
-                                    )
-                            )
+                            Circle()
+                                .stroke(
+                                    isEnabled
+                                        ? Color.orange.opacity(0.4) : Color.gray.opacity(0.2),
+                                    lineWidth: 1
+                                )
+                        )
                 }
                 .symbolEffect(.bounce, value: didBounce)
                 .shadow(color: isEnabled ? .cyan.opacity(0.4) : .clear, radius: 8)
@@ -52,10 +52,10 @@ struct ToolIconToggle: View {
     }
 }
 
-// MARK: - Preview
+// MARK: - Previews
 
-#Preview {
-    HStack(spacing: 16) {
+#Preview("Tool Toggles") {
+    HStack(spacing: 8) {
         ToolIconToggle(
             toolName: "Terminal",
             iconName: "terminal",
@@ -75,5 +75,5 @@ struct ToolIconToggle: View {
         )
     }
     .padding()
-    .background(Color.black)
+    .previewEnvironment()
 }

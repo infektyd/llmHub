@@ -15,24 +15,24 @@ struct FileOperationApprovalView: View {
     let onApprove: () -> Void
     /// Action to perform when rejected.
     let onReject: () -> Void
-    
+
     @State private var showFullDiff = true
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Header
             headerView
-            
+
             Divider()
-            
+
             // Diff content
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     // Operation summary
                     operationSummary
-                    
+
                     Divider()
-                    
+
                     // Diff preview
                     if showFullDiff {
                         diffPreview
@@ -40,61 +40,61 @@ struct FileOperationApprovalView: View {
                 }
                 .padding()
             }
-            
+
             Divider()
-            
+
             // Action buttons
             actionButtons
         }
         .frame(minWidth: 500, idealWidth: 700, minHeight: 400, idealHeight: 600)
         #if os(macOS)
-        .background(Color(nsColor: .windowBackgroundColor))
+            .background(Color(nsColor: .windowBackgroundColor))
         #else
-        .background(Color(uiColor: .systemBackground))
+            .background(Color(uiColor: .systemBackground))
         #endif
     }
-    
+
     // MARK: - Header
-    
+
     private var headerView: some View {
         HStack {
             Image(systemName: preview.request.operation.systemImage)
                 .font(.title2)
                 .foregroundColor(operationColor)
-            
+
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(preview.request.operation.displayName) File")
                     .font(.headline)
-                
+
                 Text(preview.request.path)
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
             }
-            
+
             Spacer()
-            
+
             Toggle("Show Diff", isOn: $showFullDiff)
                 .toggleStyle(.switch)
                 .controlSize(.small)
         }
         .padding()
         #if os(macOS)
-        .background(Color(nsColor: .controlBackgroundColor))
+            .background(Color(nsColor: .controlBackgroundColor))
         #else
-        .background(Color(uiColor: .secondarySystemBackground))
+            .background(Color(uiColor: .secondarySystemBackground))
         #endif
     }
-    
+
     // MARK: - Operation Summary
-    
+
     private var operationSummary: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Operation Details")
                 .font(.subheadline.bold())
                 .foregroundColor(.secondary)
-            
+
             Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 6) {
                 GridRow {
                     Text("Operation:")
@@ -102,14 +102,14 @@ struct FileOperationApprovalView: View {
                     Text(preview.request.operation.displayName)
                         .fontWeight(.medium)
                 }
-                
+
                 GridRow {
                     Text("Path:")
                         .foregroundColor(.secondary)
                     Text(preview.request.path)
                         .font(.system(.body, design: .monospaced))
                 }
-                
+
                 if let destination = preview.request.destination {
                     GridRow {
                         Text("Destination:")
@@ -118,10 +118,11 @@ struct FileOperationApprovalView: View {
                             .font(.system(.body, design: .monospaced))
                     }
                 }
-                
+
                 if preview.request.operation == .edit,
-                   let oldString = preview.request.oldString,
-                   let newString = preview.request.newString {
+                    let oldString = preview.request.oldString,
+                    let newString = preview.request.newString
+                {
                     GridRow {
                         Text("Find:")
                             .foregroundColor(.secondary)
@@ -131,7 +132,7 @@ struct FileOperationApprovalView: View {
                             .background(Color.red.opacity(0.2))
                             .cornerRadius(2)
                     }
-                    
+
                     GridRow {
                         Text("Replace:")
                             .foregroundColor(.secondary)
@@ -142,7 +143,7 @@ struct FileOperationApprovalView: View {
                             .cornerRadius(2)
                     }
                 }
-                
+
                 if let content = preview.request.content {
                     GridRow {
                         Text("Content:")
@@ -154,29 +155,29 @@ struct FileOperationApprovalView: View {
         }
         .padding()
         #if os(macOS)
-        .background(Color(nsColor: .controlBackgroundColor))
+            .background(Color(nsColor: .controlBackgroundColor))
         #else
-        .background(Color(uiColor: .secondarySystemBackground))
+            .background(Color(uiColor: .secondarySystemBackground))
         #endif
         .cornerRadius(8)
     }
-    
+
     // MARK: - Diff Preview
-    
+
     private var diffPreview: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("Changes Preview")
                     .font(.subheadline.bold())
                     .foregroundColor(.secondary)
-                
+
                 Spacer()
-                
+
                 Text("\(addedLinesCount) additions, \(removedLinesCount) deletions")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-            
+
             ScrollView(.horizontal, showsIndicators: true) {
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(Array(preview.diffLines.enumerated()), id: \.offset) { index, line in
@@ -187,9 +188,9 @@ struct FileOperationApprovalView: View {
             }
             .font(.system(.body, design: .monospaced))
             #if os(macOS)
-            .background(Color(nsColor: .textBackgroundColor))
+                .background(Color(nsColor: .textBackgroundColor))
             #else
-            .background(Color(uiColor: .tertiarySystemBackground))
+                .background(Color(uiColor: .tertiarySystemBackground))
             #endif
             .cornerRadius(8)
             .overlay(
@@ -198,17 +199,17 @@ struct FileOperationApprovalView: View {
             )
         }
     }
-    
+
     private var addedLinesCount: Int {
         preview.diffLines.filter { $0.type == .added }.count
     }
-    
+
     private var removedLinesCount: Int {
         preview.diffLines.filter { $0.type == .removed }.count
     }
-    
+
     // MARK: - Action Buttons
-    
+
     private var actionButtons: some View {
         HStack {
             Button(action: onReject) {
@@ -219,15 +220,15 @@ struct FileOperationApprovalView: View {
             }
             .keyboardShortcut(.escape, modifiers: [])
             .buttonStyle(.bordered)
-            
+
             Spacer()
-            
+
             Text("This will modify files on your system")
                 .font(.caption)
                 .foregroundColor(.secondary)
-            
+
             Spacer()
-            
+
             Button(action: onApprove) {
                 HStack {
                     Image(systemName: "checkmark.circle.fill")
@@ -240,9 +241,9 @@ struct FileOperationApprovalView: View {
         }
         .padding()
     }
-    
+
     // MARK: - Helpers
-    
+
     private var operationColor: Color {
         switch preview.request.operation {
         case .create, .copy:
@@ -263,7 +264,7 @@ struct FileOperationApprovalView: View {
 struct DiffLineView: View {
     /// The diff line data.
     let line: DiffLine
-    
+
     var body: some View {
         HStack(spacing: 0) {
             // Line number
@@ -276,23 +277,23 @@ struct DiffLineView: View {
                 Spacer()
                     .frame(width: 48)
             }
-            
+
             // Prefix
             Text(linePrefix)
                 .foregroundColor(lineColor)
                 .frame(width: 20, alignment: .center)
-            
+
             // Content
             Text(line.content)
                 .foregroundColor(lineColor)
-            
+
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 2)
         .background(backgroundColor)
     }
-    
+
     private var linePrefix: String {
         switch line.type {
         case .unchanged: return " "
@@ -300,7 +301,7 @@ struct DiffLineView: View {
         case .added: return "+"
         }
     }
-    
+
     private var lineColor: Color {
         switch line.type {
         case .unchanged: return .primary
@@ -308,7 +309,7 @@ struct DiffLineView: View {
         case .added: return .green
         }
     }
-    
+
     private var backgroundColor: Color {
         switch line.type {
         case .unchanged: return .clear
@@ -332,10 +333,12 @@ extension View {
         onApprove: @escaping () -> Void,
         onReject: @escaping () -> Void
     ) -> some View {
-        self.sheet(isPresented: Binding(
-            get: { preview.wrappedValue != nil },
-            set: { if !$0 { preview.wrappedValue = nil } }
-        )) {
+        self.sheet(
+            isPresented: Binding(
+                get: { preview.wrappedValue != nil },
+                set: { if !$0 { preview.wrappedValue = nil } }
+            )
+        ) {
             if let currentPreview = preview.wrappedValue {
                 FileOperationApprovalView(
                     preview: currentPreview,
@@ -374,6 +377,7 @@ extension View {
         onApprove: {},
         onReject: {}
     )
+    .previewEnvironment()
 }
 
 #Preview("Edit File") {
@@ -395,4 +399,5 @@ extension View {
         onApprove: {},
         onReject: {}
     )
+    .previewEnvironment()
 }

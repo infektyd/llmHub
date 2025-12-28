@@ -41,11 +41,12 @@ struct NeonChatView: View {
                     showingSettings: $showingSettings,
                     showingToolsDebug: $showingToolsDebug,
                     onOpenSettings: {
-                        #if os(macOS)
-                            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-                        #endif
+                        showingSettings = true
                     }
                 )
+                SettingsLink {
+                    Label("Settings", systemImage: "gearshape")
+                }
             #endif
 
             // Main Content with Safe Area Inset for Input
@@ -350,4 +351,11 @@ struct NeonScrollOffsetPreferenceKey: PreferenceKey {
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = nextValue()
     }
+}
+
+// MARK: - Previews
+
+#Preview("Neon Chat View") {
+    NeonChatView(session: MockData.chatSession())
+        .previewEnvironment()
 }

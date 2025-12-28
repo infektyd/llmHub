@@ -286,13 +286,13 @@ struct NordicChatContainerView: View {
 
             // Settings button
             #if os(macOS)
-            SettingsLink {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 16))
-                    .foregroundColor(NordicColors.textSecondary(colorScheme))
-            }
-            .buttonStyle(.plain)
-            .help("Settings")
+                SettingsLink {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 16))
+                        .foregroundColor(NordicColors.textSecondary(colorScheme))
+                }
+                .buttonStyle(.plain)
+                .help("Settings")
             #endif
 
             // Nordic theme indicator
@@ -376,4 +376,26 @@ struct NordicStreamingMessage: View {
         .padding(.horizontal, 24)
         .padding(.vertical, 8)
     }
+}
+
+// MARK: - Previews
+
+#Preview("Nordic Root") {
+    NordicRootView()
+        .previewEnvironment()
+        .frame(width: 800, height: 600)
+}
+
+#Preview("Nordic Sidebar") {
+    NordicSidebarView(
+        sessions: [
+            MockData.chatSession(title: "First Chat", messageCount: 2),
+            MockData.chatSession(title: "Second Chat", messageCount: 0),
+        ],
+        selectedSession: .constant(nil),
+        viewModel: SidebarViewModel()
+    )
+    .frame(width: 260, height: 600)
+    .background(Color.gray.opacity(0.1))
+    .previewEnvironment()
 }
