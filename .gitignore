@@ -68,7 +68,10 @@ Scaffold/*.zip
 
 ## Local caches & indexes
 .cursor/
+.claude/
+.gemini/
 .tmp.driveupload/
+.tmp.drivedownload/
 .sandbox_home/
 DerivedData/
 DerivedDataLocal/
