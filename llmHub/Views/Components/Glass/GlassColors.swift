@@ -44,3 +44,48 @@ extension Color {
     static let neonCharcoal = Color(red: 0.12, green: 0.12, blue: 0.15)
     static let neonGray = Color(red: 0.6, green: 0.6, blue: 0.65)
 }
+
+// MARK: - Previews
+
+#Preview("Glass Tints") {
+    VStack(alignment: .leading, spacing: 12) {
+        Text("Glass Semantic Colors")
+            .font(.headline)
+            .padding(.bottom, 4)
+
+        Group {
+            ColorRow(name: "Success", color: .glassSuccess)
+            ColorRow(name: "Warning", color: .glassWarning)
+            ColorRow(name: "Error", color: .glassError)
+            ColorRow(name: "Accent", color: .glassAccent)
+            ColorRow(name: "AI / Assistant", color: .glassAI)
+            ColorRow(name: "User", color: .glassUser)
+            ColorRow(name: "Tool", color: .glassTool)
+            ColorRow(name: "Background", color: .glassBackground)
+        }
+    }
+    .padding()
+    .frame(width: 300)
+}
+
+private struct ColorRow: View {
+    let name: String
+    let color: Color
+
+    var body: some View {
+        HStack {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(color)
+                .frame(width: 40, height: 40)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                )
+
+            Text(name)
+                .font(.system(size: 14))
+
+            Spacer()
+        }
+    }
+}

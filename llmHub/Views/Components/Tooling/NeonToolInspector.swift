@@ -155,3 +155,48 @@ struct NeonToolInspector: View {
         }
     }
 }
+
+// MARK: - Previews
+
+#Preview("Empty State") {
+    NeonToolInspector(
+        isVisible: .constant(true),
+        toolExecution: .constant(nil)
+    )
+    .frame(width: 350, height: 500)
+    .previewEnvironment()
+}
+
+#Preview("Active Execution") {
+    NeonToolInspector(
+        isVisible: .constant(true),
+        toolExecution: .constant(
+            ToolExecution(
+                toolID: "browser",
+                name: "Web Browser",
+                icon: "safari",
+                status: .running,
+                output: "Searching for 'SwiftUI previews'..."
+            )
+        )
+    )
+    .frame(width: 350, height: 500)
+    .previewEnvironment()
+}
+
+#Preview("Completed Execution") {
+    NeonToolInspector(
+        isVisible: .constant(true),
+        toolExecution: .constant(
+            ToolExecution(
+                toolID: "calculator",
+                name: "Calculator",
+                icon: "plus.forwardslash.minus",
+                status: .completed,
+                output: "2 + 2 = 4"
+            )
+        )
+    )
+    .frame(width: 350, height: 500)
+    .previewEnvironment()
+}

@@ -411,6 +411,35 @@ struct NeonModelPickerPanel: View {
         return results
     }
 }
+// MARK: - Previews
 
-// MARK: - Pricing Tier
-// PricingTier moved to UIModels.swift
+#Preview("Model Picker Panel") {
+    NeonModelPickerPanel(
+        selectedProvider: .constant(UILLMProvider.mockOpenAI()),
+        selectedModel: .constant(UILLMModel.mockGPT4()),
+        isPresented: .constant(true),
+        availableProviders: [
+            UILLMProvider.mockOpenAI(),
+            UILLMProvider.mockAnthropic()
+        ]
+    )
+    .environmentObject(MockData.modelRegistry())
+    .previewEnvironment()
+}
+
+// MARK: - Mocks for Panel
+
+extension UILLMProvider {
+    static func mockAnthropic() -> UILLMProvider {
+        UILLMProvider(
+            id: UUID(),
+            name: "Anthropic",
+            icon: "brain.head.profile",
+            models: [
+                UILLMModel(id: UUID(), modelID: "claude-3-opus", name: "Claude 3 Opus", contextWindow: 200000),
+                UILLMModel(id: UUID(), modelID: "claude-3-sonnet", name: "Claude 3 Sonnet", contextWindow: 200000)
+            ],
+            isActive: true
+        )
+    }
+}

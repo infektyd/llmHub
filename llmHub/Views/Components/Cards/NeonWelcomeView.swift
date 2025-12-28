@@ -12,7 +12,7 @@ struct NeonWelcomeView: View {
     @Environment(WorkbenchViewModel.self) private var viewModel
     @Environment(\.modelContext) private var modelContext
     @Environment(\.theme) private var theme
-    
+
     var body: some View {
         VStack(spacing: 24) {
             // Mark
@@ -100,7 +100,8 @@ private struct QuickActionButton: View {
             }
             .frame(width: 140, height: 100)
             .glassEffect(
-                isHovered ? .regular.tint(color.opacity(0.3)).interactive() : .regular.interactive(),
+                isHovered
+                    ? .regular.tint(color.opacity(0.3)).interactive() : .regular.interactive(),
                 in: .rect(cornerRadius: 16)
             )
         }
@@ -111,4 +112,10 @@ private struct QuickActionButton: View {
             }
         }
     }
+}
+// MARK: - Previews
+
+#Preview("Welcome View") {
+    NeonWelcomeView()
+        .previewEnvironment()
 }

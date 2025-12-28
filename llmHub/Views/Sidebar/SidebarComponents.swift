@@ -273,3 +273,38 @@ struct TagPill: View {
             )
     }
 }
+// MARK: - Previews
+
+#Preview("Sidebar Components") {
+    VStack(alignment: .leading, spacing: 20) {
+        SectionHeader(title: "Models", icon: "cpu")
+
+        CollapsibleSectionHeader(
+            title: "Pinned",
+            icon: "pin.fill",
+            count: 3,
+            isCollapsed: false,
+            onToggle: {}
+        )
+
+        ConversationRow(
+            session: MockData.chatSession(title: "Coding Help"),
+            isSelected: true
+        )
+
+        ConversationRow(
+            session: MockData.chatSession(title: "Research Topic"),
+            isSelected: false
+        )
+
+        HStack {
+            CategoryBadge(category: "Coding")
+            CategoryBadge(category: "Research")
+            CategoryBadge(category: "Creative")
+        }
+        .padding(.horizontal)
+    }
+    .frame(width: 300)
+    .padding(.vertical)
+    .previewEnvironment()
+}

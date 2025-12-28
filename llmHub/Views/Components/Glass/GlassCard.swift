@@ -14,7 +14,7 @@ struct GlassCard<Content: View>: View {
     @ViewBuilder let content: Content
 
     init(
-        cornerRadius: CGFloat = 16,
+        cornerRadius: CGFloat = 08,
         tint: Color? = nil,
         isInteractive: Bool = false,
         @ViewBuilder content: () -> Content
@@ -46,7 +46,7 @@ struct GlassCard<Content: View>: View {
 
 extension GlassCard where Content == EmptyView {
     /// Creates an empty glass card (use as background)
-    init(cornerRadius: CGFloat = 16, tint: Color? = nil) {
+    init(cornerRadius: CGFloat = 08, tint: Color? = nil) {
         self.cornerRadius = cornerRadius
         self.tint = tint
         self.isInteractive = false
@@ -57,7 +57,7 @@ extension GlassCard where Content == EmptyView {
 // MARK: - Preview
 
 #Preview("Glass Cards") {
-    VStack(spacing: 20) {
+    VStack(spacing: 12) {
         GlassCard {
             Text("Default Glass Card")
                 .padding()
@@ -68,14 +68,14 @@ extension GlassCard where Content == EmptyView {
                 .padding()
         }
 
-        GlassCard(cornerRadius: 24, tint: Color.purple.opacity(0.2)) {
+        GlassCard(cornerRadius: 12, tint: Color.purple.opacity(0.2)) {
             HStack {
-                Image(systemName: "sparkles")
+                Image(systemName: "brain")
                 Text("AI Response Card")
             }
             .padding()
         }
     }
     .padding()
-    .background(Color.black)
+    .previewEnvironment()
 }

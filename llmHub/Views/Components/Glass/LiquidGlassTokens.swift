@@ -15,9 +15,9 @@ enum LiquidGlassTokens {
     }
 
     enum Radius {
-        static let sheet: CGFloat = 22
-        static let control: CGFloat = 14
-        static let toolCard: CGFloat = 14
+        static let sheet: CGFloat = 11
+        static let control: CGFloat = 07
+        static let toolCard: CGFloat = 07
     }
 
     enum Spacing {
@@ -120,6 +120,70 @@ extension View {
                     RoundedRectangle(cornerRadius: radius)
                         .stroke(theme.textTertiary.opacity(0.15), lineWidth: theme.borderWidth)
                 )
+        }
+    }
+}
+
+// MARK: - Previews
+
+#Preview("Token Showcase") {
+    VStack(alignment: .leading, spacing: 20) {
+        Text("Liquid Glass Design Tokens")
+            .font(.title2.bold())
+            .padding(.bottom)
+
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Radius Values")
+                .font(.headline)
+            HStack(spacing: 16) {
+                RadiusChip(name: "Sheet", radius: LiquidGlassTokens.Radius.sheet)
+                RadiusChip(name: "Control", radius: LiquidGlassTokens.Radius.control)
+                RadiusChip(name: "Tool Card", radius: LiquidGlassTokens.Radius.toolCard)
+            }
+        }
+
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Role Labels & Tints")
+                .font(.headline)
+
+            ForEach([MessageRole.user, .assistant, .system, .tool], id: \.self) { role in
+                HStack {
+                    Text(LiquidGlassTokens.roleLabel(role))
+                        .font(.system(.body, design: .monospaced))
+                        .frame(width: 100, alignment: .leading)
+
+                    Circle()
+                        .fill(LiquidGlassTokens.roleTint(role, theme: ThemeManager.shared.current))
+                        .frame(width: 24, height: 24)
+                        .overlay(Circle().stroke(Color.primary.opacity(0.1), lineWidth: 1))
+                }
+            }
+        }
+    }
+    .padding()
+    .frame(width: 400)
+    .background(Color.gray.opacity(0.05))
+}
+
+private struct RadiusChip: View {
+    let name: String
+    let radius: CGFloat
+
+    var body: some View {
+        VStack {
+            RoundedRectangle(cornerRadius: radius)
+                .fill(Color.accentColor.opacity(0.2))
+                .frame(width: 60, height: 60)
+                .overlay(
+                    RoundedRectangle(cornerRadius: radius)
+                        .stroke(Color.accentColor, lineWidth: 1)
+                )
+
+            Text(name)
+                .font(.caption)
+            Text("\(Int(radius))pt")
+                .font(.caption2)
+                .foregroundColor(.secondary)
         }
     }
 }

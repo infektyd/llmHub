@@ -279,7 +279,9 @@ struct ToolResultCard: View {
         .presentationDragIndicator(.visible)
     }
 
-    private func section<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+    private func section<Content: View>(title: String, @ViewBuilder content: () -> Content)
+        -> some View
+    {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.caption2.weight(.semibold))
@@ -329,7 +331,8 @@ struct ToolResultCard: View {
         guard !raw.isEmpty, raw != "{}" else { return nil }
 
         let pretty = prettyPrintedJSON(from: raw) ?? raw
-        let singleLine = pretty
+        let singleLine =
+            pretty
             .replacingOccurrences(of: "\n", with: " ")
             .replacingOccurrences(of: "  ", with: " ")
             .trimmingCharacters(in: .whitespaces)
@@ -402,7 +405,10 @@ struct ToolResultCard: View {
             return nil
         }
         guard JSONSerialization.isValidJSONObject(object) else { return nil }
-        guard let prettyData = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted]) else {
+        guard
+            let prettyData = try? JSONSerialization.data(
+                withJSONObject: object, options: [.prettyPrinted])
+        else {
             return nil
         }
         return String(data: prettyData, encoding: .utf8)
@@ -486,4 +492,32 @@ struct ToolResultCard: View {
             }
         }
     }
+}
+// MARK: - Previews
+
+#Preview("Tool Result Card") {
+    VStack(spacing: 20) {
+        ToolResultCard(
+            message: MockData.toolMessage(
+                content: "{\"status\": \"success\", \"result\": 42}",
+                toolCallID: "calc_123"
+            ),
+            relatedToolCall: MockData.toolCall(
+                name: "calculator", input: "{\"expression\": \"21 * 2\"}"),
+            toolCallStartedAt: Date().addingTimeInterval(-5)
+        )
+
+        ToolResultCard(
+            message: MockData.toolMessage(
+                content: "Error: File not found",
+                toolCallID: "read_123"
+            ),
+            relatedToolCall: MockData.toolCall(
+                name: "read_file", input: "{\"path\": \"missing.txt\"}"),
+            toolCallStartedAt: Date().addingTimeInterval(-2)
+        )
+    }
+    .padding()
+    .frame(width: 400)
+    .previewEnvironment()
 }

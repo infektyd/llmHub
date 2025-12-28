@@ -61,10 +61,12 @@ struct NativeWindowBackground: View {
 
 #Preview("Airy") {
     NativeWindowBackground(style: .airy)
+        .previewEnvironment()
 }
 
 #Preview("Grounded") {
     NativeWindowBackground(style: .grounded)
+        .previewEnvironment()
 }
 
 // MARK: - Settings Picker Component
@@ -116,7 +118,7 @@ struct NativeWindowBackground: View {
                                             ? theme.accent.opacity(0.3) : Color.clear
                                     )
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
+                                        RoundedRectangle(cornerRadius: 04)
                                             .stroke(
                                                 isSelected
                                                     ? theme.accent.opacity(0.6) : .clear,
@@ -133,7 +135,7 @@ struct NativeWindowBackground: View {
                     RoundedRectangle(cornerRadius: 05)
                         .fill(.ultraThinMaterial)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 5)
+                            RoundedRectangle(cornerRadius: 05)
                                 .stroke(.white.opacity(0.05), lineWidth: 1)
                         )
                 )
@@ -151,6 +153,6 @@ struct NativeWindowBackground: View {
     #Preview("Window Style Picker") {
         WindowStylePicker()
             .padding()
-            .background(Color.black)
+            .previewEnvironment()
     }
 #endif

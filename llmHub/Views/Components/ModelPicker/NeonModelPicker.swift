@@ -185,4 +185,55 @@ import SwiftUI
             }
         }
     }
+
+// MARK: - Previews
+
+#if os(macOS)
+#Preview("Model Picker - Selected") {
+    NeonModelPicker(
+        selectedProvider: .constant(UILLMProvider.mockOpenAI()),
+        selectedModel: .constant(UILLMModel.mockGPT4())
+    )
+    .environmentObject(MockData.modelRegistry())
+    .padding()
+    .frame(width: 300)
+    .previewEnvironment()
+}
+
+#Preview("Model Picker - No Provider") {
+    NeonModelPicker(
+        selectedProvider: .constant(nil),
+        selectedModel: .constant(nil)
+    )
+    .environmentObject(MockData.modelRegistry())
+    .padding()
+    .frame(width: 300)
+    .previewEnvironment()
+}
+
+// MARK: - Mocks for Model Picker
+
+extension UILLMProvider {
+    static func mockOpenAI() -> UILLMProvider {
+        UILLMProvider(
+            id: UUID(),
+            name: "OpenAI",
+            icon: "sparkles",
+            models: [UILLMModel.mockGPT4()],
+            isActive: true
+        )
+    }
+}
+
+extension UILLMModel {
+    static func mockGPT4() -> UILLMModel {
+        UILLMModel(
+            id: UUID(),
+            modelID: "gpt-4",
+            name: "GPT-4",
+            contextWindow: 128000
+        )
+    }
+}
+#endif
 #endif

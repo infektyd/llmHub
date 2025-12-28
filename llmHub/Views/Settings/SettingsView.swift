@@ -1105,7 +1105,9 @@ struct SettingsToolToggleRow: View {
     }
 }
 
-#Preview {
+// MARK: - Previews
+
+#Preview("Settings View") {
     SettingsView()
-        .preferredColorScheme(.dark)
+        .previewEnvironment()
 }

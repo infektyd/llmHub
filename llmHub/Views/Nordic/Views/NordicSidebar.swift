@@ -121,3 +121,17 @@ struct NordicSidebarRow: View {
         return colorScheme == .dark ? Color(hex: "FAFAF9") : Color(hex: "1C1917")
     }
 }
+
+// MARK: - Previews
+
+#Preview("Nordic Sidebar - Light") {
+    NordicSidebar()
+        .previewEnvironment()
+        .preferredColorScheme(.light)
+}
+
+#Preview("Nordic Sidebar - Dark") {
+    NordicSidebar()
+        .previewEnvironment()
+        .preferredColorScheme(.dark)
+}

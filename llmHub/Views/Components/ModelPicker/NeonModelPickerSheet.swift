@@ -339,3 +339,15 @@ struct NeonModelPickerSheet: View {
         }
     }
 }
+
+// MARK: - Previews
+
+#Preview("Model Picker Sheet") {
+    NeonModelPickerSheet(
+        selectedProvider: .constant(UILLMProvider.mockOpenAI()),
+        selectedModel: .constant(UILLMModel.mockGPT4()),
+        isPresented: .constant(true)
+    )
+    .environmentObject(MockData.modelRegistry())
+    .previewEnvironment()
+}

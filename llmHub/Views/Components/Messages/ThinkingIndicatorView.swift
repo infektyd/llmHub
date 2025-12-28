@@ -74,12 +74,7 @@ struct ThinkingIndicatorView: View {
 }
 
 #Preview {
-    ZStack {
-        Color.clear.ignoresSafeArea()
-
-        VStack(spacing: 20) {
-            ThinkingIndicatorView(isThinking: true)
-                .padding()
-        }
-    }
+    ThinkingIndicatorView(isThinking: true)
+        .padding()
+        .previewEnvironment()
 }

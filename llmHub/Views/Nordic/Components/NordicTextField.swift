@@ -70,12 +70,14 @@ private struct TextFieldPreviewWrapper: View {
     TextFieldPreviewWrapper()
         .padding()
         .frame(width: 300)
+        .previewEnvironment()
 }
 
 #Preview("With Text") {
     TextFieldPreviewWrapper(initialText: "Sample text")
         .padding()
         .frame(width: 300)
+        .previewEnvironment()
 }
 
 #Preview("Dark Mode") {
@@ -85,8 +87,7 @@ private struct TextFieldPreviewWrapper: View {
     }
     .padding()
     .frame(width: 300)
-    .background(NordicColors.Dark.canvas)
-    .preferredColorScheme(.dark)
+    .previewEnvironment()
 }
 
 #Preview("Multiple Fields") {
@@ -97,4 +98,5 @@ private struct TextFieldPreviewWrapper: View {
     }
     .padding()
     .frame(width: 350)
+    .previewEnvironment()
 }

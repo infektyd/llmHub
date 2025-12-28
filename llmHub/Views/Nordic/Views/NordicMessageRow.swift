@@ -24,7 +24,7 @@ struct NordicMessageRow: View {
                 Spacer(minLength: 80)
             }
 
-            HStack(alignment: .top, spacing: 12) {
+            HStack(alignment: .top, spacing: 04) {
                 // Left accent bar for assistant only
                 if !isUser {
                     RoundedRectangle(cornerRadius: 1.5)
@@ -32,7 +32,7 @@ struct NordicMessageRow: View {
                         .frame(width: 3)
                 }
 
-                VStack(alignment: isUser ? .trailing : .leading, spacing: 4) {
+                VStack(alignment: isUser ? .trailing : .leading, spacing: 0) {
                     // Content - NO background
                     Text(message.content)
                         .font(.system(size: 15, weight: .regular))
@@ -73,8 +73,7 @@ struct NordicMessageRow: View {
             )
         )
     }
-    .background(NordicColors.Light.canvas)
-    .preferredColorScheme(.light)
+    .previewEnvironment()
 }
 
 #Preview("Assistant Message") {
@@ -94,8 +93,7 @@ struct NordicMessageRow: View {
             )
         )
     }
-    .background(NordicColors.Light.canvas)
-    .preferredColorScheme(.light)
+    .previewEnvironment()
 }
 
 #Preview("Conversation - Dark Mode") {
@@ -141,6 +139,5 @@ struct NordicMessageRow: View {
             )
         )
     }
-    .background(NordicColors.Dark.canvas)
-    .preferredColorScheme(.dark)
+    .previewEnvironment()
 }

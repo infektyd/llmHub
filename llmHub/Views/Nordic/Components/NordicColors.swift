@@ -103,14 +103,13 @@ struct NordicColors {
         }
     }
     .padding()
-    .preferredColorScheme(.light)
+    .previewEnvironment()
 }
 
 #Preview("Dark Mode Colors") {
     VStack(spacing: 20) {
         Text("Nordic Colors - Dark Mode")
             .font(.title2.bold())
-            .foregroundColor(.white)
 
         VStack(spacing: 12) {
             ColorSwatch(name: "Canvas", color: NordicColors.Dark.canvas)
@@ -125,8 +124,7 @@ struct NordicColors {
         }
     }
     .padding()
-    .background(NordicColors.Dark.canvas)
-    .preferredColorScheme(.dark)
+    .previewEnvironment()
 }
 
 // Helper view for color swatches

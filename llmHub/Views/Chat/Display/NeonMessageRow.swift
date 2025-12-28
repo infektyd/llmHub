@@ -5,10 +5,11 @@
 //  Created by Hans Axelsson on 12/12/25.
 //
 
-#if canImport(MarkdownUI)
-import MarkdownUI
-#endif
 import SwiftUI
+
+#if canImport(MarkdownUI)
+    import MarkdownUI
+#endif
 
 /// Flattened tool invocation data for UI + copy.
 struct ToolCallBlock: Identifiable, Equatable {
@@ -104,7 +105,7 @@ struct NeonMessageRow: View {
                 relatedToolCall: relatedToolCall,
                 toolCallStartedAt: toolCallStartedAt
             )
-                .textSelection(.enabled)
+            .textSelection(.enabled)
 
         default:
             toolRequestsRow
@@ -137,7 +138,9 @@ struct NeonMessageRow: View {
                         // Fallback if MarkdownUI isn't available in this build.
                         Text(message.content)
                             .font(LiquidGlassTokens.messageFont(role: role, theme: theme))
-                            .foregroundColor(role == .assistant ? theme.textPrimary : theme.textSecondary)
+                            .foregroundColor(
+                                role == .assistant ? theme.textPrimary : theme.textSecondary
+                            )
                             .textSelection(.enabled)
                             .fixedSize(horizontal: false, vertical: true)
                     #endif
@@ -293,10 +296,46 @@ struct NeonMessageRow: View {
         }
         guard JSONSerialization.isValidJSONObject(object) else { return nil }
         guard
-            let prettyData = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted])
+            let prettyData = try? JSONSerialization.data(
+                withJSONObject: object, options: [.prettyPrinted])
         else {
             return nil
         }
         return String(data: prettyData, encoding: .utf8)
     }
+}
+
+// MARK: - Previews
+
+#Preview("Message Rows") {
+    ScrollView {
+        VStack(spacing: 0) {
+            NeonMessageRow(
+                message: MockData.userMessage(
+                    content: "Hello! How can I use the `http_request` tool?"),
+                relatedToolCall: nil
+            )
+
+            NeonMessageRow(
+                message: MockData.assistantMessage(
+                    content: "You can use it by calling the function with a URL. For example:"),
+                relatedToolCall: nil
+            )
+
+            NeonMessageRow(
+                message: MockData.assistantMessage(content: ""),
+                relatedToolCall: MockData.toolCall(
+                    name: "http_request", input: "{\"url\": \"https://api.github.com\"}"),
+                relatedToolBlocks: [
+                    ToolCallBlock(
+                        id: "call_123",
+                        name: "http_request",
+                        input: "{\"url\": \"https://api.github.com\"}",
+                        output: "{\"status\": 200, \"body\": \"...\"}"
+                    )
+                ]
+            )
+        }
+    }
+    .previewEnvironment()
 }

@@ -87,7 +87,9 @@ struct CleanupBadge: View {
     }
 }
 
-#Preview {
+// MARK: - Previews
+
+#Preview("Cleanup Banner") {
     VStack(spacing: 20) {
         CleanupBannerView(flaggedCount: 5) {
             print("Tapped")
@@ -104,4 +106,5 @@ struct CleanupBadge: View {
     }
     .padding()
     .frame(width: 300)
+    .previewEnvironment()
 }
