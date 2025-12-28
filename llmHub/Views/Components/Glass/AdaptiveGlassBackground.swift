@@ -4,12 +4,12 @@ import SwiftUI
 struct AdaptiveGlassBackground: View {
     @Environment(\.theme) private var theme
 
-    @AppStorage("glassIntensity.sidebar") private var sidebar: Double = 50
-    @AppStorage("glassIntensity.chatArea") private var chatArea: Double = 10
-    @AppStorage("glassIntensity.inputBar") private var inputBar: Double = 10
-    @AppStorage("glassIntensity.toolInspector") private var toolInspector: Double = 65
+    @AppStorage("glassIntensity.sidebar") private var sidebar: Double = 25
+    @AppStorage("glassIntensity.chatArea") private var chatArea: Double = 05
+    @AppStorage("glassIntensity.inputBar") private var inputBar: Double = 05
+    @AppStorage("glassIntensity.toolInspector") private var toolInspector: Double = 35
     @AppStorage("glassIntensity.messages") private var messages: Double = 95
-    @AppStorage("glassIntensity.modelPicker") private var modelPicker: Double = 50
+    @AppStorage("glassIntensity.modelPicker") private var modelPicker: Double = 30
 
     let target: Target
 
@@ -29,21 +29,21 @@ struct AdaptiveGlassBackground: View {
     var body: some View {
         if theme.usesGlassEffect {
             // Glass implementation
-            let (style, overlay) = intensity.asGlassIntensity
+            let (style, _) = intensity.asGlassIntensity
             Color.clear
-                .overlay(Color.gray.opacity(overlay))
+                .overlay(Color.gray.opacity(0.03))
                 .glassEffect(
-                    style, in: RoundedRectangle(cornerRadius: target == .sidebar ? 06 : 08)
+                    style, in: RoundedRectangle(cornerRadius: target == .sidebar ? 03 : 04)
                 )
                 .onChange(of: intensity) { _, new in
                     print("Glass intensity applied: \(target) = \(new)%")
                 }
         } else {
             // Flat fallback
-            RoundedRectangle(cornerRadius: target == .sidebar ? 6 : theme.cornerRadius)
+            RoundedRectangle(cornerRadius: target == .sidebar ? 03 : theme.cornerRadius)
                 .fill(theme.backgroundSecondary)
                 .overlay(
-                    RoundedRectangle(cornerRadius: target == .sidebar ? 6 : theme.cornerRadius)
+                    RoundedRectangle(cornerRadius: target == .sidebar ? 03 : theme.cornerRadius)
                         .stroke(theme.textTertiary.opacity(0.15), lineWidth: theme.borderWidth)
                 )
         }

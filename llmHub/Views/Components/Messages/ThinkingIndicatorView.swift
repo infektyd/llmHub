@@ -7,13 +7,12 @@
 
 import SwiftUI
 
-/// A "living" thinking indicator with pulsing sparkles animation.
+/// A "living" thinking indicator with rotating gear animation.
 /// Design spec: "Living Thinking Indicator" from Liquid Glass UI improvements.
 struct ThinkingIndicatorView: View {
     let isThinking: Bool
 
-    @State private var opacity: Double = 0.6
-    @State private var animationTrigger: Bool = false
+    @State private var rotationAngle: Double = 0
 
     var body: some View {
         HStack(spacing: 12) {
@@ -32,43 +31,39 @@ struct ThinkingIndicatorView: View {
                         )
                 )
 
+            // Rotating gear symbol
+            Image(systemName: "gearshape")
+                .font(.system(size: 16))
+                .foregroundColor(.secondary)
+                .rotationEffect(.degrees(rotationAngle))
+
             // Thinking text
             Text("Thinking...")
                 .font(.system(.caption, design: .monospaced))
                 .foregroundColor(.secondary)
-                .padding(.leading, 4)
 
             Spacer()
         }
-        .opacity(opacity)
         .onAppear {
             if isThinking {
-                startOpacityAnimation()
+                startRotationAnimation()
             }
         }
         .onChange(of: isThinking) { _, newValue in
             if newValue {
-                startOpacityAnimation()
+                startRotationAnimation()
             } else {
-                // Reset opacity when not thinking
+                // Stop rotation when not thinking
                 withAnimation(.easeOut(duration: 0.3)) {
-                    opacity = 0.6
+                    rotationAngle = 0
                 }
             }
         }
     }
 
-    private func startOpacityAnimation() {
-        // Reset to base state first
-        opacity = 0.6
-        // Delay slightly to ensure state change is registered
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            withAnimation(
-                .easeInOut(duration: 1.0)
-                    .repeatForever(autoreverses: true)
-            ) {
-                opacity = 1.0
-            }
+    private func startRotationAnimation() {
+        withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false)) {
+            rotationAngle = 360.0
         }
     }
 }

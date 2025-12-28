@@ -22,7 +22,7 @@ struct NeonWelcomeView: View {
                         RadialGradient(
                             colors: [
                                 theme.accent.opacity(0.18),
-                                Color.purple.opacity(0.10),
+                                Color.green.opacity(0.10),
                                 .clear,
                             ],
                             center: .center,
@@ -32,13 +32,13 @@ struct NeonWelcomeView: View {
                     )
                     .frame(width: 160, height: 160)
 
-                Image(systemName: "sparkles")
+                Image(systemName: "brain.head.profile")
                     .font(.system(size: 64, weight: .light))
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [theme.accent, Color.purple],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
+                            colors: [theme.accent, Color.blue.opacity(0.7)],
+                            startPoint: .bottomLeading,
+                            endPoint: .topTrailing
                         )
                     )
             }
@@ -80,12 +80,12 @@ struct NeonWelcomeView: View {
     }
 }
 
-private struct QuickActionButton: View {
+struct QuickActionButton: View {
     let icon: String
     let title: String
     let color: Color
     let action: () -> Void
-    @State private var isHovered = false
+    @State private var isHovered = true
 
     var body: some View {
         Button(action: action) {
@@ -115,7 +115,36 @@ private struct QuickActionButton: View {
 }
 // MARK: - Previews
 
-#Preview("Welcome View") {
+#Preview("Welcome View - Default") {
     NeonWelcomeView()
         .previewEnvironment()
+        .frame(width: 800, height: 600)
 }
+#Preview("Welcome View - Large") {
+    NeonWelcomeView()
+        .previewEnvironment()
+        .frame(width: 1200, height: 800)
+}
+
+#Preview("Quick Action Button - New Chat") {
+    QuickActionButton(
+        icon: "plus.bubble.fill",
+        title: "New Chat",
+        color: .blue,
+        action: { print("New Chat tapped") }
+    )
+    .previewEnvironment()
+    .padding()
+}
+
+#Preview("Quick Action Button - Browse") {
+    QuickActionButton(
+        icon: "folder.fill",
+        title: "Browse",
+        color: .secondary,
+        action: { print("Browse tapped") }
+    )
+    .previewEnvironment()
+    .padding()
+}
+

@@ -50,15 +50,15 @@ struct NeonModelPickerPanel: View {
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 08)
             .background(headerBackground)
 
             Divider()
                 .background(theme.textSecondary.opacity(0.2))
 
             // Search bar
-            HStack(spacing: 12) {
+            HStack(spacing: 06) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 14))
                     .foregroundColor(theme.textSecondary)
@@ -80,15 +80,15 @@ struct NeonModelPickerPanel: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 08)
+            .padding(.vertical, 05)
             .background(searchBarBackground)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 06)
 
             // Model list with proper scrolling
             ScrollView(.vertical, showsIndicators: true) {
-                LazyVStack(spacing: 12, pinnedViews: [.sectionHeaders]) {
+                LazyVStack(spacing: 06, pinnedViews: [.sectionHeaders]) {
                     // Favorites section (if any)
                     if !favoriteModels.isEmpty {
                         Section {
@@ -113,13 +113,13 @@ struct NeonModelPickerPanel: View {
                         }
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.horizontal, 08)
+                .padding(.vertical, 06)
             }
-            .frame(height: 500)
+            .frame(height: 300)
             .scrollContentBackground(.hidden)
         }
-        .frame(width: 520)
+        .frame(width: 300)
         .background(panelBackground)
         .onAppear {
             isSearchFocused = true
@@ -151,7 +151,7 @@ struct NeonModelPickerPanel: View {
     // MARK: - Section Header
 
     private func sectionHeader(title: String, icon: String) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 04) {
             Image(systemName: icon)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(title == "Favorites" ? .yellow : theme.accent)
@@ -162,8 +162,8 @@ struct NeonModelPickerPanel: View {
 
             Spacer()
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 01)
+        .padding(.vertical, 01)
         .background(sectionHeaderBackground)
     }
 
@@ -191,18 +191,18 @@ struct NeonModelPickerPanel: View {
                     if isSelected(model) {
                         Circle()
                             .fill(theme.accent)
-                            .frame(width: 10, height: 10)
+                            .frame(width: 05, height: 05)
                     }
                 }
 
                 // Model info
                 VStack(alignment: .leading, spacing: 4) {
                     Text(model.name)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(theme.textPrimary)
                         .lineLimit(1)
 
-                    HStack(spacing: 12) {
+                    HStack(spacing: 06) {
                         // Context window
                         Label(formatContextWindow(model.contextWindow), systemImage: "doc.text")
                             .font(.system(size: 11))

@@ -10,7 +10,6 @@ import SwiftUI
 
 /// Manages user's favorite models with persistence using UserDefaults.
 @Observable
-@MainActor
 final class ModelFavoritesManager {
 
     // MARK: - Properties

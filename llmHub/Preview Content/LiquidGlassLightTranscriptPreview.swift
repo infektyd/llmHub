@@ -2,7 +2,6 @@
 //  LiquidGlassLightTranscriptPreview.swift
 //  llmHub
 //
-//  Preview for the Unified Liquid Glass System (Light Mode).
 //
 
 #if canImport(MarkdownUI)

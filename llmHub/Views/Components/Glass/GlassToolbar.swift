@@ -12,7 +12,7 @@ struct GlassToolbar<Content: View>: View {
     let spacing: CGFloat
     @ViewBuilder let content: Content
 
-    init(spacing: CGFloat = 06, @ViewBuilder content: () -> Content) {
+    init(spacing: CGFloat = 03, @ViewBuilder content: () -> Content) {
         self.spacing = spacing
         self.content = content()
     }
