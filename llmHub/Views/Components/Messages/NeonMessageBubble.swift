@@ -40,9 +40,6 @@ struct NeonMessageBubble: View, Equatable {
             Spacer()
         }
         .padding(16)
-        .background {
-            bubbleBackground
-        }
     }
 
     // MARK: - Subviews
@@ -84,7 +81,7 @@ struct NeonMessageBubble: View, Equatable {
                     Circle()
                         .fill(theme.accentSecondary)
                         .frame(width: 4, height: 4)
-                        .opacity(0.6)
+                        .opacity(0.1)
                         .animation(
                             .easeInOut(duration: 0.6)
                                 .repeatForever()
@@ -101,13 +98,13 @@ struct NeonMessageBubble: View, Equatable {
 
     private var bubbleBackground: some View {
         RoundedRectangle(cornerRadius: theme.cornerRadius)
-            .fill(theme.usesGlassEffect ? Color.black.opacity(0.2) : theme.surface)
+            .fill(theme.usesGlassEffect ? Color.black.opacity(0) : theme.surface)
             .overlay {
                 RoundedRectangle(cornerRadius: theme.cornerRadius)
                     .stroke(
                         isUserMessage
-                            ? theme.accent.opacity(0.3)
-                            : theme.accentSecondary.opacity(0.3),
+                            ? theme.accent.opacity(0)
+                            : theme.accentSecondary.opacity(0),
                         lineWidth: theme.borderWidth
                     )
             }

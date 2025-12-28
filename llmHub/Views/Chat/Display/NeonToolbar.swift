@@ -101,8 +101,8 @@ import SwiftUI
 
 #if os(macOS)
     #Preview("Neon Toolbar") {
-        @Previewable @State var provider = MockData.uiLLMProvider()
-        @Previewable @State var model = MockData.uiLLMModel()
+        @Previewable @State var provider: UILLMProvider? = MockData.uiLLMProvider()
+        @Previewable @State var model: UILLMModel? = MockData.uiLLMModel()
         @Previewable @State var inspectorVisible = false
         @Previewable @State var columnVisibility: NavigationSplitViewVisibility = .all
         @Previewable @State var showingSettings = false
