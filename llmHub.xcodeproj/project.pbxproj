@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A3C9CD872F0190D7005AC351 /* Textual in Frameworks */ = {isa = PBXBuildFile; productRef = A3C9CD862F0190D7005AC351 /* Textual */; };
 		A3F5589C2EFEEBAC00AC1AFE /* ComplexModule in Frameworks */ = {isa = PBXBuildFile; productRef = A3F5589B2EFEEBAC00AC1AFE /* ComplexModule */; };
 		A3F5589E2EFEEBAC00AC1AFE /* Numerics in Frameworks */ = {isa = PBXBuildFile; productRef = A3F5589D2EFEEBAC00AC1AFE /* Numerics */; };
 		A3F558A02EFEEBAC00AC1AFE /* RealModule in Frameworks */ = {isa = PBXBuildFile; productRef = A3F5589F2EFEEBAC00AC1AFE /* RealModule */; };
@@ -148,6 +149,7 @@
 			files = (
 				A3F5589E2EFEEBAC00AC1AFE /* Numerics in Frameworks */,
 				A3F5589C2EFEEBAC00AC1AFE /* ComplexModule in Frameworks */,
+				A3C9CD872F0190D7005AC351 /* Textual in Frameworks */,
 				A3F558A02EFEEBAC00AC1AFE /* RealModule in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -239,6 +241,7 @@
 				A3F5589B2EFEEBAC00AC1AFE /* ComplexModule */,
 				A3F5589D2EFEEBAC00AC1AFE /* Numerics */,
 				A3F5589F2EFEEBAC00AC1AFE /* RealModule */,
+				A3C9CD862F0190D7005AC351 /* Textual */,
 			);
 			productName = llmHub;
 			productReference = A3C71F262ED9389A0088DF32 /* llmHub.app */;
@@ -339,6 +342,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				A3F5589A2EFEEBAC00AC1AFE /* XCRemoteSwiftPackageReference "swift-numerics" */,
+				A3C9CD852F0190D7005AC351 /* XCLocalSwiftPackageReference "../Downloads/textual-main" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A3C71F272ED9389A0088DF32 /* Products */;
@@ -888,6 +892,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		A3C9CD852F0190D7005AC351 /* XCLocalSwiftPackageReference "../Downloads/textual-main" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../Downloads/textual-main";
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		A3F5589A2EFEEBAC00AC1AFE /* XCRemoteSwiftPackageReference "swift-numerics" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -900,6 +911,10 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		A3C9CD862F0190D7005AC351 /* Textual */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Textual;
+		};
 		A3F5589B2EFEEBAC00AC1AFE /* ComplexModule */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A3F5589A2EFEEBAC00AC1AFE /* XCRemoteSwiftPackageReference "swift-numerics" */;
