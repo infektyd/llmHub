@@ -138,24 +138,32 @@ enum MockData {
     // MARK: - UI Model Types
 
     static func uiLLMProvider(
-        id: String = "openai",
+        id: UUID = UUID(),
         name: String = "OpenAI",
-        iconName: String = "sparkles"
+        icon: String = "sparkles",
+        models: [UILLMModel] = [uiLLMModel()],
+        isActive: Bool = true
     ) -> UILLMProvider {
-        UILLMProvider(id: id, name: name, iconName: iconName)
+        UILLMProvider(
+            id: id,
+            name: name,
+            icon: icon,
+            models: models,
+            isActive: isActive
+        )
     }
 
     static func uiLLMModel(
-        id: String = "gpt-4o",
+        id: UUID = UUID(),
+        modelID: String = "gpt-4o",
         name: String = "GPT-4o",
-        contextWindow: Int = 128000,
-        supportsTools: Bool = true
+        contextWindow: Int = 128000
     ) -> UILLMModel {
         UILLMModel(
             id: id,
+            modelID: modelID,
             name: name,
-            contextWindow: contextWindow,
-            supportsTools: supportsTools
+            contextWindow: contextWindow
         )
     }
 
@@ -225,6 +233,7 @@ extension View {
             .environment(\.modelContext, PreviewContainer.shared.context)
             .environment(MockData.workbenchViewModel())
             .environmentObject(MockData.modelRegistry())
+            .environment(\.keychainStore, KeychainStore(backend: InMemoryKeychainBacking(), accessGroups: []))
             .environment(\.theme, ThemeManager.shared.current)
     }
 }

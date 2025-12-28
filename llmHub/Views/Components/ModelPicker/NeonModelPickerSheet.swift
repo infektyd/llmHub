@@ -348,6 +348,5 @@ struct NeonModelPickerSheet: View {
         selectedModel: .constant(UILLMModel.mockGPT4()),
         isPresented: .constant(true)
     )
-    .environmentObject(MockData.modelRegistry())
     .previewEnvironment()
 }

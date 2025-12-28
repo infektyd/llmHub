@@ -14,7 +14,7 @@ struct GlassCard<Content: View>: View {
     @ViewBuilder let content: Content
 
     init(
-        cornerRadius: CGFloat = 08,
+        cornerRadius: CGFloat = 04,
         tint: Color? = nil,
         isInteractive: Bool = false,
         @ViewBuilder content: () -> Content
@@ -46,7 +46,7 @@ struct GlassCard<Content: View>: View {
 
 extension GlassCard where Content == EmptyView {
     /// Creates an empty glass card (use as background)
-    init(cornerRadius: CGFloat = 08, tint: Color? = nil) {
+    init(cornerRadius: CGFloat = 04, tint: Color? = nil) {
         self.cornerRadius = cornerRadius
         self.tint = tint
         self.isInteractive = false
@@ -68,7 +68,7 @@ extension GlassCard where Content == EmptyView {
                 .padding()
         }
 
-        GlassCard(cornerRadius: 12, tint: Color.purple.opacity(0.2)) {
+        GlassCard(cornerRadius: 03, tint: Color.purple.opacity(0.2)) {
             HStack {
                 Image(systemName: "brain")
                 Text("AI Response Card")

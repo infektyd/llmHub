@@ -11,10 +11,10 @@ extension Color {
     // MARK: - Glass Tints (use with .glassEffect(.regular.tint()))
 
     /// Success state - tool completed, message sent
-    static let glassSuccess = Color.green.opacity(0.25)
+    static let glassSuccess = Color.green.opacity(0.45)
 
     /// Warning state - rate limit approaching, large context
-    static let glassWarning = Color.orange.opacity(0.25)
+    static let glassWarning = Color.orange.opacity(0.40)
 
     /// Error state - failed request, tool error
     static let glassError = Color.red.opacity(0.25)
@@ -32,7 +32,7 @@ extension Color {
     static let glassBackground = Color.black.opacity(0.1)
 
     /// Tool execution - active tool operations
-    static let glassTool = Color.cyan.opacity(0.2)
+    static let glassTool = Color.cyan.opacity(0.45)
 
     // MARK: - Legacy Neon Colors (for gradual migration)
     // Keep these temporarily, but prefer glass tints for new code
