@@ -76,25 +76,9 @@ func makeDefaultConfig() -> ProvidersConfig {
     ]
 
     // MARK: - Anthropic (Claude) Models
-    // Includes Claude 4.x flagship models and Claude 3.x for backward compatibility
+    // Keep this list to models that are known to exist; invalid IDs will make chat "hang"
+    // (the request is sent but the provider returns an error).
     config.anthropic.models = [
-        // Claude 4.5 Flagship (Latest)
-        LLMModel(
-            id: "claude-opus-4-5-20251101", name: "Claude Opus 4.5", maxOutputTokens: 32000,
-            contextWindow: 200000),
-        LLMModel(
-            id: "claude-sonnet-4-5-20250929", name: "Claude Sonnet 4.5", maxOutputTokens: 64000,
-            contextWindow: 200000),
-        LLMModel(
-            id: "claude-haiku-4-5-20251001", name: "Claude Haiku 4.5", maxOutputTokens: 8192,
-            contextWindow: 200000),
-        // Claude 4 (Previous Generation)
-        LLMModel(
-            id: "claude-opus-4-20250514", name: "Claude Opus 4", maxOutputTokens: 32000,
-            contextWindow: 200000),
-        LLMModel(
-            id: "claude-sonnet-4-20250514", name: "Claude Sonnet 4", maxOutputTokens: 64000,
-            contextWindow: 200000),
         // Claude 3.5
         LLMModel(
             id: "claude-3-5-sonnet-20241022", name: "Claude 3.5 Sonnet", maxOutputTokens: 8192,
@@ -102,7 +86,7 @@ func makeDefaultConfig() -> ProvidersConfig {
         LLMModel(
             id: "claude-3-5-haiku-20241022", name: "Claude 3.5 Haiku", maxOutputTokens: 8192,
             contextWindow: 200000),
-        // Claude 3 (Legacy)
+        // Claude 3
         LLMModel(
             id: "claude-3-opus-20240229", name: "Claude 3 Opus", maxOutputTokens: 8192,
             contextWindow: 200000),

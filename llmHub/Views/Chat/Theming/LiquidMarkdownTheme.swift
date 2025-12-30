@@ -2,217 +2,252 @@
 //  LiquidMarkdownTheme.swift
 //  llmHub
 //
-//  Claude-level Markdown typography tuned for the unified Liquid Glass transcript.
+//  Liquid Glass typography tuned for Textual's StructuredText rendering.
 //
 
 import SwiftUI
 
-#if canImport(MarkdownUI)
-    import MarkdownUI
+#if canImport(Textual)
+import Textual
 #endif
 
-#if canImport(MarkdownUI)
-    extension MarkdownUI.Theme {
-        static func llmHubLiquid(theme appTheme: AppTheme) -> MarkdownUI.Theme {
-            MarkdownUI.Theme()
-                .text {
-                    ForegroundColor(appTheme.textPrimary)
-                    BackgroundColor(nil)
-                    FontSize(16)
-                }
-                .code {
-                    FontFamilyVariant(.monospaced)
-                    FontSize(.em(0.92))
-                    ForegroundColor(appTheme.textPrimary.opacity(0.92))
-                    BackgroundColor(appTheme.textPrimary.opacity(0.08))
-                }
-                .strong {
-                    FontWeight(.semibold)
-                }
-                .link {
-                    ForegroundColor(appTheme.accent)
-                }
-                .heading1 { configuration in
-                    configuration.label
-                        .relativeLineSpacing(.em(0.12))
-                        .markdownMargin(top: 22, bottom: 12)
-                        .markdownTextStyle {
-                            FontWeight(.semibold)
-                            FontSize(.em(1.70))
-                        }
-                }
-                .heading2 { configuration in
-                    configuration.label
-                        .relativeLineSpacing(.em(0.12))
-                        .markdownMargin(top: 20, bottom: 10)
-                        .markdownTextStyle {
-                            FontWeight(.semibold)
-                            FontSize(.em(1.38))
-                        }
-                }
-                .heading3 { configuration in
-                    configuration.label
-                        .relativeLineSpacing(.em(0.12))
-                        .markdownMargin(top: 18, bottom: 10)
-                        .markdownTextStyle {
-                            FontWeight(.semibold)
-                            FontSize(.em(1.18))
-                        }
-                }
-                .heading4 { configuration in
-                    configuration.label
-                        .relativeLineSpacing(.em(0.12))
-                        .markdownMargin(top: 16, bottom: 8)
-                        .markdownTextStyle {
-                            FontWeight(.semibold)
-                            FontSize(.em(1.06))
-                        }
-                }
-                .heading5 { configuration in
-                    configuration.label
-                        .relativeLineSpacing(.em(0.12))
-                        .markdownMargin(top: 14, bottom: 8)
-                        .markdownTextStyle {
-                            FontWeight(.semibold)
-                            FontSize(.em(0.95))
-                            ForegroundColor(appTheme.textSecondary)
-                        }
-                }
-                .heading6 { configuration in
-                    configuration.label
-                        .relativeLineSpacing(.em(0.12))
-                        .markdownMargin(top: 14, bottom: 8)
-                        .markdownTextStyle {
-                            FontWeight(.semibold)
-                            FontSize(.em(0.90))
-                            ForegroundColor(appTheme.textTertiary)
-                        }
-                }
-                .paragraph { configuration in
-                    configuration.label
-                        .fixedSize(horizontal: false, vertical: true)
-                        .relativeLineSpacing(.em(0.26))
-                        .markdownMargin(top: 0, bottom: 14)
-                }
-                .blockquote { configuration in
-                    HStack(spacing: 0) {
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(appTheme.textSecondary.opacity(0.25))
-                            .relativeFrame(width: .em(0.20))
-                        configuration.label
-                            .markdownTextStyle {
-                                ForegroundColor(appTheme.textSecondary)
-                                BackgroundColor(nil)
-                            }
-                            .relativePadding(.horizontal, length: .em(0.95))
-                    }
-                    .fixedSize(horizontal: false, vertical: true)
-                    .markdownMargin(top: 0, bottom: 14)
-                }
-                .codeBlock { configuration in
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        configuration.label
-                            .fixedSize(horizontal: false, vertical: true)
-                            .relativeLineSpacing(.em(0.22))
-                            .markdownTextStyle {
-                                FontFamilyVariant(.monospaced)
-                                FontSize(.em(0.90))
-                                ForegroundColor(appTheme.textPrimary.opacity(0.92))
-                            }
-                            .padding(14)
-                    }
-                    .background(appTheme.textPrimary.opacity(0.06))
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    .markdownMargin(top: 0, bottom: 14)
-                }
-                .listItem { configuration in
-                    configuration.label
-                        .markdownMargin(top: .em(0.22))
-                }
-                .table { configuration in
-                    configuration.label
-                        .fixedSize(horizontal: false, vertical: true)
-                        .markdownTableBorderStyle(.init(color: appTheme.textPrimary.opacity(0.10)))
-                        .markdownTableBackgroundStyle(
-                            .alternatingRows(
-                                appTheme.textPrimary.opacity(0.02),
-                                appTheme.textPrimary.opacity(0.05)
-                            )
-                        )
-                        .markdownMargin(top: 0, bottom: 14)
-                }
-                .tableCell { configuration in
-                    configuration.label
-                        .markdownTextStyle {
-                            if configuration.row == 0 { FontWeight(.semibold) }
-                            BackgroundColor(nil)
-                        }
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 12)
-                        .relativeLineSpacing(.em(0.25))
-                }
-                .thematicBreak {
-                    Divider()
-                        .relativeFrame(height: .em(0.18))
-                        .overlay(appTheme.textPrimary.opacity(0.08))
-                        .markdownMargin(top: 18, bottom: 18)
-                }
+#if canImport(Textual)
+struct LiquidStructuredTextStyle: StructuredText.Style {
+    let theme: AppTheme
+
+    var inlineStyle: InlineStyle {
+        InlineStyle()
+            .code(
+                .monospaced,
+                .fontScale(0.92),
+                .foregroundColor(theme.textPrimary.opacity(0.92)),
+                .backgroundColor(theme.textPrimary.opacity(0.08))
+            )
+            .strong(.fontWeight(.semibold))
+            .link(.foregroundColor(theme.accent))
+    }
+
+    var headingStyle: LiquidHeadingStyle { LiquidHeadingStyle(theme: theme) }
+    var paragraphStyle: LiquidParagraphStyle { LiquidParagraphStyle() }
+    var blockQuoteStyle: LiquidBlockQuoteStyle { LiquidBlockQuoteStyle(theme: theme) }
+    var codeBlockStyle: LiquidCodeBlockStyle { LiquidCodeBlockStyle(theme: theme) }
+    var listItemStyle: StructuredText.DefaultListItemStyle {
+        .default(markerSpacing: .fontScaled(0.5))
+    }
+    var unorderedListMarker: StructuredText.HierarchicalSymbolListMarker {
+        .hierarchical(.disc, .circle, .square)
+    }
+    var orderedListMarker: StructuredText.DecimalListMarker { .decimal }
+    var tableStyle: LiquidTableStyle { LiquidTableStyle(theme: theme) }
+    var tableCellStyle: LiquidTableCellStyle { LiquidTableCellStyle() }
+    var thematicBreakStyle: LiquidThematicBreakStyle { LiquidThematicBreakStyle(theme: theme) }
+}
+
+extension StructuredText.Style where Self == LiquidStructuredTextStyle {
+    static func llmHubLiquid(theme: AppTheme) -> Self {
+        .init(theme: theme)
+    }
+}
+
+extension StructuredText.HighlighterTheme {
+    static func llmHubLiquid(theme: AppTheme) -> StructuredText.HighlighterTheme {
+        StructuredText.HighlighterTheme(
+            foregroundColor: DynamicColor(theme.textPrimary.opacity(0.92)),
+            backgroundColor: DynamicColor(theme.textPrimary.opacity(0.06))
+        )
+    }
+}
+
+struct LiquidHeadingStyle: StructuredText.HeadingStyle {
+    let theme: AppTheme
+    private static let fontScales: [CGFloat] = [1.70, 1.38, 1.18, 1.06, 0.95, 0.90]
+    private static let spacingTops: [CGFloat] = [1.375, 1.25, 1.125, 1.0, 0.875, 0.875]
+    private static let spacingBottoms: [CGFloat] = [0.75, 0.625, 0.625, 0.5, 0.5, 0.5]
+
+    func makeBody(configuration: Configuration) -> some View {
+        let headingLevel = min(configuration.headingLevel, 6)
+        let fontScale = Self.fontScales[headingLevel - 1]
+        let spacingTop = Self.spacingTops[headingLevel - 1]
+        let spacingBottom = Self.spacingBottoms[headingLevel - 1]
+
+        configuration.label
+            .textual.fontScale(fontScale)
+            .textual.lineSpacing(.fontScaled(0.12))
+            .textual.blockSpacing(.fontScaled(top: spacingTop, bottom: spacingBottom))
+            .fontWeight(.semibold)
+            .foregroundStyle(headingForegroundColor(for: headingLevel))
+    }
+
+    private func headingForegroundColor(for level: Int) -> Color {
+        switch level {
+        case 5:
+            return theme.textSecondary
+        case 6:
+            return theme.textTertiary
+        default:
+            return theme.textPrimary
         }
     }
-#endif
-#if canImport(MarkdownUI)
-    // MARK: - Previews
+}
 
-    #Preview("Markdown Showcase") {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                Markdown {
-                    """
-                    # Heading 1
-                    ## Heading 2
-                    ### Heading 3
+struct LiquidParagraphStyle: StructuredText.ParagraphStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .textual.lineSpacing(.fontScaled(0.26))
+            .textual.blockSpacing(.fontScaled(top: 0, bottom: 0.875))
+    }
+}
 
-                    This is a paragraph with **strong text**, *italic text*, and a [link](https://google.com).
+struct LiquidBlockQuoteStyle: StructuredText.BlockQuoteStyle {
+    let theme: AppTheme
 
-                    > This is a blockquote with some interesting information that should be styled nicely.
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 0) {
+            RoundedRectangle(cornerRadius: 6)
+                .fill(theme.textSecondary.opacity(0.25))
+                .textual.frame(width: .fontScaled(0.2), alignment: .leading)
 
-                    ### Code Samples
+            configuration.label
+                .foregroundStyle(theme.textSecondary)
+                .textual.padding(.horizontal, .fontScaled(0.95))
+        }
+        .textual.lineSpacing(.fontScaled(0.26))
+        .textual.blockSpacing(.fontScaled(bottom: 0.875))
+    }
+}
 
-                    Inline `code` and code blocks:
+struct LiquidCodeBlockStyle: StructuredText.CodeBlockStyle {
+    let theme: AppTheme
 
-                    ```swift
-                    func hello() {
-                        print("Hello, Liquid Glass!")
+    func makeBody(configuration: Configuration) -> some View {
+        Overflow {
+            configuration.label
+                .textual.lineSpacing(.fontScaled(0.22))
+                .textual.fontScale(0.9)
+                .fixedSize(horizontal: false, vertical: true)
+                .monospaced()
+                .textual.padding(.fontScaled(0.875))
+        }
+        .background(theme.textPrimary.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .textual.blockSpacing(.fontScaled(bottom: 0.875))
+    }
+}
+
+struct LiquidTableStyle: StructuredText.TableStyle {
+    let theme: AppTheme
+    private let borderWidth: CGFloat = 1
+
+    func makeBody(configuration: Configuration) -> some View {
+        let borderColor = theme.textPrimary.opacity(0.10)
+        let rowPrimary = theme.textPrimary.opacity(0.02)
+        let rowAlternate = theme.textPrimary.opacity(0.05)
+
+        configuration.label
+            .background {
+                Canvas { context, _ in
+                    for row in configuration.layout.rowIndices {
+                        let rowRect = configuration.layout.rowBounds(row)
+                        guard !rowRect.isNull else { continue }
+                        let fillColor = row % 2 == 0 ? rowPrimary : rowAlternate
+                        context.fill(Path(rowRect), with: .color(fillColor))
                     }
-                    ```
-
-                    ### Lists
-
-                    - Item 1
-                    - Item 2
-                      - Sub-item 2.1
-
-                    1. Ordered 1
-                    2. Ordered 2
-
-                    ### Tables
-
-                    | Feature | Status | Notes |
-                    | :--- | :--- | :--- |
-                    | Glass | ✅ | Shiny |
-                    | Flat | ❌ | Boring |
-
-                    ***
-
-                    Bottom content.
-                    """
                 }
-                .markdownTheme(.llmHubLiquid(theme: ThemeManager.shared.current))
             }
-            .padding()
-        }
-        .frame(width: 500)
-        .previewEnvironment()
+            .overlay {
+                Canvas { context, _ in
+                    for divider in configuration.layout.dividers() {
+                        context.fill(Path(divider), with: .color(borderColor))
+                    }
+                    context.stroke(
+                        Path(configuration.layout.bounds),
+                        with: .color(borderColor),
+                        lineWidth: borderWidth
+                    )
+                }
+            }
+            .textual.tableCellSpacing(horizontal: borderWidth, vertical: borderWidth)
+            .textual.blockSpacing(.fontScaled(top: 0, bottom: 0.875))
+            .padding(borderWidth)
     }
+}
+
+struct LiquidTableCellStyle: StructuredText.TableCellStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .fontWeight(configuration.row == 0 ? .semibold : .regular)
+            .textual.lineSpacing(.fontScaled(0.25))
+            .textual.padding(.vertical, .fontScaled(0.375))
+            .textual.padding(.horizontal, .fontScaled(0.75))
+    }
+}
+
+struct LiquidThematicBreakStyle: StructuredText.ThematicBreakStyle {
+    let theme: AppTheme
+
+    func makeBody(configuration: Configuration) -> some View {
+        Divider()
+            .textual.frame(height: .fontScaled(0.18))
+            .overlay(theme.textPrimary.opacity(0.08))
+            .textual.blockSpacing(.fontScaled(top: 1.125, bottom: 1.125))
+    }
+}
+#endif
+
+#if canImport(Textual)
+// MARK: - Previews
+
+#Preview("Markdown Showcase") {
+    ScrollView {
+        VStack(alignment: .leading, spacing: 20) {
+            StructuredText(
+                markdown: """
+                # Heading 1
+                ## Heading 2
+                ### Heading 3
+
+                This is a paragraph with **strong text**, *italic text*, and a [link](https://google.com).
+
+                > This is a blockquote with some interesting information that should be styled nicely.
+
+                ### Code Samples
+
+                Inline `code` and code blocks:
+
+                ```swift
+                func hello() {
+                    print("Hello, Liquid Glass!")
+                }
+                ```
+
+                ### Lists
+
+                - Item 1
+                - Item 2
+                  - Sub-item 2.1
+
+                1. Ordered 1
+                2. Ordered 2
+
+                ### Tables
+
+                | Feature | Status | Notes |
+                | :--- | :--- | :--- |
+                | Glass | ✅ | Shiny |
+                | Flat | ❌ | Boring |
+
+                ***
+
+                Bottom content.
+                """
+            )
+            .textual.structuredTextStyle(.llmHubLiquid(theme: ThemeManager.shared.current))
+            .textual.highlighterTheme(.llmHubLiquid(theme: ThemeManager.shared.current))
+            .textual.listItemSpacing(.fontScaled(top: 0.22))
+        }
+        .padding()
+    }
+    .frame(width: 500)
+    .previewEnvironment()
+}
 #endif

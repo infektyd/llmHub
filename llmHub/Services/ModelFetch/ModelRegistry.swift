@@ -68,20 +68,12 @@ final class ModelRegistry: ObservableObject {
         isFetching = true
         fetchErrors = [:]
         
-        logger.info("Starting model fetch for all configured providers")
-        
-        // Get all providers with API keys
-        let configuredProviders = await getConfiguredProviders()
-        
-        if configuredProviders.isEmpty {
-            logger.warning("No providers configured with API keys")
-            isFetching = false
-            return
-        }
+        logger.info("Starting model fetch for all providers")
+        let providers = KeychainStore.ProviderKey.allCases
         
         // Fetch models for each provider
         await withTaskGroup(of: (String, Result<[LLMModel], Error>).self) { group in
-            for provider in configuredProviders {
+            for provider in providers {
                 group.addTask {
                     do {
                         let models = try await self.fetchModelsForProvider(provider, forceRefresh: forceRefresh)
@@ -131,11 +123,7 @@ final class ModelRegistry: ObservableObject {
         let providerID = provider.rawValue
         let canonicalProviderID = ProviderID.canonicalID(from: providerID)
 
-        // Check if API key exists
-        guard await keychainStore.apiKey(for: provider) != nil else {
-            logger.warning("No API key configured for \(providerID)")
-            throw ModelRegistryError.noAPIKey
-        }
+        let hasAPIKey = (await keychainStore.apiKey(for: provider) != nil)
 
         // Compute cache age (if any)
         let cachedEntry = modelCache[providerID]
@@ -160,21 +148,25 @@ final class ModelRegistry: ObservableObject {
         // Special handling: Anthropic and xAI should be official-first, then models.dev, then cached, then curated.
         if canonicalProviderID == "anthropic" || canonicalProviderID == "xai" {
             // 1) Official provider endpoint
-            do {
-                logger.info("Attempting official /models fetch for \(canonicalProviderID)")
-                let fetched = try await fetchService.fetchModels(for: provider)
+            if hasAPIKey {
+                do {
+                    logger.info("Attempting official /models fetch for \(canonicalProviderID)")
+                    let fetched = try await fetchService.fetchModels(for: provider)
 
-                if fetched.isEmpty {
-                    logger.warning("Official /models fetch returned empty for \(canonicalProviderID); will fall back")
-                } else {
-                    let merged = overlayWithProvidersConfig(providerID: canonicalProviderID, fetchedModels: fetched)
-                    logger.info(
-                        "✅ Using official models for \(canonicalProviderID): fetched=\(fetched.count) merged=\(merged.count)"
-                    )
-                    return merged
+                    if fetched.isEmpty {
+                        logger.warning("Official /models fetch returned empty for \(canonicalProviderID); will fall back")
+                    } else {
+                        let merged = overlayWithProvidersConfig(providerID: canonicalProviderID, fetchedModels: fetched)
+                        logger.info(
+                            "✅ Using official models for \(canonicalProviderID): fetched=\(fetched.count) merged=\(merged.count)"
+                        )
+                        return merged
+                    }
+                } catch {
+                    logger.warning("Official /models fetch failed for \(canonicalProviderID): \(error.localizedDescription)")
                 }
-            } catch {
-                logger.warning("Official /models fetch failed for \(canonicalProviderID): \(error.localizedDescription)")
+            } else {
+                logger.info("No API key for \(canonicalProviderID); skipping official /models fetch")
             }
 
             // 2) models.dev fallback
@@ -227,14 +219,18 @@ final class ModelRegistry: ObservableObject {
         }
 
         // 2) provider API
-        do {
-            logger.info("Attempting provider API fetch for \(providerID)")
-            let fetched = try await fetchService.fetchModels(for: provider)
-            if !fetched.isEmpty {
-                return overlayWithProvidersConfig(providerID: canonicalProviderID, fetchedModels: fetched)
+        if hasAPIKey {
+            do {
+                logger.info("Attempting provider API fetch for \(providerID)")
+                let fetched = try await fetchService.fetchModels(for: provider)
+                if !fetched.isEmpty {
+                    return overlayWithProvidersConfig(providerID: canonicalProviderID, fetchedModels: fetched)
+                }
+            } catch {
+                logger.warning("Provider API fetch failed for \(providerID): \(error.localizedDescription)")
             }
-        } catch {
-            logger.warning("Provider API fetch failed for \(providerID): \(error.localizedDescription)")
+        } else {
+            logger.info("No API key for \(providerID); skipping provider API fetch")
         }
 
         // 3) cached
@@ -393,17 +389,6 @@ final class ModelRegistry: ObservableObject {
 
     // MARK: - Private Methods
     
-    /// Gets all providers that have API keys configured.
-    private func getConfiguredProviders() async -> [KeychainStore.ProviderKey] {
-        var configured: [KeychainStore.ProviderKey] = []
-        for provider in KeychainStore.ProviderKey.allCases {
-            if await keychainStore.apiKey(for: provider) != nil {
-                configured.append(provider)
-            }
-        }
-        return configured
-    }
-    
     /// Loads cached models from UserDefaults.
     private func loadCachedModels() {
         guard let data = UserDefaults.standard.data(forKey: "ModelRegistryCache"),
@@ -441,14 +426,11 @@ private struct CachedModels: Codable {
 
 /// Errors specific to the ModelRegistry.
 enum ModelRegistryError: LocalizedError {
-    case noAPIKey
     case fetchFailed(underlying: Error)
     case providerNotSupported
     
     var errorDescription: String? {
         switch self {
-        case .noAPIKey:
-            return "No API key configured for this provider"
         case .fetchFailed(let error):
             return "Failed to fetch models: \(error.localizedDescription)"
         case .providerNotSupported:

@@ -51,7 +51,13 @@ struct SettingsView: View {
 
 struct AppearanceSettingsView: View {
     @State private var themeManager = ThemeManager.shared
-    @AppStorage("uiMode") private var uiMode: String = "neon"
+    @AppStorage("uiMode") private var uiMode: String = "canvas"
+
+    private var effectiveMode: String {
+        // Back-compat: "neon" used to mean the old NavigationSplitView UI.
+        // We now treat it as the new canvas UI unless the user explicitly chooses "legacy".
+        uiMode.lowercased() == "neon" ? "canvas" : uiMode.lowercased()
+    }
 
     var body: some View {
         ScrollView {
@@ -78,22 +84,34 @@ struct AppearanceSettingsView: View {
                         .padding(.horizontal)
 
                     Text(
-                        "Choose between Neon Glass (modern, vibrant) or Nordic (minimal, clean) interface."
+                        "Canvas is the new default (floating panels + no bubbles). Legacy is the old 3-column layout."
                     )
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal)
 
                     HStack(spacing: 12) {
-                        // Neon/Glass Mode
+                        // Canvas (New)
                         UIModeCard(
-                            title: "Neon Glass",
-                            icon: "sparkles",
-                            description: "Modern UI with glass effects",
-                            isSelected: uiMode == "neon"
+                            title: "Canvas",
+                            icon: "rectangle.inset.filled",
+                            description: "Floating panels, no bubbles",
+                            isSelected: effectiveMode == "canvas"
                         ) {
                             withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
-                                uiMode = "neon"
+                                uiMode = "canvas"
+                            }
+                        }
+
+                        // Legacy (Old)
+                        UIModeCard(
+                            title: "Legacy",
+                            icon: "square.split.2x1",
+                            description: "Old split-view workbench",
+                            isSelected: effectiveMode == "legacy"
+                        ) {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                                uiMode = "legacy"
                             }
                         }
 
@@ -102,7 +120,7 @@ struct AppearanceSettingsView: View {
                             title: "Nordic",
                             icon: "leaf",
                             description: "Minimal Scandinavian design",
-                            isSelected: uiMode == "nordic"
+                            isSelected: effectiveMode == "nordic"
                         ) {
                             withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
                                 uiMode = "nordic"
@@ -110,25 +128,6 @@ struct AppearanceSettingsView: View {
                         }
                     }
                     .padding(.horizontal)
-
-                    // Restart notice
-                    if uiMode == "nordic" {
-                        HStack(spacing: 8) {
-                            Image(systemName: "info.circle.fill")
-                                .foregroundColor(.blue)
-                            Text(
-                                "Nordic mode uses a completely separate UI. Restart the app to apply changes."
-                            )
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        }
-                        .padding(12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.blue.opacity(0.1))
-                        )
-                        .padding(.horizontal)
-                    }
                 }
 
                 // MARK: - Theme Engine
@@ -156,49 +155,6 @@ struct AppearanceSettingsView: View {
                     }
                 }
 
-                // MARK: - Transcript Style
-                VStack(alignment: .leading, spacing: 10) {
-                    Label("Transcript", systemImage: "text.bubble.fill")
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                        .padding(.horizontal)
-
-                    HStack(spacing: 0) {
-                        ForEach(ThemeManager.TranscriptStyle.allCases) { style in
-                            let isSelected = themeManager.transcriptStyle == style
-                            Button {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    themeManager.setTranscriptStyle(style)
-                                }
-                            } label: {
-                                Text(style.rawValue)
-                                    .font(.subheadline)
-                                    .fontWeight(isSelected ? .semibold : .medium)
-                                    .foregroundStyle(isSelected ? .white : .secondary)
-                                    .padding(.vertical, 10)
-                                    .padding(.horizontal, 16)
-                                    .frame(maxWidth: .infinity)
-                                    .background(
-                                        RoundedRectangle(
-                                            cornerRadius: LiquidGlassTokens.Radius.control
-                                        )
-                                        .fill(
-                                            isSelected
-                                                ? Color.accentColor.opacity(0.3) : Color.clear)
-                                    )
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .padding(4)
-                    .background(
-                        RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control)
-                            .fill(.ultraThinMaterial)
-                    )
-                    .padding(.horizontal)
-                }
-
                 // MARK: - Window Style (macOS only)
                 #if os(macOS)
                     WindowStylePicker()
@@ -213,7 +169,6 @@ struct AppearanceSettingsView: View {
                     Button("Reset to Defaults") {
                         withAnimation(.bouncy) {
                             themeManager.setTheme(ThemeManager.available.first!)
-                            themeManager.setTranscriptStyle(.neonDark)
                         }
                     }
                     .font(.caption)

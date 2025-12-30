@@ -7,8 +7,8 @@
 
 import SwiftUI
 
-#if canImport(MarkdownUI)
-    import MarkdownUI
+#if canImport(Textual)
+    import Textual
 #endif
 
 /// Flattened tool invocation data for UI + copy.
@@ -120,22 +120,16 @@ struct NeonMessageRow: View {
                         .textSelection(.enabled)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
-                    #if canImport(MarkdownUI)
-                        if role == .assistant && isStreaming {
-                            // Typewriter animation for streaming assistant messages
-                            Markdown(message.content)
-                                .markdownTheme(.llmHubLiquid(theme: theme))
-                                .font(LiquidGlassTokens.messageFont(role: role, theme: theme))
-                                .foregroundColor(theme.textPrimary)
-                                .textSelection(.enabled)
-                        } else {
-                            Markdown(message.content)
-                                .markdownTheme(.llmHubLiquid(theme: theme))
-                                .font(LiquidGlassTokens.messageFont(role: role, theme: theme))
-                                .textSelection(.enabled)
-                        }
+                    #if canImport(Textual)
+                        StructuredText(markdown: message.content)
+                            .textual.structuredTextStyle(.llmHubLiquid(theme: theme))
+                            .textual.highlighterTheme(.llmHubLiquid(theme: theme))
+                            .textual.listItemSpacing(.fontScaled(top: 0.22))
+                            .font(LiquidGlassTokens.messageFont(role: role, theme: theme))
+                            .foregroundStyle(theme.textPrimary)
+                            .textual.textSelection(.enabled)
                     #else
-                        // Fallback if MarkdownUI isn't available in this build.
+                        // Fallback if Textual isn't available in this build.
                         Text(message.content)
                             .font(LiquidGlassTokens.messageFont(role: role, theme: theme))
                             .foregroundColor(
