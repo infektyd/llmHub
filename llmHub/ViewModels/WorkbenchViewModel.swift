@@ -92,11 +92,14 @@ class WorkbenchViewModel {
     /// Creates a new conversation session and selects it.
     /// - Parameter modelContext: The SwiftData context used for persistence.
     func createNewConversation(modelContext: ModelContext) {
+        let providerID = ProviderID.canonicalID(from: selectedProvider?.name ?? "openai")
+        let modelID = selectedModel?.modelID ?? "gpt-4o"
+
         let newSession = ChatSession(
             id: UUID(),
             title: "New Conversation",
-            providerID: selectedProvider?.name ?? "Unknown",
-            model: selectedModel?.name ?? "Unknown",
+            providerID: providerID,
+            model: modelID,
             createdAt: Date(),
             updatedAt: Date(),
             messages: [],

@@ -65,6 +65,7 @@ Thumbs.db
 *.doccarchive/
 llmHub.doccarchive/
 Scaffold/*.zip
+llmHub/Views/_ViewsArchive-*.zip
 
 ## Local caches & indexes
 .cursor/

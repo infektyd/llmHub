@@ -23,6 +23,19 @@
         nonisolated(unsafe) private var _connection: NSXPCConnection?
         /// Lock to ensure thread-safe access to the connection.
         private let connectionLock = NSLock()
+        /// Reset the connection and release its handlers.
+        nonisolated private func resetConnection(shouldInvalidate: Bool, reason: String) {
+            connectionLock.lock()
+            let existing = _connection
+            _connection = nil
+            connectionLock.unlock()
+
+            guard let existing, shouldInvalidate else { return }
+            existing.invalidationHandler = nil
+            existing.interruptionHandler = nil
+            logger.info("Invalidating XPC connection: \(reason)")
+            existing.invalidate()
+        }
 
         // MARK: - Connection Management
 
@@ -41,13 +54,12 @@
 
             newConnection.invalidationHandler = { [weak self] in
                 self?.logger.warning("XPC connection invalidated")
-                self?.connectionLock.lock()
-                self?._connection = nil
-                self?.connectionLock.unlock()
+                self?.resetConnection(shouldInvalidate: false, reason: "invalidation handler")
             }
 
             newConnection.interruptionHandler = { [weak self] in
                 self?.logger.warning("XPC connection interrupted")
+                self?.resetConnection(shouldInvalidate: true, reason: "interruption handler")
             }
 
             newConnection.resume()
@@ -63,6 +75,7 @@
             guard
                 let proxy = connection.remoteObjectProxyWithErrorHandler({ [weak self] error in
                     self?.logger.error("XPC remote object error: \(error.localizedDescription)")
+                    self?.resetConnection(shouldInvalidate: true, reason: "remote object error")
                 }) as? CodeExecutionXPCProtocol
             else {
                 throw XPCExecutionError.connectionFailed
@@ -198,10 +211,7 @@
         // MARK: - Cleanup
 
         deinit {
-            connectionLock.lock()
-            _connection?.invalidate()
-            _connection = nil
-            connectionLock.unlock()
+            resetConnection(shouldInvalidate: true, reason: "deinit")
         }
     }
 

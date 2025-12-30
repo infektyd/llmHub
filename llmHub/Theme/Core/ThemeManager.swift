@@ -30,12 +30,8 @@ final class ThemeManager {
 
     /// All available themes
     static let available: [AppTheme] = [
-        LiquidGlassTheme(),
-        LiquidGlassLightTheme(),  // New Light Theme
-        NeonGlassTheme(),
-        WarmPaperTheme(),
-        ClaudeFlatTheme(),
-        NordicTheme(),
+        CanvasDarkTheme(),
+        CanvasLightTheme(),
     ]
 
     /// Convenience computed property for binding to theme name
@@ -75,7 +71,7 @@ final class ThemeManager {
         {
             self.current = savedTheme
         } else {
-            self.current = LiquidGlassTheme()
+            self.current = CanvasDarkTheme()
         }
 
         // Load saved transcript style or default to neonDark for modern feel
@@ -131,7 +127,7 @@ final class ThemeManager {
 // MARK: - Environment Integration
 
 private struct ThemeKey: EnvironmentKey {
-    static let defaultValue: AppTheme = LiquidGlassTheme()
+    static let defaultValue: AppTheme = CanvasDarkTheme()
 }
 
 extension EnvironmentValues {

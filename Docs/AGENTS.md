@@ -244,7 +244,7 @@ llmHub/
 
 ### Dependencies
 
-- **MarkdownUI** — Chat message rendering
+- **Textual** — Chat message rendering
 - **Splash** — Syntax highlighting
 - **SwiftCollections** — Efficient data structures
 

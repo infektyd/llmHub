@@ -36,11 +36,6 @@ struct llmHubApp: App {
                     }
                 )
                 .task {
-                    // TEMPORARY: Clear all model caches to force fresh fetch
-                    // This ensures updated model IDs (Anthropic, xAI) are loaded
-                    // Remove this after a few app launches when all users have fresh data
-                    modelRegistry.clearAllCaches()
-
                     // Log AFM availability status once on launch (debug aid for Apple Intelligence)
                     AppLogger.logAFMStatusOnLaunch()
                     
