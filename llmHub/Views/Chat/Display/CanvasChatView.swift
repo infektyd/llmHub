@@ -17,15 +17,36 @@ struct CanvasChatView: View {
 
     @State private var chatVM = ChatViewModel()
     @State private var composerText: String = ""
+    @State private var thinkingPreference: ThinkingPreference = .auto
 
     var body: some View {
         VStack(spacing: 0) {
             transcript
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            CanvasComposerBar(text: $composerText, onSend: {
-                send()
-            })
+            ChatInputPanel(
+                text: $composerText,
+                thinkingPreference: $thinkingPreference,
+                isSending: chatVM.isGenerating,
+                onSend: { messageText in
+                    send(text: messageText)
+                },
+                onStop: {
+                    await chatVM.stopGeneration()
+                },
+                tools: chatVM.toolToggles,
+                onToggleTool: { id, enabled in
+                    Task { await chatVM.setToolPermission(toolID: id, enabled: enabled) }
+                },
+                onToolsAppear: {
+                    Task { await chatVM.refreshToolToggles(modelContext: modelContext) }
+                },
+                stagedAttachments: chatVM.stagedAttachments,
+                onAddAttachment: { chatVM.addAttachment($0) },
+                onRemoveAttachment: { chatVM.removeAttachment(at: $0) },
+                stagedReferences: chatVM.stagedReferences,
+                onRemoveReference: { chatVM.removeReference(at: $0) }
+            )
             .frame(maxWidth: 860)
             .padding(.horizontal, 18)
             .padding(.bottom, 16)
@@ -77,14 +98,14 @@ struct CanvasChatView: View {
         session.messages.sorted { $0.createdAt < $1.createdAt }
     }
 
-    private func send() {
-        let text = composerText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+    private func send(text: String) {
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty || !chatVM.stagedAttachments.isEmpty else { return }
         composerText = ""
 
         chatVM.sendMessage(
-            messageText: text,
-            attachments: nil,
+            messageText: trimmedText,
+            attachments: chatVM.stagedAttachments.isEmpty ? nil : chatVM.stagedAttachments,
             session: session,
             modelContext: modelContext,
             selectedProvider: workbenchVM.selectedProvider,

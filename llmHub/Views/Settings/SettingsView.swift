@@ -51,13 +51,6 @@ struct SettingsView: View {
 
 struct AppearanceSettingsView: View {
     @State private var themeManager = ThemeManager.shared
-    @AppStorage("uiMode") private var uiMode: String = "canvas"
-
-    private var effectiveMode: String {
-        // Back-compat: "neon" used to mean the old NavigationSplitView UI.
-        // We now treat it as the new canvas UI unless the user explicitly chooses "legacy".
-        uiMode.lowercased() == "neon" ? "canvas" : uiMode.lowercased()
-    }
 
     var body: some View {
         ScrollView {
@@ -76,84 +69,23 @@ struct AppearanceSettingsView: View {
                 .padding(.horizontal)
                 .padding(.top, 16)
 
-                // MARK: - UI Mode Selector
-                VStack(alignment: .leading, spacing: 12) {
-                    Label("UI Style", systemImage: "sparkles.rectangle.stack")
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                        .padding(.horizontal)
-
-                    Text(
-                        "Canvas is the new default (floating panels + no bubbles). Legacy is the old 3-column layout."
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal)
-
-                    HStack(spacing: 12) {
-                        // Canvas (New)
-                        UIModeCard(
-                            title: "Canvas",
-                            icon: "rectangle.inset.filled",
-                            description: "Floating panels, no bubbles",
-                            isSelected: effectiveMode == "canvas"
-                        ) {
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
-                                uiMode = "canvas"
-                            }
-                        }
-
-                        // Legacy (Old)
-                        UIModeCard(
-                            title: "Legacy",
-                            icon: "square.split.2x1",
-                            description: "Old split-view workbench",
-                            isSelected: effectiveMode == "legacy"
-                        ) {
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
-                                uiMode = "legacy"
-                            }
-                        }
-
-                        // Nordic Mode
-                        UIModeCard(
-                            title: "Nordic",
-                            icon: "leaf",
-                            description: "Minimal Scandinavian design",
-                            isSelected: effectiveMode == "nordic"
-                        ) {
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
-                                uiMode = "nordic"
-                            }
-                        }
+                // Info about Canvas UI
+                HStack(spacing: 12) {
+                    Image(systemName: "rectangle.inset.filled")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Canvas UI")
+                            .font(.headline)
+                        Text("Floating panels with minimal design")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
-                    .padding(.horizontal)
+                    Spacer()
                 }
-
-                // MARK: - Theme Engine
-                VStack(alignment: .leading, spacing: 12) {
-                    Label("Theme", systemImage: "swatchpalette.fill")
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                        .padding(.horizontal)
-
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(ThemeManager.available, id: \.name) { theme in
-                                LiquidThemeCard(
-                                    theme: theme,
-                                    isSelected: themeManager.current.name == theme.name
-                                )
-                                .onTapGesture {
-                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
-                                        themeManager.setTheme(theme)
-                                    }
-                                }
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
-                }
+                .padding()
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal)
 
                 // MARK: - Window Style (macOS only)
                 #if os(macOS)
@@ -162,20 +94,6 @@ struct AppearanceSettingsView: View {
                 #endif
 
                 Spacer(minLength: 20)
-
-                // Reset Action
-                HStack {
-                    Spacer()
-                    Button("Reset to Defaults") {
-                        withAnimation(.bouncy) {
-                            themeManager.setTheme(ThemeManager.available.first!)
-                        }
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    Spacer()
-                }
-                .padding(.bottom, 20)
             }
         }
         .background(Color.clear)
