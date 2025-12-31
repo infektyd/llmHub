@@ -58,7 +58,7 @@ enum ThinkingPreference: String, Codable, CaseIterable, Sendable {
         switch self {
         case .auto: "brain"
         case .on: "brain.head.profile"
-        case .off: "brain.slash"
+        case .off: "bolt.slash"
         }
     }
 }

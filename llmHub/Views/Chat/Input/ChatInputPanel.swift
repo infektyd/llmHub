@@ -455,6 +455,7 @@ struct ChatInputPanel: View {
 // MARK: - Attachment Chip (Glass Capsule)
 
 struct AttachmentChip: View {
+    @Environment(\.theme) private var theme
     let attachment: Attachment
     let onRemove: () -> Void
 
@@ -481,13 +482,20 @@ struct AttachmentChip: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .background {
-            Capsule()
-                .fill(.ultraThinMaterial)
-                .glassEffect(GlassEffect.regular, in: .capsule)
-                .overlay(
+            Group {
+                if theme.usesGlassEffect {
                     Capsule()
-                        .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
-                )
+                        .fill(.ultraThinMaterial)
+                        .glassEffect(GlassEffect.regular, in: .capsule)
+                } else {
+                    Capsule()
+                        .fill(.ultraThinMaterial)
+                }
+            }
+            .overlay(
+                Capsule()
+                    .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
+            )
         }
     }
 }
@@ -495,6 +503,7 @@ struct AttachmentChip: View {
 // MARK: - Reference Chip
 
 struct ReferenceChip: View {
+    @Environment(\.theme) private var theme
     let reference: ChatReference
     let onRemove: () -> Void
 
@@ -521,13 +530,20 @@ struct ReferenceChip: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .background {
-            Capsule()
-                .fill(.ultraThinMaterial)
-                .glassEffect(GlassEffect.regular, in: .capsule)
-                .overlay(
+            Group {
+                if theme.usesGlassEffect {
                     Capsule()
-                        .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
-                )
+                        .fill(.ultraThinMaterial)
+                        .glassEffect(GlassEffect.regular, in: .capsule)
+                } else {
+                    Capsule()
+                        .fill(.ultraThinMaterial)
+                }
+            }
+            .overlay(
+                Capsule()
+                    .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
+            )
         }
     }
 
@@ -543,6 +559,7 @@ struct ReferenceChip: View {
 // MARK: - Tools List View
 
 struct ToolsListView: View {
+    @Environment(\.theme) private var theme
     let tools: [UIToolToggleItem]
     let onToggle: (String, Bool) -> Void
 
@@ -611,8 +628,12 @@ struct ToolsListView: View {
         }
         .scrollContentBackground(.hidden)
         .background {
-            Color.clear
-                .glassEffect(.regular, in: Rectangle())
+            if theme.usesGlassEffect {
+                Color.clear
+                    .glassEffect(.regular, in: Rectangle())
+            } else {
+                theme.surface.opacity(0.95)
+            }
         }
     }
 }

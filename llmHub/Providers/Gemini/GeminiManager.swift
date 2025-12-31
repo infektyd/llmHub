@@ -177,8 +177,24 @@ public class GeminiManager {
         // Config
         var config = GenerationConfig()
         config.maxOutputTokens = maxOutputTokens ?? 8192  // Ensure responses aren't cut off
+
+        // Build thinking config as a separate top-level field (NOT inside generationConfig)
+        // For Gemini 2.5 models, use thinkingBudget. For Gemini 3, use thinkingLevel.
+        var thinkingConfig: ThinkingConfig? = nil
         if thinkingLevel != .off {
-            config.thinkingLevel = thinkingLevel.rawValue
+            let lower = model.lowercased()
+            let isGemini25 = lower.contains("gemini-2.5") || lower.contains("gemini-2.")
+            let isGemini3 = lower.contains("gemini-3")
+
+            if isGemini25 {
+                // Gemini 2.5 uses thinkingBudget (token count, -1 for dynamic)
+                thinkingConfig = ThinkingConfig(thinkingBudget: -1, thinkingLevel: nil)
+            } else if isGemini3 {
+                // Gemini 3 uses thinkingLevel string
+                thinkingConfig = ThinkingConfig(
+                    thinkingBudget: nil, thinkingLevel: thinkingLevel.rawValue)
+            }
+            // For other models, leave thinkingConfig nil (not supported)
         }
 
         let geminiTools: [GeminiTool]? = {
@@ -196,7 +212,8 @@ public class GeminiManager {
         let payload = GenerateContentRequest(
             contents: contents,
             generationConfig: config,
-            tools: geminiTools
+            tools: geminiTools,
+            thinkingConfig: thinkingConfig
         )
 
         guard let url = URL(string: endpoint) else { throw GeminiError.invalidURL }
@@ -460,6 +477,16 @@ struct GenerateContentRequest: Codable {
     let generationConfig: GenerationConfig?
     /// Optional tool/function declarations for native tool calling.
     let tools: [GeminiTool]?
+    /// Thinking configuration (separate from generationConfig per API spec)
+    let thinkingConfig: ThinkingConfig?
+}
+
+/// Configuration for thinking/reasoning mode.
+struct ThinkingConfig: Codable {
+    /// For Gemini 2.5: token budget for thinking (-1 for dynamic, 0 for off)
+    let thinkingBudget: Int?
+    /// For Gemini 3: thinking level ("LOW", "HIGH", etc.)
+    let thinkingLevel: String?
 }
 
 /// A Gemini tool container (function declarations).
@@ -546,8 +573,6 @@ public nonisolated struct InlineData: Codable, Sendable {
 struct GenerationConfig: Codable {
     /// Sampling temperature (0.0 - 2.0).
     var temperature: Float? = nil  // Default 1.0 is best for Gemini 3
-    /// Thinking level setting.
-    var thinkingLevel: String?
     /// Response modalities (e.g., TEXT, IMAGE).
     var responseModalities: [String]?  // ["TEXT", "IMAGE"]
     /// Maximum number of output tokens.
