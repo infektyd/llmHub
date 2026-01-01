@@ -1,0 +1,1259 @@
+Loaded cached models for  3  providers
+Type: Info | Timestamp: 2025-12-31 22:21:29.401520-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+🟢 VIEWMODEL: selectedConversationID changed: nil → Optional(B1DCC47D-0A1A-454B-8A74-F0CADA666824)
+Type: stdio
+AFM: SystemLanguageModel.default.availability= unavailable(FoundationModels.SystemLanguageModel.Availability.UnavailableReason.appleIntelligenceNotEnabled)
+Type: Info | Timestamp: 2025-12-31 22:21:29.855633-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: AFM | TID: 0x2c7770
+AFM: Model assets not available. User may need to enable Apple Intelligence or download models.
+Type: Debug | Timestamp: 2025-12-31 22:21:29.856695-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: AFM | TID: 0x2c7770
+Starting model fetch for all providers
+Type: Info | Timestamp: 2025-12-31 22:21:29.856789-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Keychain diagnostics: bundleID= Syntra.llmHub  isHelper= 0  accessGroups= (none)  service= com.llmhub.keys  account= openai
+Type: Debug | Timestamp: 2025-12-31 22:21:29.883551-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: KeychainStore | TID: 0x2c7770
+Fetching models for provider= openai  canonical= openai  forceRefresh= 0  cacheAgeSeconds= 364,693
+Type: Info | Timestamp: 2025-12-31 22:21:29.887702-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Attempting to fetch models for  openai  from models.dev
+Type: Info | Timestamp: 2025-12-31 22:21:29.887880-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Fetching fresh data from models.dev API
+Type: Info | Timestamp: 2025-12-31 22:21:29.888050-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelsDevService | TID: 0x2c78c9
+Fetching models for provider= google  canonical= google  forceRefresh= 0  cacheAgeSeconds= 364,693
+Type: Info | Timestamp: 2025-12-31 22:21:29.889851-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Attempting to fetch models for  google  from models.dev
+Type: Info | Timestamp: 2025-12-31 22:21:29.889880-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Fetching fresh data from models.dev API
+Type: Info | Timestamp: 2025-12-31 22:21:29.889922-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelsDevService | TID: 0x2c78b5
+Fetching models for provider= xai  canonical= xai  forceRefresh= 0  cacheAgeSeconds= 18,446,744,073,709,551,615
+Type: Info | Timestamp: 2025-12-31 22:21:29.893677-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+No API key for  xai ; skipping official /models fetch
+Type: Info | Timestamp: 2025-12-31 22:21:29.893721-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Attempting models.dev fetch for  xai
+Type: Info | Timestamp: 2025-12-31 22:21:29.893745-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Fetching fresh data from models.dev API
+Type: Info | Timestamp: 2025-12-31 22:21:29.893781-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelsDevService | TID: 0x2c78c1
+Fetching models for provider= mistral  canonical= mistral  forceRefresh= 0  cacheAgeSeconds= 18,446,744,073,709,551,615
+Type: Info | Timestamp: 2025-12-31 22:21:29.896522-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Attempting to fetch models for  mistral  from models.dev
+Type: Info | Timestamp: 2025-12-31 22:21:29.896552-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Fetching fresh data from models.dev API
+Type: Info | Timestamp: 2025-12-31 22:21:29.896590-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelsDevService | TID: 0x2c78c1
+Fetching models for provider= openrouter  canonical= openrouter  forceRefresh= 0  cacheAgeSeconds= 18,446,744,073,709,551,615
+Type: Info | Timestamp: 2025-12-31 22:21:29.899520-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Attempting to fetch models for  openrouter  from models.dev
+Type: Info | Timestamp: 2025-12-31 22:21:29.899553-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Fetching fresh data from models.dev API
+Type: Info | Timestamp: 2025-12-31 22:21:29.899632-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelsDevService | TID: 0x2c78ca
+Fetching models for provider= anthropic  canonical= anthropic  forceRefresh= 0  cacheAgeSeconds= 364,693
+Type: Info | Timestamp: 2025-12-31 22:21:29.900646-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Attempting official /models fetch for  anthropic
+Type: Info | Timestamp: 2025-12-31 22:21:29.900670-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Fetching models for  anthropic
+Type: Info | Timestamp: 2025-12-31 22:21:29.900909-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelFetchService | TID: 0x2c7770
+Anthropic /models request page= 0  url= https://api.anthropic.com/v1/models?limit=100
+Type: Info | Timestamp: 2025-12-31 22:21:29.901881-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelFetchService | TID: 0x2c7770
+Anthropic /models page= 0  decoded= 10  has_more= 0  last_id= nil
+Type: Info | Timestamp: 2025-12-31 22:21:30.290887-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelFetchService | TID: 0x2c7770
+Fetched  10  Anthropic models from official API
+Type: Info | Timestamp: 2025-12-31 22:21:30.291508-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelFetchService | TID: 0x2c7770
+✅ Using official models for  anthropic : fetched= 10  merged= 12
+Type: Info | Timestamp: 2025-12-31 22:21:30.291630-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Successfully fetched  12  models for  anthropic
+Type: Info | Timestamp: 2025-12-31 22:21:30.291724-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Fetched  1,929  models from  74  providers via models.dev
+Type: Info | Timestamp: 2025-12-31 22:21:31.175850-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelsDevService | TID: 0x2c78b6
+Found  26  models for ' mistral ' from models.dev
+Type: Info | Timestamp: 2025-12-31 22:21:31.175970-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelsDevService | TID: 0x2c78b6
+✅ Fetched  26  models for  mistral  from models.dev
+Type: Info | Timestamp: 2025-12-31 22:21:31.176015-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Successfully fetched  27  models for  mistral
+Type: Info | Timestamp: 2025-12-31 22:21:31.176578-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Fetched  1,929  models from  74  providers via models.dev
+Type: Info | Timestamp: 2025-12-31 22:21:31.188608-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelsDevService | TID: 0x2c78b6
+Found  137  models for ' openrouter ' from models.dev
+Type: Info | Timestamp: 2025-12-31 22:21:31.188708-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelsDevService | TID: 0x2c78b6
+✅ Fetched  137  models for  openrouter  from models.dev
+Type: Info | Timestamp: 2025-12-31 22:21:31.193012-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Successfully fetched  139  models for  openrouter
+Type: Info | Timestamp: 2025-12-31 22:21:31.193436-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Fetched  1,929  models from  74  providers via models.dev
+Type: Info | Timestamp: 2025-12-31 22:21:31.201186-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelsDevService | TID: 0x2c78b6
+Found  22  models for ' xai ' from models.dev
+Type: Info | Timestamp: 2025-12-31 22:21:31.201290-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelsDevService | TID: 0x2c78b6
+✅ Using models.dev for  xai : fetched= 22  merged= 24
+Type: Info | Timestamp: 2025-12-31 22:21:31.201369-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Successfully fetched  24  models for  xai
+Type: Info | Timestamp: 2025-12-31 22:21:31.201428-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Fetched  1,929  models from  74  providers via models.dev
+Type: Info | Timestamp: 2025-12-31 22:21:31.213193-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelsDevService | TID: 0x2c78b6
+Found  39  models for ' openai ' from models.dev
+Type: Info | Timestamp: 2025-12-31 22:21:31.213307-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelsDevService | TID: 0x2c78b6
+✅ Fetched  39  models for  openai  from models.dev
+Type: Info | Timestamp: 2025-12-31 22:21:31.213630-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Successfully fetched  39  models for  openai
+Type: Info | Timestamp: 2025-12-31 22:21:31.213832-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Fetched  1,929  models from  74  providers via models.dev
+Type: Info | Timestamp: 2025-12-31 22:21:31.225262-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelsDevService | TID: 0x2c78b6
+Found  26  models for ' google ' from models.dev
+Type: Info | Timestamp: 2025-12-31 22:21:31.225387-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelsDevService | TID: 0x2c78b6
+✅ Fetched  26  models for  google  from models.dev
+Type: Info | Timestamp: 2025-12-31 22:21:31.225405-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Successfully fetched  26  models for  google
+Type: Info | Timestamp: 2025-12-31 22:21:31.225511-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Saved model cache to UserDefaults
+Type: Info | Timestamp: 2025-12-31 22:21:31.236515-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Model fetch complete. Providers loaded:  openai, mistral, openrouter, xai, google, anthropic
+Type: Info | Timestamp: 2025-12-31 22:21:31.236539-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub.app | Category: ModelRegistry | TID: 0x2c7770
+Registered provider:  OpenAI  (ID:  openai ) -> Canonical:  openai
+Type: Info | Timestamp: 2025-12-31 22:22:20.529844-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ProviderRegistry | TID: 0x2c7770
+Registered provider:  Anthropic (Claude)  (ID:  anthropic ) -> Canonical:  anthropic
+Type: Info | Timestamp: 2025-12-31 22:22:20.530071-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ProviderRegistry | TID: 0x2c7770
+Registered provider:  Mistral  (ID:  mistral ) -> Canonical:  mistral
+Type: Info | Timestamp: 2025-12-31 22:22:20.530483-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ProviderRegistry | TID: 0x2c7770
+Registered provider:  Google AI (Gemini)  (ID:  google ) -> Canonical:  google
+Type: Info | Timestamp: 2025-12-31 22:22:20.530640-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ProviderRegistry | TID: 0x2c7770
+Registered provider:  xAI (Grok)  (ID:  xai ) -> Canonical:  xai
+Type: Info | Timestamp: 2025-12-31 22:22:20.530846-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ProviderRegistry | TID: 0x2c7770
+Registered provider:  OpenRouter  (ID:  openrouter ) -> Canonical:  openrouter
+Type: Info | Timestamp: 2025-12-31 22:22:20.531175-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ProviderRegistry | TID: 0x2c7770
+Registry initialized with  6  providers.
+Type: Info | Timestamp: 2025-12-31 22:22:20.531182-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ProviderRegistry | TID: 0x2c7770
+Permissions loaded:  8  entries
+Type: Debug | Timestamp: 2025-12-31 22:22:20.542322-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ToolAuthorizationService | TID: 0x2c7770
+🟢 VIEWMODEL: selectedConversationID changed: Optional(B1DCC47D-0A1A-454B-8A74-F0CADA666824) → Optional(7FB63BAA-7815-4D7E-B968-E38146B4D761)
+Type: stdio
+containerToPush is nil, will not push anything to candidate receiver for request token:  06C3C073
+Type: Error | Timestamp: 2025-12-31 22:22:39.343913-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7b53
+Reporter disconnected. { function=sendMessage, reporterID= 58,836,756,987,905  }
+Type: Error | Timestamp: 2025-12-31 22:22:39.846142-05:00 | Library: AudioAnalytics | Subsystem: com.apple.audioanalytics | Category: carc | TID: 0x2c78c2
+Reporter disconnected. { function=sendMessage, reporterID= 58,836,756,987,905  }
+Type: Error | Timestamp: 2025-12-31 22:22:39.850101-05:00 | Library: AudioAnalytics | Subsystem: com.apple.audioanalytics | Category: carc | TID: 0x2c78c2
+Reporter disconnected. { function=sendMessage, reporterID= 58,836,756,987,905  }
+Type: Error | Timestamp: 2025-12-31 22:22:39.851384-05:00 | Library: AudioAnalytics | Subsystem: com.apple.audioanalytics | Category: carc | TID: 0x2c78c2
+Reporter disconnected. { function=sendMessage, reporterID= 58,836,756,987,905  }
+Type: Error | Timestamp: 2025-12-31 22:22:39.853455-05:00 | Library: AudioAnalytics | Subsystem: com.apple.audioanalytics | Category: carc | TID: 0x2c78c2
+Reporter disconnected. { function=sendMessage, reporterID= 58,836,756,987,905  }
+Type: Error | Timestamp: 2025-12-31 22:22:39.855994-05:00 | Library: AudioAnalytics | Subsystem: com.apple.audioanalytics | Category: carc | TID: 0x2c78c2
+Reporter disconnected. { function=sendMessage, reporterID= 58,836,756,987,905  }
+Type: Error | Timestamp: 2025-12-31 22:22:39.858034-05:00 | Library: AudioAnalytics | Subsystem: com.apple.audioanalytics | Category: carc | TID: 0x2c78c2
+Reporter disconnected. { function=sendMessage, reporterID= 58,836,756,987,905  }
+Type: Error | Timestamp: 2025-12-31 22:22:39.860026-05:00 | Library: AudioAnalytics | Subsystem: com.apple.audioanalytics | Category: carc | TID: 0x2c78c2
+📐 Window resize: (402.0, 778.0) → (402.0, 477.0)
+Type: stdio
+Reporter disconnected. { function=sendMessage, reporterID= 58,836,756,987,905  }
+Type: Error | Timestamp: 2025-12-31 22:22:39.861788-05:00 | Library: AudioAnalytics | Subsystem: com.apple.audioanalytics | Category: carc | TID: 0x2c78c2
+Reporter disconnected. { function=sendMessage, reporterID= 58,836,756,987,905  }
+Type: Error | Timestamp: 2025-12-31 22:22:39.863434-05:00 | Library: AudioAnalytics | Subsystem: com.apple.audioanalytics | Category: carc | TID: 0x2c78c2
+Could not find cached accumulator for token= 1D24DACF  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:23:04.081078-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7d1b
+Could not find cached accumulator for token= 1D24DACF  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:23:04.081566-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7d1b
+Could not find cached accumulator for token= 9A91CA62  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:23:04.293699-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7b80
+Could not find cached accumulator for token= 9A91CA62  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:23:04.294081-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7d1b
+Could not find cached accumulator for token= 6916716B  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:23:04.464986-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7d1b
+Could not find cached accumulator for token= 6916716B  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:23:04.465619-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7d1b
+Could not find cached accumulator for token= 18E322BE  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:23:04.641290-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7b71
+Could not find cached accumulator for token= 18E322BE  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:23:04.641547-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7b71
+Could not find cached accumulator for token= C96CF49E  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:23:04.844199-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7b71
+Could not find cached accumulator for token= C96CF49E  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:23:04.844385-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7b7e
+Could not find cached accumulator for token= 0CFD4124  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:23:04.985823-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7b7e
+Could not find cached accumulator for token= 0CFD4124  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:23:04.986372-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7b71
+Could not find cached accumulator for token= 971CB283  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:23:05.166963-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7b7e
+Could not find cached accumulator for token= 971CB283  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:23:05.167862-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7b7e
+Could not find cached accumulator for token= 55ACC47C  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:23:05.345004-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7d1b
+Could not find cached accumulator for token= 55ACC47C  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:23:05.345565-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7d1b
+Could not find cached accumulator for token= 6D5F69B0  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:23:05.538055-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7b71
+Could not find cached accumulator for token= 6D5F69B0  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:23:05.538976-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7d1b
+Could not find cached accumulator for token= 1B2744ED  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:23:05.721667-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7b71
+Could not find cached accumulator for token= 1B2744ED  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:23:05.722325-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7b71
+📐 Window resize: (402.0, 477.0) → (750.0, 382.0)
+📐 Window resize: (750.0, 382.0) → (750.0, 198.0)
+📐 Window resize: (750.0, 198.0) → (402.0, 181.33333333333331)
+📐 Window resize: (402.0, 181.33333333333331) → (402.0, 477.0)
+Type: stdio
+Called -[UIContextMenuInteraction updateVisibleMenuWithBlock:] while no context menu is visible. This won't do anything.
+Type: Error | Timestamp: 2025-12-31 22:23:30.140673-05:00 | Library: UIKitCore | Subsystem: com.apple.UIKit | Category: UILog | TID: 0x2c7770
+Adding ' _UIReparentingView ' as a subview of  UIHostingController.view  is not supported and may result in a broken view hierarchy. Add your view above  UIHostingController.view  in a common superview or insert it into your SwiftUI content in a UIViewRepresentable instead.
+Type: Fault | Timestamp: 2025-12-31 22:23:30.163341-05:00 | Library: SwiftUI | Subsystem: com.apple.runtime-issues | Category: SwiftUI | TID: 0x2c7770
+Adding ' _UIReparentingView ' as a subview of  UIHostingController.view  is not supported and may result in a broken view hierarchy. Add your view above  UIHostingController.view  in a common superview or insert it into your SwiftUI content in a UIViewRepresentable instead.
+Type: Fault | Timestamp: 2025-12-31 22:23:30.167273-05:00 | Library: SwiftUI | Subsystem: com.apple.runtime-issues | Category: SwiftUI | TID: 0x2c7770
+Adding ' _UIReparentingView ' as a subview of  UIHostingController.view  is not supported and may result in a broken view hierarchy. Add your view above  UIHostingController.view  in a common superview or insert it into your SwiftUI content in a UIViewRepresentable instead.
+Type: Fault | Timestamp: 2025-12-31 22:23:38.197918-05:00 | Library: SwiftUI | Subsystem: com.apple.runtime-issues | Category: SwiftUI | TID: 0x2c7770
+Called -[UIContextMenuInteraction updateVisibleMenuWithBlock:] while no context menu is visible. This won't do anything.
+Type: Error | Timestamp: 2025-12-31 22:23:50.821940-05:00 | Library: UIKitCore | Subsystem: com.apple.UIKit | Category: UILog | TID: 0x2c7770
+Adding ' _UIReparentingView ' as a subview of  UIHostingController.view  is not supported and may result in a broken view hierarchy. Add your view above  UIHostingController.view  in a common superview or insert it into your SwiftUI content in a UIViewRepresentable instead.
+Type: Fault | Timestamp: 2025-12-31 22:23:50.839420-05:00 | Library: SwiftUI | Subsystem: com.apple.runtime-issues | Category: SwiftUI | TID: 0x2c7770
+Adding ' _UIReparentingView ' as a subview of  UIHostingController.view  is not supported and may result in a broken view hierarchy. Add your view above  UIHostingController.view  in a common superview or insert it into your SwiftUI content in a UIViewRepresentable instead.
+Type: Fault | Timestamp: 2025-12-31 22:23:50.841178-05:00 | Library: SwiftUI | Subsystem: com.apple.runtime-issues | Category: SwiftUI | TID: 0x2c7770
+Adding ' _UIReparentingView ' as a subview of  UIHostingController.view  is not supported and may result in a broken view hierarchy. Add your view above  UIHostingController.view  in a common superview or insert it into your SwiftUI content in a UIViewRepresentable instead.
+Type: Fault | Timestamp: 2025-12-31 22:23:52.238387-05:00 | Library: SwiftUI | Subsystem: com.apple.runtime-issues | Category: SwiftUI | TID: 0x2c7770
+Could not find cached accumulator for token= 23EA35F3  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:23:59.229011-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7b7e
+Could not find cached accumulator for token= 23EA35F3  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:23:59.229819-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7b7e
+Could not find cached accumulator for token= 23EA35F3  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:23:59.233125-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7b7e
+Could not find cached accumulator for token= D39C3E42  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:23:59.386693-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7e9c
+Could not find cached accumulator for token= D39C3E42  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:23:59.387294-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7e9c
+Could not find cached accumulator for token= 9053127E  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:23:59.617509-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7e9c
+Could not find cached accumulator for token= 9053127E  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:23:59.623053-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7e9c
+Could not find cached accumulator for token= E7DDE6AB  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:23:59.794582-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7f15
+Could not find cached accumulator for token= E7DDE6AB  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:23:59.795164-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7f15
+Could not find cached accumulator for token= D5F4A82F  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:23:59.973976-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7e9b
+Could not find cached accumulator for token= D5F4A82F  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:23:59.974596-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7e9b
+Could not find cached accumulator for token= F3F238C2  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:24:00.166170-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7f15
+Could not find cached accumulator for token= F3F238C2  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:24:00.166442-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7f15
+Could not find cached accumulator for token= 3CBEC2A4  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:24:00.423888-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7e9b
+Could not find cached accumulator for token= 3CBEC2A4  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:24:00.425870-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7e9b
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 12AE53EC ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:24:00.817280-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7f83
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 55F91398 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:24:04.500133-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7b7e
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 37314DE3 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:24:08.167205-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7f83
+UI Selection - Provider:  Google , Model:  Gemini 3 Flash Preview
+Type: Info | Timestamp: 2025-12-31 22:24:09.674109-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Normalized ' Google ' -> ' google '
+Type: Debug | Timestamp: 2025-12-31 22:24:09.674221-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Mapped to - Provider ID:  google , Model ID:  gemini-3-flash-preview
+Type: Info | Timestamp: 2025-12-31 22:24:09.674255-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Using thinkingPreference:  off
+Type: Info | Timestamp: 2025-12-31 22:24:09.727970-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Sending message to provider:  google , model:  gemini-3-flash-preview
+Type: Info | Timestamp: 2025-12-31 22:24:09.775017-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Using provider:  google , model:  gemini-3-flash-preview
+Type: Debug | Timestamp: 2025-12-31 22:24:09.775272-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🔵 [ChatService] streamCompletion called - provider:  google , model:  gemini-3-flash-preview , userMessage length:  49
+Type: Info | Timestamp: 2025-12-31 22:24:09.775286-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🟢 [ChatService] Provider resolved:  GoogleAIProvider
+Type: Info | Timestamp: 2025-12-31 22:24:09.775300-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Extracted query keywords:  hello, can, you, see, tools, test, out
+Type: Debug | Timestamp: 2025-12-31 22:24:09.779289-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: Memory | TID: 0x2c7770
+Retrieved  0  memories for query
+Type: Info | Timestamp: 2025-12-31 22:24:09.783467-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: Memory | TID: 0x2c7770
+Starting compaction:  2  messages, maxTokens= 120,000
+Type: Debug | Timestamp: 2025-12-31 22:24:09.784657-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+No compaction needed:  612  tokens within limit
+Type: Debug | Timestamp: 2025-12-31 22:24:09.784680-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+🔵 [ChatService] Building request - messages:  2 , tools:  7 , thinking:  off
+Type: Info | Timestamp: 2025-12-31 22:24:09.784702-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+➡️ [ Gemini ] Request started - model:  gemini-3-flash-preview , messages:  2 , tools:  7
+Type: Info | Timestamp: 2025-12-31 22:24:09.784930-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🔑 [ Gemini ] API key found
+Type: Debug | Timestamp: 2025-12-31 22:24:09.792756-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] URL:  https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AIzaSyCRSKgAYnodvL_j1ov_3aKRg4yu4eImdgA
+Type: Debug | Timestamp: 2025-12-31 22:24:09.807823-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] Body:  {"tools":[{"functionDeclarations":[{"name":"calculator","description":"Evaluates mathematical expressions with scientific functions and complex numbers.","parameters":{"required":["expression"],"type":"object","properties":{"precision":{"description":"Decimal precision (0-12, default 6)","type":"int ...
+Type: Debug | Timestamp: 2025-12-31 22:24:09.807846-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🟢 [ChatService] Request built successfully
+Type: Info | Timestamp: 2025-12-31 22:24:09.807857-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🔵 [ChatService] Starting to stream response from provider...
+Type: Info | Timestamp: 2025-12-31 22:24:09.807861-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+📤 [ Gemini ] Request sent to network
+Type: Debug | Timestamp: 2025-12-31 22:24:09.808224-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7e9c
+🟢 [ChatService] Received event # 1 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:24:12.061510-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+ChatService: Tool call detected:  workspace
+Type: Debug | Timestamp: 2025-12-31 22:24:12.061530-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool use:  workspace  (id:  call_122C1037 )
+Type: Info | Timestamp: 2025-12-31 22:24:12.061599-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+🟢 [ChatService] Received event # 2 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:24:12.061642-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+ChatService: Tool call detected:  calculator
+Type: Debug | Timestamp: 2025-12-31 22:24:12.061651-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool use:  calculator  (id:  call_75E60002 )
+Type: Info | Timestamp: 2025-12-31 22:24:12.061681-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+🟢 [ChatService] Received event # 3 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:24:12.061708-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool executing:  workspace
+Type: Info | Timestamp: 2025-12-31 22:24:12.087986-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Tool executing:  calculator
+Type: Info | Timestamp: 2025-12-31 22:24:12.088032-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+✅  workspace  completed in  5 ms
+Type: Info | Timestamp: 2025-12-31 22:24:12.088868-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ToolExecutor | TID: 0x2c7e9c
+Executed tool:  workspace , success:  1
+Type: Info | Timestamp: 2025-12-31 22:24:12.088909-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+✅  calculator  completed in  4 ms
+Type: Info | Timestamp: 2025-12-31 22:24:12.089672-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ToolExecutor | TID: 0x2c7b7e
+Executed tool:  calculator , success:  1
+Type: Info | Timestamp: 2025-12-31 22:24:12.097929-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Extracted query keywords:  hello, can, you, see, tools, test, out
+Type: Debug | Timestamp: 2025-12-31 22:24:12.104561-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: Memory | TID: 0x2c7770
+Retrieved  0  memories for query
+Type: Info | Timestamp: 2025-12-31 22:24:12.104712-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: Memory | TID: 0x2c7770
+Starting compaction:  5  messages, maxTokens= 120,000
+Type: Debug | Timestamp: 2025-12-31 22:24:12.107362-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+No compaction needed:  651  tokens within limit
+Type: Debug | Timestamp: 2025-12-31 22:24:12.107393-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+🔵 [ChatService] Building request - messages:  5 , tools:  7 , thinking:  off
+Type: Info | Timestamp: 2025-12-31 22:24:12.107400-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+➡️ [ Gemini ] Request started - model:  gemini-3-flash-preview , messages:  5 , tools:  7
+Type: Info | Timestamp: 2025-12-31 22:24:12.107407-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🔑 [ Gemini ] API key found
+Type: Debug | Timestamp: 2025-12-31 22:24:12.114656-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] URL:  https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AIzaSyCRSKgAYnodvL_j1ov_3aKRg4yu4eImdgA
+Type: Debug | Timestamp: 2025-12-31 22:24:12.116711-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] Body:  {"tools":[{"functionDeclarations":[{"parameters":{"type":"object","required":["expression"],"properties":{"format":{"type":"string","description":"Output format (default: decimal)","enum":["decimal","scientific"]},"precision":{"type":"integer","description":"Decimal precision (0-12, default 6)"},"ex ...
+Type: Debug | Timestamp: 2025-12-31 22:24:12.116732-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🟢 [ChatService] Request built successfully
+Type: Info | Timestamp: 2025-12-31 22:24:12.116741-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🔵 [ChatService] Starting to stream response from provider...
+Type: Info | Timestamp: 2025-12-31 22:24:12.116745-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+📤 [ Gemini ] Request sent to network
+Type: Debug | Timestamp: 2025-12-31 22:24:12.116808-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7b7e
+🟢 [ChatService] Received event # 1 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:24:15.781632-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+ChatService: Tool call detected:  calculator
+Type: Debug | Timestamp: 2025-12-31 22:24:15.781662-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool use:  calculator  (id:  call_49C94368 )
+Type: Info | Timestamp: 2025-12-31 22:24:15.781710-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+🟢 [ChatService] Received event # 2 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:24:15.784130-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool executing:  calculator
+Type: Info | Timestamp: 2025-12-31 22:24:15.797667-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+✅  calculator  completed in  0 ms
+Type: Info | Timestamp: 2025-12-31 22:24:15.798136-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ToolExecutor | TID: 0x2c7e9c
+Executed tool:  calculator , success:  1
+Type: Info | Timestamp: 2025-12-31 22:24:15.802769-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Extracted query keywords:  hello, can, you, see, tools, test, out
+Type: Debug | Timestamp: 2025-12-31 22:24:15.811577-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: Memory | TID: 0x2c7770
+Retrieved  0  memories for query
+Type: Info | Timestamp: 2025-12-31 22:24:15.811814-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: Memory | TID: 0x2c7770
+Starting compaction:  7  messages, maxTokens= 120,000
+Type: Debug | Timestamp: 2025-12-31 22:24:15.815540-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+No compaction needed:  660  tokens within limit
+Type: Debug | Timestamp: 2025-12-31 22:24:15.815588-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+🔵 [ChatService] Building request - messages:  7 , tools:  7 , thinking:  off
+Type: Info | Timestamp: 2025-12-31 22:24:15.815602-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+➡️ [ Gemini ] Request started - model:  gemini-3-flash-preview , messages:  7 , tools:  7
+Type: Info | Timestamp: 2025-12-31 22:24:15.815618-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🔑 [ Gemini ] API key found
+Type: Debug | Timestamp: 2025-12-31 22:24:15.824362-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] URL:  https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AIzaSyCRSKgAYnodvL_j1ov_3aKRg4yu4eImdgA
+Type: Debug | Timestamp: 2025-12-31 22:24:15.825013-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] Body:  {"generationConfig":{"maxOutputTokens":8192},"tools":[{"functionDeclarations":[{"name":"calculator","description":"Evaluates mathematical expressions with scientific functions and complex numbers.","parameters":{"required":["expression"],"type":"object","properties":{"expression":{"type":"string","d ...
+Type: Debug | Timestamp: 2025-12-31 22:24:15.825030-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🟢 [ChatService] Request built successfully
+Type: Info | Timestamp: 2025-12-31 22:24:15.825042-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🔵 [ChatService] Starting to stream response from provider...
+Type: Info | Timestamp: 2025-12-31 22:24:15.825046-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+📤 [ Gemini ] Request sent to network
+Type: Debug | Timestamp: 2025-12-31 22:24:15.825126-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7e9c
+🟢 [ChatService] Received event # 1 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:24:20.232030-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+ChatService: Tool call detected:  read_file
+Type: Debug | Timestamp: 2025-12-31 22:24:20.232064-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool use:  read_file  (id:  call_821D6A69 )
+Type: Info | Timestamp: 2025-12-31 22:24:20.232119-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+🟢 [ChatService] Received event # 2 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:24:20.234467-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool executing:  read_file
+Type: Info | Timestamp: 2025-12-31 22:24:20.247038-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Reading file:  /privatetest.txt
+Type: Debug | Timestamp: 2025-12-31 22:24:20.247133-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: Tool | TID: 0x2c7b7e
+❌  read_file  failed:  Sandbox violation: Access denied: File outside workspace sandbox
+Type: Error | Timestamp: 2025-12-31 22:24:20.250356-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ToolExecutor | TID: 0x2c7f15
+Executed tool:  read_file , success:  0
+Type: Info | Timestamp: 2025-12-31 22:24:20.252373-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Extracted query keywords:  hello, can, you, see, tools, test, out
+Type: Debug | Timestamp: 2025-12-31 22:24:20.259704-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: Memory | TID: 0x2c7770
+Retrieved  0  memories for query
+Type: Info | Timestamp: 2025-12-31 22:24:20.259901-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: Memory | TID: 0x2c7770
+Starting compaction:  9  messages, maxTokens= 120,000
+Type: Debug | Timestamp: 2025-12-31 22:24:20.263275-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+No compaction needed:  684  tokens within limit
+Type: Debug | Timestamp: 2025-12-31 22:24:20.263320-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+🔵 [ChatService] Building request - messages:  9 , tools:  7 , thinking:  off
+Type: Info | Timestamp: 2025-12-31 22:24:20.263330-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+➡️ [ Gemini ] Request started - model:  gemini-3-flash-preview , messages:  9 , tools:  7
+Type: Info | Timestamp: 2025-12-31 22:24:20.263342-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🔑 [ Gemini ] API key found
+Type: Debug | Timestamp: 2025-12-31 22:24:20.265190-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] URL:  https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AIzaSyCRSKgAYnodvL_j1ov_3aKRg4yu4eImdgA
+Type: Debug | Timestamp: 2025-12-31 22:24:20.265713-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] Body:  {"tools":[{"functionDeclarations":[{"name":"calculator","parameters":{"properties":{"expression":{"description":"The mathematical expression to evaluate (e.g., '5 * 5 + 2', 'sin(pi\/4)')","type":"string"},"precision":{"type":"integer","description":"Decimal precision (0-12, default 6)"},"format":{"d ...
+Type: Debug | Timestamp: 2025-12-31 22:24:20.265726-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🟢 [ChatService] Request built successfully
+Type: Info | Timestamp: 2025-12-31 22:24:20.265735-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🔵 [ChatService] Starting to stream response from provider...
+Type: Info | Timestamp: 2025-12-31 22:24:20.265740-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+📤 [ Gemini ] Request sent to network
+Type: Debug | Timestamp: 2025-12-31 22:24:20.265811-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7f83
+🟢 [ChatService] Received event # 1 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:24:25.669533-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+ChatService: Tool call detected:  web_search
+Type: Debug | Timestamp: 2025-12-31 22:24:25.669550-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool use:  web_search  (id:  call_55E7B6D6 )
+Type: Info | Timestamp: 2025-12-31 22:24:25.669596-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+🟢 [ChatService] Received event # 2 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:24:25.671385-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool executing:  web_search
+Type: Info | Timestamp: 2025-12-31 22:24:25.681635-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Searching web for:  llmHub macOS app features
+Type: Info | Timestamp: 2025-12-31 22:24:25.682159-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: Tool | TID: 0x2c7e9c
+✅  web_search  completed in  1,077 ms
+Type: Info | Timestamp: 2025-12-31 22:24:26.752820-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ToolExecutor | TID: 0x2c7e9c
+Executed tool:  web_search , success:  1
+Type: Info | Timestamp: 2025-12-31 22:24:26.753542-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Extracted query keywords:  hello, can, you, see, tools, test, out
+Type: Debug | Timestamp: 2025-12-31 22:24:26.777550-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: Memory | TID: 0x2c7770
+Retrieved  0  memories for query
+Type: Info | Timestamp: 2025-12-31 22:24:26.777720-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: Memory | TID: 0x2c7770
+Starting compaction:  11  messages, maxTokens= 120,000
+Type: Debug | Timestamp: 2025-12-31 22:24:26.781587-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+No compaction needed:  995  tokens within limit
+Type: Debug | Timestamp: 2025-12-31 22:24:26.781692-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+🔵 [ChatService] Building request - messages:  11 , tools:  7 , thinking:  off
+Type: Info | Timestamp: 2025-12-31 22:24:26.781713-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+➡️ [ Gemini ] Request started - model:  gemini-3-flash-preview , messages:  11 , tools:  7
+Type: Info | Timestamp: 2025-12-31 22:24:26.781728-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🔑 [ Gemini ] API key found
+Type: Debug | Timestamp: 2025-12-31 22:24:26.784128-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] URL:  https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AIzaSyCRSKgAYnodvL_j1ov_3aKRg4yu4eImdgA
+Type: Debug | Timestamp: 2025-12-31 22:24:26.785062-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] Body:  {"generationConfig":{"maxOutputTokens":8192},"tools":[{"functionDeclarations":[{"parameters":{"required":["expression"],"properties":{"expression":{"type":"string","description":"The mathematical expression to evaluate (e.g., '5 * 5 + 2', 'sin(pi\/4)')"},"format":{"type":"string","enum":["decimal"," ...
+Type: Debug | Timestamp: 2025-12-31 22:24:26.785082-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🟢 [ChatService] Request built successfully
+Type: Info | Timestamp: 2025-12-31 22:24:26.785098-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🔵 [ChatService] Starting to stream response from provider...
+Type: Info | Timestamp: 2025-12-31 22:24:26.785106-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+📤 [ Gemini ] Request sent to network
+Type: Debug | Timestamp: 2025-12-31 22:24:26.785206-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7e9c
+🟢 [ChatService] Received event # 1 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:24:29.744492-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+ChatService: Tool call detected:  read_file
+Type: Debug | Timestamp: 2025-12-31 22:24:29.744524-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool use:  read_file  (id:  call_052BEA9E )
+Type: Info | Timestamp: 2025-12-31 22:24:29.744567-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+🟢 [ChatService] Received event # 2 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:24:29.746309-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+ChatService: Tool call detected:  calculator
+Type: Debug | Timestamp: 2025-12-31 22:24:29.746333-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool use:  calculator  (id:  call_DF22AEB2 )
+Type: Info | Timestamp: 2025-12-31 22:24:29.746379-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+🟢 [ChatService] Received event # 3 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:24:30.022027-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+ChatService: Tool call detected:  file_editor
+Type: Debug | Timestamp: 2025-12-31 22:24:30.022082-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool use:  file_editor  (id:  call_12119847 )
+Type: Info | Timestamp: 2025-12-31 22:24:30.022145-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+ChatService: Tool call detected:  web_search
+Type: Debug | Timestamp: 2025-12-31 22:24:30.051117-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool use:  web_search  (id:  call_F898E3E9 )
+Type: Info | Timestamp: 2025-12-31 22:24:30.051204-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Tool executing:  read_file
+Type: Info | Timestamp: 2025-12-31 22:24:30.103530-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Tool executing:  calculator
+Type: Info | Timestamp: 2025-12-31 22:24:30.103614-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Reading file:  /var/mobile/Containers/Data/Application/D97F52C7-0A14-47A4-ABD6-018E2D373B5E/Documents/privatetest.txt
+Type: Debug | Timestamp: 2025-12-31 22:24:30.103831-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: Tool | TID: 0x2c7fdd
+Tool executing:  file_editor
+Type: Info | Timestamp: 2025-12-31 22:24:30.103898-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Tool executing:  web_search
+Type: Info | Timestamp: 2025-12-31 22:24:30.103958-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Searching web for:  llmHub macOS app official features list
+Type: Info | Timestamp: 2025-12-31 22:24:30.103975-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: Tool | TID: 0x2c7fdc
+❌  read_file  failed:  Execution failed: File not found: privatetest.txt
+Type: Error | Timestamp: 2025-12-31 22:24:30.104115-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ToolExecutor | TID: 0x2c7fdd
+Executed tool:  read_file , success:  0
+Type: Info | Timestamp: 2025-12-31 22:24:30.104199-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+✅  calculator  completed in  8 ms
+Type: Info | Timestamp: 2025-12-31 22:24:30.104621-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ToolExecutor | TID: 0x2c7e9c
+✅  file_editor  completed in  10 ms
+Type: Info | Timestamp: 2025-12-31 22:24:30.106533-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ToolExecutor | TID: 0x2c7e9b
+Executed tool:  calculator , success:  1
+Type: Info | Timestamp: 2025-12-31 22:24:30.115303-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Executed tool:  file_editor , success:  1
+Type: Info | Timestamp: 2025-12-31 22:24:30.122611-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+✅  web_search  completed in  852 ms
+Type: Info | Timestamp: 2025-12-31 22:24:30.948284-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ToolExecutor | TID: 0x2c807b
+Executed tool:  web_search , success:  1
+Type: Info | Timestamp: 2025-12-31 22:24:30.948494-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Extracted query keywords:  hello, can, you, see, tools, test, out
+Type: Debug | Timestamp: 2025-12-31 22:24:30.972366-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: Memory | TID: 0x2c7770
+Retrieved  0  memories for query
+Type: Info | Timestamp: 2025-12-31 22:24:30.972732-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: Memory | TID: 0x2c7770
+Starting compaction:  16  messages, maxTokens= 120,000
+Type: Debug | Timestamp: 2025-12-31 22:24:30.979589-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+No compaction needed:  1,292  tokens within limit
+Type: Debug | Timestamp: 2025-12-31 22:24:30.979708-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+🔵 [ChatService] Building request - messages:  16 , tools:  7 , thinking:  off
+Type: Info | Timestamp: 2025-12-31 22:24:30.979732-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+➡️ [ Gemini ] Request started - model:  gemini-3-flash-preview , messages:  16 , tools:  7
+Type: Info | Timestamp: 2025-12-31 22:24:30.979756-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🔑 [ Gemini ] API key found
+Type: Debug | Timestamp: 2025-12-31 22:24:30.982904-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] URL:  https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AIzaSyCRSKgAYnodvL_j1ov_3aKRg4yu4eImdgA
+Type: Debug | Timestamp: 2025-12-31 22:24:30.984003-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] Body:  {"contents":[{"parts":[{"text":"<llmhub_tool_manifest>\nYou are running inside llmHub, a native macOS\/iOS app.\n\nTool access is provided ONLY by llmHub and is limited to the tools listed in this message.\nDo not claim access to external tools (e.g. web browser, Python, filesystem, shell) unless yo ...
+Type: Debug | Timestamp: 2025-12-31 22:24:30.984024-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🟢 [ChatService] Request built successfully
+Type: Info | Timestamp: 2025-12-31 22:24:30.984043-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🔵 [ChatService] Starting to stream response from provider...
+Type: Info | Timestamp: 2025-12-31 22:24:30.984050-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+📤 [ Gemini ] Request sent to network
+Type: Debug | Timestamp: 2025-12-31 22:24:30.984168-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c807b
+nw_read_request_report  [C 2 ] Receive failed with error " Operation timed out "
+Type: Error | Timestamp: 2025-12-31 22:24:31.257550-05:00 | Library: Network | Subsystem: com.apple.network | Category: connection | TID: 0x2c7e9b
+nw_read_request_report  [C 2 ] Receive failed with error " Operation timed out "
+Type: Error | Timestamp: 2025-12-31 22:24:31.257920-05:00 | Library: Network | Subsystem: com.apple.network | Category: connection | TID: 0x2c7e9b
+nw_read_request_report  [C 2 ] Receive failed with error " Operation timed out "
+Type: Error | Timestamp: 2025-12-31 22:24:31.258024-05:00 | Library: Network | Subsystem: com.apple.network | Category: connection | TID: 0x2c7e9b
+🟢 [ChatService] Received event # 1 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:24:31.793749-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🟢 [ChatService] Received event # 2 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:24:31.972794-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🟢 [ChatService] Received event # 3 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:24:32.020200-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Completion received, final length:  464
+Type: Info | Timestamp: 2025-12-31 22:24:32.544515-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Session message count:  16
+Type: Info | Timestamp: 2025-12-31 22:24:32.544716-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Message generation completed
+Type: Info | Timestamp: 2025-12-31 22:24:32.551899-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+tcp_input   [C5.1.1.1:3]  flags= 14  seq= 2,009,550,894 , ack= 1,528,428,586 , win= 326  state= 8  rcv_nxt= 2,009,550,894 , snd_una= 1,528,428,586
+Type: Error | Timestamp: 2025-12-31 22:24:51.040272-05:00 | Library: libusrtcp.dylib | Subsystem: com.apple.network | Category: tcp | TID: 0x2c8118
+tcp_input   [C5.1.1.1:3]  flags= 4  seq= 2,009,550,894 , ack= 0 , win= 0  state= 0  rcv_nxt= 2,009,550,894 , snd_una= 1,528,428,586
+Type: Error | Timestamp: 2025-12-31 22:24:51.040359-05:00 | Library: libusrtcp.dylib | Subsystem: com.apple.network | Category: tcp | TID: 0x2c8118
+tcp_input   [C5.1.1.1:3]  flags= 4  seq= 2,009,550,894 , ack= 0 , win= 0  state= 0  rcv_nxt= 2,009,550,894 , snd_una= 1,528,428,586
+Type: Error | Timestamp: 2025-12-31 22:24:51.041007-05:00 | Library: libusrtcp.dylib | Subsystem: com.apple.network | Category: tcp | TID: 0x2c807b
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ CA7FB902 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:24:51.306340-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8118
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 077E3559 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:24:51.934408-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8118
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 33138ABE ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:24:52.518705-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdd
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 730114F2 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:24:53.892279-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c807b
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 3F6FFBFA ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:24:54.791686-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8119
+Could not find cached accumulator for token= 90834803  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:24:55.255351-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8119
+Could not find cached accumulator for token= 90834803  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:24:55.256071-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8119
+Could not find cached accumulator for token= 4B302E5F  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:24:55.450476-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8118
+Could not find cached accumulator for token= 4B302E5F  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:24:55.451035-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8118
+Could not find cached accumulator for token= 14ED15B9  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:24:55.531747-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdd
+Could not find cached accumulator for token= 14ED15B9  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:24:55.534592-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdd
+Could not find cached accumulator for token= 804E21CA  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:24:55.690260-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdc
+Could not find cached accumulator for token= 804E21CA  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:24:55.690874-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdc
+Could not find cached accumulator for token= 804E21CA  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:24:55.692403-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdc
+Could not find cached accumulator for token= 5E4204AF  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:24:55.860446-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8118
+Could not find cached accumulator for token= 5E4204AF  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:24:55.861359-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8118
+Could not find cached accumulator for token= 5EFF6282  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:24:56.079103-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdd
+Could not find cached accumulator for token= 5EFF6282  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:24:56.079602-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdd
+Could not find cached accumulator for token= 3754C27B  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:24:56.159525-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8119
+Could not find cached accumulator for token= 3754C27B  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:24:56.160165-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8119
+Could not find cached accumulator for token= FF6F528F  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:24:56.300314-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdd
+Could not find cached accumulator for token= FF6F528F  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:24:56.304919-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdd
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ E134CFC9 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:24:56.557030-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdd
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 24189454 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:24:56.886424-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdc
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 3B42BEA1 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:24:57.762019-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c807b
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 2B2D58CA ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:24:58.959413-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdc
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 4520C141 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:25:03.557261-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8119
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ E5229571 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:25:04.495746-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8119
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 33D86454 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:25:08.095249-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8119
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 264659B7 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:25:09.590372-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdc
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 82834EF6 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:25:10.189445-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8118
+Could not find cached accumulator for token= 5EA73BCC  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:25:12.188955-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8119
+Could not find cached accumulator for token= 5EA73BCC  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:25:12.189692-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8119
+Could not find cached accumulator for token= AF3D6284  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:25:12.414314-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdd
+Could not find cached accumulator for token= AF3D6284  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:25:12.414933-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdd
+Could not find cached accumulator for token= B9E63744  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:25:12.538691-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdd
+Could not find cached accumulator for token= B9E63744  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:25:12.541250-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdd
+Could not find cached accumulator for token= 079B61B7  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:25:12.696682-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdd
+Could not find cached accumulator for token= 079B61B7  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:25:12.697318-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdd
+Could not find cached accumulator for token= 07C3EB19  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:25:12.851475-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c807d
+Could not find cached accumulator for token= 07C3EB19  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:25:12.851879-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c807d
+Could not find cached accumulator for token= 489785F3  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:25:13.062725-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdd
+Could not find cached accumulator for token= 489785F3  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:25:13.063037-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdd
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 808CEB4D ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:25:13.537852-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c807d
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ D70973AF ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:25:14.796262-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdd
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ A2CB1D98 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:25:16.645445-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c807b
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 3B6BB0B4 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:25:17.090910-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c807b
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 374DC295 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:25:18.791310-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8119
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 731F6FC0 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:25:24.391371-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c807d
+UI Selection - Provider:  Google , Model:  Gemini 3 Flash Preview
+Type: Info | Timestamp: 2025-12-31 22:25:28.513322-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Normalized ' Google ' -> ' google '
+Type: Debug | Timestamp: 2025-12-31 22:25:28.513418-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Mapped to - Provider ID:  google , Model ID:  gemini-3-flash-preview
+Type: Info | Timestamp: 2025-12-31 22:25:28.513446-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Using thinkingPreference:  off
+Type: Info | Timestamp: 2025-12-31 22:25:28.520559-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Sending message to provider:  google , model:  gemini-3-flash-preview
+Type: Info | Timestamp: 2025-12-31 22:25:28.585650-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Using provider:  google , model:  gemini-3-flash-preview
+Type: Debug | Timestamp: 2025-12-31 22:25:28.585665-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🔵 [ChatService] streamCompletion called - provider:  google , model:  gemini-3-flash-preview , userMessage length:  164
+Type: Info | Timestamp: 2025-12-31 22:25:28.585676-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🟢 [ChatService] Provider resolved:  GoogleAIProvider
+Type: Info | Timestamp: 2025-12-31 22:25:28.585696-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Starting compaction:  18  messages, maxTokens= 120,000
+Type: Debug | Timestamp: 2025-12-31 22:25:28.591055-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+No compaction needed:  1,457  tokens within limit
+Type: Debug | Timestamp: 2025-12-31 22:25:28.591141-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+🔵 [ChatService] Building request - messages:  18 , tools:  7 , thinking:  off
+Type: Info | Timestamp: 2025-12-31 22:25:28.591152-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+➡️ [ Gemini ] Request started - model:  gemini-3-flash-preview , messages:  18 , tools:  7
+Type: Info | Timestamp: 2025-12-31 22:25:28.591162-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🔑 [ Gemini ] API key found
+Type: Debug | Timestamp: 2025-12-31 22:25:28.599492-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] URL:  https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AIzaSyCRSKgAYnodvL_j1ov_3aKRg4yu4eImdgA
+Type: Debug | Timestamp: 2025-12-31 22:25:28.614462-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] Body:  {"tools":[{"functionDeclarations":[{"parameters":{"properties":{"expression":{"type":"string","description":"The mathematical expression to evaluate (e.g., '5 * 5 + 2', 'sin(pi\/4)')"},"format":{"enum":["decimal","scientific"],"description":"Output format (default: decimal)","type":"string"},"precis ...
+Type: Debug | Timestamp: 2025-12-31 22:25:28.614482-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🟢 [ChatService] Request built successfully
+Type: Info | Timestamp: 2025-12-31 22:25:28.614494-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🔵 [ChatService] Starting to stream response from provider...
+Type: Info | Timestamp: 2025-12-31 22:25:28.614499-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+📤 [ Gemini ] Request sent to network
+Type: Debug | Timestamp: 2025-12-31 22:25:28.614559-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c807d
+🟢 [ChatService] Received event # 1 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:25:32.022170-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🟢 [ChatService] Received event # 2 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:25:32.122644-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+onChange(of: AnyTextLayoutCollection) action tried to update multiple times per frame.
+Type: Fault | Timestamp: 2025-12-31 22:25:32.157733-05:00 | Library: SwiftUICore | Subsystem: com.apple.SwiftUI | Category: Invalid Configuration | TID: 0x2c7770
+🟢 [ChatService] Received event # 3 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:25:32.272939-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Completion received, final length:  2,591
+Type: Info | Timestamp: 2025-12-31 22:25:35.944236-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Session message count:  18
+Type: Info | Timestamp: 2025-12-31 22:25:35.944446-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Message generation completed
+Type: Info | Timestamp: 2025-12-31 22:25:35.951978-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+📐 Window resize: (402.0, 477.0) → (402.0, 778.0)
+📐 Window resize: (402.0, 778.0) → (402.0, 477.0)
+Type: stdio
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 6BE4EDE4 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:28:30.616260-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8414
+Could not find cached accumulator for token= 6EFB0093  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:28:34.289991-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdc
+Could not find cached accumulator for token= 6EFB0093  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:28:34.290703-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdc
+Could not find cached accumulator for token= AB4D1ACB  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:28:34.433872-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8414
+Could not find cached accumulator for token= AB4D1ACB  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:28:34.434450-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8414
+Could not find cached accumulator for token= AB4D1ACB  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:28:34.435865-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8414
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 2E3D7176 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:28:35.364778-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c85c8
+Could not find cached accumulator for token= 96CEF5E3  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:28:39.694847-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8414
+Could not find cached accumulator for token= 96CEF5E3  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:28:39.695551-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8414
+Could not find cached accumulator for token= 80399901  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:28:39.944494-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8414
+Could not find cached accumulator for token= 80399901  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:28:39.945112-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8414
+Could not find cached accumulator for token= 80399901  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:28:39.949930-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8414
+Could not find cached accumulator for token= AB05DBA1  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:28:40.124594-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8591
+Could not find cached accumulator for token= AB05DBA1  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:28:40.125573-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c85c8
+Could not find cached accumulator for token= 85DCC5BB  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:28:40.297940-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c85c8
+Could not find cached accumulator for token= 85DCC5BB  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:28:40.298585-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8414
+Could not find cached accumulator for token= 9D66015C  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:28:40.460394-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8591
+Could not find cached accumulator for token= 9D66015C  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:28:40.461199-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c85c8
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 31AC919A ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:28:42.238403-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c85c8
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ A180C032 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:28:44.632939-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8414
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ F1CAB381 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:28:46.704003-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8591
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ A9D48AEF ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:29:41.923195-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8841
+Could not find cached accumulator for token= C7EE85DD  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:29:45.589664-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8712
+Could not find cached accumulator for token= C7EE85DD  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:29:45.590437-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdc
+Could not find cached accumulator for token= BBAA1EE5  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:29:45.812371-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8712
+Could not find cached accumulator for token= BBAA1EE5  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:29:45.812859-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8712
+Could not find cached accumulator for token= BBAA1EE5  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:29:45.819439-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8712
+Could not find cached accumulator for token= 45780D65  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:29:46.020224-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8841
+Could not find cached accumulator for token= 45780D65  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:29:46.020645-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8841
+Could not find cached accumulator for token= AFC8B127  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:29:46.098647-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8841
+Could not find cached accumulator for token= AFC8B127  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:29:46.100352-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8841
+Could not find cached accumulator for token= 0368F233  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:29:52.723940-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8626
+Could not find cached accumulator for token= 0368F233  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:29:52.724603-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8842
+Could not find cached accumulator for token= D7E679F4  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:29:52.856594-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8626
+Could not find cached accumulator for token= D7E679F4  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:29:52.857139-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8626
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ C00D1F2F ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:29:55.330042-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c88d8
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 65544941 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:30:01.715957-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c88d8
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 18A5DF8B ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:30:06.952591-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c88e0
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 1C3C6985 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:30:15.473416-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdc
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 7EE55C8F ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:30:16.221805-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c7fdc
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ F5F2D13D ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:30:19.318906-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8842
+Could not find cached accumulator for token= 9D3C760A  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:30:19.856949-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8841
+Could not find cached accumulator for token= 9D3C760A  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:30:19.859876-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8841
+Could not find cached accumulator for token= 3B158855  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:30:20.158114-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c88e0
+Could not find cached accumulator for token= 3B158855  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:30:20.158672-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c88e0
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 31750AB9 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:30:21.322860-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8626
+UI Selection - Provider:  Google , Model:  Gemini 3 Flash Preview
+Type: Info | Timestamp: 2025-12-31 22:30:22.676325-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Normalized ' Google ' -> ' google '
+Type: Debug | Timestamp: 2025-12-31 22:30:22.676431-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Mapped to - Provider ID:  google , Model ID:  gemini-3-flash-preview
+Type: Info | Timestamp: 2025-12-31 22:30:22.676468-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Using thinkingPreference:  off
+Type: Info | Timestamp: 2025-12-31 22:30:22.687176-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Sending message to provider:  google , model:  gemini-3-flash-preview
+Type: Info | Timestamp: 2025-12-31 22:30:22.748390-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Using provider:  google , model:  gemini-3-flash-preview
+Type: Debug | Timestamp: 2025-12-31 22:30:22.748407-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🔵 [ChatService] streamCompletion called - provider:  google , model:  gemini-3-flash-preview , userMessage length:  226
+Type: Info | Timestamp: 2025-12-31 22:30:22.748418-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🟢 [ChatService] Provider resolved:  GoogleAIProvider
+Type: Info | Timestamp: 2025-12-31 22:30:22.748436-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Starting compaction:  20  messages, maxTokens= 120,000
+Type: Debug | Timestamp: 2025-12-31 22:30:22.754750-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+No compaction needed:  2,168  tokens within limit
+Type: Debug | Timestamp: 2025-12-31 22:30:22.754989-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+🔵 [ChatService] Building request - messages:  20 , tools:  7 , thinking:  off
+Type: Info | Timestamp: 2025-12-31 22:30:22.754999-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+➡️ [ Gemini ] Request started - model:  gemini-3-flash-preview , messages:  20 , tools:  7
+Type: Info | Timestamp: 2025-12-31 22:30:22.755009-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🔑 [ Gemini ] API key found
+Type: Debug | Timestamp: 2025-12-31 22:30:22.763640-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] URL:  https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AIzaSyCRSKgAYnodvL_j1ov_3aKRg4yu4eImdgA
+Type: Debug | Timestamp: 2025-12-31 22:30:22.764399-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] Body:  {"generationConfig":{"maxOutputTokens":8192},"tools":[{"functionDeclarations":[{"name":"calculator","parameters":{"required":["expression"],"properties":{"expression":{"type":"string","description":"The mathematical expression to evaluate (e.g., '5 * 5 + 2', 'sin(pi\/4)')"},"precision":{"description ...
+Type: Debug | Timestamp: 2025-12-31 22:30:22.764413-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🟢 [ChatService] Request built successfully
+Type: Info | Timestamp: 2025-12-31 22:30:22.764425-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🔵 [ChatService] Starting to stream response from provider...
+Type: Info | Timestamp: 2025-12-31 22:30:22.764431-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+📤 [ Gemini ] Request sent to network
+Type: Debug | Timestamp: 2025-12-31 22:30:22.764574-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c8842
+🟢 [ChatService] Received event # 1 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:30:23.844999-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+ChatService: Tool call detected:  calculator
+Type: Debug | Timestamp: 2025-12-31 22:30:23.845081-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool use:  calculator  (id:  call_B806084D )
+Type: Info | Timestamp: 2025-12-31 22:30:23.845238-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+🟢 [ChatService] Received event # 2 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:30:23.847407-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+ChatService: Tool call detected:  workspace
+Type: Debug | Timestamp: 2025-12-31 22:30:23.847425-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool use:  workspace  (id:  call_DF7A2877 )
+Type: Info | Timestamp: 2025-12-31 22:30:23.847461-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+🟢 [ChatService] Received event # 3 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:30:23.849818-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool executing:  calculator
+Type: Info | Timestamp: 2025-12-31 22:30:23.870392-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Tool executing:  workspace
+Type: Info | Timestamp: 2025-12-31 22:30:23.877228-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+✅  calculator  completed in  7 ms
+Type: Info | Timestamp: 2025-12-31 22:30:23.877654-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ToolExecutor | TID: 0x2c8626
+Executed tool:  calculator , success:  1
+Type: Info | Timestamp: 2025-12-31 22:30:23.877711-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+✅  workspace  completed in  5 ms
+Type: Info | Timestamp: 2025-12-31 22:30:23.877980-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ToolExecutor | TID: 0x2c88e0
+Executed tool:  workspace , success:  1
+Type: Info | Timestamp: 2025-12-31 22:30:23.880566-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Starting compaction:  23  messages, maxTokens= 120,000
+Type: Debug | Timestamp: 2025-12-31 22:30:23.897664-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+No compaction needed:  2,215  tokens within limit
+Type: Debug | Timestamp: 2025-12-31 22:30:23.897937-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+🔵 [ChatService] Building request - messages:  23 , tools:  7 , thinking:  off
+Type: Info | Timestamp: 2025-12-31 22:30:23.897948-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+➡️ [ Gemini ] Request started - model:  gemini-3-flash-preview , messages:  23 , tools:  7
+Type: Info | Timestamp: 2025-12-31 22:30:23.897958-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🔑 [ Gemini ] API key found
+Type: Debug | Timestamp: 2025-12-31 22:30:23.905482-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] URL:  https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AIzaSyCRSKgAYnodvL_j1ov_3aKRg4yu4eImdgA
+Type: Debug | Timestamp: 2025-12-31 22:30:23.906161-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] Body:  {"contents":[{"role":"user","parts":[{"text":"<llmhub_tool_manifest>\nYou are running inside llmHub, a native macOS\/iOS app.\n\nTool access is provided ONLY by llmHub and is limited to the tools listed in this message.\nDo not claim access to external tools (e.g. web browser, Python, filesystem, sh ...
+Type: Debug | Timestamp: 2025-12-31 22:30:23.906173-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🟢 [ChatService] Request built successfully
+Type: Info | Timestamp: 2025-12-31 22:30:23.906183-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🔵 [ChatService] Starting to stream response from provider...
+Type: Info | Timestamp: 2025-12-31 22:30:23.906188-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+📤 [ Gemini ] Request sent to network
+Type: Debug | Timestamp: 2025-12-31 22:30:23.906258-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c88e0
+🟢 [ChatService] Received event # 1 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:30:26.422273-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+ChatService: Tool call detected:  read_file
+Type: Debug | Timestamp: 2025-12-31 22:30:26.422292-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool use:  read_file  (id:  call_AB83D8A9 )
+Type: Info | Timestamp: 2025-12-31 22:30:26.422343-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+🟢 [ChatService] Received event # 2 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:30:26.424662-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool executing:  read_file
+Type: Info | Timestamp: 2025-12-31 22:30:26.445450-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Reading file:  /var/mobile/Containers/Data/Application/D97F52C7-0A14-47A4-ABD6-018E2D373B5E/Documents/privatetest_file.txt
+Type: Debug | Timestamp: 2025-12-31 22:30:26.445543-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: Tool | TID: 0x2c88e0
+❌  read_file  failed:  Execution failed: File not found: privatetest_file.txt
+Type: Error | Timestamp: 2025-12-31 22:30:26.447397-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ToolExecutor | TID: 0x2c88e0
+Executed tool:  read_file , success:  0
+Type: Info | Timestamp: 2025-12-31 22:30:26.447450-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Starting compaction:  25  messages, maxTokens= 120,000
+Type: Debug | Timestamp: 2025-12-31 22:30:26.462586-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+No compaction needed:  2,236  tokens within limit
+Type: Debug | Timestamp: 2025-12-31 22:30:26.462807-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+🔵 [ChatService] Building request - messages:  25 , tools:  7 , thinking:  off
+Type: Info | Timestamp: 2025-12-31 22:30:26.462821-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+➡️ [ Gemini ] Request started - model:  gemini-3-flash-preview , messages:  25 , tools:  7
+Type: Info | Timestamp: 2025-12-31 22:30:26.462830-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🔑 [ Gemini ] API key found
+Type: Debug | Timestamp: 2025-12-31 22:30:26.470318-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] URL:  https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AIzaSyCRSKgAYnodvL_j1ov_3aKRg4yu4eImdgA
+Type: Debug | Timestamp: 2025-12-31 22:30:26.471026-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] Body:  {"contents":[{"role":"user","parts":[{"text":"<llmhub_tool_manifest>\nYou are running inside llmHub, a native macOS\/iOS app.\n\nTool access is provided ONLY by llmHub and is limited to the tools listed in this message.\nDo not claim access to external tools (e.g. web browser, Python, filesystem, sh ...
+Type: Debug | Timestamp: 2025-12-31 22:30:26.471038-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🟢 [ChatService] Request built successfully
+Type: Info | Timestamp: 2025-12-31 22:30:26.471049-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🔵 [ChatService] Starting to stream response from provider...
+Type: Info | Timestamp: 2025-12-31 22:30:26.471054-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+📤 [ Gemini ] Request sent to network
+Type: Debug | Timestamp: 2025-12-31 22:30:26.471130-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c88e0
+🟢 [ChatService] Received event # 1 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:30:36.599616-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+ChatService: Tool call detected:  workspace
+Type: Debug | Timestamp: 2025-12-31 22:30:36.599638-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool use:  workspace  (id:  call_BBCCEFB8 )
+Type: Info | Timestamp: 2025-12-31 22:30:36.599685-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+🟢 [ChatService] Received event # 2 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:30:36.600884-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool executing:  workspace
+Type: Info | Timestamp: 2025-12-31 22:30:36.612508-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+✅  workspace  completed in  0 ms
+Type: Info | Timestamp: 2025-12-31 22:30:36.612987-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ToolExecutor | TID: 0x2c8626
+Executed tool:  workspace , success:  1
+Type: Info | Timestamp: 2025-12-31 22:30:36.615635-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Starting compaction:  27  messages, maxTokens= 120,000
+Type: Debug | Timestamp: 2025-12-31 22:30:36.622326-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+No compaction needed:  2,278  tokens within limit
+Type: Debug | Timestamp: 2025-12-31 22:30:36.622554-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+🔵 [ChatService] Building request - messages:  27 , tools:  7 , thinking:  off
+Type: Info | Timestamp: 2025-12-31 22:30:36.622564-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+➡️ [ Gemini ] Request started - model:  gemini-3-flash-preview , messages:  27 , tools:  7
+Type: Info | Timestamp: 2025-12-31 22:30:36.622576-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🔑 [ Gemini ] API key found
+Type: Debug | Timestamp: 2025-12-31 22:30:36.624014-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] URL:  https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AIzaSyCRSKgAYnodvL_j1ov_3aKRg4yu4eImdgA
+Type: Debug | Timestamp: 2025-12-31 22:30:36.624525-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] Body:  {"generationConfig":{"maxOutputTokens":8192},"tools":[{"functionDeclarations":[{"name":"calculator","description":"Evaluates mathematical expressions with scientific functions and complex numbers.","parameters":{"type":"object","properties":{"format":{"description":"Output format (default: decimal)" ...
+Type: Debug | Timestamp: 2025-12-31 22:30:36.624535-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🟢 [ChatService] Request built successfully
+Type: Info | Timestamp: 2025-12-31 22:30:36.624544-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🔵 [ChatService] Starting to stream response from provider...
+Type: Info | Timestamp: 2025-12-31 22:30:36.624547-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+📤 [ Gemini ] Request sent to network
+Type: Debug | Timestamp: 2025-12-31 22:30:36.624604-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7fdc
+🟢 [ChatService] Received event # 1 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:30:39.719771-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+ChatService: Tool call detected:  read_file
+Type: Debug | Timestamp: 2025-12-31 22:30:39.719804-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool use:  read_file  (id:  call_4A0748BE )
+Type: Info | Timestamp: 2025-12-31 22:30:39.719848-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+🟢 [ChatService] Received event # 2 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:30:39.722145-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool executing:  read_file
+Type: Info | Timestamp: 2025-12-31 22:30:39.736366-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Reading file:  /var/mobile/Containers/Data/Application/D97F52C7-0A14-47A4-ABD6-018E2D373B5E/Documents/hello_llmhub.txt
+Type: Debug | Timestamp: 2025-12-31 22:30:39.736675-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: Tool | TID: 0x2c8958
+✅  read_file  completed in  1 ms
+Type: Info | Timestamp: 2025-12-31 22:30:39.738134-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ToolExecutor | TID: 0x2c8958
+Executed tool:  read_file , success:  1
+Type: Info | Timestamp: 2025-12-31 22:30:39.742331-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Starting compaction:  29  messages, maxTokens= 120,000
+Type: Debug | Timestamp: 2025-12-31 22:30:39.754775-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+No compaction needed:  2,306  tokens within limit
+Type: Debug | Timestamp: 2025-12-31 22:30:39.755120-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+🔵 [ChatService] Building request - messages:  29 , tools:  7 , thinking:  off
+Type: Info | Timestamp: 2025-12-31 22:30:39.755134-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+➡️ [ Gemini ] Request started - model:  gemini-3-flash-preview , messages:  29 , tools:  7
+Type: Info | Timestamp: 2025-12-31 22:30:39.755151-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🔑 [ Gemini ] API key found
+Type: Debug | Timestamp: 2025-12-31 22:30:39.763657-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] URL:  https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AIzaSyCRSKgAYnodvL_j1ov_3aKRg4yu4eImdgA
+Type: Debug | Timestamp: 2025-12-31 22:30:39.764542-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] Body:  {"contents":[{"parts":[{"text":"<llmhub_tool_manifest>\nYou are running inside llmHub, a native macOS\/iOS app.\n\nTool access is provided ONLY by llmHub and is limited to the tools listed in this message.\nDo not claim access to external tools (e.g. web browser, Python, filesystem, shell) unless yo ...
+Type: Debug | Timestamp: 2025-12-31 22:30:39.764557-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🟢 [ChatService] Request built successfully
+Type: Info | Timestamp: 2025-12-31 22:30:39.764570-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🔵 [ChatService] Starting to stream response from provider...
+Type: Info | Timestamp: 2025-12-31 22:30:39.764574-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+📤 [ Gemini ] Request sent to network
+Type: Debug | Timestamp: 2025-12-31 22:30:39.764705-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7fdc
+🟢 [ChatService] Received event # 1 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:30:42.068972-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+ChatService: Tool call detected:  file_editor
+Type: Debug | Timestamp: 2025-12-31 22:30:42.069030-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool use:  file_editor  (id:  call_9AA925DA )
+Type: Info | Timestamp: 2025-12-31 22:30:42.069097-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+🟢 [ChatService] Received event # 2 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:30:42.072145-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool executing:  file_editor
+Type: Info | Timestamp: 2025-12-31 22:30:42.098655-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+✅  file_editor  completed in  14 ms
+Type: Info | Timestamp: 2025-12-31 22:30:42.106788-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ToolExecutor | TID: 0x2c7fdc
+Executed tool:  file_editor , success:  1
+Type: Info | Timestamp: 2025-12-31 22:30:42.106851-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Starting compaction:  31  messages, maxTokens= 120,000
+Type: Debug | Timestamp: 2025-12-31 22:30:42.121030-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+No compaction needed:  2,318  tokens within limit
+Type: Debug | Timestamp: 2025-12-31 22:30:42.121382-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+🔵 [ChatService] Building request - messages:  31 , tools:  7 , thinking:  off
+Type: Info | Timestamp: 2025-12-31 22:30:42.121395-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+➡️ [ Gemini ] Request started - model:  gemini-3-flash-preview , messages:  31 , tools:  7
+Type: Info | Timestamp: 2025-12-31 22:30:42.121408-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🔑 [ Gemini ] API key found
+Type: Debug | Timestamp: 2025-12-31 22:30:42.123876-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] URL:  https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AIzaSyCRSKgAYnodvL_j1ov_3aKRg4yu4eImdgA
+Type: Debug | Timestamp: 2025-12-31 22:30:42.124755-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] Body:  {"tools":[{"functionDeclarations":[{"parameters":{"type":"object","properties":{"precision":{"description":"Decimal precision (0-12, default 6)","type":"integer"},"format":{"enum":["decimal","scientific"],"type":"string","description":"Output format (default: decimal)"},"expression":{"description":" ...
+Type: Debug | Timestamp: 2025-12-31 22:30:42.124772-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🟢 [ChatService] Request built successfully
+Type: Info | Timestamp: 2025-12-31 22:30:42.124785-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🔵 [ChatService] Starting to stream response from provider...
+Type: Info | Timestamp: 2025-12-31 22:30:42.124790-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+📤 [ Gemini ] Request sent to network
+Type: Debug | Timestamp: 2025-12-31 22:30:42.124892-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c8958
+🟢 [ChatService] Received event # 1 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:30:46.185401-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+ChatService: Tool call detected:  file_editor
+Type: Debug | Timestamp: 2025-12-31 22:30:46.185442-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool use:  file_editor  (id:  call_E22331A4 )
+Type: Info | Timestamp: 2025-12-31 22:30:46.185492-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+🟢 [ChatService] Received event # 2 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:30:46.187880-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool executing:  file_editor
+Type: Info | Timestamp: 2025-12-31 22:30:46.204483-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+✅  file_editor  completed in  2 ms
+Type: Info | Timestamp: 2025-12-31 22:30:46.206425-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ToolExecutor | TID: 0x2c8626
+Executed tool:  file_editor , success:  1
+Type: Info | Timestamp: 2025-12-31 22:30:46.209838-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+CoreData: debug: WAL checkpoint: Database did checkpoint. Log size: 1007 checkpointed: 1007
+Type: stdio
+Starting compaction:  33  messages, maxTokens= 120,000
+Type: Debug | Timestamp: 2025-12-31 22:30:46.236801-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+No compaction needed:  2,330  tokens within limit
+Type: Debug | Timestamp: 2025-12-31 22:30:46.237094-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+🔵 [ChatService] Building request - messages:  33 , tools:  7 , thinking:  off
+Type: Info | Timestamp: 2025-12-31 22:30:46.237110-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+➡️ [ Gemini ] Request started - model:  gemini-3-flash-preview , messages:  33 , tools:  7
+Type: Info | Timestamp: 2025-12-31 22:30:46.237124-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🔑 [ Gemini ] API key found
+Type: Debug | Timestamp: 2025-12-31 22:30:46.239035-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] URL:  https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AIzaSyCRSKgAYnodvL_j1ov_3aKRg4yu4eImdgA
+Type: Debug | Timestamp: 2025-12-31 22:30:46.239687-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] Body:  {"contents":[{"parts":[{"text":"<llmhub_tool_manifest>\nYou are running inside llmHub, a native macOS\/iOS app.\n\nTool access is provided ONLY by llmHub and is limited to the tools listed in this message.\nDo not claim access to external tools (e.g. web browser, Python, filesystem, shell) unless yo ...
+Type: Debug | Timestamp: 2025-12-31 22:30:46.239699-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🟢 [ChatService] Request built successfully
+Type: Info | Timestamp: 2025-12-31 22:30:46.239709-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🔵 [ChatService] Starting to stream response from provider...
+Type: Info | Timestamp: 2025-12-31 22:30:46.239713-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+📤 [ Gemini ] Request sent to network
+Type: Debug | Timestamp: 2025-12-31 22:30:46.239800-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c8626
+🟢 [ChatService] Received event # 1 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:30:50.417433-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🟢 [ChatService] Received event # 2 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:30:50.537520-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+onChange(of: AnyTextLayoutCollection) action tried to update multiple times per frame.
+Type: Fault | Timestamp: 2025-12-31 22:30:50.554352-05:00 | Library: SwiftUICore | Subsystem: com.apple.SwiftUI | Category: Invalid Configuration | TID: 0x2c7770
+🟢 [ChatService] Received event # 3 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:30:50.729954-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Completion received, final length:  1,157
+Type: Info | Timestamp: 2025-12-31 22:30:52.122625-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Session message count:  33
+Type: Info | Timestamp: 2025-12-31 22:30:52.122870-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Message generation completed
+Type: Info | Timestamp: 2025-12-31 22:30:52.127267-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 1BD8E4D1 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:31:39.902114-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8958
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 0E70CC4E ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:31:42.846722-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8626
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 24D6CBA9 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:31:45.257211-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8c70
+Could not find cached accumulator for token= 3AEF1600  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:31:45.490299-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8958
+Could not find cached accumulator for token= 3AEF1600  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:31:45.490949-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8958
+Could not find cached accumulator for token= 9FFC2820  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:31:45.568143-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8626
+Could not find cached accumulator for token= 9FFC2820  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:31:45.568938-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8626
+Could not find cached accumulator for token= D70D4CE0  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:31:45.791743-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8626
+Could not find cached accumulator for token= D70D4CE0  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:31:45.794705-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8626
+Could not find cached accumulator for token= 63FEAE7C  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:31:45.981697-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8842
+Could not find cached accumulator for token= 63FEAE7C  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:31:45.982326-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8842
+Could not find cached accumulator for token= 0E9D0843  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:31:46.096541-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8626
+Could not find cached accumulator for token= 0E9D0843  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:31:46.097158-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8626
+Could not find cached accumulator for token= C300C771  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:31:46.239440-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8958
+Could not find cached accumulator for token= C300C771  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:31:46.241929-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8958
+Could not find cached accumulator for token= DDA3613A  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:31:46.413432-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8c70
+Could not find cached accumulator for token= DDA3613A  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:31:46.413927-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8c70
+Could not find cached accumulator for token= DDA3613A  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:31:46.417752-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8c70
+Could not find cached accumulator for token= 447F601F  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:31:46.509806-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8842
+Could not find cached accumulator for token= 447F601F  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:31:46.510633-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8842
+Could not find cached accumulator for token= CA91801E  type: 0  in  -[TUIKeyboardCandidateMultiplexer receiveExternalAutocorrectionUpdate:requestToken:]_block_invoke
+Type: Error | Timestamp: 2025-12-31 22:31:46.724297-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8958
+Could not find cached accumulator for token= CA91801E  type: 0  in  -[TUIKeyboardCandidateMultiplexer _queueOnly_willHandleDeliveryForCandidates:requestToken:]
+Type: Error | Timestamp: 2025-12-31 22:31:46.724742-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8958
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ ACC8BE1C ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:31:47.300869-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8a60
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 37874DA0 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:31:52.563157-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8842
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ A8028B10 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:31:52.969731-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8842
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 5AA34021 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:31:56.678141-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8842
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 5E38DAD5 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:31:57.946799-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8842
+Attempted to update accumulator from source type:  0 , after completion has already been called for token:[ 6EE2E040 ]. This is an error and will be ignored.
+Type: Error | Timestamp: 2025-12-31 22:31:59.409238-05:00 | Library: TextInputUI | Subsystem: com.apple.TextInputUI | Category: CandidateGeneration | TID: 0x2c8842
+UI Selection - Provider:  Google , Model:  Gemini 3 Flash Preview
+Type: Info | Timestamp: 2025-12-31 22:32:21.265323-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Normalized ' Google ' -> ' google '
+Type: Debug | Timestamp: 2025-12-31 22:32:21.265423-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Mapped to - Provider ID:  google , Model ID:  gemini-3-flash-preview
+Type: Info | Timestamp: 2025-12-31 22:32:21.265462-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Using thinkingPreference:  off
+Type: Info | Timestamp: 2025-12-31 22:32:21.275112-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Sending message to provider:  google , model:  gemini-3-flash-preview
+Type: Info | Timestamp: 2025-12-31 22:32:21.338865-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Using provider:  google , model:  gemini-3-flash-preview
+Type: Debug | Timestamp: 2025-12-31 22:32:21.338877-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🔵 [ChatService] streamCompletion called - provider:  google , model:  gemini-3-flash-preview , userMessage length:  66
+Type: Info | Timestamp: 2025-12-31 22:32:21.338885-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🟢 [ChatService] Provider resolved:  GoogleAIProvider
+Type: Info | Timestamp: 2025-12-31 22:32:21.338897-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Starting compaction:  35  messages, maxTokens= 120,000
+Type: Debug | Timestamp: 2025-12-31 22:32:21.343414-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+No compaction needed:  2,643  tokens within limit
+Type: Debug | Timestamp: 2025-12-31 22:32:21.343756-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+🔵 [ChatService] Building request - messages:  35 , tools:  7 , thinking:  off
+Type: Info | Timestamp: 2025-12-31 22:32:21.343766-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+➡️ [ Gemini ] Request started - model:  gemini-3-flash-preview , messages:  35 , tools:  7
+Type: Info | Timestamp: 2025-12-31 22:32:21.343775-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🔑 [ Gemini ] API key found
+Type: Debug | Timestamp: 2025-12-31 22:32:21.351247-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] URL:  https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AIzaSyCRSKgAYnodvL_j1ov_3aKRg4yu4eImdgA
+Type: Debug | Timestamp: 2025-12-31 22:32:21.351968-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] Body:  {"tools":[{"functionDeclarations":[{"name":"calculator","description":"Evaluates mathematical expressions with scientific functions and complex numbers.","parameters":{"properties":{"format":{"description":"Output format (default: decimal)","enum":["decimal","scientific"],"type":"string"},"precision ...
+Type: Debug | Timestamp: 2025-12-31 22:32:21.351979-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🟢 [ChatService] Request built successfully
+Type: Info | Timestamp: 2025-12-31 22:32:21.351990-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🔵 [ChatService] Starting to stream response from provider...
+Type: Info | Timestamp: 2025-12-31 22:32:21.351994-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+📤 [ Gemini ] Request sent to network
+Type: Debug | Timestamp: 2025-12-31 22:32:21.352067-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c8626
+🟢 [ChatService] Received event # 1 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:32:25.300202-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+ChatService: Tool call detected:  calculator
+Type: Debug | Timestamp: 2025-12-31 22:32:25.300231-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool use:  calculator  (id:  call_8969F597 )
+Type: Info | Timestamp: 2025-12-31 22:32:25.300280-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+🟢 [ChatService] Received event # 2 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:32:25.302694-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Tool executing:  calculator
+Type: Info | Timestamp: 2025-12-31 22:32:25.330232-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+✅  calculator  completed in  7 ms
+Type: Info | Timestamp: 2025-12-31 22:32:25.330997-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ToolExecutor | TID: 0x2c8c70
+Executed tool:  calculator , success:  1
+Type: Info | Timestamp: 2025-12-31 22:32:25.331050-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+Starting compaction:  37  messages, maxTokens= 120,000
+Type: Debug | Timestamp: 2025-12-31 22:32:25.344964-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+No compaction needed:  2,652  tokens within limit
+Type: Debug | Timestamp: 2025-12-31 22:32:25.345324-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ContextManagement | TID: 0x2c7770
+🔵 [ChatService] Building request - messages:  37 , tools:  7 , thinking:  off
+Type: Info | Timestamp: 2025-12-31 22:32:25.345334-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+➡️ [ Gemini ] Request started - model:  gemini-3-flash-preview , messages:  37 , tools:  7
+Type: Info | Timestamp: 2025-12-31 22:32:25.345344-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🔑 [ Gemini ] API key found
+Type: Debug | Timestamp: 2025-12-31 22:32:25.353021-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] URL:  https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=AIzaSyCRSKgAYnodvL_j1ov_3aKRg4yu4eImdgA
+Type: Debug | Timestamp: 2025-12-31 22:32:25.353759-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+📋 [ Gemini ] Body:  {"generationConfig":{"maxOutputTokens":8192},"contents":[{"role":"user","parts":[{"text":"<llmhub_tool_manifest>\nYou are running inside llmHub, a native macOS\/iOS app.\n\nTool access is provided ONLY by llmHub and is limited to the tools listed in this message.\nDo not claim access to external too ...
+Type: Debug | Timestamp: 2025-12-31 22:32:25.353779-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c7770
+🟢 [ChatService] Request built successfully
+Type: Info | Timestamp: 2025-12-31 22:32:25.353790-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🔵 [ChatService] Starting to stream response from provider...
+Type: Info | Timestamp: 2025-12-31 22:32:25.353795-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+📤 [ Gemini ] Request sent to network
+Type: Debug | Timestamp: 2025-12-31 22:32:25.353869-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: LLMRequest | TID: 0x2c8c70
+🟢 [ChatService] Received event # 1 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:32:26.192864-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🟢 [ChatService] Received event # 2 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:32:26.272049-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+🟢 [ChatService] Received event # 3 :  ProviderEvent
+Type: Info | Timestamp: 2025-12-31 22:32:26.443485-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatService | TID: 0x2c7770
+onChange(of: AnyTextLayoutCollection) action tried to update multiple times per frame.
+Type: Fault | Timestamp: 2025-12-31 22:32:26.450201-05:00 | Library: SwiftUICore | Subsystem: com.apple.SwiftUI | Category: Invalid Configuration | TID: 0x2c7770
+onChange(of: AnyTextLayoutCollection) action tried to update multiple times per frame.
+Type: Fault | Timestamp: 2025-12-31 22:32:26.485999-05:00 | Library: SwiftUICore | Subsystem: com.apple.SwiftUI | Category: Invalid Configuration | TID: 0x2c7770
+Completion received, final length:  264
+Type: Info | Timestamp: 2025-12-31 22:32:26.495245-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Session message count:  37
+Type: Info | Timestamp: 2025-12-31 22:32:26.495609-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Message generation completed
+Type: Info | Timestamp: 2025-12-31 22:32:26.503904-05:00 | Library: llmHub.debug.dylib | Subsystem: com.llmhub | Category: ChatViewModel | TID: 0x2c7770
+Reporter disconnected or already stopped. { func=stop, reporterID= 58,836,756,987,905  }
+Type: Error | Timestamp: 2025-12-31 22:32:48.859010-05:00 | Library: AudioAnalytics | Subsystem: com.apple.audioanalytics | Category: carc | TID: 0x2c8da7
+0.5
+0.5
+Type: stdio
+Potential Structural Swift Concurrency Issue: unsafeForcedSync called from Swift Concurrent context.
+Type: Fault | Timestamp: 2025-12-31 22:32:48.919517-05:00 | Library: AXCoreUtilities | Subsystem: com.apple.Accessibility | Category: AXCommon | TID: 0x2c8e9a
+[C:4]  Error received: Connection interrupted.
+Type: Error | Timestamp: 2025-12-31 22:32:49.854424-05:00 | Library: BoardServices | Subsystem: com.apple.BoardServices | Category: XPCErrors | TID: 0x2c8e9a
+-[RTIInputSystemClient _configureConnection:withMachName:]_block_invoke   Client connection to service was interrupted:  <NSXPCConnection: 0x118f4ac60> connection to service with pid -1 named (null)
+Type: Error | Timestamp: 2025-12-31 22:32:49.854748-05:00 | Library: RemoteTextInput | Subsystem: com.apple.RemoteTextInput | Category: InputSessionChange | TID: 0x2c8ea7
+Unable to simultaneously satisfy constraints.
+	Probably at least one of the constraints in the following list is one you don't want. 
+	Try this: 
+		(1) look at each constraint and try to figure out which you don't expect; 
+		(2) find the code that added the unwanted constraint or constraints and fix it. 
+(
+    "<NSLayoutConstraint:0x12ebb72f0 V:|-(7)-[TUIKeyboardContentView:0x128b8ce00]   (active, names: '|':TUIKeyplaneView:0x104df3800 )>",
+    "<NSLayoutConstraint:0x12ebb7340 V:[TUIKeyboardContentView:0x128b8ce00]-(10)-|   (active, names: '|':TUIKeyplaneView:0x104df3800 )>",
+    "<NSLayoutConstraint:0x12ebb6440 V:|-(0)-[TUIKeyplaneView:0x104df3800]   (active, names: UIKeyboardLayoutStar Prev...:0x104f0de00, '|':UIKeyboardLayoutStar Prev...:0x104f0de00 )>",
+    "<NSLayoutConstraint:0x12ebb6e90 V:[TUIKeyplaneView:0x104df3800]-(0)-|   (active, names: UIKeyboardLayoutStar Prev...:0x104f0de00, '|':UIKeyboardLayoutStar Prev...:0x104f0de00 )>",
+    "<NSLayoutConstraint:0x12ebb6f30 V:|-(0)-[UIKeyboardLayoutStar Prev...]   (active, names: UIKeyboardLayoutStar Prev...:0x104f0de00, '|':UIKeyboardImpl:0x104df2c00 )>",
+    "<NSLayoutConstraint:0x12ebb6fd0 V:[UIKeyboardLayoutStar Prev...]-(0)-|   (active, names: UIKeyboardLayoutStar Prev...:0x104f0de00, '|':UIKeyboardImpl:0x104df2c00 )>",
+    "<NSLayoutConstraint:0x12fc42210 '_UITemporaryLayoutHeight' UIKeyboardImpl:0x104df2c00.height == 250   (active)>",
+    "<NSLayoutConstraint:0x12ebb74d0 'TUIKeyplane.height' TUIKeyboardContentView:0x128b8ce00.height == 216   (active)>"
+)
+
+Will attempt to recover by breaking constraint 
+<NSLayoutConstraint:0x12ebb74d0 'TUIKeyplane.height' TUIKeyboardContentView:0x128b8ce00.height == 216   (active)>
+
+Make a symbolic breakpoint at UIViewAlertForUnsatisfiableConstraints to catch this in the debugger.
+The methods in the UIConstraintBasedLayoutDebugging category on UIView listed in <UIKitCore/UIView.h> may also be helpful.
+Type: Error | Timestamp: 2025-12-31 22:32:49.932924-05:00 | Library: UIKitCore | Subsystem: com.apple.UIKit | Category: LayoutConstraints | TID: 0x2c7770
+Unable to simultaneously satisfy constraints.
+	Probably at least one of the constraints in the following list is one you don't want. 
+	Try this: 
+		(1) look at each constraint and try to figure out which you don't expect; 
+		(2) find the code that added the unwanted constraint or constraints and fix it. 
+(
+    "<NSLayoutConstraint:0x12ebb72f0 V:|-(7)-[TUIKeyboardContentView:0x128b8ce00]   (active, names: '|':TUIKeyplaneView:0x104df3800 )>",
+    "<NSLayoutConstraint:0x12ebb7340 V:[TUIKeyboardContentView:0x128b8ce00]-(10)-|   (active, names: '|':TUIKeyplaneView:0x104df3800 )>",
+    "<NSLayoutConstraint:0x12ebb6440 V:|-(0)-[TUIKeyplaneView:0x104df3800]   (active, names: UIKeyboardLayoutStar Prev...:0x104f0de00, '|':UIKeyboardLayoutStar Prev...:0x104f0de00 )>",
+    "<NSLayoutConstraint:0x12ebb6e90 V:[TUIKeyplaneView:0x104df3800]-(0)-|   (active, names: UIKeyboardLayoutStar Prev...:0x104f0de00, '|':UIKeyboardLayoutStar Prev...:0x104f0de00 )>",
+    "<NSLayoutConstraint:0x12ebb6f30 V:|-(0)-[UIKeyboardLayoutStar Prev...]   (active, names: UIKeyboardLayoutStar Prev...:0x104f0de00, '|':UIKeyboardImpl:0x104df2c00 )>",
+    "<NSLayoutConstraint:0x12ebb6fd0 V:[UIKeyboardLayoutStar Prev...]-(0)-|   (active, names: UIKeyboardLayoutStar Prev...:0x104f0de00, '|':UIKeyboardImpl:0x104df2c00 )>",
+    "<NSLayoutConstraint:0x12fc9c640 '_UITemporaryLayoutHeight' UIKeyboardImpl:0x104df2c00.height == 250   (active)>",
+    "<NSLayoutConstraint:0x12ebb74d0 'TUIKeyplane.height' TUIKeyboardContentView:0x128b8ce00.height == 216   (active)>"
+)
+
+Will attempt to recover by breaking constraint 
+<NSLayoutConstraint:0x12ebb74d0 'TUIKeyplane.height' TUIKeyboardContentView:0x128b8ce00.height == 216   (active)>
+
+Make a symbolic breakpoint at UIViewAlertForUnsatisfiableConstraints to catch this in the debugger.
+The methods in the UIConstraintBasedLayoutDebugging category on UIView listed in <UIKitCore/UIView.h> may also be helpful.
+Type: Error | Timestamp: 2025-12-31 22:32:49.945701-05:00 | Library: UIKitCore | Subsystem: com.apple.UIKit | Category: LayoutConstraints | TID: 0x2c7770

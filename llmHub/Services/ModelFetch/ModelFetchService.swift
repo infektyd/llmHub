@@ -192,7 +192,7 @@ final class ModelFetchService {
         var request = URLRequest(url: url)
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         
-        let (data, response) = try await LLMURLSession.shared.data(for: request)
+        let (data, response) = try await LLMURLSession.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse else {
             throw ModelFetchError.invalidResponse
@@ -273,7 +273,7 @@ final class ModelFetchService {
         let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models?key=\(apiKey)")!
         let request = URLRequest(url: url)
 
-        let (data, response) = try await LLMURLSession.shared.data(for: request)
+        let (data, response) = try await LLMURLSession.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw ModelFetchError.invalidResponse
@@ -347,7 +347,7 @@ final class ModelFetchService {
         var request = URLRequest(url: url)
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         
-        let (data, response) = try await LLMURLSession.shared.data(for: request)
+        let (data, response) = try await LLMURLSession.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse else {
             throw ModelFetchError.invalidResponse
@@ -406,7 +406,7 @@ final class ModelFetchService {
         var request = URLRequest(url: url)
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         
-        let (data, response) = try await LLMURLSession.shared.data(for: request)
+        let (data, response) = try await LLMURLSession.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse else {
             throw ModelFetchError.invalidResponse
@@ -485,7 +485,7 @@ final class ModelFetchService {
 
             logger.info("Anthropic /models request page=\(pageIndex) url=\(url.absoluteString)")
 
-            let (data, response) = try await LLMURLSession.shared.data(for: request)
+            let (data, response) = try await LLMURLSession.data(for: request)
 
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw ModelFetchError.invalidResponse
@@ -558,7 +558,7 @@ final class ModelFetchService {
 
         logger.info("xAI /models request url=\(url.absoluteString)")
 
-        let (data, response) = try await LLMURLSession.shared.data(for: request)
+        let (data, response) = try await LLMURLSession.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw ModelFetchError.invalidResponse

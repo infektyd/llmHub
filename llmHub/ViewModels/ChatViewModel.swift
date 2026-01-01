@@ -15,15 +15,15 @@ struct AFMDiagnostics {
     var isAvailable: Bool = false
     var lastCheckTime: Date = Date()
     var reason: String = "Not yet checked"
-    
+
     var statusColor: Color {
         isAvailable ? .green : .orange
     }
-    
+
     var reasonText: String {
         reason
     }
-    
+
     var timeSinceCheck: String {
         let interval = Date().timeIntervalSince(lastCheckTime)
         if interval < 60 {
@@ -55,7 +55,7 @@ class ChatViewModel {
 
     /// Indicates whether the view model is currently streaming/generating a response.
     var isGenerating: Bool = false
-    
+
     /// AFM diagnostics information
     var afmDiagnostics: AFMDiagnostics = AFMDiagnostics()
 
@@ -85,6 +85,10 @@ class ChatViewModel {
     var lastVisibleMessageID: UUID?
     /// Current streaming text buffer for the assistant.
     var streamingText: String?
+    /// Coalesces streaming updates to reduce UI churn.
+    private var pendingStreamingText: String?
+    private var streamingUpdateTask: Task<Void, Never>?
+    private let streamingUpdateIntervalNs: UInt64 = 50_000_000
     /// Notification message for context compaction.
     var contextCompactionMessage: String?
     /// Whether to show the context compaction notification.
@@ -115,6 +119,29 @@ class ChatViewModel {
             toolCallID: nil,
             toolCalls: nil
         )
+    }
+
+    private func scheduleStreamingUpdate(_ text: String, messageID: UUID) {
+        pendingStreamingText = text
+        guard streamingUpdateTask == nil else { return }
+        streamingUpdateTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: streamingUpdateIntervalNs)
+            self.applyPendingStreamingUpdate(messageID: messageID)
+        }
+    }
+
+    private func flushStreamingUpdate(messageID: UUID) {
+        streamingUpdateTask?.cancel()
+        applyPendingStreamingUpdate(messageID: messageID)
+    }
+
+    private func applyPendingStreamingUpdate(messageID: UUID) {
+        if let pending = pendingStreamingText {
+            streamingText = pending
+            setLastVisibleMessage(to: messageID)
+        }
+        pendingStreamingText = nil
+        streamingUpdateTask = nil
     }
 
     /// Indicates the model is thinking but hasn't started streaming yet
@@ -210,7 +237,9 @@ class ChatViewModel {
 
         let baseEnvironment = ToolEnvironment.current
         #if os(macOS)
-            let backendAvailable = await CodeExecutionEngine().isBackendAvailable
+            // TODO: Fix XPC helper entitlements - crashes on sandbox init
+            // let backendAvailable = await CodeExecutionEngine().isBackendAvailable
+            let backendAvailable = false  // Temporarily disabled due to sandbox crash
             let toolEnvironment = ToolEnvironment(
                 platform: baseEnvironment.platform,
                 isSimulator: baseEnvironment.isSimulator,
@@ -472,7 +501,8 @@ class ChatViewModel {
         session: ChatSessionEntity,
         modelContext: ModelContext,
         selectedProvider: UILLMProvider? = nil,
-        selectedModel: UILLMModel? = nil
+        selectedModel: UILLMModel? = nil,
+        thinkingPreference: ThinkingPreference = .auto
     ) {
         let finalAttachments = attachments ?? stagedAttachments
         let finalReferences = stagedReferences
@@ -549,6 +579,11 @@ class ChatViewModel {
         let streamToken = UUID().uuidString
         let streamingID = UUID()
         let streamingStart = Date()
+
+        // Update session's thinking preference from UI before converting to domain
+        session.thinkingPreference = thinkingPreference
+        logger.info("Using thinkingPreference: \(thinkingPreference.rawValue)")
+
         let domainSession = session.asDomain()
 
         Task { @MainActor in
@@ -556,9 +591,9 @@ class ChatViewModel {
 
             let updateTask = Task { @MainActor in
                 for await text in uiStream {
-                    self.streamingText = text
-                    self.setLastVisibleMessage(to: streamingID)
+                    self.scheduleStreamingUpdate(text, messageID: streamingID)
                 }
+                self.flushStreamingUpdate(messageID: streamingID)
             }
 
             do {
@@ -988,53 +1023,54 @@ class ChatViewModel {
             modelContext: modelContext
         )
     }
-    
+
     /// Stops the current generation if one is in progress
     func stopGeneration() async {
         guard isGenerating else { return }
-        
+
         // Cancel all tool executions
         let toolCallIDs = Array(toolExecutionCancelHandlers.keys)
         for toolCallID in toolCallIDs {
             cancelToolExecution(toolCallID: toolCallID)
         }
-        
+
         // Reset generation state
         isGenerating = false
         resetStreamingState()
         executingToolNames.removeAll()
-        
+
         logger.info("Generation stopped by user")
     }
-    
+
     // MARK: - AFM Diagnostics
-    
+
     /// Check if Apple Foundation Models are available
     func checkAFMAvailability(retryDelay: TimeInterval = 0) {
         Task {
             if retryDelay > 0 {
                 try? await Task.sleep(nanoseconds: UInt64(retryDelay * 1_000_000_000))
             }
-            
+
             // Check if Foundation Models framework is available
             // This is a placeholder - actual implementation would check for the framework
             let isAvailable = await checkFoundationModelsAvailability()
-            
+
             await MainActor.run {
                 afmDiagnostics.isAvailable = isAvailable
                 afmDiagnostics.lastCheckTime = Date()
-                afmDiagnostics.reason = isAvailable
+                afmDiagnostics.reason =
+                    isAvailable
                     ? "Foundation Models available"
                     : "Foundation Models not available on this system"
             }
         }
     }
-    
+
     /// Retry AFM check with exponential backoff
     func retryAFMCheck() {
         checkAFMAvailability(retryDelay: 2.0)
     }
-    
+
     /// Check if Foundation Models are available (placeholder implementation)
     private func checkFoundationModelsAvailability() async -> Bool {
         // This is a placeholder implementation
@@ -1042,20 +1078,20 @@ class ChatViewModel {
         // For now, return false as it's not generally available yet
         return false
     }
-    
+
     // MARK: - Tool Execution Timing (STEP 3)
-    
+
     /// Start tracking elapsed time for a tool execution
     func startToolTimer(toolCallID: String, cancelHandler: @escaping () -> Void) {
         toolExecutionElapsedSeconds[toolCallID] = 0
         toolExecutionCancelHandlers[toolCallID] = cancelHandler
-        
+
         // Start or restart the timer task if needed
         if toolTimerTask == nil || toolTimerTask?.isCancelled == true {
             toolTimerTask = Task { @MainActor in
                 while !Task.isCancelled {
-                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-                    
+                    try? await Task.sleep(nanoseconds: 1_000_000_000)  // 1 second
+
                     // Update all active tool timers (throttled to 1 Hz)
                     for toolCallID in toolExecutionElapsedSeconds.keys {
                         toolExecutionElapsedSeconds[toolCallID, default: 0] += 1
@@ -1064,19 +1100,19 @@ class ChatViewModel {
             }
         }
     }
-    
+
     /// Stop tracking elapsed time for a tool execution
     func stopToolTimer(toolCallID: String) {
         toolExecutionElapsedSeconds.removeValue(forKey: toolCallID)
         toolExecutionCancelHandlers.removeValue(forKey: toolCallID)
-        
+
         // Cancel timer task if no tools are running
         if toolExecutionElapsedSeconds.isEmpty {
             toolTimerTask?.cancel()
             toolTimerTask = nil
         }
     }
-    
+
     /// Cancel a running tool execution
     func cancelToolExecution(toolCallID: String) {
         if let cancelHandler = toolExecutionCancelHandlers[toolCallID] {

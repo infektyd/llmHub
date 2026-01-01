@@ -64,9 +64,18 @@ struct OpenRouterProvider: LLMProvider {
         tools: [ToolDefinition]?,
         options: LLMRequestOptions
     ) async throws -> URLRequest {
+        LLMTrace.requestStarted(
+            provider: "OpenRouter",
+            model: model,
+            messageCount: messages.count,
+            toolCount: tools?.count ?? 0
+        )
+
         guard let apiKey = await keychain.apiKey(for: .openrouter) else {
+            LLMTrace.authStatus(provider: "OpenRouter", hasKey: false)
             throw LLMProviderError.authenticationMissing
         }
+        LLMTrace.authStatus(provider: "OpenRouter", hasKey: true)
 
         let manager = OpenRouterManager(apiKey: apiKey)
 
@@ -137,15 +146,29 @@ struct OpenRouterProvider: LLMProvider {
                     }
                     streamRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
 
+                    if let bodyData = streamRequest.httpBody,
+                        let bodyStr = String(data: bodyData, encoding: .utf8)
+                    {
+                        LLMTrace.requestDetails(
+                            provider: "OpenRouter",
+                            url: streamRequest.url?.absoluteString ?? "unknown",
+                            bodyPreview: bodyStr)
+                    }
+                    LLMTrace.requestSent(provider: "OpenRouter")
+
                     // 2. Execute
-                    let (result, response) = try await LLMURLSession.shared.bytes(
+                    let (result, response) = try await LLMURLSession.bytes(
                         for: streamRequest)
 
                     guard let http = response as? HTTPURLResponse,
                         (200...299).contains(http.statusCode)
                     else {
+                        let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+                        LLMTrace.responseReceived(provider: "OpenRouter", statusCode: statusCode)
                         var errorText = ""
                         for try await line in result.lines { errorText += line }
+                        LLMTrace.errorWithBody(
+                            provider: "OpenRouter", statusCode: statusCode, body: errorText)
                         continuation.yield(
                             .error(
                                 .server(
@@ -158,14 +181,15 @@ struct OpenRouterProvider: LLMProvider {
                     // Determine stream format from model prefix and provider hints.
                     let modelID: String = {
                         guard let body = request.httpBody,
-                            let json = try? JSONSerialization.jsonObject(with: body) as? [String: Any]
+                            let json = try? JSONSerialization.jsonObject(with: body)
+                                as? [String: Any]
                         else { return "" }
                         return (json["model"] as? String) ?? ""
                     }()
 
                     let headerProviderHint =
                         (http.value(forHTTPHeaderField: "x-model-provider")
-                            ?? http.value(forHTTPHeaderField: "X-Model-Provider"))?
+                        ?? http.value(forHTTPHeaderField: "X-Model-Provider"))?
                         .lowercased()
 
                     enum StreamFormat {
@@ -182,7 +206,9 @@ struct OpenRouterProvider: LLMProvider {
                         if lower.hasPrefix("openai/") { return .openAIStyle }
                         if let hint = headerProviderHint {
                             if hint.contains("anthropic") { return .anthropicStyle }
-                            if hint.contains("google") || hint.contains("gemini") { return .geminiStyle }
+                            if hint.contains("google") || hint.contains("gemini") {
+                                return .geminiStyle
+                            }
                             if hint.contains("openai") { return .openAIStyle }
                         }
                         return modelID.isEmpty ? .unknown : .openAIStyle
@@ -203,7 +229,10 @@ struct OpenRouterProvider: LLMProvider {
                             for payload in sse.append(byte: byte) {
                                 if payload == "[DONE]" { break }
                                 guard let data = payload.data(using: .utf8) else { continue }
-                                guard let chunk = try? decoder.decode(GenerationResponse.self, from: data) else {
+                                guard
+                                    let chunk = try? decoder.decode(
+                                        GenerationResponse.self, from: data)
+                                else {
                                     continue
                                 }
 
@@ -238,7 +267,10 @@ struct OpenRouterProvider: LLMProvider {
                             if jsonStr == "[DONE]" { break }
                             guard let data = jsonStr.data(using: .utf8) else { continue }
 
-                            guard let event = try? decoder.decode(AnthropicStreamEvent.self, from: data) else {
+                            guard
+                                let event = try? decoder.decode(
+                                    AnthropicStreamEvent.self, from: data)
+                            else {
                                 continue
                             }
 
@@ -262,7 +294,8 @@ struct OpenRouterProvider: LLMProvider {
                                 if let thinking = event.delta?.thinking, !thinking.isEmpty {
                                     continuation.yield(.thinking(thinking))
                                 }
-                                if let partialJson = event.delta?.partial_json, !partialJson.isEmpty {
+                                if let partialJson = event.delta?.partial_json, !partialJson.isEmpty
+                                {
                                     if var tu = currentToolUse {
                                         tu.input += partialJson
                                         currentToolUse = tu
@@ -273,7 +306,8 @@ struct OpenRouterProvider: LLMProvider {
                                 if let tu = currentToolUse, !tu.id.isEmpty, !tu.name.isEmpty {
                                     let call = ToolCall(id: tu.id, name: tu.name, input: tu.input)
                                     toolCalls.append(call)
-                                    continuation.yield(.toolUse(id: tu.id, name: tu.name, input: tu.input))
+                                    continuation.yield(
+                                        .toolUse(id: tu.id, name: tu.name, input: tu.input))
                                     currentToolUse = nil
                                 }
 
@@ -338,7 +372,8 @@ struct OpenRouterProvider: LLMProvider {
                                     let calls = toolAssembler.finalizeAll()
                                     finalizedToolCalls.append(contentsOf: calls)
                                     for tc in calls {
-                                        continuation.yield(.toolUse(id: tc.id, name: tc.name, input: tc.input))
+                                        continuation.yield(
+                                            .toolUse(id: tc.id, name: tc.name, input: tc.input))
                                     }
                                 }
 
@@ -356,7 +391,9 @@ struct OpenRouterProvider: LLMProvider {
                             }
 
                             // Fallback: try to decode Anthropic events if OpenRouter emits them.
-                            if let event = try? decoder.decode(AnthropicStreamEvent.self, from: data) {
+                            if let event = try? decoder.decode(
+                                AnthropicStreamEvent.self, from: data)
+                            {
                                 switch event.type {
                                 case "content_block_start":
                                     if let contentBlock = event.content_block,
@@ -377,7 +414,9 @@ struct OpenRouterProvider: LLMProvider {
                                     if let thinking = event.delta?.thinking, !thinking.isEmpty {
                                         continuation.yield(.thinking(thinking))
                                     }
-                                    if let partialJson = event.delta?.partial_json, !partialJson.isEmpty {
+                                    if let partialJson = event.delta?.partial_json,
+                                        !partialJson.isEmpty
+                                    {
                                         if var tu = currentToolUse {
                                             tu.input += partialJson
                                             currentToolUse = tu
@@ -386,9 +425,11 @@ struct OpenRouterProvider: LLMProvider {
 
                                 case "content_block_stop":
                                     if let tu = currentToolUse, !tu.id.isEmpty, !tu.name.isEmpty {
-                                        let call = ToolCall(id: tu.id, name: tu.name, input: tu.input)
+                                        let call = ToolCall(
+                                            id: tu.id, name: tu.name, input: tu.input)
                                         toolCalls.append(call)
-                                        continuation.yield(.toolUse(id: tu.id, name: tu.name, input: tu.input))
+                                        continuation.yield(
+                                            .toolUse(id: tu.id, name: tu.name, input: tu.input))
                                         currentToolUse = nil
                                     }
 
@@ -436,6 +477,7 @@ struct OpenRouterProvider: LLMProvider {
                     continuation.finish()
 
                 } catch {
+                    LLMTrace.error(provider: "OpenRouter", message: "Stream error: \(error)")
                     continuation.yield(.error(.network(error as? URLError ?? URLError(.unknown))))
                     continuation.finish()
                 }

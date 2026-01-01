@@ -14,7 +14,8 @@ nonisolated final class FileEditorTool: Tool {
     let description = """
         Create, edit, and manage files. Supports creating new files, \
         editing existing files with search/replace, appending content, \
-        deleting, renaming, moving, and copying files.
+        deleting, renaming, moving, and copying files. \
+        Create defaults to an empty file if content is omitted.
         """
 
     nonisolated var parameters: ToolParametersSchema {
@@ -70,11 +71,10 @@ nonisolated final class FileEditorTool: Tool {
 
         switch operationStr {
         case "create":
-            guard let content = arguments.string("content") else {
-                throw ToolError.invalidArguments("content required")
-            }
+            let content = arguments.string("content") ?? ""
             try content.write(to: fileURL, atomically: true, encoding: .utf8)
-            return ToolResult.success("File created at \(path)")
+            let message = content.isEmpty ? "Empty file created at \(path)" : "File created at \(path)"
+            return ToolResult.success(message)
 
         case "edit":
             guard let oldStr = arguments.string("old_string"),
@@ -94,8 +94,8 @@ nonisolated final class FileEditorTool: Tool {
             return ToolResult.success("File edited")
 
         case "append":
-            guard let content = arguments.string("content") else {
-                throw ToolError.invalidArguments("content required")
+            guard let content = arguments.string("content"), !content.isEmpty else {
+                return ToolResult.success("No content provided; nothing appended.")
             }
             guard fm.fileExists(atPath: fileURL.path) else {
                 throw ToolError.executionFailed("File not found")

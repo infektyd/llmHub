@@ -15,6 +15,8 @@ nonisolated struct ShellTool: Tool {
         Execute shell commands on macOS. \
         Use this tool when you need to run terminal commands, \
         manipulate files via command line, or access system utilities. \
+        Avoid '/tmp' paths in sandboxed runs (use $TMPDIR instead). \
+        Use '&&' or ';' for chaining; avoid ';&' which is case-only syntax. \
         Not available on iOS for security reasons.
         """
 
@@ -56,6 +58,10 @@ nonisolated struct ShellTool: Tool {
                 throw ToolError.invalidArguments("command is required")
             }
 
+            if containsInvalidShellToken(command) {
+                throw ToolError.invalidArguments("Invalid shell token ';&'. Use ';' or '&&' instead.")
+            }
+
             let workingDirectory = arguments.string("working_directory")
             let timeoutSeconds = max(1, min(arguments.int("timeout") ?? 30, 120))
             let envArgs =
@@ -64,11 +70,16 @@ nonisolated struct ShellTool: Tool {
             let stdinData = arguments.string("pipe_input")?.data(using: .utf8)
             let runInBackground = arguments.bool("background") ?? false
 
-            context.logger.info("Executing shell command: \(command)")
+            let tempDir = context.workspacePath.appendingPathComponent(".tmp", isDirectory: true)
+            try? FileManager.default.createDirectory(
+                at: tempDir, withIntermediateDirectories: true, attributes: nil)
+            let (sanitizedCommand, didRewriteTmp) = rewriteTmpPaths(in: command, tmpPath: tempDir.path)
+
+            context.logger.info("Executing shell command: \(sanitizedCommand)")
 
             let process = Process()
             process.launchPath = "/bin/zsh"
-            process.arguments = ["-lc", command]
+            process.arguments = ["-lc", sanitizedCommand]
 
             if let wd = workingDirectory {
                 process.currentDirectoryURL = URL(fileURLWithPath: wd)
@@ -79,6 +90,9 @@ nonisolated struct ShellTool: Tool {
 
             var fullEnv = ProcessInfo.processInfo.environment
             envArgs.forEach { fullEnv[$0.key] = $0.value }
+            fullEnv["TMPDIR"] = tempDir.path
+            fullEnv["TEMP"] = tempDir.path
+            fullEnv["TMP"] = tempDir.path
             process.environment = fullEnv
 
             let stdoutPipe = Pipe()
@@ -134,13 +148,20 @@ nonisolated struct ShellTool: Tool {
             let stdoutText = String(data: stdoutData, encoding: .utf8) ?? ""
             let stderrText = String(data: stderrData, encoding: .utf8) ?? ""
 
-            let combined = """
+            var combined = """
                 exit_code: \(exitCode)
                 stdout:
                 \(stdoutText)
                 stderr:
                 \(stderrText)
                 """
+            if didRewriteTmp {
+                combined = """
+                    Note: Rewrote /tmp to \(tempDir.path) due to sandbox restrictions.
+
+                    \(combined)
+                    """
+            }
 
             if exitCode == 0 {
                 return ToolResult.success(combined, metadata: ["exit_code": "\(exitCode)"])
@@ -148,5 +169,21 @@ nonisolated struct ShellTool: Tool {
                 return ToolResult.failure(combined, metadata: ["exit_code": "\(exitCode)"])
             }
         #endif
+    }
+
+    private func containsInvalidShellToken(_ command: String) -> Bool {
+        command.range(of: #";\s*&"#, options: .regularExpression) != nil
+    }
+
+    private func rewriteTmpPaths(in command: String, tmpPath: String) -> (String, Bool) {
+        let pattern = #"(^|[\s"\'=])/tmp(?=(/|\s|$))"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            return (command, false)
+        }
+        let range = NSRange(command.startIndex..., in: command)
+        let template = "$1" + NSRegularExpression.escapedTemplate(for: tmpPath)
+        let updated = regex.stringByReplacingMatches(
+            in: command, options: [], range: range, withTemplate: template)
+        return (updated, updated != command)
     }
 }

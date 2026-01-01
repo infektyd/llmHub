@@ -59,9 +59,18 @@ struct MistralProvider: LLMProvider {
         tools: [ToolDefinition]?,
         options: LLMRequestOptions
     ) async throws -> URLRequest {
+        LLMTrace.requestStarted(
+            provider: "Mistral",
+            model: model,
+            messageCount: messages.count,
+            toolCount: tools?.count ?? 0
+        )
+
         guard let apiKey = await keychain.apiKey(for: .mistral) else {
+            LLMTrace.authStatus(provider: "Mistral", hasKey: false)
             throw LLMProviderError.authenticationMissing
         }
+        LLMTrace.authStatus(provider: "Mistral", hasKey: true)
 
         let manager = MistralManager(apiKey: apiKey)
 
@@ -151,15 +160,29 @@ struct MistralProvider: LLMProvider {
                     }
                     streamRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
 
+                    if let bodyData = streamRequest.httpBody,
+                        let bodyStr = String(data: bodyData, encoding: .utf8)
+                    {
+                        LLMTrace.requestDetails(
+                            provider: "Mistral",
+                            url: streamRequest.url?.absoluteString ?? "unknown",
+                            bodyPreview: bodyStr)
+                    }
+                    LLMTrace.requestSent(provider: "Mistral")
+
                     // 2. Execute
-                    let (result, response) = try await LLMURLSession.shared.bytes(
+                    let (result, response) = try await LLMURLSession.bytes(
                         for: streamRequest)
 
                     guard let http = response as? HTTPURLResponse,
                         (200...299).contains(http.statusCode)
                     else {
+                        let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+                        LLMTrace.responseReceived(provider: "Mistral", statusCode: statusCode)
                         var errorText = ""
                         for try await line in result.lines { errorText += line }
+                        LLMTrace.errorWithBody(
+                            provider: "Mistral", statusCode: statusCode, body: errorText)
                         continuation.yield(
                             .error(
                                 .server(
@@ -220,7 +243,8 @@ struct MistralProvider: LLMProvider {
                                 let calls = toolAssembler.finalizeAll()
                                 finalizedToolCalls.append(contentsOf: calls)
                                 for tc in calls {
-                                    continuation.yield(.toolUse(id: tc.id, name: tc.name, input: tc.input))
+                                    continuation.yield(
+                                        .toolUse(id: tc.id, name: tc.name, input: tc.input))
                                 }
                             }
 
@@ -272,6 +296,7 @@ struct MistralProvider: LLMProvider {
                     continuation.finish()
 
                 } catch {
+                    LLMTrace.error(provider: "Mistral", message: "Stream error: \(error)")
                     continuation.yield(.error(.network(error as? URLError ?? URLError(.unknown))))
                     continuation.finish()
                 }

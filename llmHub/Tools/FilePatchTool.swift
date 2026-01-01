@@ -13,8 +13,8 @@ nonisolated struct FilePatchTool: Tool {
     let name = "file_patch"
     let description = """
         Safely edit files using structured patches. Supports two modes:
-        - line_replace: Replace specific line ranges with new content
-        - unified_diff: Apply standard unified diff format
+        - line_replace: Replace specific line ranges with new content (start_line required; end_line defaults to start_line)
+        - unified_diff: Apply standard unified diff format (diff required)
         Validates changes before applying to prevent corruption.
         """
 
@@ -33,7 +33,9 @@ nonisolated struct FilePatchTool: Tool {
                     description: "Starting line number (1-indexed) for line_replace mode"),
                 "end_line": ToolProperty(
                     type: .integer,
-                    description: "Ending line number (1-indexed, inclusive) for line_replace mode"),
+                    description:
+                        "Ending line number (1-indexed, inclusive) for line_replace mode (defaults to start_line)"
+                ),
                 "new_content": ToolProperty(
                     type: .string, description: "New content to insert for line_replace mode"),
                 "diff": ToolProperty(
@@ -87,11 +89,12 @@ nonisolated struct FilePatchTool: Tool {
     private func lineReplace(fileURL: URL, arguments: ToolArguments, dryRun: Bool) async throws
         -> String
     {
-        guard let startLine = arguments.int("start_line"), let endLine = arguments.int("end_line"),
-            let newContent = arguments.string("new_content")
-        else {
-            throw ToolError.invalidArguments(
-                "start_line, end_line, and new_content are required for line_replace mode")
+        guard let startLine = arguments.int("start_line") else {
+            throw ToolError.invalidArguments("start_line is required for line_replace mode")
+        }
+        let endLine = arguments.int("end_line") ?? startLine
+        guard let newContent = arguments.string("new_content") else {
+            throw ToolError.invalidArguments("new_content is required for line_replace mode")
         }
         guard startLine >= 1, endLine >= startLine else {
             throw ToolError.invalidArguments("Invalid line range")
@@ -125,7 +128,7 @@ nonisolated struct FilePatchTool: Tool {
         -> String
     {
         guard let diff = arguments.string("diff") else {
-            throw ToolError.invalidArguments("diff is required")
+            throw ToolError.invalidArguments("diff is required for unified_diff mode")
         }
         let hunks = try parseUnifiedDiff(diff)
         if hunks.isEmpty { throw ToolError.invalidArguments("No valid hunks found") }

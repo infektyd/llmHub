@@ -269,23 +269,26 @@ struct CanvasMessageRow: View {
     let role: MessageRole
     let markdown: String
 
+    @State private var hovered = false
+    @State private var copied = false
+
     private var isUser: Bool { role == .user }
+    private var hasCopyableText: Bool {
+        !markdown.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
             if isUser { Spacer(minLength: 100) }
 
             VStack(alignment: isUser ? .trailing : .leading, spacing: 6) {
-                #if canImport(Textual)
-                StructuredText(markdown: markdown)
-                    .textual.structuredTextStyle(.llmHubLiquid(theme: theme))
-                    .textual.highlighterTheme(.llmHubLiquid(theme: theme))
-                #else
-                Text(markdown)
-                    .font(theme.responseFont)
-                    .foregroundStyle(theme.textPrimary)
-                    .textSelection(.enabled)
-                #endif
+                messageContent
+                    .padding(.trailing, isUser ? 0 : 20)
+                    .overlay(alignment: isUser ? .topLeading : .topTrailing) {
+                        if shouldShowCopyButton {
+                            copyButton
+                        }
+                    }
             }
             .frame(maxWidth: .infinity, alignment: isUser ? .trailing : .leading)
 
@@ -293,6 +296,78 @@ struct CanvasMessageRow: View {
         }
         .padding(.horizontal, 26)
         .padding(.vertical, 8)
+        .contentShape(Rectangle())
+        .contextMenu {
+            if hasCopyableText && !isUser {
+                Button("Copy") {
+                    copyToClipboard()
+                }
+            }
+        }
+        #if os(macOS)
+        .onHover { isHovering in
+            withAnimation(.easeInOut(duration: 0.2)) {
+                hovered = isHovering
+            }
+        }
+        #endif
+    }
+
+    @ViewBuilder
+    private var messageContent: some View {
+        #if canImport(Textual)
+        StructuredText(markdown: markdown)
+            .textual.structuredTextStyle(.llmHubLiquid(theme: theme))
+            .textual.highlighterTheme(.llmHubLiquid(theme: theme))
+            .textual.textSelection(.enabled)
+        #else
+        Text(markdown)
+            .font(theme.responseFont)
+            .foregroundStyle(theme.textPrimary)
+            .textSelection(.enabled)
+        #endif
+    }
+
+    private var shouldShowCopyButton: Bool {
+        guard hasCopyableText && !isUser else { return false }
+        #if os(macOS)
+        return hovered || copied
+        #else
+        return true
+        #endif
+    }
+
+    private var copyButton: some View {
+        Button {
+            copyToClipboard()
+        } label: {
+            Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                .font(.caption2)
+                .foregroundColor(copied ? theme.success : theme.textTertiary)
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 2)
+        .transition(.opacity)
+        .accessibilityLabel("Copy response")
+    }
+
+    private func copyToClipboard() {
+        #if os(macOS)
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(markdown, forType: .string)
+        #else
+        UIPasteboard.general.string = markdown
+        #endif
+
+        withAnimation {
+            copied = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation {
+                copied = false
+            }
+        }
     }
 }
 
@@ -521,4 +596,3 @@ struct CanvasWorkbenchShell: View {
         }
     }
 }
-

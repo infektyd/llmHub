@@ -82,7 +82,10 @@ nonisolated struct WorkspaceTool: Tool {
         let includeHidden = arguments.bool("include_hidden") ?? false
         var extFilter: Set<String>?
         if let exts = arguments.array("file_extensions") {
-            extFilter = Set(exts.compactMap { $0.stringValue?.lowercased() })
+            extFilter = Set(exts.compactMap { value in
+                guard let raw = value.stringValue?.lowercased() else { return nil }
+                return raw.hasPrefix(".") ? String(raw.dropFirst()) : raw
+            })
         }
 
         let gitignorePatterns = loadGitignorePatterns(in: context.workspacePath)

@@ -109,7 +109,8 @@ struct CanvasChatView: View {
             session: session,
             modelContext: modelContext,
             selectedProvider: workbenchVM.selectedProvider,
-            selectedModel: workbenchVM.selectedModel
+            selectedModel: workbenchVM.selectedModel,
+            thinkingPreference: thinkingPreference
         )
     }
 }

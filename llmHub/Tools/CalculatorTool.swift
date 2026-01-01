@@ -6,14 +6,11 @@ import RealModule
 
 private enum CalculatorError: LocalizedError {
     case invalidExpression
-    case divideByZero
 
     var errorDescription: String? {
         switch self {
         case .invalidExpression:
             return "Invalid or unsupported expression."
-        case .divideByZero:
-            return "Division by zero is not allowed."
         }
     }
 }
@@ -43,10 +40,7 @@ private nonisolated struct CalculatorEngine {
         "/": OperatorInfo(
             precedence: 2,
             rightAssociative: false,
-            apply: { lhs, rhs in
-                if rhs.real == 0 && rhs.imaginary == 0 { throw CalculatorError.divideByZero }
-                return lhs / rhs
-            }
+            apply: { lhs, rhs in lhs / rhs }
         ),
         "^": OperatorInfo(precedence: 3, rightAssociative: true, apply: { Complex.pow($0, $1) }),
     ]
@@ -297,6 +291,8 @@ private nonisolated func formatComplex(_ value: Complex, precision: Int, style: 
     let epsilon = 1e-10
 
     func format(_ number: Double) -> String {
+        if number.isNaN { return "nan" }
+        if number.isInfinite { return number.sign == .minus ? "-inf" : "inf" }
         let formatter = NumberFormatter()
         formatter.maximumFractionDigits = min(max(0, precision), 12)
         formatter.minimumFractionDigits = 0

@@ -1,5 +1,4 @@
 import Foundation
-import OSLog
 
 @MainActor
 struct OpenAIProvider: LLMProvider {
@@ -8,7 +7,6 @@ struct OpenAIProvider: LLMProvider {
 
     private let keychain: KeychainStore
     private let config: ProvidersConfig.OpenAI
-    private nonisolated let logger = Logger(subsystem: "com.llmhub", category: "OpenAIProvider")
 
     var supportsToolCalling: Bool { true }
 
@@ -75,7 +73,8 @@ struct OpenAIProvider: LLMProvider {
         tools: [ToolDefinition]?,
         options: LLMRequestOptions
     ) async throws -> URLRequest {
-        try await buildRequest(messages: messages, model: model, tools: tools, options: options, jsonMode: false)
+        try await buildRequest(
+            messages: messages, model: model, tools: tools, options: options, jsonMode: false)
     }
 
     private func buildRequest(
@@ -86,12 +85,22 @@ struct OpenAIProvider: LLMProvider {
         jsonMode: Bool
     ) async throws -> URLRequest {
         guard let apiKey = await keychain.apiKey(for: .openai) else {
+            LLMTrace.authStatus(provider: "OpenAI", hasKey: false)
             throw LLMProviderError.authenticationMissing
         }
+        LLMTrace.authStatus(provider: "OpenAI", hasKey: true)
+
+        LLMTrace.requestStarted(
+            provider: "OpenAI",
+            model: model,
+            messageCount: messages.count,
+            toolCount: tools?.count ?? 0
+        )
 
         let manager = OpenAIManager(apiKey: apiKey)
         let endpoint = ModelRouter.endpoint(for: model)
-        let requestThinking = shouldRequestThinking(model: model, preference: options.thinkingPreference)
+        let requestThinking = shouldRequestThinking(
+            model: model, preference: options.thinkingPreference)
         let isResponsesAPI = (endpoint == .responses)
 
         // Map messages
@@ -102,7 +111,7 @@ struct OpenAIProvider: LLMProvider {
                 if isResponsesAPI {
                     // Responses API (gpt-5*, o1*, etc.) requires tool results as "user" role
                     mappedRole = "user"
-                    logger.debug("OpenAIProvider: Mapped tool result message to 'user' role for Responses API (model: \(model))")
+
                 } else {
                     // Chat Completions API uses "tool" role
                     mappedRole = "tool"
@@ -216,24 +225,45 @@ struct OpenAIProvider: LLMProvider {
                                 as? [String: Any]
                         {
                             json["stream"] = true
-                            streamRequest.httpBody = try JSONSerialization.data(withJSONObject: json)
+                            streamRequest.httpBody = try JSONSerialization.data(
+                                withJSONObject: json)
                         }
                         streamRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
 
-                        let (bytes, response) = try await LLMURLSession.shared.bytes(for: streamRequest)
+                        if let bodyData = streamRequest.httpBody,
+                            let bodyStr = String(data: bodyData, encoding: .utf8)
+                        {
+                            LLMTrace.requestDetails(
+                                provider: "OpenAI (Responses)",
+                                url: streamRequest.url?.absoluteString ?? "unknown",
+                                bodyPreview: bodyStr)
+                        }
+                        LLMTrace.requestSent(provider: "OpenAI (Responses)")
+
+                        let (bytes, response) = try await LLMURLSession.bytes(
+                            for: streamRequest)
                         guard let http = response as? HTTPURLResponse,
                             (200...299).contains(http.statusCode)
                         else {
+                            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+                            LLMTrace.responseReceived(
+                                provider: "OpenAI (Responses)", statusCode: statusCode)
                             var errorText = ""
                             for try await line in bytes.lines { errorText += line }
+                            LLMTrace.errorWithBody(
+                                provider: "OpenAI (Responses)", statusCode: statusCode,
+                                body: errorText)
                             continuation.yield(
                                 .error(
                                     .server(
-                                        reason: errorText.isEmpty ? "Unknown stream error" : errorText))
+                                        reason: errorText.isEmpty
+                                            ? "Unknown stream error" : errorText))
                             )
                             continuation.finish()
                             return
                         }
+                        LLMTrace.responseReceived(
+                            provider: "OpenAI (Responses)", statusCode: http.statusCode)
 
                         func parseJSONDict(_ payload: String) -> [String: Any]? {
                             guard let data = payload.data(using: .utf8) else { return nil }
@@ -258,7 +288,8 @@ struct OpenAIProvider: LLMProvider {
                         func jsonString(from value: Any) -> String? {
                             if let s = value as? String { return s }
                             guard JSONSerialization.isValidJSONObject(value) else { return nil }
-                            guard let data = try? JSONSerialization.data(withJSONObject: value) else {
+                            guard let data = try? JSONSerialization.data(withJSONObject: value)
+                            else {
                                 return nil
                             }
                             return String(data: data, encoding: .utf8)
@@ -285,7 +316,9 @@ struct OpenAIProvider: LLMProvider {
                         var contentBlockIDByIndex: [Int: String] = [:]
 
                         func upsertToolCall(id: String, name: String?, argsDelta: String?) {
-                            var existing = partialCallsByID[id] ?? PartialCall(id: id, name: nil, arguments: "")
+                            var existing =
+                                partialCallsByID[id]
+                                ?? PartialCall(id: id, name: nil, arguments: "")
                             if let name, !name.isEmpty { existing.name = name }
                             if let argsDelta { existing.arguments += argsDelta }
                             partialCallsByID[id] = existing
@@ -304,11 +337,16 @@ struct OpenAIProvider: LLMProvider {
                             partialCallsByID[id] = call
                         }
 
-                        func resolveToolCallID(from dict: [String: Any], fallbackIndex: Int?) -> String {
-                            if let id = firstString(dict, keys: ["id", "tool_call_id", "call_id", "item_id"]) {
+                        func resolveToolCallID(from dict: [String: Any], fallbackIndex: Int?)
+                            -> String
+                        {
+                            if let id = firstString(
+                                dict, keys: ["id", "tool_call_id", "call_id", "item_id"])
+                            {
                                 return id
                             }
-                            if let index = fallbackIndex, let mapped = contentBlockIDByIndex[index] {
+                            if let index = fallbackIndex, let mapped = contentBlockIDByIndex[index]
+                            {
                                 return mapped
                             }
                             if let index = fallbackIndex {
@@ -328,20 +366,26 @@ struct OpenAIProvider: LLMProvider {
 
                                 switch typeName {
                                 case "content_block_start":
-                                    guard let dict, let block = dict["content_block"] as? [String: Any] else { break }
+                                    guard let dict,
+                                        let block = dict["content_block"] as? [String: Any]
+                                    else { break }
                                     let blockType = (block["type"] as? String) ?? ""
                                     let index = dict["index"] as? Int
                                     if blockType == "text" {
-                                        if let text = firstString(block, keys: ["text", "content", "value"]) {
+                                        if let text = firstString(
+                                            block, keys: ["text", "content", "value"])
+                                        {
                                             if !text.isEmpty {
                                                 fullText += text
                                                 continuation.yield(.token(text: text))
                                             }
                                         }
                                     } else if blockType == "tool_use" {
-                                        let callID = resolveToolCallID(from: block, fallbackIndex: index)
+                                        let callID = resolveToolCallID(
+                                            from: block, fallbackIndex: index)
                                         if let index { contentBlockIDByIndex[index] = callID }
-                                        let name = firstString(block, keys: ["name", "tool_name", "function_name"])
+                                        let name = firstString(
+                                            block, keys: ["name", "tool_name", "function_name"])
                                         let input = block["input"].flatMap { jsonString(from: $0) }
                                         upsertToolCall(id: callID, name: name, argsDelta: input)
                                         finalizeToolCallIfReady(id: callID)
@@ -351,17 +395,24 @@ struct OpenAIProvider: LLMProvider {
                                     guard let dict else { break }
                                     let index = dict["index"] as? Int
                                     let delta = dict["delta"] as? [String: Any]
-                                    let deltaType = delta.flatMap { firstString($0, keys: ["type"]) } ?? ""
+                                    let deltaType =
+                                        delta.flatMap { firstString($0, keys: ["type"]) } ?? ""
                                     if deltaType == "text_delta" {
-                                        if let text = delta.flatMap({ firstString($0, keys: ["text", "delta", "value"]) }) {
+                                        if let text = delta.flatMap({
+                                            firstString($0, keys: ["text", "delta", "value"])
+                                        }) {
                                             if !text.isEmpty {
                                                 fullText += text
                                                 continuation.yield(.token(text: text))
                                             }
                                         }
                                     } else if deltaType == "input_json_delta" {
-                                        let callID = resolveToolCallID(from: dict, fallbackIndex: index)
-                                        let jsonDelta = delta.flatMap({ firstString($0, keys: ["partial_json", "delta", "arguments"]) })
+                                        let callID = resolveToolCallID(
+                                            from: dict, fallbackIndex: index)
+                                        let jsonDelta = delta.flatMap({
+                                            firstString(
+                                                $0, keys: ["partial_json", "delta", "arguments"])
+                                        })
                                         upsertToolCall(id: callID, name: nil, argsDelta: jsonDelta)
                                         finalizeToolCallIfReady(id: callID)
                                     }
@@ -370,10 +421,22 @@ struct OpenAIProvider: LLMProvider {
                                     if let dict,
                                         let usageDict = dict["usage"] as? [String: Any]
                                     {
-                                        let inputTokens = firstInt(usageDict, keys: ["input_tokens", "prompt_tokens"]) ?? 0
-                                        let outputTokens = firstInt(usageDict, keys: ["output_tokens", "completion_tokens"]) ?? 0
-                                        let cachedTokens = firstInt(usageDict, keys: ["cached_tokens"]) ?? 0
-                                        continuation.yield(.usage(TokenUsage(inputTokens: inputTokens, outputTokens: outputTokens, cachedTokens: cachedTokens)))
+                                        let inputTokens =
+                                            firstInt(
+                                                usageDict, keys: ["input_tokens", "prompt_tokens"])
+                                            ?? 0
+                                        let outputTokens =
+                                            firstInt(
+                                                usageDict,
+                                                keys: ["output_tokens", "completion_tokens"]) ?? 0
+                                        let cachedTokens =
+                                            firstInt(usageDict, keys: ["cached_tokens"]) ?? 0
+                                        continuation.yield(
+                                            .usage(
+                                                TokenUsage(
+                                                    inputTokens: inputTokens,
+                                                    outputTokens: outputTokens,
+                                                    cachedTokens: cachedTokens)))
                                     }
 
                                 case "message_stop":
@@ -385,14 +448,17 @@ struct OpenAIProvider: LLMProvider {
                                         let errorDict = dict["error"] as? [String: Any]
                                     {
                                         let message =
-                                            firstString(errorDict, keys: ["message", "error", "type"])
+                                            firstString(
+                                                errorDict, keys: ["message", "error", "type"])
                                             ?? "Unknown error"
                                         continuation.yield(.error(.server(reason: message)))
                                         didYieldError = true
                                     }
 
                                 case "response.output_text.delta":
-                                    if let delta = dict.flatMap({ firstString($0, keys: ["delta", "text"]) }) {
+                                    if let delta = dict.flatMap({
+                                        firstString($0, keys: ["delta", "text"])
+                                    }) {
                                         if !delta.isEmpty {
                                             fullText += delta
                                             continuation.yield(.token(text: delta))
@@ -400,7 +466,9 @@ struct OpenAIProvider: LLMProvider {
                                     }
 
                                 case "response.reasoning_summary_text.delta":
-                                    if let delta = dict.flatMap({ firstString($0, keys: ["delta", "text"]) }) {
+                                    if let delta = dict.flatMap({
+                                        firstString($0, keys: ["delta", "text"])
+                                    }) {
                                         if !delta.isEmpty {
                                             thinkingSummary += delta
                                             continuation.yield(.thinking(delta))
@@ -413,11 +481,14 @@ struct OpenAIProvider: LLMProvider {
                                         firstString(dict, keys: ["call_id", "item_id", "id"])
                                         ?? "call_0"
                                     let name = firstString(dict, keys: ["name", "function_name"])
-                                    let delta = firstString(dict, keys: ["delta", "arguments_delta", "arguments"])
+                                    let delta = firstString(
+                                        dict, keys: ["delta", "arguments_delta", "arguments"])
                                     upsertToolCall(id: callID, name: name, argsDelta: delta)
 
                                 case "response.output_item.added", "response.output_item.done":
-                                    guard let dict, let item = dict["item"] as? [String: Any] else { break }
+                                    guard let dict, let item = dict["item"] as? [String: Any] else {
+                                        break
+                                    }
                                     let itemType = (item["type"] as? String) ?? ""
                                     guard itemType == "function_call" else { break }
 
@@ -436,12 +507,26 @@ struct OpenAIProvider: LLMProvider {
                                     if let dict {
                                         let usageDict =
                                             (dict["usage"] as? [String: Any])
-                                            ?? ((dict["response"] as? [String: Any])?["usage"] as? [String: Any])
+                                            ?? ((dict["response"] as? [String: Any])?["usage"]
+                                                as? [String: Any])
                                         if let usageDict {
-                                            let inputTokens = firstInt(usageDict, keys: ["input_tokens", "prompt_tokens"]) ?? 0
-                                            let outputTokens = firstInt(usageDict, keys: ["output_tokens", "completion_tokens"]) ?? 0
-                                            let cachedTokens = firstInt(usageDict, keys: ["cached_tokens"]) ?? 0
-                                            continuation.yield(.usage(TokenUsage(inputTokens: inputTokens, outputTokens: outputTokens, cachedTokens: cachedTokens)))
+                                            let inputTokens =
+                                                firstInt(
+                                                    usageDict,
+                                                    keys: ["input_tokens", "prompt_tokens"]) ?? 0
+                                            let outputTokens =
+                                                firstInt(
+                                                    usageDict,
+                                                    keys: ["output_tokens", "completion_tokens"])
+                                                ?? 0
+                                            let cachedTokens =
+                                                firstInt(usageDict, keys: ["cached_tokens"]) ?? 0
+                                            continuation.yield(
+                                                .usage(
+                                                    TokenUsage(
+                                                        inputTokens: inputTokens,
+                                                        outputTokens: outputTokens,
+                                                        cachedTokens: cachedTokens)))
                                         }
                                     }
                                     // Attempt to finalize any fully-formed tool calls.
@@ -489,17 +574,29 @@ struct OpenAIProvider: LLMProvider {
                         json["stream"] = true
                         json["stream_options"] = ["include_usage": true]
                         streamRequest.httpBody = try JSONSerialization.data(withJSONObject: json)
-                        print("OpenAIProvider: Helper stream request config applied (stream=true)")
                     }
                     streamRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
 
-                    let (result, response) = try await LLMURLSession.shared.bytes(
+                    if let bodyData = streamRequest.httpBody,
+                        let bodyStr = String(data: bodyData, encoding: .utf8)
+                    {
+                        LLMTrace.requestDetails(
+                            provider: "OpenAI", url: streamRequest.url?.absoluteString ?? "unknown",
+                            bodyPreview: bodyStr)
+                    }
+                    LLMTrace.requestSent(provider: "OpenAI")
+
+                    let (result, response) = try await LLMURLSession.bytes(
                         for: streamRequest)
                     guard let http = response as? HTTPURLResponse,
                         (200...299).contains(http.statusCode)
                     else {
+                        let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+                        LLMTrace.responseReceived(provider: "OpenAI", statusCode: statusCode)
                         var errorText = ""
                         for try await line in result.lines { errorText += line }
+                        LLMTrace.errorWithBody(
+                            provider: "OpenAI", statusCode: statusCode, body: errorText)
                         continuation.yield(
                             .error(
                                 .server(
@@ -508,6 +605,7 @@ struct OpenAIProvider: LLMProvider {
                         continuation.finish()
                         return
                     }
+                    LLMTrace.responseReceived(provider: "OpenAI", statusCode: http.statusCode)
 
                     var fullText = ""
                     var toolAssembler = PartialToolCallAssembler()
@@ -553,7 +651,8 @@ struct OpenAIProvider: LLMProvider {
                             let calls = toolAssembler.finalizeAll()
                             finalizedToolCalls.append(contentsOf: calls)
                             for tc in calls {
-                                continuation.yield(.toolUse(id: tc.id, name: tc.name, input: tc.input))
+                                continuation.yield(
+                                    .toolUse(id: tc.id, name: tc.name, input: tc.input))
                             }
                         }
 
@@ -591,7 +690,10 @@ struct OpenAIProvider: LLMProvider {
                     }
                     continuation.finish()
 
+                    continuation.finish()
+
                 } catch {
+                    LLMTrace.error(provider: "OpenAI", message: "Stream error: \(error)")
                     continuation.yield(.error(.network(error as? URLError ?? URLError(.unknown))))
                     continuation.finish()
                 }

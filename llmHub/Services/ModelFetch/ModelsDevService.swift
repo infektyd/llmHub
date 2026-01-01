@@ -44,7 +44,7 @@ actor ModelsDevService {
         logger.info("Fetching fresh data from models.dev API")
         
         do {
-            let (data, response) = try await LLMURLSession.shared.data(from: apiURL)
+            let (data, response) = try await LLMURLSession.data(from: apiURL)
             
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw ModelsDevError.invalidResponse
