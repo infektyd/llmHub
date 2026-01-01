@@ -14,6 +14,9 @@ final class ContextManagementService {
     private let compactor = ContextCompactor()
     private var config: ContextConfig
     private let logger = Logger(subsystem: "com.llmhub", category: "ContextManagement")
+
+    typealias RollingSummaryGenerator =
+        @Sendable @MainActor (_ messagesToSummarize: [ChatMessage], _ summaryMaxTokens: Int) async throws -> String
     
     /// Initializes a new context management service.
     /// - Parameter config: The configuration to use. Defaults to loading from UserDefaults.
@@ -38,7 +41,8 @@ final class ContextManagementService {
     func compact(
         messages: [ChatMessage],
         maxTokens: Int? = nil,
-        providerID: String? = nil
+        providerID: String? = nil,
+        rollingSummaryGenerator: RollingSummaryGenerator? = nil
     ) async throws -> CompactionResult {
         // Check if compaction is enabled
         guard config.enabled else {
@@ -68,16 +72,25 @@ final class ContextManagementService {
             maxTokens: effectiveMaxTokens,
             preserveSystemPrompt: config.preserveSystemPrompt,
             preserveRecentMessages: config.preserveRecentMessages,
-            summaryModel: nil // For future use
+            summarizationEnabled: config.summarizationEnabled,
+            summarizeAtTurnCount: config.summarizeAtTurnCount,
+            preserveLastTurns: config.preserveLastTurns,
+            summaryMaxTokens: config.summaryMaxTokens
         )
         
         logger.debug("Starting compaction: \(messages.count) messages, maxTokens=\(effectiveMaxTokens)")
         
         // Perform compaction
+        //
+        // Rationale: Rolling-summary compaction is optionally enabled. It runs via a dedicated
+        // "summarize mode" generator that must not re-enter the normal ChatService agent loop.
         let result = try await compactor.compact(
             messages: messages,
             config: compactionConfig,
-            strategy: .truncateOldest
+            strategy: (config.summarizationEnabled && rollingSummaryGenerator != nil)
+                ? .summarizeOldest
+                : .truncateOldest,
+            rollingSummaryGenerator: rollingSummaryGenerator
         )
         
         if result.droppedCount > 0 {

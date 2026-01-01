@@ -215,7 +215,7 @@ struct OpenAIProvider: LLMProvider {
 
     func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {
         AsyncThrowingStream(ProviderEvent.self) { continuation in
-            Task {
+            let task = Task {
                 do {
                     // Streaming Responses endpoint
                     if request.url?.path.contains("/responses") == true {
@@ -693,10 +693,18 @@ struct OpenAIProvider: LLMProvider {
                     continuation.finish()
 
                 } catch {
+                    if error is CancellationError {
+                        continuation.finish()
+                        return
+                    }
                     LLMTrace.error(provider: "OpenAI", message: "Stream error: \(error)")
                     continuation.yield(.error(.network(error as? URLError ?? URLError(.unknown))))
                     continuation.finish()
                 }
+            }
+
+            continuation.onTermination = { @Sendable _ in
+                task.cancel()
             }
         }
     }

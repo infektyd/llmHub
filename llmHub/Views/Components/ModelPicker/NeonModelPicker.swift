@@ -12,7 +12,6 @@ import SwiftUI
         @Binding var selectedProvider: UILLMProvider?
         @Binding var selectedModel: UILLMModel?
         @EnvironmentObject private var modelRegistry: ModelRegistry
-        @Environment(\.theme) private var theme
         @State private var showPickerPanel = false
 
         var body: some View {
@@ -27,42 +26,42 @@ import SwiftUI
                     if let provider = selectedProvider {
                         Image(systemName: provider.icon)
                             .font(.system(size: 14))
-                            .foregroundColor(theme.accent)
+                            .foregroundColor(AppColors.accent)
                     } else if availableProviders.isEmpty {
                         Image(systemName: "exclamationmark.triangle")
                             .font(.system(size: 14))
-                            .foregroundColor(theme.error)
+                            .foregroundColor(AppColors.error)
                     }
 
                     VStack(alignment: .leading, spacing: 2) {
                         if let provider = selectedProvider {
                             Text(provider.name)
                                 .font(.system(size: 10, weight: .medium))
-                                .foregroundColor(theme.textSecondary)
+                                .foregroundColor(AppColors.textSecondary)
                         } else if availableProviders.isEmpty {
                             Text("No providers")
                                 .font(.system(size: 10, weight: .medium))
-                                .foregroundColor(theme.textSecondary)
+                                .foregroundColor(AppColors.textSecondary)
                         }
 
                         if let model = selectedModel {
                             Text(model.name)
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(theme.textPrimary)
+                                .foregroundColor(AppColors.textPrimary)
                         } else if availableProviders.isEmpty {
                             Text("Add API keys")
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(theme.error)
+                                .foregroundColor(AppColors.error)
                         } else {
                             Text("Select model")
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(theme.textSecondary)
+                                .foregroundColor(AppColors.textSecondary)
                         }
                     }
 
                     Image(systemName: showPickerPanel ? "chevron.up" : "chevron.down")
                         .font(.system(size: 10))
-                        .foregroundColor(theme.textSecondary)
+                        .foregroundColor(AppColors.textSecondary)
                         .animation(.snappy, value: showPickerPanel)
                 }
                 .padding(.horizontal, 16)
@@ -150,39 +149,17 @@ import SwiftUI
         // MARK: - Subviews
 
         private var pickerButtonBackground: some View {
-            Group {
-                if theme.usesGlassEffect {
+            Capsule()
+                .glassEffect(.regular, in: .capsule)
+                .overlay(
                     Capsule()
-                        .glassEffect(.regular, in: .capsule)
-                        .overlay(
-                            Capsule()
-                                .stroke(
-                                    availableProviders.isEmpty
-                                        ? theme.error.opacity(0.8)
-                                        : theme.accentSecondary.opacity(0.5),
-                                    lineWidth: 1.5
-                                )
+                        .stroke(
+                            availableProviders.isEmpty
+                                ? AppColors.error.opacity(0.8)
+                                : AppColors.accentSecondary.opacity(0.5),
+                            lineWidth: 1.5
                         )
-                } else {
-                    Capsule()
-                        .fill(theme.surface)
-                        .overlay(
-                            Capsule()
-                                .stroke(
-                                    availableProviders.isEmpty
-                                        ? theme.error.opacity(0.5)
-                                        : theme.textSecondary.opacity(0.2),
-                                    lineWidth: theme.borderWidth
-                                )
-                        )
-                        .shadow(
-                            color: theme.shadowStyle.color,
-                            radius: theme.shadowStyle.radius / 2,
-                            x: 0,
-                            y: 2
-                        )
-                }
-            }
+                )
         }
     }
 

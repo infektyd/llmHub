@@ -12,7 +12,6 @@
         @Binding var selectedProvider: UILLMProvider?
         @Binding var selectedModel: UILLMModel?
         @EnvironmentObject private var modelRegistry: ModelRegistry
-        @Environment(\.theme) private var theme
         @State private var showModelPicker = false
 
         var body: some View {
@@ -27,7 +26,7 @@
                     if let provider = selectedProvider {
                         Image(systemName: provider.icon)
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(hasAPIKey ? theme.accent : .orange)
+                            .foregroundColor(hasAPIKey ? AppColors.accent : .orange)
                     } else if availableProviders.isEmpty {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .font(.system(size: 14, weight: .semibold))
@@ -35,7 +34,7 @@
                     } else {
                         Image(systemName: "cpu")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(theme.accent)
+                            .foregroundColor(AppColors.accent)
                     }
 
                     // Model name (abbreviated)
@@ -120,13 +119,13 @@
                     Capsule()
                         .stroke(
                             hasAPIKey || selectedModel == nil
-                                ? theme.accent.opacity(0.4) : Color.orange.opacity(0.6),
+                                ? AppColors.accent.opacity(0.4) : Color.orange.opacity(0.6),
                             lineWidth: 1.5
                         )
                 )
                 .shadow(
                     color: hasAPIKey
-                        ? theme.accent.opacity(0.2) : Color.orange.opacity(0.2),
+                        ? AppColors.accent.opacity(0.2) : Color.orange.opacity(0.2),
                     radius: 8,
                     x: 0,
                     y: 2

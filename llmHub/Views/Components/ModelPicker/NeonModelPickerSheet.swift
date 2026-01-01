@@ -15,7 +15,6 @@ struct NeonModelPickerSheet: View {
     @EnvironmentObject private var modelRegistry: ModelRegistry
     @Environment(\.keychainStore) private var keychainStore
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.theme) private var theme
 
     @State private var searchText = ""
     @State private var favoritesManager = ModelFavoritesManager()
@@ -26,7 +25,7 @@ struct NeonModelPickerSheet: View {
         NavigationStack {
             ZStack {
                 // Background
-                theme.backgroundPrimary
+                AppColors.backgroundPrimary
                     .ignoresSafeArea()
 
                 List {
@@ -73,7 +72,7 @@ struct NeonModelPickerSheet: View {
                             } label: {
                                 providerHeader(provider: provider)
                             }
-                            .tint(theme.accent)
+                            .tint(AppColors.accent)
                         }
                     }
                 }
@@ -90,7 +89,7 @@ struct NeonModelPickerSheet: View {
                         isPresented = false
                         dismiss()
                     }
-                    .foregroundColor(theme.accent)
+                    .foregroundColor(AppColors.accent)
                     .fontWeight(.semibold)
                 }
             }
@@ -115,7 +114,7 @@ struct NeonModelPickerSheet: View {
         HStack(spacing: 10) {
             Image(systemName: provider.icon)
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(theme.accent)
+                .foregroundColor(AppColors.accent)
                 .frame(width: 24)
 
             Text(provider.name)
@@ -154,7 +153,7 @@ struct NeonModelPickerSheet: View {
                 ZStack {
                     if isSelected {
                         Circle()
-                            .fill(theme.accent)
+                            .fill(AppColors.accent)
                             .frame(width: 8, height: 8)
                     }
                 }
@@ -163,13 +162,13 @@ struct NeonModelPickerSheet: View {
                 // Icon for model
                 Image(systemName: "brain")
                     .font(.system(size: 12))
-                    .foregroundColor(theme.textSecondary)
+                    .foregroundColor(AppColors.textSecondary)
 
                 // Model info
                 VStack(alignment: .leading, spacing: 4) {
                     Text(model.name)
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(isSelected ? theme.accent : .white)
+                        .foregroundColor(isSelected ? AppColors.accent : .white)
                         .lineLimit(1)
 
                     HStack(spacing: 10) {

@@ -12,7 +12,6 @@ import SwiftUI
 struct CleanupReviewSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.theme) private var theme
 
     @Bindable var sidebarViewModel: SidebarViewModel
 
@@ -27,7 +26,7 @@ struct CleanupReviewSheet: View {
             headerView
 
             Divider()
-                .foregroundColor(theme.textSecondary.opacity(0.2))
+                .foregroundColor(AppColors.textSecondary.opacity(0.2))
 
             // Stats
             statsView
@@ -40,7 +39,7 @@ struct CleanupReviewSheet: View {
             }
 
             Divider()
-                .foregroundColor(theme.textSecondary.opacity(0.2))
+                .foregroundColor(AppColors.textSecondary.opacity(0.2))
 
             // Bulk Actions
             bulkActionsView
@@ -85,13 +84,13 @@ struct CleanupReviewSheet: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Cleanup Review")
                     .font(.headline)
-                    .foregroundColor(theme.textPrimary)
+                    .foregroundColor(AppColors.textPrimary)
 
                 Text(
                     "\(flaggedSessions.count) conversation\(flaggedSessions.count == 1 ? "" : "s") ready for cleanup"
                 )
                 .font(.caption)
-                .foregroundColor(theme.textSecondary)
+                .foregroundColor(AppColors.textSecondary)
             }
 
             Spacer()
@@ -99,7 +98,7 @@ struct CleanupReviewSheet: View {
             Button(action: { dismiss() }) {
                 Image(systemName: "xmark.circle.fill")
                     .font(.title2)
-                    .foregroundColor(theme.textSecondary)
+                    .foregroundColor(AppColors.textSecondary)
             }
             .buttonStyle(.plain)
         }
@@ -168,11 +167,11 @@ struct CleanupReviewSheet: View {
 
             Text("All Clean!")
                 .font(.headline)
-                .foregroundColor(theme.textPrimary)
+                .foregroundColor(AppColors.textPrimary)
 
             Text("No conversations need cleanup review.")
                 .font(.subheadline)
-                .foregroundColor(theme.textSecondary)
+                .foregroundColor(AppColors.textSecondary)
 
             Spacer()
         }
@@ -209,13 +208,9 @@ struct CleanupReviewSheet: View {
 
     @ViewBuilder
     private var sheetBackground: some View {
-        if theme.usesGlassEffect {
-            Rectangle()
-                .fill(Color.clear)
-                .glassEffect(.regular, in: .rect(cornerRadius: 12))
-        } else {
-            theme.backgroundPrimary
-        }
+        Rectangle()
+            .fill(Color.clear)
+            .glassEffect(.regular, in: .rect(cornerRadius: 12))
     }
 
     // MARK: - Actions
@@ -301,8 +296,6 @@ private struct StatPill: View {
     let count: Int
     let color: Color
 
-    @Environment(\.theme) private var theme
-
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: icon)
@@ -311,11 +304,11 @@ private struct StatPill: View {
 
             Text("\(count)")
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(theme.textPrimary)
+                .foregroundColor(AppColors.textPrimary)
 
             Text(label)
                 .font(.system(size: 11))
-                .foregroundColor(theme.textSecondary)
+                .foregroundColor(AppColors.textSecondary)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
@@ -335,7 +328,6 @@ private struct CleanupSessionRow: View {
     let onKeep: () -> Void
 
     @State private var isHovered = false
-    @Environment(\.theme) private var theme
 
     var body: some View {
         HStack(spacing: 12) {
@@ -343,7 +335,7 @@ private struct CleanupSessionRow: View {
             Button(action: onToggle) {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 18))
-                    .foregroundColor(isSelected ? theme.accent : theme.textSecondary)
+                    .foregroundColor(isSelected ? AppColors.accent : AppColors.textSecondary)
             }
             .buttonStyle(.plain)
 
@@ -351,25 +343,25 @@ private struct CleanupSessionRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(session.displayTitle)
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(theme.textPrimary)
+                    .foregroundColor(AppColors.textPrimary)
                     .lineLimit(1)
 
                 HStack(spacing: 8) {
                     if let intent = session.lifecycleIntent {
                         Text(intent)
                             .font(.system(size: 10))
-                            .foregroundColor(theme.textSecondary)
+                            .foregroundColor(AppColors.textSecondary)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background(
                                 Capsule()
-                                    .fill(theme.textSecondary.opacity(0.1))
+                                    .fill(AppColors.textSecondary.opacity(0.1))
                             )
                     }
 
                     Text(timeAgo(from: session.lastActivityAt ?? session.updatedAt))
                         .font(.system(size: 10))
-                        .foregroundColor(theme.textSecondary.opacity(0.7))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.7))
                 }
             }
 
@@ -397,10 +389,10 @@ private struct CleanupSessionRow: View {
 
     private var rowBackground: some View {
         RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .fill(isHovered ? theme.textPrimary.opacity(0.04) : Color.clear)
+            .fill(isHovered ? AppColors.textPrimary.opacity(0.04) : Color.clear)
             .overlay(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(isSelected ? theme.accent.opacity(0.3) : Color.clear, lineWidth: 1)
+                    .stroke(isSelected ? AppColors.accent.opacity(0.3) : Color.clear, lineWidth: 1)
             )
     }
 

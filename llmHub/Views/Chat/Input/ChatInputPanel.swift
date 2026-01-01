@@ -33,7 +33,6 @@ struct ChatInputPanel: View {
 
     @FocusState private var isInputFocused: Bool
     @AppStorage("pasteThreshold") private var pasteThreshold: Int = 4000
-    @Environment(\.theme) private var theme
 
     private let minHeight: CGFloat = 44
     @State private var isShowingTools = false
@@ -229,8 +228,8 @@ struct ChatInputPanel: View {
         TextField("Message...", text: $text, axis: .vertical)
             .lineLimit(1...6)
             .textFieldStyle(.plain)
-            .font(theme.bodyFont)
-            .foregroundColor(theme.textPrimary)
+            .font(AppColors.bodyFont)
+            .foregroundColor(AppColors.textPrimary)
             .frame(maxWidth: .infinity, minHeight: minHeight)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -275,28 +274,20 @@ struct ChatInputPanel: View {
                 if isSending {
                     Image(systemName: "stop.circle.fill")
                         .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(theme.textPrimary)
+                        .foregroundColor(AppColors.textPrimary)
                 } else {
                     Image(systemName: "arrow.up")
                         .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(theme.textPrimary)
+                        .foregroundColor(AppColors.textPrimary)
                 }
             }
             .frame(width: 36, height: 36)
             .glassEffect(
-                theme.usesGlassEffect
-                    ? (isDisabled
-                        ? GlassEffect.clear.interactive()
-                        : GlassEffect.regular.tint(theme.accent.opacity(0.25)).interactive())
-                    : GlassEffect.identity,
+                isDisabled
+                    ? GlassEffect.clear.interactive()
+                    : GlassEffect.regular.tint(AppColors.accent.opacity(0.25)).interactive(),
                 in: .circle
             )
-            .background {
-                if !theme.usesGlassEffect {
-                    Circle()
-                        .fill(isDisabled ? theme.textSecondary.opacity(0.18) : theme.accent)
-                }
-            }
         }
         .buttonStyle(.plain)
         .disabled(isDisabled)
@@ -310,22 +301,14 @@ struct ChatInputPanel: View {
             Image(systemName: "paperclip")
                 .font(.system(size: 16, weight: .semibold))
                 .frame(width: toolButtonSize, height: toolButtonSize)
-                .foregroundColor(theme.textTertiary)
+                .foregroundColor(AppColors.textTertiary)
                 .glassEffect(
-                    theme.usesGlassEffect ? GlassEffect.clear.interactive() : GlassEffect.identity,
+                    GlassEffect.clear.interactive(),
                     in: RoundedRectangle(
                         cornerRadius: LiquidGlassTokens.Radius.control,
                         style: .continuous
                     )
                 )
-                .background {
-                    if !theme.usesGlassEffect {
-                        RoundedRectangle(
-                            cornerRadius: LiquidGlassTokens.Radius.control, style: .continuous
-                        )
-                        .fill(theme.surface)
-                    }
-                }
         }
         .buttonStyle(.plain)
     }
@@ -340,13 +323,11 @@ struct ChatInputPanel: View {
             Image(systemName: "wrench.and.screwdriver")
                 .font(.system(size: 16, weight: .semibold))
                 .frame(width: toolButtonSize, height: toolButtonSize)
-                .foregroundColor(theme.textSecondary)
+                .foregroundColor(AppColors.textSecondary)
                 .glassEffect(
-                    theme.usesGlassEffect
-                        ? (anyEnabled
-                            ? GlassEffect.regular.tint(theme.accent.opacity(0.20)).interactive()
-                            : GlassEffect.clear.interactive())
-                        : GlassEffect.identity,
+                    anyEnabled
+                        ? GlassEffect.regular.tint(AppColors.accent.opacity(0.20)).interactive()
+                        : GlassEffect.clear.interactive(),
                     in: RoundedRectangle(
                         cornerRadius: LiquidGlassTokens.Radius.control, style: .continuous)
                 )
@@ -355,7 +336,8 @@ struct ChatInputPanel: View {
                         cornerRadius: LiquidGlassTokens.Radius.control, style: .continuous
                     )
                     .stroke(
-                        anyEnabled ? theme.accent.opacity(0.30) : theme.textPrimary.opacity(0.10),
+                        anyEnabled
+                            ? AppColors.accent.opacity(0.30) : AppColors.textPrimary.opacity(0.10),
                         lineWidth: 1
                     )
                 )
@@ -374,7 +356,7 @@ struct ChatInputPanel: View {
                     .toolbar {
                         ToolbarItem(placement: .topBarTrailing) {
                             Button("Done") { isShowingTools = false }
-                            .foregroundColor(theme.accent)
+                            .foregroundColor(AppColors.accent)
                         }
                     }
                 }
@@ -399,13 +381,11 @@ struct ChatInputPanel: View {
             Image(systemName: thinkingPreference.iconSystemName)
                 .font(.system(size: 16, weight: .semibold))
                 .frame(width: toolButtonSize, height: toolButtonSize)
-                .foregroundColor(theme.textSecondary)
+                .foregroundColor(AppColors.textSecondary)
                 .glassEffect(
-                    theme.usesGlassEffect
-                        ? (thinkingPreference == .off
-                            ? GlassEffect.clear.interactive()
-                            : GlassEffect.regular.tint(theme.accent.opacity(0.20)).interactive())
-                        : GlassEffect.identity,
+                    thinkingPreference == .off
+                        ? GlassEffect.clear.interactive()
+                        : GlassEffect.regular.tint(AppColors.accent.opacity(0.20)).interactive(),
                     in: RoundedRectangle(
                         cornerRadius: LiquidGlassTokens.Radius.control, style: .continuous)
                 )
@@ -415,7 +395,7 @@ struct ChatInputPanel: View {
                     )
                     .stroke(
                         thinkingPreference == .off
-                            ? theme.textPrimary.opacity(0.10) : theme.accent.opacity(0.30),
+                            ? AppColors.textPrimary.opacity(0.10) : AppColors.accent.opacity(0.30),
                         lineWidth: 1
                     )
                 )
@@ -427,35 +407,19 @@ struct ChatInputPanel: View {
     // MARK: - Backgrounds
 
     private var inputFieldBackground: some View {
-        Group {
-            if theme.usesGlassEffect {
-                RoundedRectangle(cornerRadius: 14)
-                    .glassEffect(
-                        isInputFocused
-                            ? GlassEffect.regular.tint(theme.accent.opacity(0.25)).interactive()
-                            : GlassEffect.regular.interactive(),
-                        in: .rect(cornerRadius: 14)
-                    )
-            } else {
-                RoundedRectangle(cornerRadius: theme.cornerRadius)
-                    .fill(theme.surface)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: theme.cornerRadius)
-                            .stroke(
-                                isInputFocused
-                                    ? theme.accent.opacity(0.3) : theme.textSecondary.opacity(0.15),
-                                lineWidth: theme.borderWidth
-                            )
-                    )
-            }
-        }
+        RoundedRectangle(cornerRadius: 14)
+            .glassEffect(
+                isInputFocused
+                    ? GlassEffect.regular.tint(AppColors.accent.opacity(0.25)).interactive()
+                    : GlassEffect.regular.interactive(),
+                in: .rect(cornerRadius: 14)
+            )
     }
 }
 
 // MARK: - Attachment Chip (Glass Capsule)
 
 struct AttachmentChip: View {
-    @Environment(\.theme) private var theme
     let attachment: Attachment
     let onRemove: () -> Void
 
@@ -482,16 +446,9 @@ struct AttachmentChip: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .background {
-            Group {
-                if theme.usesGlassEffect {
-                    Capsule()
-                        .fill(.ultraThinMaterial)
-                        .glassEffect(GlassEffect.regular, in: .capsule)
-                } else {
-                    Capsule()
-                        .fill(.ultraThinMaterial)
-                }
-            }
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .glassEffect(GlassEffect.regular, in: .capsule)
             .overlay(
                 Capsule()
                     .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
@@ -503,7 +460,6 @@ struct AttachmentChip: View {
 // MARK: - Reference Chip
 
 struct ReferenceChip: View {
-    @Environment(\.theme) private var theme
     let reference: ChatReference
     let onRemove: () -> Void
 
@@ -530,16 +486,9 @@ struct ReferenceChip: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .background {
-            Group {
-                if theme.usesGlassEffect {
-                    Capsule()
-                        .fill(.ultraThinMaterial)
-                        .glassEffect(GlassEffect.regular, in: .capsule)
-                } else {
-                    Capsule()
-                        .fill(.ultraThinMaterial)
-                }
-            }
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .glassEffect(GlassEffect.regular, in: .capsule)
             .overlay(
                 Capsule()
                     .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
@@ -559,7 +508,6 @@ struct ReferenceChip: View {
 // MARK: - Tools List View
 
 struct ToolsListView: View {
-    @Environment(\.theme) private var theme
     let tools: [UIToolToggleItem]
     let onToggle: (String, Bool) -> Void
 
@@ -628,12 +576,8 @@ struct ToolsListView: View {
         }
         .scrollContentBackground(.hidden)
         .background {
-            if theme.usesGlassEffect {
-                Color.clear
-                    .glassEffect(.regular, in: Rectangle())
-            } else {
-                theme.surface.opacity(0.95)
-            }
+            Color.clear
+                .glassEffect(.regular, in: Rectangle())
         }
     }
 }

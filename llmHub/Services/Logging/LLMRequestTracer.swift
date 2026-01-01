@@ -102,14 +102,16 @@ struct LLMTrace {
         }
     }
 
-    private static func redactURL(_ url: String) -> String {
+    nonisolated private static func redactURL(_ url: String) -> String {
         let pattern = #"([?&](?:key|api_key|apikey|access_token|token)=)[^&]+"#
-        return url.replacingOccurrences(of: pattern, with: "$1[REDACTED]", options: .regularExpression)
+        return url.replacingOccurrences(
+            of: pattern, with: "$1[REDACTED]", options: .regularExpression)
     }
 
-    private static func redactBody(_ body: String) -> String {
+    nonisolated private static func redactBody(_ body: String) -> String {
         var sanitized = body
-        let jsonPattern = #"("(?:key|api_key|apikey|access_token|token|authorization)"\s*:\s*")[^"]*""#
+        let jsonPattern =
+            #"("(?:key|api_key|apikey|access_token|token|authorization)"\s*:\s*")[^"]*""#
         sanitized = sanitized.replacingOccurrences(
             of: jsonPattern,
             with: #"$1[REDACTED]""#,

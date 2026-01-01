@@ -186,6 +186,7 @@ public class AnthropicManager {
         model: String,
         maxTokens: Int,
         stream: Bool,
+        system: String? = nil,
         tools: [AnthropicTool]? = nil
     ) throws -> URLRequest {
         let payload = AnthropicMessagesRequest(
@@ -193,7 +194,7 @@ public class AnthropicManager {
             max_tokens: maxTokens,
             messages: messages,
             stream: stream,
-            system: nil,
+            system: system,
             tools: tools,
             thinking: nil
         )

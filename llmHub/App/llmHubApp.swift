@@ -18,7 +18,7 @@ struct llmHubApp: App {
     @StateObject private var modelRegistry = ModelRegistry()
 
     /// Theme manager for app-wide theme selection
-    @State private var themeManager = ThemeManager.shared
+    
 
     // MARK: - Body
 
@@ -26,7 +26,7 @@ struct llmHubApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(modelRegistry)
-                .environment(\.theme, themeManager.current)
+                
                 .background(
                     GeometryReader { geo in
                         Color.clear

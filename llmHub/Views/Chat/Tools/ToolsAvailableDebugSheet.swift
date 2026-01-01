@@ -5,7 +5,6 @@ struct ToolsAvailableDebugSheet: View {
     let modelID: String
     let toolToggles: [UIToolToggleItem]
 
-    @Environment(\.theme) private var theme
     @Environment(\.dismiss) private var dismiss
 
     private var canonicalProviderID: String {
@@ -37,7 +36,7 @@ struct ToolsAvailableDebugSheet: View {
                         .font(.system(size: 18, weight: .semibold))
                     Text("\(canonicalProviderID) / \(modelID)")
                         .font(.caption)
-                        .foregroundStyle(theme.textTertiary)
+                        .foregroundStyle(AppColors.textTertiary)
                 }
                 Spacer()
                 Button("Done") { dismiss() }
@@ -48,7 +47,7 @@ struct ToolsAvailableDebugSheet: View {
                 VStack(alignment: .leading, spacing: 14) {
                     Text("Tool calling: \(toolCallingAvailable ? "available" : "not available")")
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(theme.textSecondary)
+                        .foregroundStyle(AppColors.textSecondary)
 
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Enabled tools")
@@ -57,22 +56,22 @@ struct ToolsAvailableDebugSheet: View {
                         if enabledToolDefinitions.isEmpty {
                             Text("None enabled (authorize tools in Settings → General).")
                                 .font(.caption)
-                                .foregroundStyle(theme.textTertiary)
+                                .foregroundStyle(AppColors.textTertiary)
                         } else {
                             ForEach(enabledToolDefinitions, id: \.name) { tool in
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(tool.name)
                                         .font(.system(size: 13, weight: .semibold))
-                                        .foregroundStyle(theme.textPrimary)
+                                        .foregroundStyle(AppColors.textPrimary)
                                     Text(tool.description)
                                         .font(.caption)
-                                        .foregroundStyle(theme.textTertiary)
+                                        .foregroundStyle(AppColors.textTertiary)
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(10)
                                 .background(
                                     RoundedRectangle(cornerRadius: 06)
-                                        .fill(theme.surface.opacity(0.25))
+                                        .fill(AppColors.surface.opacity(0.25))
                                         .glassEffect(
                                             GlassEffect.regular, in: .rect(cornerRadius: 12))
                                 )
@@ -91,12 +90,12 @@ struct ToolsAvailableDebugSheet: View {
                             )
                         )
                         .font(.system(.caption, design: .monospaced))
-                        .foregroundStyle(theme.textSecondary)
+                        .foregroundStyle(AppColors.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(12)
                         .background(
                             RoundedRectangle(cornerRadius: 06)
-                                .fill(theme.surface.opacity(0.20))
+                                .fill(AppColors.surface.opacity(0.20))
                                 .glassEffect(GlassEffect.regular, in: .rect(cornerRadius: 12))
                         )
                     }
@@ -105,7 +104,7 @@ struct ToolsAvailableDebugSheet: View {
             }
         }
         .padding(16)
-        .background(theme.backgroundPrimary)
+        .background(AppColors.backgroundPrimary)
     }
 }
 // MARK: - Previews

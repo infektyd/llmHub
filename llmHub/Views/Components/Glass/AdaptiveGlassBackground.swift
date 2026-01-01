@@ -2,8 +2,6 @@
 import SwiftUI
 
 struct AdaptiveGlassBackground: View {
-    @Environment(\.theme) private var theme
-
     @AppStorage("glassIntensity.sidebar") private var sidebar: Double = 25
     @AppStorage("glassIntensity.chatArea") private var chatArea: Double = 05
     @AppStorage("glassIntensity.inputBar") private var inputBar: Double = 05
@@ -27,26 +25,16 @@ struct AdaptiveGlassBackground: View {
     }
 
     var body: some View {
-        if theme.usesGlassEffect {
-            // Glass implementation
-            let (style, _) = intensity.asGlassIntensity
-            Color.clear
-                .overlay(Color.gray.opacity(0.03))
-                .glassEffect(
-                    style, in: RoundedRectangle(cornerRadius: target == .sidebar ? 03 : 04)
-                )
-                .onChange(of: intensity) { _, new in
-                    print("Glass intensity applied: \(target) = \(new)%")
-                }
-        } else {
-            // Flat fallback
-            RoundedRectangle(cornerRadius: target == .sidebar ? 03 : theme.cornerRadius)
-                .fill(theme.backgroundSecondary)
-                .overlay(
-                    RoundedRectangle(cornerRadius: target == .sidebar ? 03 : theme.cornerRadius)
-                        .stroke(theme.textTertiary.opacity(0.15), lineWidth: theme.borderWidth)
-                )
-        }
+        // Glass implementation (native on supported platforms)
+        let (style, _) = intensity.asGlassIntensity
+        Color.clear
+            .overlay(Color.gray.opacity(0.03))
+            .glassEffect(
+                style, in: RoundedRectangle(cornerRadius: target == .sidebar ? 03 : 04)
+            )
+            .onChange(of: intensity) { _, new in
+                print("Glass intensity applied: \(target) = \(new)%")
+            }
     }
 }
 

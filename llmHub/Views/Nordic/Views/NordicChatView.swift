@@ -9,7 +9,6 @@ import SwiftUI
 
 /// A demonstration chat view showcasing the Nordic theme
 struct NordicChatView: View {
-    @Environment(\.theme) private var theme
     @Environment(\.colorScheme) private var colorScheme
 
     @State private var inputText = ""
@@ -82,7 +81,7 @@ struct NordicChatView: View {
             // Theme indicator
             Text("Nordic Theme")
                 .font(.system(size: 12))
-                .foregroundColor(theme.textTertiary)
+                .foregroundColor(AppColors.textTertiary)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(
@@ -148,7 +147,6 @@ struct DemoChatMessage: Identifiable {
 
 /// Simplified message row for Nordic demo
 struct SimplifiedNordicMessageRow: View {
-    @Environment(\.theme) private var theme
     @Environment(\.colorScheme) private var colorScheme
 
     let message: DemoChatMessage
@@ -162,7 +160,7 @@ struct SimplifiedNordicMessageRow: View {
                 if !isUser {
                     Text("AI Assistant")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(theme.textPrimary)
+                        .foregroundColor(AppColors.textPrimary)
                 }
 
                 messageContent
@@ -170,7 +168,7 @@ struct SimplifiedNordicMessageRow: View {
                 // Timestamp
                 Text(message.createdAt, style: .time)
                     .font(.system(size: 11))
-                    .foregroundColor(theme.textTertiary)
+                    .foregroundColor(AppColors.textTertiary)
             }
 
             if !isUser { Spacer(minLength: 60) }
@@ -210,7 +208,7 @@ struct SimplifiedNordicMessageRow: View {
             // Content
             Text(message.content)
                 .font(.system(size: 15))
-                .foregroundColor(theme.textPrimary)
+                .foregroundColor(AppColors.textPrimary)
                 .padding(16)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }

@@ -12,8 +12,6 @@ struct ToolResultCard: View {
     let relatedToolCall: ToolCall?
     let toolCallStartedAt: Date?
 
-    @Environment(\.theme) private var theme
-
     // Collapsed by default (as requested), expandable per tool message.
     @State private var isExpanded: Bool = false
     @State private var copied: Bool = false
@@ -30,7 +28,7 @@ struct ToolResultCard: View {
         VStack(alignment: .leading, spacing: 0) {
             header
 
-            Divider().overlay(theme.textPrimary.opacity(0.08))
+            Divider().overlay(AppColors.textPrimary.opacity(0.08))
 
             if isExpanded {
                 expandedBody
@@ -41,7 +39,7 @@ struct ToolResultCard: View {
             }
         }
         .glassEffect(
-            GlassEffect.regular.tint(theme.accent.opacity(0.12)),
+            GlassEffect.regular.tint(AppColors.accent.opacity(0.12)),
             in: RoundedRectangle(
                 cornerRadius: LiquidGlassTokens.Radius.toolCard,
                 style: .continuous
@@ -73,15 +71,15 @@ struct ToolResultCard: View {
 
                 Text(toolDisplayName)
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(theme.textPrimary)
+                    .foregroundColor(AppColors.textPrimary)
 
                 if let duration = durationLabel {
                     Text(duration)
                         .font(.caption2)
-                        .foregroundColor(theme.textSecondary)
+                        .foregroundColor(AppColors.textSecondary)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
-                        .background(theme.textPrimary.opacity(0.05))
+                        .background(AppColors.textPrimary.opacity(0.05))
                         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                 }
 
@@ -89,7 +87,7 @@ struct ToolResultCard: View {
 
                 Image(systemName: "chevron.down")
                     .font(.caption2)
-                    .foregroundColor(theme.textSecondary)
+                    .foregroundColor(AppColors.textSecondary)
                     .rotationEffect(.degrees(isExpanded ? 180 : 0))
             }
             .padding(.horizontal, 14)
@@ -97,7 +95,7 @@ struct ToolResultCard: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .background(theme.textPrimary.opacity(0.035))
+        .background(AppColors.textPrimary.opacity(0.035))
     }
 
     // MARK: - Bodies
@@ -107,7 +105,7 @@ struct ToolResultCard: View {
             if let inputPreview = collapsedInputPreview {
                 Text(inputPreview)
                     .font(.caption)
-                    .foregroundColor(theme.textSecondary)
+                    .foregroundColor(AppColors.textSecondary)
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
@@ -116,8 +114,8 @@ struct ToolResultCard: View {
                 largeOutputRow
             } else {
                 Text(collapsedOutputPreview)
-                    .font(theme.monoFont)
-                    .foregroundColor(theme.textPrimary.opacity(0.82))
+                    .font(AppColors.monoFont)
+                    .foregroundColor(AppColors.textPrimary.opacity(0.82))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .lineLimit(previewLineLimit)
                     .fixedSize(horizontal: false, vertical: true)
@@ -129,7 +127,7 @@ struct ToolResultCard: View {
                 }
                 .buttonStyle(.plain)
                 .font(.caption2.weight(.semibold))
-                .foregroundColor(theme.accent)
+                .foregroundColor(AppColors.accent)
 
                 Spacer()
 
@@ -139,7 +137,7 @@ struct ToolResultCard: View {
                     }
                     .buttonStyle(.plain)
                     .font(.caption2.weight(.semibold))
-                    .foregroundColor(theme.textSecondary)
+                    .foregroundColor(AppColors.textSecondary)
                 }
             }
         }
@@ -154,8 +152,8 @@ struct ToolResultCard: View {
                 section(title: "Input") {
                     ScrollView([.horizontal, .vertical], showsIndicators: false) {
                         Text(input)
-                            .font(theme.monoFont)
-                            .foregroundColor(theme.textPrimary.opacity(0.78))
+                            .font(AppColors.monoFont)
+                            .foregroundColor(AppColors.textPrimary.opacity(0.78))
                             .padding(12)
                             .textSelection(.enabled)
                             .fixedSize(horizontal: false, vertical: true)
@@ -163,7 +161,7 @@ struct ToolResultCard: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .frame(maxHeight: 140)
                     .glassEffect(
-                        GlassEffect.regular.tint(theme.textPrimary.opacity(0.03)),
+                        GlassEffect.regular.tint(AppColors.textPrimary.opacity(0.03)),
                         in: .rect(cornerRadius: 10)
                     )
                 }
@@ -172,8 +170,8 @@ struct ToolResultCard: View {
             section(title: "Output") {
                 ScrollView([.horizontal, .vertical], showsIndicators: true) {
                     Text(message.content)
-                        .font(theme.monoFont)
-                        .foregroundColor(theme.textPrimary.opacity(0.82))
+                        .font(AppColors.monoFont)
+                        .foregroundColor(AppColors.textPrimary.opacity(0.82))
                         .padding(12)
                         .textSelection(.enabled)
                         .fixedSize(horizontal: false, vertical: true)
@@ -225,7 +223,7 @@ struct ToolResultCard: View {
 
                 Text(toolDisplayName)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(theme.textPrimary)
+                    .foregroundColor(AppColors.textPrimary)
 
                 Spacer()
 
@@ -234,19 +232,19 @@ struct ToolResultCard: View {
                 }
                 .buttonStyle(.plain)
                 .font(.caption.weight(.semibold))
-                .foregroundColor(theme.accent)
+                .foregroundColor(AppColors.accent)
 
                 Button("Done") {
                     showingDetails = false
                 }
                 .buttonStyle(.plain)
                 .font(.caption.weight(.semibold))
-                .foregroundColor(theme.textSecondary)
+                .foregroundColor(AppColors.textSecondary)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
 
-            Divider().overlay(theme.textPrimary.opacity(0.08))
+            Divider().overlay(AppColors.textPrimary.opacity(0.08))
 
             ScrollView([.vertical, .horizontal], showsIndicators: true) {
                 VStack(alignment: .leading, spacing: 12) {
@@ -254,20 +252,20 @@ struct ToolResultCard: View {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Input")
                                 .font(.caption2.weight(.semibold))
-                                .foregroundColor(theme.textSecondary)
+                                .foregroundColor(AppColors.textSecondary)
                             Text(input)
-                                .font(theme.monoFont)
-                                .foregroundColor(theme.textPrimary.opacity(0.78))
+                                .font(AppColors.monoFont)
+                                .foregroundColor(AppColors.textPrimary.opacity(0.78))
                         }
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Output")
                             .font(.caption2.weight(.semibold))
-                            .foregroundColor(theme.textSecondary)
+                            .foregroundColor(AppColors.textSecondary)
                         Text(message.content)
-                            .font(theme.monoFont)
-                            .foregroundColor(theme.textPrimary.opacity(0.82))
+                            .font(AppColors.monoFont)
+                            .foregroundColor(AppColors.textPrimary.opacity(0.82))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -285,7 +283,7 @@ struct ToolResultCard: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.caption2.weight(.semibold))
-                .foregroundColor(theme.textSecondary)
+                .foregroundColor(AppColors.textSecondary)
 
             content()
         }
@@ -351,21 +349,21 @@ struct ToolResultCard: View {
         HStack(spacing: 10) {
             Image(systemName: "doc.text")
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(theme.textSecondary)
+                .foregroundColor(AppColors.textSecondary)
 
             Text("Large output")
                 .font(.caption)
-                .foregroundColor(theme.textPrimary)
+                .foregroundColor(AppColors.textPrimary)
 
             Spacer()
 
             Text(formatByteCount(message.content.utf8.count))
                 .font(.caption2)
-                .foregroundColor(theme.textSecondary)
+                .foregroundColor(AppColors.textSecondary)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .background(theme.textPrimary.opacity(0.035))
+        .background(AppColors.textPrimary.opacity(0.035))
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
@@ -387,10 +385,10 @@ struct ToolResultCard: View {
     private var statusIcon: some View {
         if isSuccess {
             return Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(theme.success.opacity(0.85))
+                .foregroundStyle(AppColors.success.opacity(0.85))
         } else {
             return Image(systemName: "xmark.octagon.fill")
-                .foregroundStyle(theme.error.opacity(0.85))
+                .foregroundStyle(AppColors.error.opacity(0.85))
         }
     }
 
@@ -427,10 +425,10 @@ struct ToolResultCard: View {
             }
             .font(.caption2)
             .fontWeight(.medium)
-            .foregroundColor(isActive ? theme.success : theme.textSecondary)
+            .foregroundColor(isActive ? AppColors.success : AppColors.textSecondary)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(theme.textPrimary.opacity(0.05))
+            .background(AppColors.textPrimary.opacity(0.05))
             .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         }
         .buttonStyle(.plain)

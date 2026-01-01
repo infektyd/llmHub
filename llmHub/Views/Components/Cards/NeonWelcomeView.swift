@@ -11,7 +11,6 @@ import SwiftUI
 struct NeonWelcomeView: View {
     @Environment(WorkbenchViewModel.self) private var viewModel
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.theme) private var theme
 
     var body: some View {
         VStack(spacing: 24) {
@@ -21,7 +20,7 @@ struct NeonWelcomeView: View {
                     .fill(
                         RadialGradient(
                             colors: [
-                                theme.accent.opacity(0.18),
+                                AppColors.accent.opacity(0.18),
                                 Color.green.opacity(0.10),
                                 .clear,
                             ],
@@ -36,7 +35,7 @@ struct NeonWelcomeView: View {
                     .font(.system(size: 64, weight: .light))
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [theme.accent, Color.blue.opacity(0.7)],
+                            colors: [AppColors.accent, Color.blue.opacity(0.7)],
                             startPoint: .bottomLeading,
                             endPoint: .topTrailing
                         )
@@ -46,11 +45,11 @@ struct NeonWelcomeView: View {
             VStack(spacing: 8) {
                 Text("llmHub")
                     .font(.system(size: 32, weight: .bold))
-                    .foregroundStyle(theme.textPrimary)
+                    .foregroundStyle(AppColors.textPrimary)
 
                 Text("Select a conversation or create a new one to begin")
                     .font(.system(size: 14))
-                    .foregroundColor(theme.textSecondary)
+                    .foregroundColor(AppColors.textSecondary)
             }
 
             // Quick Actions
@@ -58,7 +57,7 @@ struct NeonWelcomeView: View {
                 QuickActionButton(
                     icon: "plus.bubble.fill",
                     title: "New Chat",
-                    color: theme.accent,
+                    color: AppColors.accent,
                     action: {
                         viewModel.createNewConversation(modelContext: modelContext)
                     }
@@ -67,7 +66,7 @@ struct NeonWelcomeView: View {
                 QuickActionButton(
                     icon: "folder.fill",
                     title: "Browse",
-                    color: theme.textSecondary,
+                    color: AppColors.textSecondary,
                     action: {
                         // Scroll to show all conversations in sidebar
                         viewModel.clearSelection()

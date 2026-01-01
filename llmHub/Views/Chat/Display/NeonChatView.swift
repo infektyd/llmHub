@@ -9,8 +9,6 @@ import SwiftData
 import SwiftUI
 
 struct NeonChatView: View {
-    @Environment(\.theme) private var theme
-
     let session: ChatSessionEntity
     @Environment(WorkbenchViewModel.self) private var workbenchVM
     @Environment(\.modelContext) private var modelContext
@@ -90,12 +88,20 @@ struct NeonChatView: View {
                     }
                 }
                 .overlay(alignment: .top) {
-                    // Context Compaction Notification
-                    if chatVM.showContextCompactionNotification,
-                        let message = chatVM.contextCompactionMessage
-                    {
-                        contextCompactionNotification(message: message)
-                            .transition(.move(edge: .top).combined(with: .opacity))
+                    VStack(spacing: 10) {
+                        // Context Compaction Notification
+                        if chatVM.showContextCompactionNotification,
+                            let message = chatVM.contextCompactionMessage
+                        {
+                            contextCompactionNotification(message: message)
+                                .transition(.move(edge: .top).combined(with: .opacity))
+                        }
+
+                        // Truncation Banner
+                        if chatVM.isTruncated, chatVM.truncatedSessionID == session.id {
+                            truncationBanner()
+                                .transition(.move(edge: .top).combined(with: .opacity))
+                        }
                     }
                 }
         }
@@ -123,7 +129,7 @@ struct NeonChatView: View {
                     } label: {
                         Image(systemName: "gearshape")
                         .font(.system(size: 18))
-                        .foregroundColor(theme.accent)
+                        .foregroundColor(AppColors.accent)
                     }
                 }
 
@@ -137,18 +143,18 @@ struct NeonChatView: View {
                         }) {
                             Image(systemName: "sidebar.right")
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(theme.accent)
+                            .foregroundColor(AppColors.accent)
                             .padding(8)
                             .background(
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                                     .fill(
-                                        theme.accent.opacity(
+                                        AppColors.accent.opacity(
                                             workbenchVM.toolInspectorVisible ? 0.18 : 0.08)
                                     )
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 10, style: .continuous)
                                             .stroke(
-                                                theme.accent.opacity(
+                                                AppColors.accent.opacity(
                                                     workbenchVM.toolInspectorVisible ? 0.35 : 0.18),
                                                 lineWidth: 1)
                                     )
@@ -174,7 +180,7 @@ struct NeonChatView: View {
                             Button("Done") {
                                 showingSettings = false
                             }
-                            .foregroundColor(theme.accent)
+                            .foregroundColor(AppColors.accent)
                         }
                     }
                     .environmentObject(modelRegistry)
@@ -252,7 +258,7 @@ extension NeonChatView {
         HStack(spacing: 8) {
             Image(systemName: "sparkles")
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(theme.accent)
+                .foregroundStyle(AppColors.accent)
 
             Text(message)
                 .font(.system(size: 13, weight: .medium))
@@ -274,27 +280,81 @@ extension NeonChatView {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(
-            RoundedRectangle(cornerRadius: theme.cornerRadius)
-                .fill(theme.usesGlassEffect ? Color.clear : theme.surface)
+            RoundedRectangle(cornerRadius: AppColors.cornerRadius)
+                .fill(Color.clear)
                 .overlay(
-                    RoundedRectangle(cornerRadius: theme.cornerRadius)
+                    RoundedRectangle(cornerRadius: AppColors.cornerRadius)
                         .strokeBorder(
                             LinearGradient(
                                 colors: [
-                                    theme.accent.opacity(0.5), theme.accent.opacity(0.2),
+                                    AppColors.accent.opacity(0.5), AppColors.accent.opacity(0.2),
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
-                            lineWidth: theme.borderWidth
+                            lineWidth: AppColors.borderWidth
                         )
                 )
         )
-        .if(theme.usesGlassEffect) { view in
-            view.glassEffect(
-                .regular.tint(.glassAccent), in: .rect(cornerRadius: theme.cornerRadius))
+        .glassEffect(.regular.tint(.glassAccent), in: .rect(cornerRadius: AppColors.cornerRadius))
+        .shadow(color: AppColors.accent.opacity(0.3), radius: 10, x: 0, y: 4)
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+    }
+
+    @ViewBuilder
+    private func truncationBanner() -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.yellow.opacity(0.95))
+
+            Text("Response truncated due to max tokens.")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.white.opacity(0.9))
+
+            Spacer()
+
+            Button("Continue") {
+                chatVM.continueGenerating(session: session, modelContext: modelContext)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(AppColors.accent)
+
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    chatVM.isTruncated = false
+                    chatVM.truncatedSessionID = nil
+                }
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 16))
+                    .foregroundStyle(.white.opacity(0.5))
+            }
+            .buttonStyle(.plain)
         }
-        .shadow(color: theme.accent.opacity(0.3), radius: 10, x: 0, y: 4)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: AppColors.cornerRadius)
+                .fill(Color.clear)
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppColors.cornerRadius)
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [
+                                    Color.yellow.opacity(0.55),
+                                    Color.yellow.opacity(0.18),
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: AppColors.borderWidth
+                        )
+                )
+        )
+        .glassEffect(.regular.tint(.glassAccent), in: .rect(cornerRadius: AppColors.cornerRadius))
+        .shadow(color: Color.yellow.opacity(0.25), radius: 10, x: 0, y: 4)
         .padding(.horizontal, 16)
         .padding(.top, 12)
     }

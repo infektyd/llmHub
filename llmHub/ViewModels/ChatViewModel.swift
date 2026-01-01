@@ -162,6 +162,8 @@ class ChatViewModel {
 
     /// The chat service for LLM interactions.
     private var chatService: ChatService?
+    /// The active generation task driving the current stream (if any).
+    private var generationTask: Task<Void, Never>?
     /// Streaming accumulator for incoming tokens.
     private let streamAccumulator = StreamAccumulator()
     /// Identifier for the current streaming message.
@@ -504,6 +506,27 @@ class ChatViewModel {
         selectedModel: UILLMModel? = nil,
         thinkingPreference: ThinkingPreference = .auto
     ) {
+        // If a generation is already in progress, interrupt: cancel current stream and send the new message.
+        if isGenerating {
+            let messageTextCopy = messageText
+            let attachmentsCopy = attachments
+            let selectedProviderCopy = selectedProvider
+            let selectedModelCopy = selectedModel
+            let thinkingPreferenceCopy = thinkingPreference
+            Task { @MainActor in
+                await self.stopGeneration()
+                self.sendMessage(
+                    messageText: messageTextCopy,
+                    attachments: attachmentsCopy,
+                    session: session,
+                    modelContext: modelContext,
+                    selectedProvider: selectedProviderCopy,
+                    selectedModel: selectedModelCopy,
+                    thinkingPreference: thinkingPreferenceCopy
+                )
+            }
+            return
+        }
         let finalAttachments = attachments ?? stagedAttachments
         let finalReferences = stagedReferences
         guard !messageText.isEmpty || !finalAttachments.isEmpty || !finalReferences.isEmpty else {
@@ -586,7 +609,7 @@ class ChatViewModel {
 
         let domainSession = session.asDomain()
 
-        Task { @MainActor in
+        generationTask = Task { @MainActor in
             let (uiStream, uiContinuation) = AsyncStream<String>.makeStream()
 
             let updateTask = Task { @MainActor in
@@ -597,6 +620,7 @@ class ChatViewModel {
             }
 
             do {
+                try Task.checkCancellation()
                 await streamAccumulator.reset()
                 await streamAccumulator.begin(token: streamToken)
 
@@ -617,6 +641,7 @@ class ChatViewModel {
                 )
 
                 for try await event in stream {
+                    try Task.checkCancellation()
                     switch event {
                     case .token(let text):
                         if let updated = await streamAccumulator.append(
@@ -724,9 +749,21 @@ class ChatViewModel {
 
                 isGenerating = false
                 resetStreamingState()
+                generationTask = nil
                 logger.info("Message generation completed")
 
             } catch {
+                if error is CancellationError {
+                    uiContinuation.finish()
+                    _ = await updateTask.result
+                    await streamAccumulator.reset()
+                    isGenerating = false
+                    resetStreamingState()
+                    executingToolNames.removeAll()
+                    generationTask = nil
+                    logger.info("Generation cancelled")
+                    return
+                }
                 uiContinuation.finish()
                 _ = await updateTask.result
 
@@ -736,6 +773,7 @@ class ChatViewModel {
                 isGenerating = false
                 resetStreamingState()
                 executingToolNames.removeAll()
+                generationTask = nil
                 logger.error("Failed to send message: \(error)")
 
                 self.handleStreamError(
@@ -1033,6 +1071,10 @@ class ChatViewModel {
         for toolCallID in toolCallIDs {
             cancelToolExecution(toolCallID: toolCallID)
         }
+
+        // Cancel the active stream task.
+        generationTask?.cancel()
+        generationTask = nil
 
         // Reset generation state
         isGenerating = false

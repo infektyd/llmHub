@@ -9,7 +9,6 @@ import SwiftUI
 
 /// A minimalist sidebar demonstrating Nordic theme styling
 struct NordicSidebar: View {
-    @Environment(\.theme) private var theme
     @Environment(\.colorScheme) private var colorScheme
 
     // Demo data - in real implementation, this would come from ConversationStore
@@ -24,7 +23,7 @@ struct NordicSidebar: View {
             // Header
             Text("Conversations")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(theme.textPrimary)
+                .foregroundColor(AppColors.textPrimary)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 20)
 

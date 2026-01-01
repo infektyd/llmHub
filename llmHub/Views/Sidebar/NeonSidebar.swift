@@ -14,7 +14,6 @@ private let sidebarLogger = Logger(subsystem: "com.llmhub", category: "Sidebar")
 struct NeonSidebar: View {
     @Environment(WorkbenchViewModel.self) private var viewModel
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.theme) private var theme
     @Query(sort: \ChatSessionEntity.updatedAt, order: .reverse) private var sessions:
         [ChatSessionEntity]
 
@@ -118,7 +117,7 @@ struct NeonSidebar: View {
         HStack {
             Text("Conversations")
                 .font(.headline)
-                .foregroundColor(theme.textPrimary)
+                .foregroundColor(AppColors.textPrimary)
 
             Spacer()
 
@@ -126,19 +125,19 @@ struct NeonSidebar: View {
             if !viewModel.selectedConversationIDs.isEmpty {
                 Text("\(viewModel.selectedConversationIDs.count) selected")
                     .font(.caption)
-                    .foregroundColor(theme.accent)
+                    .foregroundColor(AppColors.accent)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(
                         Capsule()
-                            .fill(theme.accent.opacity(0.2))
+                            .fill(AppColors.accent.opacity(0.2))
                     )
             }
 
             Button(action: { viewModel.createNewConversation(modelContext: modelContext) }) {
                 Image(systemName: "plus.circle.fill")
                     .font(.title3)
-                    .foregroundColor(theme.accent)
+                    .foregroundColor(AppColors.accent)
             }
             .buttonStyle(.plain)
         }
@@ -165,12 +164,12 @@ struct NeonSidebar: View {
     private var searchBar: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .foregroundColor(theme.textSecondary)
+                .foregroundColor(AppColors.textSecondary)
                 .font(.system(size: 14))
 
             TextField("Search conversations...", text: $sidebarVM.searchQuery)
                 .textFieldStyle(.plain)
-                .foregroundColor(theme.textPrimary)
+                .foregroundColor(AppColors.textPrimary)
         }
         .padding(10)
         .background(searchBarBackground)
@@ -378,17 +377,8 @@ struct NeonSidebar: View {
 
     @ViewBuilder
     private var searchBarBackground: some View {
-        if theme.usesGlassEffect {
-            RoundedRectangle(cornerRadius: 8)
-                .glassEffect(GlassEffect.regular.interactive(), in: .rect(cornerRadius: 8))
-        } else {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(theme.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(theme.textSecondary.opacity(0.15), lineWidth: 1)
-                )
-        }
+        RoundedRectangle(cornerRadius: 8)
+            .glassEffect(GlassEffect.regular.interactive(), in: .rect(cornerRadius: 8))
     }
 }
 // MARK: - Previews

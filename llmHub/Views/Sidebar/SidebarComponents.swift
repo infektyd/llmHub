@@ -12,17 +12,16 @@ import SwiftUI
 struct SectionHeader: View {
     let title: String
     let icon: String
-    @Environment(\.theme) private var theme
 
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: icon)
                 .font(.system(size: 11))
-                .foregroundColor(theme.textSecondary)
+                .foregroundColor(AppColors.textSecondary)
 
             Text(title.uppercased())
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(theme.textSecondary)
+                .foregroundColor(AppColors.textSecondary)
 
             Spacer()
         }
@@ -40,28 +39,26 @@ struct CollapsibleSectionHeader: View {
     let isCollapsed: Bool
     let onToggle: () -> Void
 
-    @Environment(\.theme) private var theme
-
     var body: some View {
         Button(action: onToggle) {
             HStack(spacing: 6) {
                 Image(systemName: icon)
                     .font(.system(size: 11))
-                    .foregroundColor(theme.textSecondary)
+                    .foregroundColor(AppColors.textSecondary)
 
                 Text(title.uppercased())
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(theme.textSecondary)
+                    .foregroundColor(AppColors.textSecondary)
 
                 Text("(\(count))")
                     .font(.system(size: 10))
-                    .foregroundColor(theme.textSecondary.opacity(0.7))
+                    .foregroundColor(AppColors.textSecondary.opacity(0.7))
 
                 Spacer()
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(theme.textSecondary.opacity(0.5))
+                    .foregroundColor(AppColors.textSecondary.opacity(0.5))
                     .rotationEffect(.degrees(isCollapsed ? 0 : 90))
                     .animation(.easeInOut(duration: 0.2), value: isCollapsed)
             }
@@ -80,7 +77,6 @@ struct ConversationRow: View {
     let isSelected: Bool
     var isMultiSelected: Bool = false
     @State private var isHovered = false
-    @Environment(\.theme) private var theme
 
     var body: some View {
         HStack(spacing: 12) {
@@ -88,7 +84,7 @@ struct ConversationRow: View {
             if isMultiSelected {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 14))
-                    .foregroundColor(theme.accent)
+                    .foregroundColor(AppColors.accent)
             } else {
                 // Emoji indicator or default circle
                 if let emoji = session.afmEmoji, !emoji.isEmpty {
@@ -96,7 +92,7 @@ struct ConversationRow: View {
                         .font(.system(size: 14))
                 } else {
                     Circle()
-                        .fill(isSelected ? theme.accentSecondary : theme.accent.opacity(0.3))
+                        .fill(isSelected ? AppColors.accentSecondary : AppColors.accent.opacity(0.3))
                         .frame(width: 8, height: 8)
                 }
             }
@@ -105,13 +101,13 @@ struct ConversationRow: View {
                 HStack {
                     Text(session.displayTitle)
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(isSelected ? theme.textPrimary : theme.textSecondary)
+                        .foregroundColor(isSelected ? AppColors.textPrimary : AppColors.textSecondary)
                         .lineLimit(1)
 
                     if session.isPinned {
                         Image(systemName: "pin.fill")
                             .font(.system(size: 9))
-                            .foregroundColor(theme.accent)
+                            .foregroundColor(AppColors.accent)
                     }
 
                     // Cleanup flag indicator
@@ -125,14 +121,14 @@ struct ConversationRow: View {
                     if session.isArchived {
                         Image(systemName: "archivebox.fill")
                             .font(.system(size: 9))
-                            .foregroundColor(theme.textSecondary.opacity(0.6))
+                            .foregroundColor(AppColors.textSecondary.opacity(0.6))
                     }
 
                     Spacer()
 
                     Text(timeAgo(from: session.updatedAt))
                         .font(.system(size: 10))
-                        .foregroundColor(theme.textSecondary.opacity(0.7))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.7))
                 }
 
                 // Category badge (if available) and Tags
@@ -159,45 +155,23 @@ struct ConversationRow: View {
     // MARK: - Subviews
 
     private var rowBackground: some View {
-        Group {
-            if theme.usesGlassEffect {
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(
+                isMultiSelected
+                    ? AppColors.accent.opacity(0.16)
+                    : (isSelected
+                        ? AppColors.accent.opacity(0.10)
+                        : (isHovered ? AppColors.textPrimary.opacity(0.04) : Color.clear))
+            )
+            .overlay(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(
+                    .stroke(
                         isMultiSelected
-                            ? theme.accent.opacity(0.16)
-                            : (isSelected
-                                ? theme.accent.opacity(0.10)
-                                : (isHovered ? theme.textPrimary.opacity(0.04) : Color.clear))
+                            ? AppColors.accent.opacity(0.35)
+                            : (isSelected ? AppColors.accent.opacity(0.22) : Color.clear),
+                        lineWidth: 1
                     )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(
-                                isMultiSelected
-                                    ? theme.accent.opacity(0.35)
-                                    : (isSelected ? theme.accent.opacity(0.22) : Color.clear),
-                                lineWidth: 1
-                            )
-                    )
-            } else {
-                RoundedRectangle(cornerRadius: theme.cornerRadius)
-                    .fill(
-                        isMultiSelected
-                            ? theme.accent.opacity(0.25)
-                            : (isSelected
-                                ? theme.accent.opacity(0.15)
-                                : (isHovered ? theme.textSecondary.opacity(0.08) : Color.clear))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: theme.cornerRadius)
-                            .stroke(
-                                isMultiSelected || isSelected
-                                    ? theme.accent.opacity(0.3)
-                                    : Color.clear,
-                                lineWidth: 1
-                            )
-                    )
-            }
-        }
+            )
     }
 
     private func timeAgo(from date: Date) -> String {
@@ -222,7 +196,6 @@ struct ConversationRow: View {
 
 struct CategoryBadge: View {
     let category: String
-    @Environment(\.theme) private var theme
 
     private var categoryColor: Color {
         switch category.lowercased() {
