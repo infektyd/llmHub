@@ -11,6 +11,6 @@ import SwiftUI
 /// The root view of the application.
 struct ContentView: View {
     var body: some View {
-        CanvasWorkbenchWindow()
+        CanvasRootView()
     }
 }

@@ -185,31 +185,43 @@ final class ConversationClassificationService {
         // Build context from first N messages (respect 4K token limit)
         let context = buildClassificationContext(from: messages, maxMessages: 10)
 
-        // Use the SystemLanguageModel for classification
-        let model = SystemLanguageModel(useCase: .contentTagging)
-        let session = LanguageModelSession(model: model)
+        FoundationModelsDiagnostics.logRequestStart(useCase: "conversation_classification")
+        let start = CFAbsoluteTimeGetCurrent()
 
-        let prompt = """
-            Analyze this conversation and provide metadata in JSON format:
+        do {
+            // Use the SystemLanguageModel for classification
+            let model = SystemLanguageModel(useCase: .contentTagging)
+            let session = LanguageModelSession(model: model)
 
-            Conversation:
-            \(context)
+            let prompt = """
+                Analyze this conversation and provide metadata in JSON format:
 
-            Respond with JSON containing:
-            - title: concise title (max 50 chars)
-            - emoji: single emoji representing the topic
-            - category: one of [coding, research, creative, planning, support, general]
-            - topics: array of 1-5 key topics
-            - intent: one of [quickQuestion, debugging, exploration, creation, reference]
-            - isComplete: boolean
-            - hasArtifacts: boolean
-            - suggestedRetention: one of [keep, archive, reviewIn7Days, autoDeleteOK]
-            """
+                Conversation:
+                \(context)
 
-        let response = try await session.respond(to: prompt)
+                Respond with JSON containing:
+                - title: concise title (max 50 chars)
+                - emoji: single emoji representing the topic
+                - category: one of [coding, research, creative, planning, support, general]
+                - topics: array of 1-5 key topics
+                - intent: one of [quickQuestion, debugging, exploration, creation, reference]
+                - isComplete: boolean
+                - hasArtifacts: boolean
+                - suggestedRetention: one of [keep, archive, reviewIn7Days, autoDeleteOK]
+                """
 
-        // Parse the response - in production, use @Generable for structured output
-        return try parseAFMResponse(response.content, messages: messages)
+            let response = try await session.respond(to: prompt)
+
+            let latency = (CFAbsoluteTimeGetCurrent() - start) * 1000
+            FoundationModelsDiagnostics.logRequestSuccess(latencyMs: latency)
+
+            // Parse the response - in production, use @Generable for structured output
+            return try parseAFMResponse(response.content, messages: messages)
+        } catch {
+            let latency = (CFAbsoluteTimeGetCurrent() - start) * 1000
+            FoundationModelsDiagnostics.logRequestFail(latencyMs: latency, error: error)
+            throw error
+        }
     }
 
     private func buildClassificationContext(from messages: [ChatMessage], maxMessages: Int)
