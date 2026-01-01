@@ -188,35 +188,48 @@ final class ConversationDistillationService {
         let context = buildDistillationContext(from: messages)
         let prompt = makeDistillationPrompt(conversationContext: context)
 
-        // Phase 2: use SystemLanguageModel content tagging adapter.
-        let model = SystemLanguageModel(useCase: .contentTagging)
-        let session = LanguageModelSession(model: model)
-        let response = try await session.respond(
-            to: prompt,
-            generating: ConversationEssence.self
-        )
-        let essence = response.content
+        FoundationModelsDiagnostics.logRequestStart(useCase: "conversation_distillation")
+        let start = CFAbsoluteTimeGetCurrent()
 
-        return Memory(
-            providerID: providerID,
-            summary: essence.summary,
-            userFacts: Array(essence.userFacts.prefix(5)).map {
-                FallbackFact(statement: $0.statement, category: $0.category)
-            },
-            preferences: Array(essence.preferences.prefix(5)).map {
-                FallbackPreference(topic: $0.topic, value: $0.value)
-            },
-            decisions: Array(essence.decisions.prefix(3)).map {
-                FallbackDecision(decision: $0.decision, context: $0.context)
-            },
-            artifacts: Array(essence.artifacts.prefix(3)).map {
-                FallbackArtifact(type: $0.type, description: $0.description, language: $0.language)
-            },
-            keywords: Array(essence.keywords.prefix(20)),
-            isComplete: true,
-            confidence: 0.9,
-            sourceSessionID: sessionID
-        )
+        do {
+            // Phase 2: use SystemLanguageModel content tagging adapter.
+            let model = SystemLanguageModel(useCase: .contentTagging)
+            let session = LanguageModelSession(model: model)
+            let response = try await session.respond(
+                to: prompt,
+                generating: ConversationEssence.self
+            )
+            let essence = response.content
+
+            let latency = (CFAbsoluteTimeGetCurrent() - start) * 1000
+            FoundationModelsDiagnostics.logRequestSuccess(latencyMs: latency)
+
+            return Memory(
+                providerID: providerID,
+                summary: essence.summary,
+                userFacts: Array(essence.userFacts.prefix(5)).map {
+                    FallbackFact(statement: $0.statement, category: $0.category)
+                },
+                preferences: Array(essence.preferences.prefix(5)).map {
+                    FallbackPreference(topic: $0.topic, value: $0.value)
+                },
+                decisions: Array(essence.decisions.prefix(3)).map {
+                    FallbackDecision(decision: $0.decision, context: $0.context)
+                },
+                artifacts: Array(essence.artifacts.prefix(3)).map {
+                    FallbackArtifact(
+                        type: $0.type, description: $0.description, language: $0.language)
+                },
+                keywords: Array(essence.keywords.prefix(20)),
+                isComplete: true,
+                confidence: 0.9,
+                sourceSessionID: sessionID
+            )
+        } catch {
+            let latency = (CFAbsoluteTimeGetCurrent() - start) * 1000
+            FoundationModelsDiagnostics.logRequestFail(latencyMs: latency, error: error)
+            throw error
+        }
     }
 
     // MARK: - Helpers

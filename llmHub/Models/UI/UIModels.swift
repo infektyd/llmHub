@@ -117,8 +117,8 @@ extension UILLMModel {
             switch self {
             case .free: return .green
             case .budget: return .cyan
-            case .standard: return .neonElectricBlue
-            case .premium: return .neonFuchsia
+            case .standard: return .blue
+            case .premium: return .purple
             case .enterprise: return .purple
             }
         }

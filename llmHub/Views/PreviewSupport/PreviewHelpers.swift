@@ -180,19 +180,6 @@ enum MockData {
         )
     }
 
-    static func toolCallBlock(
-        name: String = "run_command",
-        input: String = "{\"command\": \"ls -la\"}",
-        output: String? = "file1.txt\nfile2.swift"
-    ) -> ToolCallBlock {
-        ToolCallBlock(
-            id: "call_\(UUID().uuidString.prefix(8))",
-            name: name,
-            input: input,
-            output: output
-        )
-    }
-
     // MARK: - Attachments
 
     static func imageAttachment(filename: String = "screenshot.png") -> Attachment {
@@ -233,7 +220,9 @@ extension View {
             .environment(\.modelContext, PreviewContainer.shared.context)
             .environment(MockData.workbenchViewModel())
             .environmentObject(MockData.modelRegistry())
-            .environment(\.keychainStore, KeychainStore(backend: InMemoryKeychainBacking(), accessGroups: []))
-            
+            .environment(
+                \.keychainStore, KeychainStore(backend: InMemoryKeychainBacking(), accessGroups: [])
+            )
+
     }
 }

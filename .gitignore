@@ -110,6 +110,7 @@ handoff_*.jsonl
 *.trace
 *.dmp
 
+
 # --- Compressed archives (generic) ---
 *.zip
 *.tar
@@ -117,3 +118,11 @@ handoff_*.jsonl
 *.tgz
 *.7z
 *.rar
+
+# Allow specific useful archives
+!Docs/Archives/UI_Glass_2026-01-01.zip
+!Docs/Archives/OldUI_2026-01-01.zip
+
+# Ignore cleanup scripts
+cleanup_old_ui.sh
+restore_stubs.sh
