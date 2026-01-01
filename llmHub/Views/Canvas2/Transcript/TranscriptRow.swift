@@ -11,7 +11,7 @@ import SwiftUI
 
 // Note: Textual will be imported once package is added
 
-/// A single transcript row with role label and content
+/// A single transcript row with role label and content.
 /// No bubble design - flat canvas style
 struct TranscriptRow: View {
     let viewModel: TranscriptRowViewModel
@@ -77,3 +77,69 @@ struct TranscriptRow: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("TranscriptRow - Assistant") {
+    TranscriptRow(
+        viewModel: TranscriptRowViewModel(
+            id: "row-assistant",
+            role: .assistant,
+            headerLabel: "Assistant",
+            content: Canvas2PreviewFixtures.markdownShort,
+            isStreaming: false,
+            generationID: UUID(uuidString: "11111111-2222-3333-4444-555555555555"),
+            artifacts: []
+        )
+    )
+    .padding()
+    .frame(width: 900)
+}
+
+#Preview("TranscriptRow - User") {
+    TranscriptRow(
+        viewModel: TranscriptRowViewModel(
+            id: "row-user",
+            role: .user,
+            headerLabel: "You",
+            content: "Short user message aligned to the trailing edge.",
+            isStreaming: false,
+            generationID: nil,
+            artifacts: []
+        )
+    )
+    .padding()
+    .frame(width: 900)
+}
+
+#Preview("TranscriptRow - Code block") {
+    TranscriptRow(
+        viewModel: TranscriptRowViewModel(
+            id: "row-code",
+            role: .assistant,
+            headerLabel: "Assistant",
+            content: Canvas2PreviewFixtures.markdownLongWithCode,
+            isStreaming: false,
+            generationID: UUID(uuidString: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
+            artifacts: []
+        )
+    )
+    .padding()
+    .frame(width: 900)
+}
+
+#Preview("TranscriptRow - Ultra long wrapping") {
+    TranscriptRow(
+        viewModel: TranscriptRowViewModel(
+            id: "row-long",
+            role: .assistant,
+            headerLabel: "Assistant",
+            content: Canvas2PreviewFixtures.markdownVeryLong,
+            isStreaming: false,
+            generationID: UUID(uuidString: "99999999-8888-7777-6666-555555555555"),
+            artifacts: []
+        )
+    )
+    .padding()
+    .frame(width: 900)
+}
+#endif

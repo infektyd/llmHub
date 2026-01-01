@@ -6,19 +6,18 @@
 //  Appears "on top" of canvas with shadow + border (not glass)
 //
 
-import SwiftData
 import SwiftUI
 
 /// Floating left sidebar showing conversation list
 /// Flat matte surface with shadow (no glass blur)
 struct FloatingSidebarLeft: View {
-    let sessions: [ChatSessionEntity]
+    let sessions: [CanvasConversationSummary]
     @Binding var selectedConversationID: UUID?
     let onNewConversation: () -> Void
 
     @State private var searchText = ""
 
-    private var filteredSessions: [ChatSessionEntity] {
+    private var filteredSessions: [CanvasConversationSummary] {
         let needle = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !needle.isEmpty else { return sessions.filter { !$0.isArchived } }
         return sessions.filter {
@@ -91,7 +90,7 @@ struct FloatingSidebarLeft: View {
 
     // MARK: - Private Views
 
-    private func conversationRow(_ session: ChatSessionEntity) -> some View {
+    private func conversationRow(_ session: CanvasConversationSummary) -> some View {
         Button {
             selectedConversationID = session.id
         } label: {
@@ -125,3 +124,60 @@ struct FloatingSidebarLeft: View {
         .buttonStyle(.plain)
     }
 }
+
+#if DEBUG
+#Preview("SidebarLeft - Populated") {
+    @Previewable @State var selected: UUID? = UUID(uuidString: "11111111-1111-1111-1111-111111111111")
+    let sessions: [CanvasConversationSummary] = [
+        CanvasConversationSummary(
+            id: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!,
+            displayTitle: "💬 Preview Session A",
+            updatedAt: Canvas2PreviewFixtures.baseDate,
+            isArchived: false
+        ),
+        CanvasConversationSummary(
+            id: UUID(uuidString: "22222222-2222-2222-2222-222222222222")!,
+            displayTitle: "🔧 Debugging Tools",
+            updatedAt: Canvas2PreviewFixtures.baseDate.addingTimeInterval(-3600),
+            isArchived: false
+        ),
+    ]
+    return FloatingSidebarLeft(
+        sessions: sessions,
+        selectedConversationID: $selected,
+        onNewConversation: {}
+    )
+    .frame(width: 280, height: 600)
+    .padding()
+}
+
+#Preview("SidebarLeft - Empty") {
+    @Previewable @State var selected: UUID? = nil
+    return FloatingSidebarLeft(
+        sessions: [],
+        selectedConversationID: $selected,
+        onNewConversation: {}
+    )
+    .frame(width: 280, height: 600)
+    .padding()
+}
+
+#Preview("SidebarLeft - Narrow") {
+    @Previewable @State var selected: UUID? = UUID(uuidString: "11111111-1111-1111-1111-111111111111")
+    let sessions: [CanvasConversationSummary] = [
+        CanvasConversationSummary(
+            id: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!,
+            displayTitle: "Preview Session With A Very Long Title That Should Truncate",
+            updatedAt: Canvas2PreviewFixtures.baseDate,
+            isArchived: false
+        )
+    ]
+    return FloatingSidebarLeft(
+        sessions: sessions,
+        selectedConversationID: $selected,
+        onNewConversation: {}
+    )
+    .frame(width: 200, height: 600)
+    .padding()
+}
+#endif
