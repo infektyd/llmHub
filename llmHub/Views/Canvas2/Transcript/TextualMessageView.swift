@@ -83,3 +83,38 @@ struct TextualMessageView: View, Equatable {
         #endif
     }
 }
+
+#if DEBUG
+#Preview("TextualMessageView - Inline") {
+    TextualMessageView(
+        content: Canvas2PreviewFixtures.markdownShort,
+        isStreaming: false,
+        role: .assistant,
+        generationID: UUID(uuidString: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+    )
+    .padding()
+    .frame(width: 900)
+}
+
+#Preview("TextualMessageView - Structured") {
+    TextualMessageView(
+        content: Canvas2PreviewFixtures.markdownLongWithCode,
+        isStreaming: false,
+        role: .assistant,
+        generationID: UUID(uuidString: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+    )
+    .padding()
+    .frame(width: 900)
+}
+
+#Preview("TextualMessageView - Streaming") {
+    TextualMessageView(
+        content: Canvas2PreviewFixtures.streamingRow().content,
+        isStreaming: true,
+        role: .assistant,
+        generationID: Canvas2PreviewFixtures.IDs.streamingGeneration
+    )
+    .padding()
+    .frame(width: 900)
+}
+#endif

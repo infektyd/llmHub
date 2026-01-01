@@ -9,23 +9,18 @@
 import SwiftData
 import SwiftUI
 
-/// Bottom composer bar for input and controls
-/// Flat matte surface with shadow (no glass blur)
-struct ComposerBar: View {
+/// Pure, preview-friendly composer UI (no SwiftData, no providers).
+struct ComposerBarView: View {
     @Binding var leftSidebarVisible: Bool
     @Binding var rightSidebarVisible: Bool
     @Binding var showSettings: Bool
+    @Binding var inputText: String
 
-    let selectedSession: ChatSessionEntity?
-    let modelRegistry: ModelRegistry
-    let viewModel: WorkbenchViewModel
+    let isStreaming: Bool
+    let onSend: () -> Void
+    let onStop: () -> Void
 
-    @Environment(ChatViewModel.self) private var chatVM
-    @State private var inputText: String = ""
-    @State private var thinkingPreference: ThinkingPreference = .auto
     @FocusState private var isInputFocused: Bool
-
-    @Environment(\.modelContext) private var modelContext
 
     var body: some View {
         HStack(spacing: 12) {
@@ -37,8 +32,7 @@ struct ComposerBar: View {
             } label: {
                 Image(systemName: "sidebar.left")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(
-                        leftSidebarVisible ? AppColors.accent : AppColors.textSecondary)
+                    .foregroundStyle(leftSidebarVisible ? AppColors.accent : AppColors.textSecondary)
             }
             .buttonStyle(.plain)
 
@@ -48,30 +42,21 @@ struct ComposerBar: View {
                     .textFieldStyle(.plain)
                     .focused($isInputFocused)
                     .lineLimit(1...5)
-                    .onSubmit {
-                        sendMessage()
-                    }
+                    .onSubmit { onSend() }
 
                 // Send / Stop button
-                if chatVM.isGenerating {
-                    Button {
-                        Task {
-                            await chatVM.stopGeneration()
-                        }
-                    } label: {
+                if isStreaming {
+                    Button(action: onStop) {
                         Image(systemName: "stop.fill")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(AppColors.textPrimary)
                     }
                     .buttonStyle(.plain)
                 } else {
-                    Button {
-                        sendMessage()
-                    } label: {
+                    Button(action: onSend) {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.system(size: 20, weight: .semibold))
-                            .foregroundStyle(
-                                inputText.isEmpty ? AppColors.textTertiary : AppColors.accent)
+                            .foregroundStyle(inputText.isEmpty ? AppColors.textTertiary : AppColors.accent)
                     }
                     .buttonStyle(.plain)
                     .disabled(inputText.isEmpty)
@@ -96,8 +81,7 @@ struct ComposerBar: View {
             } label: {
                 Image(systemName: "sidebar.right")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(
-                        rightSidebarVisible ? AppColors.accent : AppColors.textSecondary)
+                    .foregroundStyle(rightSidebarVisible ? AppColors.accent : AppColors.textSecondary)
             }
             .buttonStyle(.plain)
 
@@ -121,9 +105,38 @@ struct ComposerBar: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(AppColors.textPrimary.opacity(0.1), lineWidth: 1)
         }
-        .onAppear {
-            print("DEBUG: ComposerBar chatVM ID: \(ObjectIdentifier(chatVM))")
-        }
+    }
+}
+
+/// Bottom composer bar for input and controls
+/// Flat matte surface with shadow (no glass blur)
+struct ComposerBar: View {
+    @Binding var leftSidebarVisible: Bool
+    @Binding var rightSidebarVisible: Bool
+    @Binding var showSettings: Bool
+
+    let selectedSession: ChatSessionEntity?
+    let modelRegistry: ModelRegistry
+    let viewModel: WorkbenchViewModel
+
+    @Environment(ChatViewModel.self) private var chatVM
+    @State private var inputText: String = ""
+    @State private var thinkingPreference: ThinkingPreference = .auto
+
+    @Environment(\.modelContext) private var modelContext
+
+    var body: some View {
+        ComposerBarView(
+            leftSidebarVisible: $leftSidebarVisible,
+            rightSidebarVisible: $rightSidebarVisible,
+            showSettings: $showSettings,
+            inputText: $inputText,
+            isStreaming: chatVM.isGenerating,
+            onSend: sendMessage,
+            onStop: {
+                Task { await chatVM.stopGeneration() }
+            }
+        )
     }
 
     // MARK: - Private Methods
@@ -146,3 +159,81 @@ struct ComposerBar: View {
         )
     }
 }
+
+#if DEBUG
+#Preview("Composer - Idle") {
+    @Previewable @State var left = true
+    @Previewable @State var right = false
+    @Previewable @State var showSettings = false
+    @Previewable @State var input = ""
+
+    return ComposerBarView(
+        leftSidebarVisible: $left,
+        rightSidebarVisible: $right,
+        showSettings: $showSettings,
+        inputText: $input,
+        isStreaming: false,
+        onSend: {},
+        onStop: {}
+    )
+    .padding()
+    .frame(width: 900)
+}
+
+#Preview("Composer - Input filled") {
+    @Previewable @State var left = true
+    @Previewable @State var right = false
+    @Previewable @State var showSettings = false
+    @Previewable @State var input = "Hello, world!"
+
+    return ComposerBarView(
+        leftSidebarVisible: $left,
+        rightSidebarVisible: $right,
+        showSettings: $showSettings,
+        inputText: $input,
+        isStreaming: false,
+        onSend: {},
+        onStop: {}
+    )
+    .padding()
+    .frame(width: 900)
+}
+
+#Preview("Composer - Streaming") {
+    @Previewable @State var left = true
+    @Previewable @State var right = true
+    @Previewable @State var showSettings = false
+    @Previewable @State var input = "Stop me"
+
+    return ComposerBarView(
+        leftSidebarVisible: $left,
+        rightSidebarVisible: $right,
+        showSettings: $showSettings,
+        inputText: $input,
+        isStreaming: true,
+        onSend: {},
+        onStop: {}
+    )
+    .padding()
+    .frame(width: 900)
+}
+
+#Preview("Composer - Multiline") {
+    @Previewable @State var left = true
+    @Previewable @State var right = false
+    @Previewable @State var showSettings = false
+    @Previewable @State var input = "Line 1\nLine 2\nLine 3"
+
+    return ComposerBarView(
+        leftSidebarVisible: $left,
+        rightSidebarVisible: $right,
+        showSettings: $showSettings,
+        inputText: $input,
+        isStreaming: false,
+        onSend: {},
+        onStop: {}
+    )
+    .padding()
+    .frame(width: 900)
+}
+#endif

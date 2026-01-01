@@ -69,6 +69,7 @@ struct AFMDiagnosticsView: View {
         .background(Color.secondary.opacity(0.08))
         .cornerRadius(10)
         .onAppear {
+            guard !PreviewMode.isRunning else { return }
             viewModel.checkAFMAvailability(retryDelay: 0)
         }
     }

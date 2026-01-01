@@ -12,8 +12,8 @@ import SwiftUI
 /// Root view for the canvas-based UI
 /// Layout: ZStack with canvas background, center transcript, overlay sidebars, bottom composer
 struct CanvasRootView: View {
-    @State private var viewModel = WorkbenchViewModel()
-    @State private var chatVM = ChatViewModel()
+    @State private var viewModel: WorkbenchViewModel
+    @State private var chatVM: ChatViewModel
 
     @EnvironmentObject private var modelRegistry: ModelRegistry
     @Environment(\.modelContext) private var modelContext
@@ -21,9 +21,21 @@ struct CanvasRootView: View {
     @Query(sort: \ChatSessionEntity.updatedAt, order: .reverse)
     private var sessions: [ChatSessionEntity]
 
-    @State private var leftSidebarVisible: Bool = true
-    @State private var rightSidebarVisible: Bool = false
+    @State private var leftSidebarVisible: Bool
+    @State private var rightSidebarVisible: Bool
     @State private var showSettings: Bool = false
+
+    init(
+        viewModel: WorkbenchViewModel = WorkbenchViewModel(),
+        chatVM: ChatViewModel = ChatViewModel(),
+        leftSidebarVisible: Bool = true,
+        rightSidebarVisible: Bool = false
+    ) {
+        _viewModel = State(initialValue: viewModel)
+        _chatVM = State(initialValue: chatVM)
+        _leftSidebarVisible = State(initialValue: leftSidebarVisible)
+        _rightSidebarVisible = State(initialValue: rightSidebarVisible)
+    }
 
     var body: some View {
         ZStack {
@@ -34,7 +46,7 @@ struct CanvasRootView: View {
             // Center: Transcript canvas
             VStack(spacing: 0) {
                 if let session = selectedSession {
-                    TranscriptCanvasView(session: session)
+                    TranscriptCanvasSessionView(session: session)
                         .environment(viewModel)
                 } else {
                     emptyState
@@ -45,7 +57,14 @@ struct CanvasRootView: View {
             // Overlay left: Floating sidebar (chat threads)
             if leftSidebarVisible {
                 FloatingSidebarLeft(
-                    sessions: sessions,
+                    sessions: sessions.map {
+                        CanvasConversationSummary(
+                            id: $0.id,
+                            displayTitle: $0.displayTitle,
+                            updatedAt: $0.updatedAt,
+                            isArchived: $0.isArchived
+                        )
+                    },
                     selectedConversationID: $viewModel.selectedConversationID,
                     onNewConversation: createAndSelectConversation
                 )
@@ -62,7 +81,7 @@ struct CanvasRootView: View {
             if rightSidebarVisible {
                 FloatingSidebarRight(
                     isVisible: $rightSidebarVisible,
-                    toolExecution: $viewModel.activeToolExecution
+                    state: inspectorState
                 )
                 .frame(width: 320)
                 .padding(.trailing, 16)
@@ -113,6 +132,9 @@ struct CanvasRootView: View {
                 return
             }
             hydrateSelection(from: session)
+            if !PreviewMode.isRunning {
+                viewModel.updateStats(for: session)
+            }
         }
         .onChange(of: sessions.count) { _, _ in
             ensureDefaultConversationSelection()
@@ -137,15 +159,14 @@ struct CanvasRootView: View {
             .buttonStyle(.borderedProminent)
             .tint(AppColors.accent)
 
-            // wrappers for debug
+            // Debug helpers
             /*
-            Button("Debug: Seed Fake Transcript") {
-                seedFakeTranscript()
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(.gray)
-            */
-
+             Button("Debug: Seed Fake Transcript") {
+                 seedFakeTranscript()
+             }
+             .buttonStyle(.plain)
+             .foregroundStyle(.gray)
+             */
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -274,4 +295,116 @@ struct CanvasRootView: View {
         default: return providerID.capitalized
         }
     }
+
+    private var inspectorState: CanvasInspectorState {
+        guard let session = selectedSession else { return .empty() }
+
+        let artifacts: [ArtifactPayload] =
+            session.messages
+            .sorted { $0.createdAt < $1.createdAt }
+            .flatMap { entity -> [ArtifactPayload] in
+                let message = entity.asDomain()
+                return message.artifactMetadatas.map { meta in
+                    ArtifactPayload(
+                        id: Canvas2StableIDs.artifactID(messageID: message.id, metadata: meta),
+                        title: meta.filename,
+                        kind: {
+                            switch meta.language {
+                            case .json, .swift, .python, .javascript: return .code
+                            case .markdown, .text: return .text
+                            }
+                        }(),
+                        status: .success,
+                        previewText: meta.content,
+                        actions: [.copy, .open],
+                        metadata: meta
+                    )
+                }
+            }
+
+        let logs: [String] = [
+            "isGenerating=\(chatVM.isGenerating)",
+            "executingTools=\(chatVM.executingToolNames.sorted().joined(separator: ","))",
+            "streamingTokenEstimate=\(chatVM.streamingTokenEstimate)",
+            "isTruncated=\(chatVM.isTruncated)",
+        ]
+
+        let contextSummary: [String] = [
+            "providerID=\(session.providerID)",
+            "model=\(session.model)",
+            "messages=\(session.messages.count)",
+        ]
+
+        let tokenStats = CanvasInspectorState.TokenStats(
+            tokens: viewModel.currentSessionTokens,
+            costUSD: viewModel.currentSessionCost,
+            percentOfContext: viewModel.tokenPercentage
+        )
+
+        return CanvasInspectorState(
+            toolExecution: viewModel.activeToolExecution,
+            artifacts: artifacts,
+            tokenStats: tokenStats,
+            logs: logs,
+            contextSummary: contextSummary
+        )
+    }
 }
+
+#if DEBUG
+#Preview("CanvasRoot • Wide") {
+    let container = PreviewContainer.shared
+    Canvas2PreviewFixtures.ensureSeeded(into: container.context)
+
+    return CanvasRootView(chatVM: ChatViewModel.preview())
+        .environmentObject(ModelRegistry())
+        .modelContainer(container.container)
+        .frame(width: 1200, height: 800)
+}
+
+#Preview("CanvasRoot • Compact") {
+    let container = PreviewContainer.shared
+    Canvas2PreviewFixtures.ensureSeeded(into: container.context)
+
+    return CanvasRootView(
+        chatVM: ChatViewModel.preview(),
+        leftSidebarVisible: false,
+        rightSidebarVisible: false
+    )
+    .environmentObject(ModelRegistry())
+    .modelContainer(container.container)
+    .frame(width: 520, height: 820)
+}
+
+#Preview("CanvasRoot • Streaming ON") {
+    let container = PreviewContainer.shared
+    Canvas2PreviewFixtures.ensureSeeded(into: container.context)
+
+    let vm = ChatViewModel.preview(
+        isGenerating: true,
+        streamingText: Canvas2PreviewFixtures.streamingRow().content,
+        generationID: Canvas2PreviewFixtures.IDs.streamingGeneration,
+        streamingMessageID: Canvas2PreviewFixtures.IDs.streamingMessage
+    )
+
+    return CanvasRootView(chatVM: vm, leftSidebarVisible: true, rightSidebarVisible: true)
+        .environmentObject(ModelRegistry())
+        .modelContainer(container.container)
+        .frame(width: 1200, height: 800)
+}
+
+#Preview("CanvasRoot • Sidebars Expanded") {
+    let container = PreviewContainer.shared
+    Canvas2PreviewFixtures.ensureSeeded(into: container.context)
+
+    return CanvasRootView(
+        chatVM: ChatViewModel.preview(),
+        leftSidebarVisible: true,
+        rightSidebarVisible: true
+    )
+    .environmentObject(ModelRegistry())
+    .modelContainer(container.container)
+    .frame(width: 1200, height: 800)
+}
+#endif
+

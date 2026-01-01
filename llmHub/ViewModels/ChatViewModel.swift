@@ -214,6 +214,23 @@ class ChatViewModel {
             return service
         }
 
+        // Preview safety: Canvas previews must not initialize providers/tools or touch the network.
+        // Any UI that needs state in previews should use `ChatViewModel.preview(...)`.
+        if PreviewMode.isRunning {
+            logger.info("PreviewMode: skipping ChatService initialization")
+            let emptyToolRegistry = await ToolRegistry(tools: [])
+            let emptyToolExecutor = ToolExecutor(registry: emptyToolRegistry, environment: .current)
+            let service = ChatService(
+                modelContext: modelContext,
+                providerRegistry: ProviderRegistry(providerBuilders: []),
+                toolRegistry: emptyToolRegistry,
+                toolExecutor: emptyToolExecutor,
+                toolAuthorizationService: ToolAuthorizationService()
+            )
+            self.chatService = service
+            return service
+        }
+
         // Initialize providers config
         let config = makeDefaultConfig()
 
@@ -296,6 +313,7 @@ class ChatViewModel {
 
     /// Refresh tool toggles and authorized tool list, ensuring registry is loaded.
     func refreshToolToggles(modelContext: ModelContext) async {
+        guard !PreviewMode.isRunning else { return }
         _ = await ensureChatService(modelContext: modelContext)
         await rebuildToolState(environment: toolEnvironment)
     }
@@ -509,6 +527,10 @@ class ChatViewModel {
         selectedModel: UILLMModel? = nil,
         thinkingPreference: ThinkingPreference = .auto
     ) {
+        guard !PreviewMode.isRunning else {
+            logger.info("PreviewMode: ignoring sendMessage()")
+            return
+        }
         // If a generation is already in progress, interrupt: cancel current stream and send the new message.
         if isGenerating {
             let messageTextCopy = messageText
@@ -1167,4 +1189,34 @@ class ChatViewModel {
             stopToolTimer(toolCallID: toolCallID)
         }
     }
+
+#if DEBUG
+    /// Internal hook used by preview factories to set streaming-related state without initializing runtime services.
+    ///
+    /// Rationale: streaming join keys (`generationID`) and message IDs are stored in private properties so the
+    /// production pipeline can manage them consistently. Previews still need to drive those fields deterministically.
+    func _applyPreviewStreamingState(
+        isGenerating: Bool,
+        streamingText: String?,
+        generationID: UUID?,
+        streamingMessageID: UUID?,
+        streamingStartedAt: Date?,
+        executingToolNames: Set<String>
+    ) {
+        self.executingToolNames = executingToolNames
+        self.isGenerating = isGenerating
+
+        if isGenerating, let text = streamingText {
+            self.streamingText = text
+            self.streamingStartedAt = streamingStartedAt
+            self.streamingMessageID = streamingMessageID
+            self.activeGenerationID = generationID
+        } else {
+            self.streamingText = nil
+            self.streamingStartedAt = nil
+            self.streamingMessageID = nil
+            self.activeGenerationID = nil
+        }
+    }
+#endif
 }

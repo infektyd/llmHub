@@ -100,6 +100,12 @@ private struct RemoteImageAttachmentView: View {
     @MainActor
     private func load() async {
         phase = .loading
+        guard !PreviewMode.isRunning else {
+            // Canvas previews must be deterministic and must not trigger network/disk caches.
+            // Keep a stable failure UI rather than attempting to fetch.
+            phase = .failure
+            return
+        }
         do {
             let image = try await ImageLoader.shared.load(url: url, generationID: generationID)
             let size = image.size

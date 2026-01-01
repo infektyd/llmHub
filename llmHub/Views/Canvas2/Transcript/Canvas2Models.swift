@@ -5,6 +5,7 @@
 //  View models and data structures for the Canvas2 UI
 //
 
+import CryptoKit
 import Foundation
 import SwiftUI
 
@@ -25,6 +26,35 @@ struct TranscriptRowViewModel: Identifiable, Equatable {
             && lhs.content == rhs.content && lhs.isStreaming == rhs.isStreaming
             && lhs.generationID == rhs.generationID
             && lhs.artifacts == rhs.artifacts
+    }
+}
+
+struct CanvasConversationSummary: Identifiable, Equatable {
+    let id: UUID
+    let displayTitle: String
+    let updatedAt: Date
+    let isArchived: Bool
+}
+
+enum Canvas2StableIDs {
+    static func artifactID(messageID: UUID, metadata: ArtifactMetadata) -> UUID {
+        // Stable across recomputes so streaming updates don't invalidate past rows and sidebars.
+        // Hash: messageID + filename + language
+        var hasher = SHA256()
+        hasher.update(data: Data(messageID.uuidString.utf8))
+        hasher.update(data: Data("|".utf8))
+        hasher.update(data: Data(metadata.filename.utf8))
+        hasher.update(data: Data("|".utf8))
+        hasher.update(data: Data(metadata.language.rawValue.utf8))
+        let digest = hasher.finalize()
+        let bytes = Array(digest)
+        let uuidBytes = (
+            bytes[0], bytes[1], bytes[2], bytes[3],
+            bytes[4], bytes[5], bytes[6], bytes[7],
+            bytes[8], bytes[9], bytes[10], bytes[11],
+            bytes[12], bytes[13], bytes[14], bytes[15]
+        )
+        return UUID(uuid: uuidBytes)
     }
 }
 
