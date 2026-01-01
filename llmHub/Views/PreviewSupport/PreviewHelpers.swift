@@ -234,6 +234,6 @@ extension View {
             .environment(MockData.workbenchViewModel())
             .environmentObject(MockData.modelRegistry())
             .environment(\.keychainStore, KeychainStore(backend: InMemoryKeychainBacking(), accessGroups: []))
-            .environment(\.theme, ThemeManager.shared.current)
+            
     }
 }

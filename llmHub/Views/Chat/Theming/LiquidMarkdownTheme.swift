@@ -241,8 +241,8 @@ struct LiquidThematicBreakStyle: StructuredText.ThematicBreakStyle {
                 Bottom content.
                 """
             )
-            .textual.structuredTextStyle(.llmHubLiquid(theme: ThemeManager.shared.current))
-            .textual.highlighterTheme(.llmHubLiquid(theme: ThemeManager.shared.current))
+            .textual.structuredTextStyle(.llmHubLiquid(theme: CanvasDarkTheme()))
+            .textual.highlighterTheme(.llmHubLiquid(theme: CanvasDarkTheme()))
             .textual.listItemSpacing(.fontScaled(top: 0.22))
         }
         .padding()

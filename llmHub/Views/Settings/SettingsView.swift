@@ -11,7 +11,6 @@ import SwiftUI
 struct SettingsView: View {
     @StateObject private var viewModel = SettingsViewModel()
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.theme) private var theme
     @EnvironmentObject private var modelRegistry: ModelRegistry
 
     var body: some View {
@@ -50,7 +49,7 @@ struct SettingsView: View {
 // MARK: - Appearance Settings (Redesigned)
 
 struct AppearanceSettingsView: View {
-    @State private var themeManager = ThemeManager.shared
+    
 
     var body: some View {
         ScrollView {
@@ -104,8 +103,6 @@ struct AppearanceSettingsView: View {
 
 /// A slider with a liquid glass aesthetic.
 struct LiquidSlider: View {
-    @Environment(\.theme) private var theme
-
     @Binding var value: Double
     var range: ClosedRange<Double> = 0...100
 
@@ -139,7 +136,7 @@ struct LiquidSlider: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                theme.accent.opacity(0.6), theme.error.opacity(0.6),
+                                AppColors.accent.opacity(0.6), AppColors.error.opacity(0.6),
                             ],
                             startPoint: .leading,
                             endPoint: .trailing
@@ -162,7 +159,7 @@ struct LiquidSlider: View {
                         Circle().stroke(.white.opacity(0.8), lineWidth: 1)
                     )
                     .shadow(
-                        color: theme.accent.opacity(isDragging ? 0.8 : 0.4),
+                        color: AppColors.accent.opacity(isDragging ? 0.8 : 0.4),
                         radius: isDragging ? 10 : 5
                     )
                     .frame(width: height, height: height)
@@ -189,7 +186,7 @@ struct LiquidSlider: View {
 
 /// A specialized card for theme selection.
 struct LiquidThemeCard: View {
-    let theme: AppTheme
+    let appTheme: AppTheme
     let isSelected: Bool
 
     var body: some View {
@@ -197,25 +194,25 @@ struct LiquidThemeCard: View {
             ZStack {
                 // Background Preview
                 RoundedRectangle(cornerRadius: 06)
-                    .fill(theme.backgroundPrimary)
+                    .fill(appTheme.backgroundPrimary)
                     .frame(width: 100, height: 70)
                     .overlay(
                         RoundedRectangle(cornerRadius: 06)
-                            .strokeBorder(isSelected ? theme.accent : .clear, lineWidth: 2)
+                            .strokeBorder(isSelected ? appTheme.accent : .clear, lineWidth: 2)
                     )
-                    .shadow(color: isSelected ? theme.accent.opacity(0.5) : .clear, radius: 10)
+                    .shadow(color: isSelected ? appTheme.accent.opacity(0.5) : .clear, radius: 10)
 
                 // UI Elements Preview
                 VStack(spacing: 4) {
-                    Capsule().fill(theme.surface).frame(width: 70, height: 8)
+                    Capsule().fill(appTheme.surface).frame(width: 70, height: 8)
                     HStack(spacing: 4) {
-                        Circle().fill(theme.accent).frame(width: 16, height: 16)
-                        Capsule().fill(theme.textSecondary.opacity(0.3)).frame(width: 40, height: 8)
+                        Circle().fill(appTheme.accent).frame(width: 16, height: 16)
+                        Capsule().fill(appTheme.textSecondary.opacity(0.3)).frame(width: 40, height: 8)
                     }
                 }
             }
 
-            Text(theme.name)
+            Text(appTheme.name)
                 .font(.caption)
                 .fontWeight(isSelected ? .bold : .medium)
                 .foregroundStyle(isSelected ? .white : .secondary)
@@ -226,8 +223,6 @@ struct LiquidThemeCard: View {
 
 /// An animated orb that reacts to intensity.
 struct OrbPreview: View {
-    @Environment(\.theme) private var theme
-
     let intensity: Double  // 0.0 to 1.0 (ish)
 
     @State private var phase: Double = 0
@@ -239,7 +234,7 @@ struct OrbPreview: View {
                 .fill(
                     AngularGradient(
                         colors: [
-                            theme.accent, theme.error, theme.accent,
+                            AppColors.accent, AppColors.error, AppColors.accent,
                         ],
                         center: .center,
                         startAngle: .degrees(phase),
@@ -321,7 +316,6 @@ struct UIModeCard: View {
 
 struct APIKeysSettingsView: View {
     @ObservedObject var viewModel: SettingsViewModel
-    @Environment(\.theme) private var theme
 
     var body: some View {
         ScrollView {
@@ -336,14 +330,14 @@ struct APIKeysSettingsView: View {
                         "Configure API keys for each LLM provider. Keys are securely stored in the system Keychain."
                     )
                     .font(.system(size: 13))
-                    .foregroundColor(theme.textSecondary)
+                    .foregroundColor(AppColors.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.bottom, 8)
 
                 Divider()
-                    .background(theme.textSecondary.opacity(0.3))
+                    .background(AppColors.textSecondary.opacity(0.3))
 
                 // Provider Key Rows
                 ForEach(SettingsViewModel.ProviderInfo.allProviders, id: \.provider) { info in
@@ -364,11 +358,11 @@ struct APIKeysSettingsView: View {
                             systemName: viewModel.isError
                                 ? "exclamationmark.triangle.fill" : "checkmark.circle.fill"
                         )
-                        .foregroundColor(viewModel.isError ? theme.error : .green)
+                        .foregroundColor(viewModel.isError ? AppColors.error : .green)
 
                         Text(message)
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(viewModel.isError ? theme.error : .green)
+                            .foregroundColor(viewModel.isError ? AppColors.error : .green)
                     }
                     .padding(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -376,7 +370,7 @@ struct APIKeysSettingsView: View {
                         RoundedRectangle(cornerRadius: 8)
                             .fill(
                                 viewModel.isError
-                                    ? theme.error.opacity(0.1) : Color.green.opacity(0.1))
+                                    ? AppColors.error.opacity(0.1) : Color.green.opacity(0.1))
                     )
                     .transition(.opacity.combined(with: .move(edge: .top)))
                 }
@@ -397,7 +391,6 @@ struct ProviderKeyRow: View {
     let isSaving: Bool
     let onSave: () -> Void
     let onDelete: () -> Void
-    @Environment(\.theme) private var theme
 
     @State private var isSecure: Bool = true
     @FocusState private var isFocused: Bool
@@ -408,7 +401,7 @@ struct ProviderKeyRow: View {
             HStack(spacing: 12) {
                 Image(systemName: info.icon)
                     .font(.system(size: 18))
-                    .foregroundColor(theme.accent)
+                    .foregroundColor(AppColors.accent)
                     .frame(width: 24, height: 24)
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -419,7 +412,7 @@ struct ProviderKeyRow: View {
                     if let description = info.description {
                         Text(description)
                             .font(.system(size: 11))
-                            .foregroundColor(theme.textSecondary)
+                            .foregroundColor(AppColors.textSecondary)
                     }
                 }
 
@@ -460,8 +453,8 @@ struct ProviderKeyRow: View {
                             RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control / 2)
                                 .stroke(
                                     isFocused
-                                        ? theme.accent
-                                        : theme.textPrimary.opacity(
+                                        ? AppColors.accent
+                                        : AppColors.textPrimary.opacity(
                                             LiquidGlassTokens.Stroke.border),
                                     lineWidth: 1)
                         )
@@ -471,7 +464,7 @@ struct ProviderKeyRow: View {
                 Button(action: { isSecure.toggle() }) {
                     Image(systemName: isSecure ? "eye.slash.fill" : "eye.fill")
                         .font(.system(size: 12))
-                        .foregroundColor(theme.textSecondary)
+                        .foregroundColor(AppColors.textSecondary)
                         .frame(width: 32, height: 32)
                         .background(
                             RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control / 2)
@@ -501,7 +494,7 @@ struct ProviderKeyRow: View {
                         RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control / 2)
                             .fill(
                                 apiKey.isEmpty
-                                    ? theme.textSecondary.opacity(0.3) : theme.accent)
+                                    ? AppColors.textSecondary.opacity(0.3) : AppColors.accent)
                     )
                 }
                 .buttonStyle(.plain)
@@ -512,11 +505,11 @@ struct ProviderKeyRow: View {
                     Button(action: onDelete) {
                         Image(systemName: "trash.fill")
                             .font(.system(size: 12))
-                            .foregroundColor(theme.error)
+                            .foregroundColor(AppColors.error)
                             .frame(width: 32, height: 32)
                             .background(
                                 RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control / 2)
-                                    .fill(theme.error.opacity(0.1))
+                                    .fill(AppColors.error.opacity(0.1))
                             )
                     }
                     .buttonStyle(.plain)
@@ -532,10 +525,10 @@ struct ProviderKeyRow: View {
                         Text("Get API key from \(info.name)")
                             .font(.system(size: 11, weight: .medium))
                     }
-                    .foregroundColor(theme.accent)
+                    .foregroundColor(AppColors.accent)
                     .padding(.vertical, 4)
                     .padding(.horizontal, 8)
-                    .background(theme.accent.opacity(0.1))
+                    .background(AppColors.accent.opacity(0.1))
                     .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
@@ -552,7 +545,9 @@ struct ProviderKeyRow: View {
                 .overlay(
                     RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control)
                         .stroke(
-                            hasKey ? theme.success.opacity(0.3) : theme.textPrimary.opacity(0.1),
+                            hasKey
+                                ? AppColors.success.opacity(0.3)
+                                : AppColors.textPrimary.opacity(0.1),
                             lineWidth: 1)
                 )
         )
@@ -561,7 +556,6 @@ struct ProviderKeyRow: View {
 
 struct GeneralSettingsView: View {
     @ObservedObject var viewModel: SettingsViewModel
-    @Environment(\.theme) private var theme
     @State private var contextConfig = UserDefaults.standard.loadContextConfig()
     @State private var showSaveConfirmation = false
 
@@ -576,13 +570,13 @@ struct GeneralSettingsView: View {
 
                     Text("Configure app behavior, tools, and performance optimizations.")
                         .font(.system(size: 13))
-                        .foregroundColor(theme.textSecondary)
+                        .foregroundColor(AppColors.textSecondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.bottom, 8)
 
                 Divider()
-                    .background(theme.textSecondary.opacity(0.3))
+                    .background(AppColors.textSecondary.opacity(0.3))
 
                 // Tool Selection Section
                 toolSelectionSection
@@ -628,7 +622,7 @@ struct GeneralSettingsView: View {
             HStack(spacing: 8) {
                 Image(systemName: "hammer.fill")
                     .font(.system(size: 18))
-                    .foregroundColor(theme.accent)
+                    .foregroundColor(AppColors.accent)
 
                 Text("Available Tools")
                     .font(.system(size: 17, weight: .semibold))
@@ -664,7 +658,7 @@ struct GeneralSettingsView: View {
             HStack(spacing: 8) {
                 Image(systemName: "cursorarrow.click.2")
                     .font(.system(size: 18))
-                    .foregroundColor(theme.accent)
+                        .foregroundColor(AppColors.accent)
 
                 Text("Text Selection")
                     .font(.system(size: 17, weight: .semibold))
@@ -680,13 +674,13 @@ struct GeneralSettingsView: View {
                             set: { UserDefaults.standard.set($0, forKey: "chatAutoCopyEnabled") }
                         )
                     )
-                    .toggleStyle(SwitchToggleStyle(tint: theme.accent))
+                    .toggleStyle(SwitchToggleStyle(tint: AppColors.accent))
 
                     Text(
                         "Automatically copy text to clipboard when selecting (Assistant/Tool messages only)."
                     )
                     .font(.caption)
-                    .foregroundColor(theme.textSecondary)
+                    .foregroundColor(AppColors.textSecondary)
                 }
                 .padding(12)
                 .background(
@@ -711,7 +705,7 @@ struct GeneralSettingsView: View {
             HStack(spacing: 8) {
                 Image(systemName: "sparkles")
                     .font(.system(size: 18))
-                    .foregroundColor(theme.accent)
+                    .foregroundColor(AppColors.accent)
 
                 Text("Context Management")
                     .font(.system(size: 17, weight: .semibold))
@@ -720,7 +714,7 @@ struct GeneralSettingsView: View {
 
             Text("Automatically optimize conversation history to reduce token usage and costs.")
                 .font(.system(size: 12))
-                .foregroundColor(theme.textSecondary)
+                .foregroundColor(AppColors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 4)
 
@@ -731,6 +725,10 @@ struct GeneralSettingsView: View {
                     set: { newValue in
                         contextConfig = ContextConfig(
                             enabled: newValue,
+                            summarizationEnabled: contextConfig.summarizationEnabled,
+                            summarizeAtTurnCount: contextConfig.summarizeAtTurnCount,
+                            preserveLastTurns: contextConfig.preserveLastTurns,
+                            summaryMaxTokens: contextConfig.summaryMaxTokens,
                             defaultMaxTokens: contextConfig.defaultMaxTokens,
                             preserveSystemPrompt: contextConfig.preserveSystemPrompt,
                             preserveRecentMessages: contextConfig.preserveRecentMessages,
@@ -747,17 +745,17 @@ struct GeneralSettingsView: View {
 
                     Text("Automatically removes old messages when context limit is reached")
                         .font(.system(size: 11))
-                        .foregroundColor(theme.textSecondary)
+                        .foregroundColor(AppColors.textSecondary)
                 }
             }
-            .toggleStyle(SwitchToggleStyle(tint: theme.accent))
+            .toggleStyle(SwitchToggleStyle(tint: AppColors.accent))
             .padding(12)
             .background(
                 RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control)
                     .fill(Color.black.opacity(0.2))
                     .overlay(
                         RoundedRectangle(cornerRadius: LiquidGlassTokens.Radius.control)
-                            .stroke(theme.textPrimary.opacity(0.1), lineWidth: 1)
+                            .stroke(AppColors.textPrimary.opacity(0.1), lineWidth: 1)
                     )
             )
 
@@ -773,7 +771,7 @@ struct GeneralSettingsView: View {
                             Spacer()
                             Text("\(contextConfig.defaultMaxTokens.formatted()) tokens")
                                 .font(.system(size: 12, design: .monospaced))
-                                .foregroundColor(theme.accent)
+                                .foregroundColor(AppColors.accent)
                         }
 
                         Slider(
@@ -782,6 +780,10 @@ struct GeneralSettingsView: View {
                                 set: { newValue in
                                     contextConfig = ContextConfig(
                                         enabled: contextConfig.enabled,
+                                        summarizationEnabled: contextConfig.summarizationEnabled,
+                                        summarizeAtTurnCount: contextConfig.summarizeAtTurnCount,
+                                        preserveLastTurns: contextConfig.preserveLastTurns,
+                                        summaryMaxTokens: contextConfig.summaryMaxTokens,
                                         defaultMaxTokens: Int(newValue),
                                         preserveSystemPrompt: contextConfig.preserveSystemPrompt,
                                         preserveRecentMessages: contextConfig
@@ -798,11 +800,11 @@ struct GeneralSettingsView: View {
                                 }
                             }
                         )
-                        .tint(theme.accent)
+                        .tint(AppColors.accent)
 
                         Text("Conversations exceeding this limit will be automatically compacted")
                             .font(.system(size: 10))
-                            .foregroundColor(theme.textSecondary)
+                            .foregroundColor(AppColors.textSecondary)
                     }
 
                     // Recent Messages Slider
@@ -814,7 +816,7 @@ struct GeneralSettingsView: View {
                             Spacer()
                             Text("\(contextConfig.preserveRecentMessages) messages")
                                 .font(.system(size: 12, design: .monospaced))
-                                .foregroundColor(theme.accent)
+                                .foregroundColor(AppColors.accent)
                         }
 
                         Slider(
@@ -823,6 +825,10 @@ struct GeneralSettingsView: View {
                                 set: { newValue in
                                     contextConfig = ContextConfig(
                                         enabled: contextConfig.enabled,
+                                        summarizationEnabled: contextConfig.summarizationEnabled,
+                                        summarizeAtTurnCount: contextConfig.summarizeAtTurnCount,
+                                        preserveLastTurns: contextConfig.preserveLastTurns,
+                                        summaryMaxTokens: contextConfig.summaryMaxTokens,
                                         defaultMaxTokens: contextConfig.defaultMaxTokens,
                                         preserveSystemPrompt: contextConfig.preserveSystemPrompt,
                                         preserveRecentMessages: Int(newValue),
@@ -838,11 +844,11 @@ struct GeneralSettingsView: View {
                                 }
                             }
                         )
-                        .tint(theme.accent)
+                        .tint(AppColors.accent)
 
                         Text("The most recent messages will always be kept in the context")
                             .font(.system(size: 10))
-                            .foregroundColor(theme.textSecondary)
+                            .foregroundColor(AppColors.textSecondary)
                     }
 
                     // Preserve System Prompt Toggle
@@ -852,6 +858,10 @@ struct GeneralSettingsView: View {
                             set: { newValue in
                                 contextConfig = ContextConfig(
                                     enabled: contextConfig.enabled,
+                                    summarizationEnabled: contextConfig.summarizationEnabled,
+                                    summarizeAtTurnCount: contextConfig.summarizeAtTurnCount,
+                                    preserveLastTurns: contextConfig.preserveLastTurns,
+                                    summaryMaxTokens: contextConfig.summaryMaxTokens,
                                     defaultMaxTokens: contextConfig.defaultMaxTokens,
                                     preserveSystemPrompt: newValue,
                                     preserveRecentMessages: contextConfig.preserveRecentMessages,
@@ -868,10 +878,10 @@ struct GeneralSettingsView: View {
 
                             Text("Keep the system instructions even when compacting context")
                                 .font(.system(size: 11))
-                                .foregroundColor(theme.textSecondary)
+                                .foregroundColor(AppColors.textSecondary)
                         }
                     }
-                    .toggleStyle(SwitchToggleStyle(tint: theme.accent))
+                    .toggleStyle(SwitchToggleStyle(tint: AppColors.accent))
                 }
                 .padding(12)
                 .background(
@@ -879,7 +889,7 @@ struct GeneralSettingsView: View {
                         .fill(Color.black.opacity(0.2))
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
-                                .stroke(theme.textSecondary.opacity(0.2), lineWidth: 1)
+                                .stroke(AppColors.textSecondary.opacity(0.2), lineWidth: 1)
                         )
                 )
                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -889,23 +899,23 @@ struct GeneralSettingsView: View {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "info.circle.fill")
                     .font(.system(size: 14))
-                    .foregroundColor(theme.accent.opacity(0.8))
+                    .foregroundColor(AppColors.accent.opacity(0.8))
                     .frame(width: 20, height: 20)
 
                 Text(
                     "Context compaction can reduce token costs by 40-70% in long conversations by intelligently removing older messages while preserving important context."
                 )
                 .font(.system(size: 11))
-                .foregroundColor(theme.textSecondary)
+                .foregroundColor(AppColors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             }
             .padding(12)
             .background(
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(theme.accent.opacity(0.05))
+                    .fill(AppColors.accent.opacity(0.05))
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
-                            .stroke(theme.accent.opacity(0.2), lineWidth: 1)
+                            .stroke(AppColors.accent.opacity(0.2), lineWidth: 1)
                     )
             )
         }

@@ -288,7 +288,7 @@ struct GoogleAIProvider: LLMProvider {
     func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {
         AsyncThrowingStream(ProviderEvent.self) { continuation in
             let baseRequest = request
-            Task.detached {
+            let task = Task.detached {
                 do {
                     // Convert to streaming request
                     var streamRequest = baseRequest
@@ -441,9 +441,17 @@ struct GoogleAIProvider: LLMProvider {
                     continuation.finish()
 
                 } catch {
+                    if error is CancellationError {
+                        continuation.finish()
+                        return
+                    }
                     continuation.yield(.error(.network(error as? URLError ?? URLError(.unknown))))
                     continuation.finish()
                 }
+            }
+
+            continuation.onTermination = { @Sendable _ in
+                task.cancel()
             }
         }
     }

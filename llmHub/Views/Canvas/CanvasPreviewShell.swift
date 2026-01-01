@@ -128,7 +128,6 @@ struct CanvasThemeEditor: View {
 }
 
 struct CanvasFloatingPanel<Content: View>: View {
-    @Environment(\.theme) private var theme
     let title: String
     let content: Content
 
@@ -140,25 +139,25 @@ struct CanvasFloatingPanel<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(theme.headingFont)
-                .foregroundStyle(theme.textPrimary)
+                .font(AppColors.headingFont)
+                .foregroundStyle(AppColors.textPrimary)
 
             content
         }
         .padding(14)
         .background {
-            RoundedRectangle(cornerRadius: theme.cornerRadius, style: .continuous)
-                .fill(theme.backgroundSecondary.opacity(0.95))
+            RoundedRectangle(cornerRadius: AppColors.cornerRadius, style: .continuous)
+                .fill(AppColors.backgroundSecondary.opacity(0.95))
         }
         .overlay {
-            RoundedRectangle(cornerRadius: theme.cornerRadius, style: .continuous)
-                .stroke(theme.textPrimary.opacity(0.10), lineWidth: theme.borderWidth)
+            RoundedRectangle(cornerRadius: AppColors.cornerRadius, style: .continuous)
+                .stroke(AppColors.textPrimary.opacity(0.10), lineWidth: AppColors.borderWidth)
         }
         .shadow(
-            color: theme.shadowStyle.color,
-            radius: theme.shadowStyle.radius,
-            x: theme.shadowStyle.x,
-            y: theme.shadowStyle.y
+            color: ShadowStyle.elevated.color,
+            radius: ShadowStyle.elevated.radius,
+            x: ShadowStyle.elevated.x,
+            y: ShadowStyle.elevated.y
         )
     }
 }
@@ -205,7 +204,6 @@ struct CanvasToolSection: Identifiable {
 }
 
 struct CanvasToolSectionView: View {
-    @Environment(\.theme) private var theme
     let section: CanvasToolSection
 
     var body: some View {
@@ -217,7 +215,7 @@ struct CanvasToolSectionView: View {
                             .foregroundStyle(color(for: step.status))
                             .font(.system(size: 12, weight: .semibold))
                         Text(step.title)
-                            .foregroundStyle(theme.textPrimary.opacity(0.9))
+                            .foregroundStyle(AppColors.textPrimary.opacity(0.9))
                         Spacer()
                     }
                     .font(.system(size: 13))
@@ -228,22 +226,22 @@ struct CanvasToolSectionView: View {
             HStack(spacing: 10) {
                 Text(section.title)
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(theme.textPrimary)
+                    .foregroundStyle(AppColors.textPrimary)
                 Spacer()
                 Image(systemName: "chevron.down")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(theme.textSecondary)
+                    .foregroundStyle(AppColors.textSecondary)
             }
         }
         .disclosureGroupStyle(.automatic)
         .padding(14)
         .background {
-            RoundedRectangle(cornerRadius: theme.cornerRadius, style: .continuous)
-                .fill(theme.surface.opacity(0.92))
+            RoundedRectangle(cornerRadius: AppColors.cornerRadius, style: .continuous)
+                .fill(AppColors.surface.opacity(0.92))
         }
         .overlay {
-            RoundedRectangle(cornerRadius: theme.cornerRadius, style: .continuous)
-                .stroke(theme.textPrimary.opacity(0.10), lineWidth: theme.borderWidth)
+            RoundedRectangle(cornerRadius: AppColors.cornerRadius, style: .continuous)
+                .stroke(AppColors.textPrimary.opacity(0.10), lineWidth: AppColors.borderWidth)
         }
     }
 
@@ -257,15 +255,14 @@ struct CanvasToolSectionView: View {
 
     private func color(for status: CanvasToolSection.Step.Status) -> Color {
         switch status {
-        case .pending: return theme.textTertiary
-        case .running: return theme.warning
-        case .done: return theme.success
+        case .pending: return AppColors.textTertiary
+        case .running: return AppColors.warning
+        case .done: return AppColors.success
         }
     }
 }
 
 struct CanvasMessageRow: View {
-    @Environment(\.theme) private var theme
     let role: MessageRole
     let markdown: String
 
@@ -317,13 +314,13 @@ struct CanvasMessageRow: View {
     private var messageContent: some View {
         #if canImport(Textual)
         StructuredText(markdown: markdown)
-            .textual.structuredTextStyle(.llmHubLiquid(theme: theme))
-            .textual.highlighterTheme(.llmHubLiquid(theme: theme))
+            .textual.structuredTextStyle(.llmHubLiquid(theme: CanvasDarkTheme()))
+            .textual.highlighterTheme(.llmHubLiquid(theme: CanvasDarkTheme()))
             .textual.textSelection(.enabled)
         #else
         Text(markdown)
-            .font(theme.responseFont)
-            .foregroundStyle(theme.textPrimary)
+            .font(AppColors.responseFont)
+            .foregroundStyle(AppColors.textPrimary)
             .textSelection(.enabled)
         #endif
     }
@@ -343,7 +340,7 @@ struct CanvasMessageRow: View {
         } label: {
             Image(systemName: copied ? "checkmark" : "doc.on.doc")
                 .font(.caption2)
-                .foregroundColor(copied ? theme.success : theme.textTertiary)
+                .foregroundColor(copied ? AppColors.success : AppColors.textTertiary)
         }
         .buttonStyle(.plain)
         .padding(.top, 2)
@@ -394,7 +391,6 @@ struct CanvasTranscriptView: View {
 }
 
 struct CanvasComposerBar: View {
-    @Environment(\.theme) private var theme
     @Binding var text: String
     var onSend: (() -> Void)?
 
@@ -404,12 +400,12 @@ struct CanvasComposerBar: View {
                 Image(systemName: "plus")
             }
             .buttonStyle(.plain)
-            .foregroundStyle(theme.textSecondary)
+            .foregroundStyle(AppColors.textSecondary)
 
             TextField("Reply…", text: $text, axis: .vertical)
                 .textFieldStyle(.plain)
-                .foregroundStyle(theme.textPrimary)
-                .font(theme.bodyFont)
+                .foregroundStyle(AppColors.textPrimary)
+                .font(AppColors.bodyFont)
 
             Spacer(minLength: 0)
 
@@ -421,7 +417,7 @@ struct CanvasComposerBar: View {
                     .padding(10)
                     .background {
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(theme.accent.opacity(0.9))
+                            .fill(AppColors.accent.opacity(0.9))
                     }
                     .foregroundStyle(.white)
             }
@@ -430,12 +426,12 @@ struct CanvasComposerBar: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
         .background {
-            RoundedRectangle(cornerRadius: theme.cornerRadius, style: .continuous)
-                .fill(theme.surface.opacity(0.92))
+            RoundedRectangle(cornerRadius: AppColors.cornerRadius, style: .continuous)
+                .fill(AppColors.surface.opacity(0.92))
         }
         .overlay {
-            RoundedRectangle(cornerRadius: theme.cornerRadius, style: .continuous)
-                .stroke(theme.textPrimary.opacity(0.10), lineWidth: theme.borderWidth)
+            RoundedRectangle(cornerRadius: AppColors.cornerRadius, style: .continuous)
+                .stroke(AppColors.textPrimary.opacity(0.10), lineWidth: AppColors.borderWidth)
         }
     }
 }
@@ -551,7 +547,6 @@ struct CanvasWorkbenchShell: View {
                 .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
-        .environment(\.theme, theme)
         .animation(.easeInOut(duration: 0.20), value: showLeftPanel)
         .animation(.easeInOut(duration: 0.20), value: showRightPanel)
         .animation(.easeInOut(duration: 0.20), value: showThemeEditor)

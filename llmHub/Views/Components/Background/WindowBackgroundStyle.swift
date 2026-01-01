@@ -74,8 +74,6 @@ struct NativeWindowBackground: View {
 #if os(macOS)
     /// A picker component for Settings to switch between Airy and Grounded modes
     struct WindowStylePicker: View {
-        @Environment(\.theme) private var theme
-
         @AppStorage("windowBackgroundStyle") private var selectedStyleRaw: String =
             WindowBackgroundStyle.grounded.rawValue
 
@@ -115,13 +113,13 @@ struct NativeWindowBackground: View {
                                 RoundedRectangle(cornerRadius: 04)
                                     .fill(
                                         isSelected
-                                            ? theme.accent.opacity(0.3) : Color.clear
+                                            ? AppColors.accent.opacity(0.3) : Color.clear
                                     )
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 04)
                                             .stroke(
                                                 isSelected
-                                                    ? theme.accent.opacity(0.6) : .clear,
+                                                    ? AppColors.accent.opacity(0.6) : .clear,
                                                 lineWidth: 1)
                                     )
                             )

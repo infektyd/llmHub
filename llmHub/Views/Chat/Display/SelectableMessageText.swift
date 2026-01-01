@@ -21,7 +21,6 @@ struct SelectableMessageText: View {
     let messageID: UUID
     let role: MessageRole
     @ObservedObject var interactionController: ChatInteractionController
-    @Environment(\.theme) private var theme
 
     var body: some View {
         #if os(macOS)
@@ -29,16 +28,14 @@ struct SelectableMessageText: View {
                 text: content,
                 messageID: messageID,
                 role: role,
-                interactionController: interactionController,
-                theme: theme
+                interactionController: interactionController
             )
         #else
             IOSSelectableTextView(
                 text: content,
                 messageID: messageID,
                 role: role,
-                interactionController: interactionController,
-                theme: theme
+                interactionController: interactionController
             )
         #endif
     }
@@ -73,7 +70,6 @@ extension ChatInteractionController {
         let messageID: UUID
         let role: MessageRole
         let interactionController: ChatInteractionController
-        let theme: AppTheme
 
         func makeNSView(context: Context) -> InternalTextView {
             let textView = InternalTextView()
@@ -115,10 +111,10 @@ extension ChatInteractionController {
                 // In a real app, we'd use a better parser or cache.
                 // For now, use AttributedString with markdown options
 
-                let attributed = parseMarkdown(text, theme: theme)
+                let attributed = parseMarkdown(text)
                 nsView.textStorage?.setAttributedString(attributed)
                 nsView.font = NSFont.systemFont(ofSize: 14)  // Fallback
-                nsView.textColor = NSColor(theme.textPrimary)
+                nsView.textColor = NSColor(AppColors.textPrimary)
             }
 
             // Update context refs just in case
@@ -207,7 +203,7 @@ extension ChatInteractionController {
             // Here we use the standard scrollable constructor but might need to invalidate intrinsic content size.
         }
 
-        private func parseMarkdown(_ text: String, theme: AppTheme) -> NSAttributedString {
+        private func parseMarkdown(_ text: String) -> NSAttributedString {
             // Fallback or basic markdown parsing
             // Since we claimed "Core Markdown Only", we can use `try? AttributedString(markdown: ...)`
             // and convert to NSAttributedString.
@@ -223,7 +219,7 @@ extension ChatInteractionController {
                 return NSAttributedString(
                     string: text,
                     attributes: [
-                        .foregroundColor: NSColor(theme.textPrimary),
+                        .foregroundColor: NSColor(AppColors.textPrimary),
                         .font: NSFont.systemFont(ofSize: 14),  // Check theme font
                     ])
             }
@@ -239,7 +235,6 @@ extension ChatInteractionController {
         let messageID: UUID
         let role: MessageRole
         let interactionController: ChatInteractionController
-        let theme: AppTheme
 
         func makeUIView(context: Context) -> InternalTextView {
             let textView = InternalTextView()
@@ -261,7 +256,7 @@ extension ChatInteractionController {
         func updateUIView(_ uiView: InternalTextView, context: Context) {
             if uiView.text != text {
                 // Apply markdown
-                uiView.attributedText = parseMarkdown(text, theme: theme)
+                uiView.attributedText = parseMarkdown(text)
             }
             uiView.interactionController = interactionController
             uiView.messageID = messageID
@@ -331,14 +326,14 @@ extension ChatInteractionController {
             }
         }
 
-        private func parseMarkdown(_ text: String, theme: AppTheme) -> NSAttributedString {
+        private func parseMarkdown(_ text: String) -> NSAttributedString {
             do {
                 let attributed = try AttributedString(markdown: text)
                 let nsAttr = NSAttributedString(attributed)
 
                 let mutable = NSMutableAttributedString(attributedString: nsAttr)
                 mutable.addAttribute(
-                    .foregroundColor, value: UIColor(theme.textPrimary),
+                    .foregroundColor, value: UIColor(AppColors.textPrimary),
                     range: NSRange(location: 0, length: mutable.length))
                 // Apply font if needed
                 return mutable
@@ -346,7 +341,7 @@ extension ChatInteractionController {
                 return NSAttributedString(
                     string: text,
                     attributes: [
-                        .foregroundColor: UIColor(theme.textPrimary)
+                        .foregroundColor: UIColor(AppColors.textPrimary)
                     ])
             }
         }

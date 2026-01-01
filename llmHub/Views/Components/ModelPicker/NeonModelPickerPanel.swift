@@ -20,7 +20,6 @@ struct NeonModelPickerPanel: View {
     @State private var favoritesManager = ModelFavoritesManager()
     @FocusState private var isSearchFocused: Bool
     @Environment(\.keychainStore) private var keychainStore
-    @Environment(\.theme) private var theme
     @State private var configuredProviders: Set<String> = []
 
     init(
@@ -39,14 +38,14 @@ struct NeonModelPickerPanel: View {
             HStack {
                 Text("Select Model")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(theme.textPrimary)
+                    .foregroundColor(AppColors.textPrimary)
 
                 Spacer()
 
                 Button(action: { isPresented = false }) {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 18))
-                        .foregroundColor(theme.textSecondary)
+                        .foregroundColor(AppColors.textSecondary)
                 }
                 .buttonStyle(.plain)
             }
@@ -55,18 +54,18 @@ struct NeonModelPickerPanel: View {
             .background(headerBackground)
 
             Divider()
-                .background(theme.textSecondary.opacity(0.2))
+                .background(AppColors.textSecondary.opacity(0.2))
 
             // Search bar
             HStack(spacing: 06) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 14))
-                    .foregroundColor(theme.textSecondary)
+                    .foregroundColor(AppColors.textSecondary)
 
                 TextField("Search models...", text: $searchText)
                     .textFieldStyle(.plain)
                     .font(.system(size: 14))
-                    .foregroundColor(theme.textPrimary)
+                    .foregroundColor(AppColors.textPrimary)
                     .focused($isSearchFocused)
 
                 if !searchText.isEmpty {
@@ -75,7 +74,7 @@ struct NeonModelPickerPanel: View {
                     }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 14))
-                            .foregroundColor(theme.textSecondary)
+                            .foregroundColor(AppColors.textSecondary)
                     }
                     .buttonStyle(.plain)
                 }
@@ -154,11 +153,11 @@ struct NeonModelPickerPanel: View {
         HStack(spacing: 04) {
             Image(systemName: icon)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(title == "Favorites" ? .yellow : theme.accent)
+                .foregroundColor(title == "Favorites" ? .yellow : AppColors.accent)
 
             Text(title)
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(theme.textSecondary)
+                .foregroundColor(AppColors.textSecondary)
 
             Spacer()
         }
@@ -183,14 +182,15 @@ struct NeonModelPickerPanel: View {
                 ZStack {
                     Circle()
                         .stroke(
-                            isSelected(model) ? theme.accent : theme.textSecondary.opacity(0.4),
+                            isSelected(model)
+                                ? AppColors.accent : AppColors.textSecondary.opacity(0.4),
                             lineWidth: 2
                         )
                         .frame(width: 18, height: 18)
 
                     if isSelected(model) {
                         Circle()
-                            .fill(theme.accent)
+                            .fill(AppColors.accent)
                             .frame(width: 05, height: 05)
                     }
                 }
@@ -199,14 +199,14 @@ struct NeonModelPickerPanel: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(model.name)
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(theme.textPrimary)
+                        .foregroundColor(AppColors.textPrimary)
                         .lineLimit(1)
 
                     HStack(spacing: 06) {
                         // Context window
                         Label(formatContextWindow(model.contextWindow), systemImage: "doc.text")
                             .font(.system(size: 11))
-                            .foregroundColor(theme.textSecondary)
+                            .foregroundColor(AppColors.textSecondary)
 
                         // Pricing tier
                         if let tier = model.pricingTier {
@@ -282,82 +282,42 @@ struct NeonModelPickerPanel: View {
     }
 
     private var headerBackground: some View {
-        Group {
-            if theme.usesGlassEffect {
-                Color.clear
-                    .glassEffect(GlassEffect.regular, in: .rect)
-            } else {
-                theme.backgroundSecondary
-            }
-        }
+        Color.clear
+            .glassEffect(GlassEffect.regular, in: .rect)
     }
 
     private var searchBarBackground: some View {
-        Group {
-            if theme.usesGlassEffect {
+        RoundedRectangle(cornerRadius: 10)
+            #if os(macOS)
+                .fill(Color(nsColor: .textBackgroundColor).opacity(0.3))
+            #else
+                .fill(Color(uiColor: .tertiarySystemBackground).opacity(0.3))
+            #endif
+            .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    #if os(macOS)
-                        .fill(Color(nsColor: .textBackgroundColor).opacity(0.3))
-                    #else
-                        .fill(Color(uiColor: .tertiarySystemBackground).opacity(0.3))
-                    #endif
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(
-                                isSearchFocused
-                                    ? theme.accent.opacity(0.5) : theme.accent.opacity(0.3),
-                                lineWidth: 1)
+                    .stroke(
+                        isSearchFocused
+                            ? AppColors.accent.opacity(0.5) : AppColors.accent.opacity(0.3),
+                        lineWidth: 1
                     )
-            } else {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(theme.surface)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(
-                                isSearchFocused
-                                    ? theme.accent.opacity(0.5) : theme.textSecondary.opacity(0.2),
-                                lineWidth: 1
-                            )
-                    )
-            }
-        }
+            )
     }
 
     private var sectionHeaderBackground: some View {
-        Group {
-            if theme.usesGlassEffect {
-                Color.clear
-                    .glassEffect(GlassEffect.regular, in: .rect)
-            } else {
-                theme.backgroundSecondary.opacity(0.5)
-            }
-        }
+        Color.clear
+            .glassEffect(GlassEffect.regular, in: .rect)
     }
 
     private func modelRowBackground(isSelected: Bool) -> some View {
-        Group {
-            if theme.usesGlassEffect {
+        RoundedRectangle(cornerRadius: 8)
+            .fill(isSelected ? AppColors.accent.opacity(0.1) : Color.clear)
+            .overlay(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? theme.accent.opacity(0.1) : Color.clear)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(
-                                isSelected ? theme.accent.opacity(0.5) : Color.clear,
-                                lineWidth: 1
-                            )
+                    .stroke(
+                        isSelected ? AppColors.accent.opacity(0.5) : Color.clear,
+                        lineWidth: 1
                     )
-            } else {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? theme.accent.opacity(0.15) : Color.clear)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(
-                                isSelected ? theme.accent.opacity(0.3) : Color.clear,
-                                lineWidth: 1
-                            )
-                    )
-            }
-        }
+            )
     }
 
     // MARK: - Filtered Data

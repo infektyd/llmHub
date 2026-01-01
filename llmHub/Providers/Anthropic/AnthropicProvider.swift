@@ -70,7 +70,21 @@ struct AnthropicProvider: LLMProvider {
 
         let manager = AnthropicManager(apiKey: key)
 
-        // Map messages
+        // Extract system messages into Anthropic's dedicated `system` field.
+        //
+        // Rationale: Anthropic's API uses a separate system prompt field rather than treating
+        // system as a normal message role. If we drop system messages, we lose tool manifest
+        // and rolling-summary compaction context.
+        let systemPrompt: String? = {
+            let systemChunks = messages
+                .filter { $0.role == .system }
+                .map { $0.content }
+                .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            if systemChunks.isEmpty { return nil }
+            return systemChunks.joined(separator: "\n\n")
+        }()
+
+        // Map non-system messages
         let anthropicMessages: [AnthropicMessage] = messages.compactMap { msg in
             // Skip system messages (handled separately in Anthropic API)
             if msg.role == .system { return nil }
@@ -148,13 +162,14 @@ struct AnthropicProvider: LLMProvider {
             model: model,
             maxTokens: maxTokens,
             stream: false,
+            system: systemPrompt,
             tools: anthropicTools
         )
     }
 
     func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {
         AsyncThrowingStream(ProviderEvent.self) { continuation in
-            Task {
+            let task = Task {
                 do {
                     // 1. Modify for stream
                     var streamRequest = request
@@ -294,10 +309,18 @@ struct AnthropicProvider: LLMProvider {
                     }
                     continuation.finish()
                 } catch {
+                    if error is CancellationError {
+                        continuation.finish()
+                        return
+                    }
                     LLMTrace.error(provider: "Anthropic", message: "Stream error: \(error)")
                     continuation.yield(.error(.network(error as? URLError ?? URLError(.unknown))))
                     continuation.finish()
                 }
+            }
+
+            continuation.onTermination = { @Sendable _ in
+                task.cancel()
             }
         }
     }

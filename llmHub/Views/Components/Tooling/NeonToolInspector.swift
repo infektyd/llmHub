@@ -10,7 +10,6 @@ import SwiftUI
 struct NeonToolInspector: View {
     @Binding var isVisible: Bool
     @Binding var toolExecution: ToolExecution?
-    @Environment(\.theme) private var theme
 
     var body: some View {
         ScrollView {
@@ -18,7 +17,7 @@ struct NeonToolInspector: View {
                 headerSection
 
                 Divider()
-                    .background(theme.textPrimary.opacity(0.08))
+                    .background(AppColors.textPrimary.opacity(0.08))
 
                 if let execution = toolExecution {
                     toolInfoSection(for: execution)
@@ -46,11 +45,11 @@ struct NeonToolInspector: View {
             HStack(spacing: 8) {
                 Image(systemName: "terminal.fill")
                     .font(.system(size: 14))
-                    .foregroundColor(theme.accent)
+                    .foregroundColor(AppColors.accent)
 
                 Text("Tool Inspector")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(theme.textPrimary)
+                    .foregroundColor(AppColors.textPrimary)
             }
 
             Spacer()
@@ -62,10 +61,10 @@ struct NeonToolInspector: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 12))
-                    .foregroundColor(theme.textSecondary)
+                    .foregroundColor(AppColors.textSecondary)
                     .frame(width: 24, height: 24)
                     .glassEffect(
-                        GlassEffect.regular.tint(theme.accent.opacity(0.15)).interactive(),
+                        GlassEffect.regular.tint(AppColors.accent.opacity(0.15)).interactive(),
                         in: .circle
                     )
             }
@@ -79,17 +78,17 @@ struct NeonToolInspector: View {
         HStack(spacing: 12) {
             Image(systemName: execution.icon)
                 .font(.system(size: 20))
-                .foregroundColor(theme.accent)
+                .foregroundColor(AppColors.accent)
                 .frame(width: 40, height: 40)
                 .glassEffect(
-                    GlassEffect.regular.tint(theme.accent.opacity(0.15)),
+                    GlassEffect.regular.tint(AppColors.accent.opacity(0.15)),
                     in: .circle
                 )
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(execution.name)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(theme.textPrimary)
+                    .foregroundColor(AppColors.textPrimary)
 
                 HStack(spacing: 6) {
                     Circle()
@@ -98,7 +97,7 @@ struct NeonToolInspector: View {
 
                     Text(statusText(execution.status))
                         .font(.system(size: 11))
-                        .foregroundColor(theme.textSecondary)
+                        .foregroundColor(AppColors.textSecondary)
                 }
             }
 
@@ -114,16 +113,16 @@ struct NeonToolInspector: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Output")
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(theme.textSecondary)
+                .foregroundColor(AppColors.textSecondary)
 
             Text(execution.output)
                 .font(.system(size: 13, design: .monospaced))
-                .foregroundColor(theme.textPrimary)
+                .foregroundColor(AppColors.textPrimary)
                 .textSelection(.enabled)
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .glassEffect(
-                    GlassEffect.regular.tint(theme.accent.opacity(0.12)),
+                    GlassEffect.regular.tint(AppColors.accent.opacity(0.12)),
                     in: .rect(cornerRadius: 8)
                 )
         }
@@ -133,15 +132,15 @@ struct NeonToolInspector: View {
         VStack(spacing: 16) {
             Image(systemName: "hammer.fill")
                 .font(.system(size: 48))
-                .foregroundColor(theme.textTertiary.opacity(0.5))
+                .foregroundColor(AppColors.textTertiary.opacity(0.5))
 
             Text("No Active Tool")
                 .font(.system(size: 14, weight: .medium))
-                .foregroundColor(theme.textSecondary)
+                .foregroundColor(AppColors.textSecondary)
 
             Text("Tool execution results will appear here")
                 .font(.system(size: 12))
-                .foregroundColor(theme.textTertiary)
+                .foregroundColor(AppColors.textTertiary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)

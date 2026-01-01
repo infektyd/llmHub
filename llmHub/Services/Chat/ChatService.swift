@@ -371,12 +371,13 @@ final class ChatService {
         let toolSession = ToolSession(id: sessionID)
 
         return AsyncThrowingStream(ProviderEvent.self) { continuation in
-            Task {
+            let task = Task {
                 do {
                     var iterationCount = 0
                     var continueLoop = true
 
                     while continueLoop && iterationCount < maxIterations {
+                        try Task.checkCancellation()
                         iterationCount += 1
                         continueLoop = false
 
@@ -529,7 +530,15 @@ final class ChatService {
                         let compactionResult = try await service.contextManager.compact(
                             messages: messagesForCompaction,
                             maxTokens: nil,  // Will use model's context window or config default
-                            providerID: currentSession.providerID
+                            providerID: currentSession.providerID,
+                            rollingSummaryGenerator: { @MainActor messagesToSummarize, summaryMaxTokens in
+                                try await service.generateRollingSummary(
+                                    provider: provider,
+                                    model: currentSession.model,
+                                    messagesToSummarize: messagesToSummarize,
+                                    summaryMaxTokens: summaryMaxTokens
+                                )
+                            }
                         )
 
                         // Notify UI if compaction occurred
@@ -581,6 +590,7 @@ final class ChatService {
                         logger.info("🔵 [ChatService] Starting to stream response from provider...")
                         var eventCount = 0
                         for try await event in provider.streamResponse(from: request) {
+                            try Task.checkCancellation()
                             eventCount += 1
                             if eventCount <= 3 {
                                 logger.info(
@@ -733,6 +743,7 @@ final class ChatService {
 
                         // After stream completes, execute any pending tool calls
                         if !accumulatedToolCalls.isEmpty {
+                            try Task.checkCancellation()
                             if !didPersistAssistantMessage {
                                 let assistantMsg = ChatMessage(
                                     id: UUID(),
@@ -814,12 +825,105 @@ final class ChatService {
 
                     continuation.finish()
                 } catch {
+                    if error is CancellationError {
+                        continuation.finish()
+                        return
+                    }
                     logger.error("Stream completion error: \(error)")
                     continuation.yield(.error(.network(error as? URLError ?? URLError(.unknown))))
                     continuation.finish()
                 }
             }
+
+            continuation.onTermination = { @Sendable _ in
+                task.cancel()
+            }
         }
+    }
+
+    // MARK: - Rolling Summary ("Summarize Mode")
+
+    /// Generates a rolling summary of older conversation turns for context compaction.
+    ///
+    /// Important: This runs in a dedicated summarize mode that MUST NOT re-enter
+    /// `streamCompletion` (agent loop/tool execution). It calls the provider directly with
+    /// `tools: nil` and consumes the provider's stream locally.
+    @MainActor
+    private func generateRollingSummary(
+        provider: any LLMProvider,
+        model: String,
+        messagesToSummarize: [ChatMessage],
+        summaryMaxTokens: Int
+    ) async throws -> String {
+        func format(_ messages: [ChatMessage]) -> String {
+            messages.map { msg in
+                let role = msg.role.rawValue.uppercased()
+                // Keep each message bounded to avoid pathological prompt sizes.
+                let content = String(msg.content.prefix(2_000))
+                return "\(role): \(content)"
+            }.joined(separator: "\n\n")
+        }
+
+        let transcript = format(messagesToSummarize)
+
+        let instruction = """
+        You are generating a rolling summary for context compaction.
+
+        Output rules:
+        - Be concise, factual, and actionable.
+        - Preserve user intent, constraints, decisions, plans, and open tasks.
+        - Avoid fluff and avoid quoting large blocks.
+        - Do not mention tool schemas or tool manifests.
+        - Hard limit: ~\(summaryMaxTokens) tokens.
+
+        TRANSCRIPT (oldest → newest):
+        \(transcript)
+        """
+
+        let system = ChatMessage(
+            id: UUID(),
+            role: .system,
+            content: "ROLLING_SUMMARY_MODE: enabled",
+            parts: [],
+            createdAt: Date(),
+            codeBlocks: []
+        )
+        let user = ChatMessage(
+            id: UUID(),
+            role: .user,
+            content: instruction,
+            parts: [.text(instruction)],
+            createdAt: Date(),
+            codeBlocks: []
+        )
+
+        let options = LLMRequestOptions(thinkingPreference: .off, thinkingBudgetTokens: nil)
+        let request = try await provider.buildRequest(
+            messages: [system, user],
+            model: model,
+            tools: nil,
+            options: options
+        )
+
+        var summary = ""
+        for try await event in provider.streamResponse(from: request) {
+            switch event {
+            case .token(let text):
+                summary += text
+            case .completion(let message):
+                if !message.content.isEmpty { summary = message.content }
+                return summary
+            case .truncated(let message):
+                if !message.content.isEmpty { summary = message.content }
+                return summary
+            case .error(let err):
+                throw err
+            case .toolUse, .toolExecuting, .usage, .reference, .thinking, .contextCompacted:
+                continue
+            }
+        }
+
+        return summary
     }
 
     // Helper to load single session

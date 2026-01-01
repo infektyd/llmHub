@@ -138,7 +138,7 @@ struct XAIProvider: LLMProvider {
     func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {
         AsyncThrowingStream(ProviderEvent.self) { continuation in
             let baseRequest = request
-            Task.detached {
+            let task = Task.detached {
                 do {
                     // 1. Modify request to enable streaming
                     var streamRequest = baseRequest
@@ -269,10 +269,18 @@ struct XAIProvider: LLMProvider {
                     }
                     continuation.finish()
                 } catch {
+                    if error is CancellationError {
+                        continuation.finish()
+                        return
+                    }
                     LLMTrace.error(provider: "xAI", message: "Stream error: \(error)")
                     continuation.yield(.error(.network(error as? URLError ?? URLError(.unknown))))
                     continuation.finish()
                 }
+            }
+
+            continuation.onTermination = { @Sendable _ in
+                task.cancel()
             }
         }
     }

@@ -43,7 +43,6 @@ struct NeonMessageRow: View {
         self.isStreaming = isStreaming
     }
 
-    @Environment(\.theme) private var theme
     @AppStorage("showTimestamps") private var showTimestamps: Bool = false
 
     @State private var hovered: Bool = false
@@ -56,6 +55,8 @@ struct NeonMessageRow: View {
     var isUser: Bool {
         role == .user
     }
+
+    private var appThemeForMarkdown: AppTheme { CanvasDarkTheme() }
 
     var body: some View {
         HStack(alignment: .top, spacing: LiquidGlassTokens.Spacing.rowGutter) {
@@ -115,25 +116,25 @@ struct NeonMessageRow: View {
             if !message.content.isEmpty, !message.rendersContentAsArtifact {
                 if role == .system {
                     Text(message.content)
-                        .font(LiquidGlassTokens.messageFont(role: role, theme: theme))
-                        .foregroundColor(theme.textTertiary)
+                        .font(LiquidGlassTokens.messageFont(role: role, theme: appThemeForMarkdown))
+                        .foregroundColor(AppColors.textTertiary)
                         .textSelection(.enabled)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
                     #if canImport(Textual)
                         StructuredText(markdown: message.content)
-                            .textual.structuredTextStyle(.llmHubLiquid(theme: theme))
-                            .textual.highlighterTheme(.llmHubLiquid(theme: theme))
+                            .textual.structuredTextStyle(.llmHubLiquid(theme: appThemeForMarkdown))
+                            .textual.highlighterTheme(.llmHubLiquid(theme: appThemeForMarkdown))
                             .textual.listItemSpacing(.fontScaled(top: 0.22))
-                            .font(LiquidGlassTokens.messageFont(role: role, theme: theme))
-                            .foregroundStyle(theme.textPrimary)
+                            .font(LiquidGlassTokens.messageFont(role: role, theme: appThemeForMarkdown))
+                            .foregroundStyle(AppColors.textPrimary)
                             .textual.textSelection(.enabled)
                     #else
                         // Fallback if Textual isn't available in this build.
                         Text(message.content)
-                            .font(LiquidGlassTokens.messageFont(role: role, theme: theme))
+                            .font(LiquidGlassTokens.messageFont(role: role, theme: appThemeForMarkdown))
                             .foregroundColor(
-                                role == .assistant ? theme.textPrimary : theme.textSecondary
+                                role == .assistant ? AppColors.textPrimary : AppColors.textSecondary
                             )
                             .textSelection(.enabled)
                             .fixedSize(horizontal: false, vertical: true)
@@ -161,12 +162,12 @@ struct NeonMessageRow: View {
                         HStack(spacing: 8) {
                             Image(systemName: attachment.type.icon)
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(theme.textTertiary)
+                                .foregroundColor(AppColors.textTertiary)
                                 .frame(width: 14)
 
                             Text(attachment.filename)
                                 .font(.caption)
-                                .foregroundColor(theme.textSecondary)
+                                .foregroundColor(AppColors.textSecondary)
                         }
                     }
                 }
@@ -180,12 +181,12 @@ struct NeonMessageRow: View {
         HStack(spacing: 10) {
             Text(LiquidGlassTokens.roleLabel(role))
                 .font(.caption2.weight(.semibold))
-                .foregroundColor(role == .assistant ? theme.textTertiary : theme.textSecondary)
+                .foregroundColor(role == .assistant ? AppColors.textTertiary : AppColors.textSecondary)
 
             if showTimestamps {
                 Text(message.createdAt.formatted(date: .omitted, time: .shortened))
                     .font(.caption2)
-                    .foregroundColor(theme.textTertiary)
+                    .foregroundColor(AppColors.textTertiary)
             }
 
             Spacer()
@@ -196,7 +197,7 @@ struct NeonMessageRow: View {
                 } label: {
                     Image(systemName: copied ? "checkmark" : "doc.on.doc")
                         .font(.caption2)
-                        .foregroundColor(copied ? theme.success : theme.textTertiary)
+                        .foregroundColor(copied ? AppColors.success : AppColors.textTertiary)
                 }
                 .buttonStyle(.plain)
                 .transition(.opacity)
@@ -205,7 +206,7 @@ struct NeonMessageRow: View {
     }
 
     private var roleTint: Color {
-        LiquidGlassTokens.roleTint(role, theme: theme)
+        LiquidGlassTokens.roleTint(role, theme: appThemeForMarkdown)
     }
 
     private var roleSymbolName: String {
@@ -227,11 +228,11 @@ struct NeonMessageRow: View {
             HStack(spacing: 8) {
                 Image(systemName: "wrench.and.screwdriver")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(theme.textTertiary)
+                    .foregroundColor(AppColors.textTertiary)
 
                 Text(toolCalls.map(\.name).joined(separator: " • "))
                     .font(.caption)
-                    .foregroundColor(theme.textSecondary)
+                    .foregroundColor(AppColors.textSecondary)
                     .lineLimit(1)
             }
             .padding(.bottom, 2)

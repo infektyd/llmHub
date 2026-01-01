@@ -132,7 +132,7 @@ struct OpenRouterProvider: LLMProvider {
 
     func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {
         AsyncThrowingStream(ProviderEvent.self) { continuation in
-            Task {
+            let task = Task {
                 do {
                     // 1. Modify request to enable streaming if not already
                     var streamRequest = request
@@ -477,10 +477,18 @@ struct OpenRouterProvider: LLMProvider {
                     continuation.finish()
 
                 } catch {
+                    if error is CancellationError {
+                        continuation.finish()
+                        return
+                    }
                     LLMTrace.error(provider: "OpenRouter", message: "Stream error: \(error)")
                     continuation.yield(.error(.network(error as? URLError ?? URLError(.unknown))))
                     continuation.finish()
                 }
+            }
+
+            continuation.onTermination = { @Sendable _ in
+                task.cancel()
             }
         }
     }

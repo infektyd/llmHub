@@ -9,7 +9,6 @@ import SwiftData
 import SwiftUI
 
 struct CanvasChatView: View {
-    @Environment(\.theme) private var theme
     @Environment(WorkbenchViewModel.self) private var workbenchVM
     @Environment(\.modelContext) private var modelContext
 
@@ -23,6 +22,14 @@ struct CanvasChatView: View {
         VStack(spacing: 0) {
             transcript
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            if chatVM.isTruncated, chatVM.truncatedSessionID == session.id {
+                truncationBanner
+                    .frame(maxWidth: 860)
+                    .padding(.horizontal, 18)
+                    .padding(.bottom, 6)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
 
             ChatInputPanel(
                 text: $composerText,
@@ -52,7 +59,40 @@ struct CanvasChatView: View {
             .padding(.bottom, 16)
             .padding(.top, 10)
         }
-        .background(theme.backgroundPrimary)
+        .background(AppColors.backgroundPrimary)
+    }
+
+    private var truncationBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.yellow)
+            Text("Response truncated due to max tokens.")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(AppColors.textPrimary)
+            Spacer()
+            Button("Continue") {
+                chatVM.continueGenerating(session: session, modelContext: modelContext)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(AppColors.accent)
+            Button("Dismiss") {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    chatVM.isTruncated = false
+                    chatVM.truncatedSessionID = nil
+                }
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background {
+            RoundedRectangle(cornerRadius: AppColors.cornerRadius, style: .continuous)
+                .fill(AppColors.surface.opacity(0.92))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: AppColors.cornerRadius, style: .continuous)
+                .stroke(Color.yellow.opacity(0.35), lineWidth: AppColors.borderWidth)
+        }
     }
 
     private var transcript: some View {
@@ -116,7 +156,6 @@ struct CanvasChatView: View {
 }
 
 private struct CanvasTranscriptRow: View {
-    @Environment(\.theme) private var theme
     let message: ChatMessageEntity
 
     var body: some View {
@@ -156,7 +195,6 @@ private struct CanvasTranscriptRow: View {
 }
 
 private struct CanvasToolOutputRow: View {
-    @Environment(\.theme) private var theme
     let toolCallID: String?
     let output: String
 
@@ -164,8 +202,8 @@ private struct CanvasToolOutputRow: View {
         DisclosureGroup {
             ScrollView(.horizontal) {
                 Text(output)
-                    .font(theme.monoFont)
-                    .foregroundStyle(theme.textPrimary.opacity(0.9))
+                    .font(AppColors.monoFont)
+                    .foregroundStyle(AppColors.textPrimary.opacity(0.9))
                     .textSelection(.enabled)
                     .padding(.top, 10)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -174,11 +212,11 @@ private struct CanvasToolOutputRow: View {
             HStack(spacing: 10) {
                 Text("Tool Output")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(theme.textPrimary)
+                    .foregroundStyle(AppColors.textPrimary)
                 if let toolCallID {
                     Text(toolCallID)
                         .font(.system(size: 12))
-                        .foregroundStyle(theme.textTertiary)
+                        .foregroundStyle(AppColors.textTertiary)
                         .lineLimit(1)
                 }
                 Spacer()
@@ -187,12 +225,12 @@ private struct CanvasToolOutputRow: View {
         .disclosureGroupStyle(.automatic)
         .padding(14)
         .background {
-            RoundedRectangle(cornerRadius: theme.cornerRadius, style: .continuous)
-                .fill(theme.surface.opacity(0.92))
+            RoundedRectangle(cornerRadius: AppColors.cornerRadius, style: .continuous)
+                .fill(AppColors.surface.opacity(0.92))
         }
         .overlay {
-            RoundedRectangle(cornerRadius: theme.cornerRadius, style: .continuous)
-                .stroke(theme.textPrimary.opacity(0.10), lineWidth: theme.borderWidth)
+            RoundedRectangle(cornerRadius: AppColors.cornerRadius, style: .continuous)
+                .stroke(AppColors.textPrimary.opacity(0.10), lineWidth: AppColors.borderWidth)
         }
         .padding(.horizontal, 26)
         .padding(.vertical, 10)
@@ -200,7 +238,6 @@ private struct CanvasToolOutputRow: View {
 }
 
 private struct CanvasStatusRow: View {
-    @Environment(\.theme) private var theme
     let text: String
 
     var body: some View {
@@ -209,7 +246,7 @@ private struct CanvasStatusRow: View {
                 .controlSize(.small)
             Text(text)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(theme.textSecondary)
+                .foregroundStyle(AppColors.textSecondary)
             Spacer()
         }
         .padding(.horizontal, 26)
@@ -220,5 +257,5 @@ private struct CanvasStatusRow: View {
 #Preview("Canvas Chat View") {
     CanvasChatView(session: MockData.chatSession())
         .previewEnvironment()
-        .environment(\.theme, CanvasDarkTheme())
+        .preferredColorScheme(.dark)
 }

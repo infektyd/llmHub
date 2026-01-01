@@ -11,7 +11,7 @@ enum LiquidGlassTokens {
     // MARK: - Dynamic Theme Access
 
     private static var theme: AppTheme {
-        ThemeManager.shared.current
+        CanvasDarkTheme()
     }
 
     enum Radius {
@@ -153,7 +153,7 @@ extension View {
                         .frame(width: 100, alignment: .leading)
 
                     Circle()
-                        .fill(LiquidGlassTokens.roleTint(role, theme: ThemeManager.shared.current))
+                        .fill(LiquidGlassTokens.roleTint(role, theme: CanvasDarkTheme()))
                         .frame(width: 24, height: 24)
                         .overlay(Circle().stroke(Color.primary.opacity(0.1), lineWidth: 1))
                 }
