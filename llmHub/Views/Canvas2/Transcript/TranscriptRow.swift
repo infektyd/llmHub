@@ -25,7 +25,9 @@ struct TranscriptRow: View {
             if !viewModel.content.isEmpty {
                 TextualMessageView(
                     content: viewModel.content,
-                    isStreaming: viewModel.isStreaming
+                    isStreaming: viewModel.isStreaming,
+                    role: viewModel.role,
+                    generationID: viewModel.generationID
                 )
                 .frame(maxWidth: 700, alignment: frameAlignment)
             }

@@ -196,6 +196,10 @@ struct ArtifactMetadata: Identifiable, Sendable {
 struct ChatMessage: Identifiable, Equatable, Sendable {
     /// The unique identifier of the message.
     let id: UUID
+    /// Stable identity for joining a streaming overlay message with its persisted assistant message.
+    /// Rationale: streaming uses a local message UUID, while persisted assistant messages may use a
+    /// different UUID from the provider/tool loop. `generationID` is the stable join key.
+    var generationID: UUID? = nil
     /// The role of the message sender (e.g., user, assistant).
     let role: MessageRole
     /// The text content of the message.
@@ -222,7 +226,8 @@ struct ChatMessage: Identifiable, Equatable, Sendable {
     var toolCalls: [ToolCall]? = nil
 
     static func == (lhs: ChatMessage, rhs: ChatMessage) -> Bool {
-        lhs.id == rhs.id && lhs.role == rhs.role && lhs.content == rhs.content
+        lhs.id == rhs.id && lhs.generationID == rhs.generationID && lhs.role == rhs.role
+            && lhs.content == rhs.content
             && lhs.thoughtProcess == rhs.thoughtProcess && lhs.parts == rhs.parts
             && lhs.attachments == rhs.attachments && lhs.createdAt == rhs.createdAt
             && lhs.codeBlocks == rhs.codeBlocks && lhs.tokenUsage == rhs.tokenUsage
@@ -649,6 +654,8 @@ final class ChatMessageEntity {
     var attachmentsData: Data?  // JSON encoded [Attachment]
     /// The creation date of the message.
     var createdAt: Date
+    /// Stable identity for merging streamed assistant messages with persisted messages.
+    var generationID: UUID?
     /// The JSON encoded data for code blocks.
     var codeBlocksData: Data?
     /// The input tokens used for this message.
@@ -678,6 +685,7 @@ final class ChatMessageEntity {
     /// - Parameter message: The `ChatMessage` domain model.
     init(message: ChatMessage) {
         id = message.id
+        generationID = message.generationID
         role = message.role.rawValue
         content = message.content
         thoughtProcess = message.thoughtProcess
@@ -701,6 +709,7 @@ final class ChatMessageEntity {
     func asDomain() -> ChatMessage {
         var domainMsg = ChatMessage(
             id: id,
+            generationID: generationID,
             role: MessageRole(rawValue: role)!,
             content: content,
             parts: (try? JSONDecoder().decode([ChatContentPart].self, from: partsData ?? Data()))

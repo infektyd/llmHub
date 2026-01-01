@@ -36,7 +36,6 @@ struct CanvasRootView: View {
                 if let session = selectedSession {
                     TranscriptCanvasView(session: session)
                         .environment(viewModel)
-                        .environment(chatVM)
                 } else {
                     emptyState
                 }
@@ -87,6 +86,10 @@ struct CanvasRootView: View {
             .padding(.bottom, 16)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         }
+        // Rationale: ChatViewModel is owned once at the CanvasRootView level and must be available
+        // throughout the canvas UI tree (composer, transcript, diagnostics) via SwiftUI's
+        // @Environment(ChatViewModel.self) injection.
+        .environment(chatVM)
         .animation(.easeInOut(duration: 0.2), value: leftSidebarVisible)
         .animation(.easeInOut(duration: 0.2), value: rightSidebarVisible)
         .sheet(isPresented: $showSettings) {
