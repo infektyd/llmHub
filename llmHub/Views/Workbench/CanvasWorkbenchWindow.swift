@@ -22,10 +22,8 @@ struct CanvasWorkbenchWindow: View {
     @State private var inspectorVisible: Bool = false
     @State private var showSettings: Bool = false
 
-    #if os(iOS)
     @State private var sidebarSheetVisible: Bool = false
     @State private var inspectorSheetVisible: Bool = false
-    #endif
 
     var body: some View {
         ZStack {
