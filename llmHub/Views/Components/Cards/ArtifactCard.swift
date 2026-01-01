@@ -14,8 +14,6 @@ import SwiftUI
 struct ArtifactCard: View {
     let artifact: ArtifactMetadata
 
-    @Environment(\.theme) private var theme
-
     @State private var isExpanded = false
     @State private var loadedContent: String? = nil
     @State private var highlightedContent: AttributedString? = nil
@@ -68,19 +66,19 @@ struct ArtifactCard: View {
                 VStack(alignment: .center, spacing: 2) {
                     Text(artifact.filename)
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(theme.textPrimary)
+                        .foregroundStyle(AppColors.textPrimary)
                         .lineLimit(1)
 
                     Text("\(languageLabel) • \(formatFileSize(artifact.sizeBytes))")
                         .font(.caption2)
-                        .foregroundStyle(theme.textSecondary)
+                        .foregroundStyle(AppColors.textSecondary)
                 }
 
                 Spacer()
 
                 Image(systemName: "chevron.down")
                     .font(.caption2)
-                    .foregroundStyle(theme.textSecondary)
+                    .foregroundStyle(AppColors.textSecondary)
                     .rotationEffect(.degrees(isExpanded ? 180 : 0))
             }
             .padding(.horizontal, 12)
@@ -95,7 +93,7 @@ struct ArtifactCard: View {
             if let warning = truncationWarning {
                 Text(warning)
                     .font(.caption2)
-                    .foregroundStyle(theme.textSecondary)
+                    .foregroundStyle(AppColors.textSecondary)
                     .padding(.horizontal, 12)
                     .padding(.top, 10)
             }
@@ -106,8 +104,8 @@ struct ArtifactCard: View {
                         Text(highlightedContent)
                     } else {
                         Text(displayContent)
-                            .font(theme.monoFont)
-                            .foregroundStyle(theme.textPrimary.opacity(0.82))
+                            .font(AppColors.monoFont)
+                            .foregroundStyle(AppColors.textPrimary.opacity(0.82))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -232,7 +230,7 @@ struct ArtifactCard: View {
             }
             .font(.caption2)
             .fontWeight(.medium)
-            .foregroundColor(isActive ? theme.success : theme.textSecondary)
+            .foregroundColor(isActive ? AppColors.success : AppColors.textSecondary)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(Color.purple.opacity(0.10))
