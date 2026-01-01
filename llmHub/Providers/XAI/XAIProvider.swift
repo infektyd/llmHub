@@ -1,9 +1,8 @@
 import Foundation
-import OSLog
 
 @MainActor
 struct XAIProvider: LLMProvider {
-    private let logger = Logger(subsystem: "com.llmhub", category: "XAIProvider")
+
     nonisolated let id: String = "xai"
     nonisolated let name: String = "xAI (Grok)"
 
@@ -60,9 +59,18 @@ struct XAIProvider: LLMProvider {
         tools: [ToolDefinition]?,
         options: LLMRequestOptions
     ) async throws -> URLRequest {
+        LLMTrace.requestStarted(
+            provider: "xAI",
+            model: model,
+            messageCount: messages.count,
+            toolCount: tools?.count ?? 0
+        )
+
         guard let apiKey = await keychain.apiKey(for: .xai) else {
+            LLMTrace.authStatus(provider: "xAI", hasKey: false)
             throw LLMProviderError.authenticationMissing
         }
+        LLMTrace.authStatus(provider: "xAI", hasKey: true)
 
         let manager = XAIManager(apiKey: apiKey)
 
@@ -135,28 +143,44 @@ struct XAIProvider: LLMProvider {
                     // 1. Modify request to enable streaming
                     var streamRequest = baseRequest
                     if let bodyData = baseRequest.httpBody,
-                        var json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any]
+                        var json = try? JSONSerialization.jsonObject(with: bodyData)
+                            as? [String: Any]
                     {
                         json["stream"] = true
                         streamRequest.httpBody = try JSONSerialization.data(withJSONObject: json)
                     }
 
                     // 2. Execute
-                    let (result, response) = try await LLMURLSession.shared.bytes(for: streamRequest)
+                    if let bodyData = streamRequest.httpBody,
+                        let bodyStr = String(data: bodyData, encoding: .utf8)
+                    {
+                        LLMTrace.requestDetails(
+                            provider: "xAI", url: streamRequest.url?.absoluteString ?? "unknown",
+                            bodyPreview: bodyStr)
+                    }
+                    LLMTrace.requestSent(provider: "xAI")
+                    let (result, response) = try await LLMURLSession.bytes(
+                        for: streamRequest)
 
                     guard let http = response as? HTTPURLResponse,
                         (200...299).contains(http.statusCode)
                     else {
+                        let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+                        LLMTrace.responseReceived(provider: "xAI", statusCode: statusCode)
                         var errorText = ""
                         for try await line in result.lines { errorText += line }
+                        LLMTrace.errorWithBody(
+                            provider: "xAI", statusCode: statusCode, body: errorText)
                         continuation.yield(
                             .error(
-                                .server(reason: errorText.isEmpty ? "Unknown stream error" : errorText)
+                                .server(
+                                    reason: errorText.isEmpty ? "Unknown stream error" : errorText)
                             )
                         )
                         continuation.finish()
                         return
                     }
+                    LLMTrace.responseReceived(provider: "xAI", statusCode: http.statusCode)
 
                     var fullText = ""
                     var thoughtProcess = ""
@@ -173,7 +197,8 @@ struct XAIProvider: LLMProvider {
                         if jsonStr == "[DONE]" { break }
 
                         guard let data = jsonStr.data(using: .utf8),
-                            let chunk = try? JSONDecoder().decode(XAIChatStreamChunk.self, from: data),
+                            let chunk = try? JSONDecoder().decode(
+                                XAIChatStreamChunk.self, from: data),
                             let choice = chunk.choices.first
                         else { continue }
 
@@ -214,7 +239,8 @@ struct XAIProvider: LLMProvider {
                             let calls = toolAssembler.finalizeAll()
                             finalizedToolCalls.append(contentsOf: calls)
                             for tc in calls {
-                                continuation.yield(.toolUse(id: tc.id, name: tc.name, input: tc.input))
+                                continuation.yield(
+                                    .toolUse(id: tc.id, name: tc.name, input: tc.input))
                             }
                         }
                     }
@@ -243,6 +269,7 @@ struct XAIProvider: LLMProvider {
                     }
                     continuation.finish()
                 } catch {
+                    LLMTrace.error(provider: "xAI", message: "Stream error: \(error)")
                     continuation.yield(.error(.network(error as? URLError ?? URLError(.unknown))))
                     continuation.finish()
                 }

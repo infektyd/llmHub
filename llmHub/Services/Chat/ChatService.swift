@@ -14,6 +14,9 @@ import SwiftData
 enum LLMURLSession {
     static let shared: URLSession = {
         let configuration = URLSessionConfiguration.default
+        configuration.waitsForConnectivity = true
+        configuration.timeoutIntervalForRequest = 60
+        configuration.timeoutIntervalForResource = 120
         #if os(iOS) || os(visionOS)
             if #available(iOS 11.0, visionOS 1.0, *) {
                 configuration.multipathServiceType = .none
@@ -23,6 +26,82 @@ enum LLMURLSession {
         // We keep HTTP/2 default negotiation and avoid HTTP/3-only paths.
         return URLSession(configuration: configuration)
     }()
+
+    static func data(
+        for request: URLRequest,
+        maxRetries: Int = 1,
+        backoffSeconds: TimeInterval = 0.5
+    ) async throws -> (Data, URLResponse) {
+        try await retrying(maxRetries: maxRetries, backoffSeconds: backoffSeconds) {
+            try await shared.data(for: request)
+        }
+    }
+
+    static func data(
+        from url: URL,
+        maxRetries: Int = 1,
+        backoffSeconds: TimeInterval = 0.5
+    ) async throws -> (Data, URLResponse) {
+        try await retrying(maxRetries: maxRetries, backoffSeconds: backoffSeconds) {
+            try await shared.data(from: url)
+        }
+    }
+
+    static func bytes(
+        for request: URLRequest,
+        maxRetries: Int = 1,
+        backoffSeconds: TimeInterval = 0.5
+    ) async throws -> (URLSession.AsyncBytes, URLResponse) {
+        try await retrying(maxRetries: maxRetries, backoffSeconds: backoffSeconds) {
+            try await shared.bytes(for: request)
+        }
+    }
+
+    private static func retrying<T>(
+        maxRetries: Int,
+        backoffSeconds: TimeInterval,
+        operation: () async throws -> T
+    ) async throws -> T {
+        for attempt in 0...maxRetries {
+            do {
+                return try await operation()
+            } catch {
+                if (error is CancellationError) || attempt >= maxRetries || !shouldRetry(error) {
+                    throw error
+                }
+                let delay = backoffDelay(base: backoffSeconds, attempt: attempt)
+                try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            }
+        }
+        throw URLError(.unknown)
+    }
+
+    private static func backoffDelay(base: TimeInterval, attempt: Int) -> TimeInterval {
+        base * pow(2.0, Double(attempt))
+    }
+
+    private static func shouldRetry(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        if nsError.domain == NSURLErrorDomain {
+            switch nsError.code {
+            case URLError.timedOut.rawValue,
+                URLError.cannotFindHost.rawValue,
+                URLError.cannotConnectToHost.rawValue,
+                URLError.networkConnectionLost.rawValue,
+                URLError.dnsLookupFailed.rawValue,
+                URLError.notConnectedToInternet.rawValue,
+                URLError.secureConnectionFailed.rawValue,
+                URLError.cannotLoadFromNetwork.rawValue,
+                URLError.internationalRoamingOff.rawValue,
+                URLError.callIsActive.rawValue,
+                URLError.dataNotAllowed.rawValue:
+                return true
+            default:
+                break
+            }
+        }
+        return false
+    }
 }
 
 /// Service responsible for managing chat sessions, messages, and interactions with LLM providers.
@@ -274,8 +353,12 @@ final class ChatService {
         // double-insertion/ghost rendering. This method only streams the response.
 
         logger.debug("Using provider: \(session.providerID), model: \(session.model)")
+        logger.info(
+            "🔵 [ChatService] streamCompletion called - provider: \(session.providerID), model: \(session.model), userMessage length: \(userMessage.count)"
+        )
 
         let provider = try providerRegistry.provider(for: session.providerID)
+        logger.info("🟢 [ChatService] Provider resolved: \(type(of: provider))")
         let sessionID = session.id
         let registry = self.toolRegistry
         let executor = self.toolExecutor
@@ -464,7 +547,8 @@ final class ChatService {
                         let compactedMessages = compactionResult.compactedMessages
 
                         let toolDefsForProvider: [ToolDefinition]? =
-                            (provider.supportsToolCalling && !allToolDefs.isEmpty) ? allToolDefs : nil
+                            (provider.supportsToolCalling && !allToolDefs.isEmpty)
+                            ? allToolDefs : nil
 
                         let options = LLMRequestOptions(
                             thinkingPreference: currentSession.thinkingPreference,
@@ -474,12 +558,18 @@ final class ChatService {
                         // Use compacted messages for the request
                         let messagesForRequest = compactedMessages
 
+                        logger.info(
+                            "🔵 [ChatService] Building request - messages: \(messagesForRequest.count), tools: \(toolDefsForProvider?.count ?? 0), thinking: \(options.thinkingPreference.rawValue)"
+                        )
+
                         let request = try await provider.buildRequest(
                             messages: messagesForRequest,
                             model: currentSession.model,
                             tools: toolDefsForProvider,
                             options: options
                         )
+
+                        logger.info("🟢 [ChatService] Request built successfully")
 
                         // Track accumulated tool calls for this iteration
                         var accumulatedToolCalls: [ToolCall] = []
@@ -488,7 +578,15 @@ final class ChatService {
                         var didPersistAssistantMessage = false
 
                         // Stream response
+                        logger.info("🔵 [ChatService] Starting to stream response from provider...")
+                        var eventCount = 0
                         for try await event in provider.streamResponse(from: request) {
+                            eventCount += 1
+                            if eventCount <= 3 {
+                                logger.info(
+                                    "🟢 [ChatService] Received event #\(eventCount): \(String(describing: type(of: event)))"
+                                )
+                            }
                             switch event {
                             case .token(let text):
                                 assistantTextBuffer += text

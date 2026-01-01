@@ -39,6 +39,9 @@ import OSLog
         /// Current working directory, persisted between commands.
         private(set) var currentWorkingDirectory: URL
 
+        /// Workspace-scoped temp directory for sandbox-safe temp usage.
+        private let tmpDirectory: URL
+
         /// Environment variables for this session.
         private var environment: [String: String]
 
@@ -54,7 +57,14 @@ import OSLog
         init(id: String, initialCwd: URL, environment: [String: String]? = nil) {
             self.id = id
             self.currentWorkingDirectory = initialCwd.standardizedFileURL
+            self.tmpDirectory = initialCwd.appendingPathComponent(".tmp", isDirectory: true)
+                .standardizedFileURL
             self.environment = environment ?? ProcessInfo.processInfo.environment
+            try? FileManager.default.createDirectory(
+                at: tmpDirectory, withIntermediateDirectories: true, attributes: nil)
+            self.environment["TMPDIR"] = tmpDirectory.path
+            self.environment["TEMP"] = tmpDirectory.path
+            self.environment["TMP"] = tmpDirectory.path
         }
 
         // MARK: - Directory Management
@@ -126,12 +136,18 @@ import OSLog
         ) async throws -> ShellOutput {
             let startTime = Date()
 
+            if containsInvalidShellToken(command) {
+                throw ShellSessionError.executionFailed(
+                    "Invalid shell token ';&'. Use ';' or '&&' instead.")
+            }
+
             // Record in history
             addToHistory(command)
 
             let process = Process()
             process.launchPath = "/bin/zsh"
-            process.arguments = ["-lc", command]
+            let (sanitizedCommand, didRewriteTmp) = rewriteTmpPaths(in: command)
+            process.arguments = ["-lc", sanitizedCommand]
             process.currentDirectoryURL = currentWorkingDirectory
             process.environment = environment
 
@@ -156,6 +172,9 @@ import OSLog
             }
 
             try process.run()
+            if didRewriteTmp {
+                logger.info("Rewrote /tmp to \(self.tmpDirectory.path)")
+            }
             logger.debug("Executing: \(command)")
 
             // Wait for completion or timeout
@@ -203,6 +222,22 @@ import OSLog
             if commandHistory.count > maxHistorySize {
                 commandHistory.removeFirst(commandHistory.count - maxHistorySize)
             }
+        }
+
+        private func containsInvalidShellToken(_ command: String) -> Bool {
+            command.range(of: #";\s*&"#, options: .regularExpression) != nil
+        }
+
+        private func rewriteTmpPaths(in command: String) -> (String, Bool) {
+            let pattern = #"(^|[\s"\'=])/tmp(?=(/|\s|$))"#
+            guard let regex = try? NSRegularExpression(pattern: pattern) else {
+                return (command, false)
+            }
+            let range = NSRange(command.startIndex..., in: command)
+            let template = "$1" + NSRegularExpression.escapedTemplate(for: tmpDirectory.path)
+            let updated = regex.stringByReplacingMatches(
+                in: command, options: [], range: range, withTemplate: template)
+            return (updated, updated != command)
         }
     }
 

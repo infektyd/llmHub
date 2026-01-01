@@ -1,9 +1,8 @@
 import Foundation
-import OSLog
 
 @MainActor
 struct GoogleAIProvider: LLMProvider {
-    private let logger = AppLogger.category("GoogleAIProvider")
+
     nonisolated let id: String = "google"
     nonisolated let name: String = "Google AI (Gemini)"
 
@@ -26,9 +25,9 @@ struct GoogleAIProvider: LLMProvider {
 
     var availableModels: [LLMModel] { config.models }
 
-    var defaultHeaders: [String: String] { 
+    var defaultHeaders: [String: String] {
         get async {
-            ["Content-Type": "application/json"] 
+            ["Content-Type": "application/json"]
         }
     }
 
@@ -56,7 +55,7 @@ struct GoogleAIProvider: LLMProvider {
 
         request.httpMethod = "GET"
 
-        let (data, response) = try await LLMURLSession.shared.data(for: request)
+        let (data, response) = try await LLMURLSession.data(for: request)
 
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
 
@@ -114,9 +113,18 @@ struct GoogleAIProvider: LLMProvider {
         tools: [ToolDefinition]?,
         options: LLMRequestOptions
     ) async throws -> URLRequest {
+        LLMTrace.requestStarted(
+            provider: "Gemini",
+            model: model,
+            messageCount: messages.count,
+            toolCount: tools?.count ?? 0
+        )
+
         guard let apiKey = await keychain.apiKey(for: .google) else {
+            LLMTrace.authStatus(provider: "Gemini", hasKey: false)
             throw LLMProviderError.authenticationMissing
         }
+        LLMTrace.authStatus(provider: "Gemini", hasKey: true)
 
         let manager = GeminiManager(apiKey: apiKey)
 
@@ -159,7 +167,10 @@ struct GoogleAIProvider: LLMProvider {
                         ]
                         return Content(
                             role: role,
-                            parts: [.functionResponse(FunctionResponse(name: toolName, response: response))]
+                            parts: [
+                                .functionResponse(
+                                    FunctionResponse(name: toolName, response: response))
+                            ]
                         )
                     }
 
@@ -207,12 +218,13 @@ struct GoogleAIProvider: LLMProvider {
                             "tool_call_id": .string(toolCallID),
                             "result": .string(msg.content),
                         ]
-                        parts.append(.functionResponse(FunctionResponse(name: toolName, response: response)))
+                        parts.append(
+                            .functionResponse(FunctionResponse(name: toolName, response: response)))
                     } else {
-                    // Text
-                    if !msg.content.isEmpty {
-                        parts.append(.text(msg.content))
-                    }
+                        // Text
+                        if !msg.content.isEmpty {
+                            parts.append(.text(msg.content))
+                        }
                     }
                     // Images
                     for part in msg.parts {
@@ -250,7 +262,8 @@ struct GoogleAIProvider: LLMProvider {
         // We build a non-streaming request by default.
         // streamResponse will convert it to a streaming request if needed.
         let maxOutputTokens = config.models.first(where: { $0.id == model })?.maxOutputTokens
-        return try manager.makeGenerateContentRequest(
+
+        let request = try manager.makeGenerateContentRequest(
             prompt: prompt,
             files: mediaFiles,  // Only new files attached to the current prompt
             model: model,
@@ -260,12 +273,21 @@ struct GoogleAIProvider: LLMProvider {
             maxOutputTokens: maxOutputTokens,
             stream: false
         )
+
+        if let body = request.httpBody, let bodyStr = String(data: body, encoding: .utf8) {
+            LLMTrace.requestDetails(
+                provider: "Gemini",
+                url: request.url?.absoluteString ?? "nil",
+                bodyPreview: bodyStr
+            )
+        }
+
+        return request
     }
 
     func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {
         AsyncThrowingStream(ProviderEvent.self) { continuation in
             let baseRequest = request
-            let logger = self.logger
             Task.detached {
                 do {
                     // Convert to streaming request
@@ -281,14 +303,21 @@ struct GoogleAIProvider: LLMProvider {
                         streamRequest.url = URL(string: newString)
                     }
 
-                    let (result, response) = try await LLMURLSession.shared.bytes(for: streamRequest)
+                    LLMTrace.requestSent(provider: "Gemini")
+
+                    let (result, response) = try await LLMURLSession.bytes(
+                        for: streamRequest)
 
                     guard let httpResponse = response as? HTTPURLResponse,
                         (200...299).contains(httpResponse.statusCode)
                     else {
+                        let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+                        LLMTrace.responseReceived(provider: "Gemini", statusCode: statusCode)
                         // Attempt to read error
                         var errorText = ""
                         for try await line in result.lines { errorText += line }
+                        LLMTrace.errorWithBody(
+                            provider: "Gemini", statusCode: statusCode, body: errorText)
                         continuation.yield(
                             .error(
                                 .server(
@@ -303,7 +332,6 @@ struct GoogleAIProvider: LLMProvider {
                     var stopDueToMalformedFunctionCall = false
                     var chunkCount = 0
                     var lastFinishReason: String? = nil
-                    var lastCandidateCount = 0
                     var lastPartCounts: [Int] = []
                     var didReceiveDone = false
 
@@ -324,14 +352,15 @@ struct GoogleAIProvider: LLMProvider {
                             do {
                                 chunk = try decoder.decode(GenerationResponse.self, from: data)
                             } catch {
-                                logger.debug(
-                                    "Failed to decode Gemini stream event: \(payload.prefix(240), privacy: .public)"
+                                LLMTrace.error(
+                                    provider: "Gemini",
+                                    message:
+                                        "Failed to decode Gemini stream event: \(payload.prefix(100))"
                                 )
                                 continue
                             }
 
                             chunkCount += 1
-                            lastCandidateCount = chunk.candidateCount
                             lastPartCounts = chunk.partCountsByCandidate
                             if let finishReason = chunk.candidates?.first?.finishReason {
                                 lastFinishReason = finishReason
@@ -363,9 +392,12 @@ struct GoogleAIProvider: LLMProvider {
                                 for part in first.content.parts {
                                     if case .functionCall(let fc) = part {
                                         let encoder = JSONEncoder()
-                                        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+                                        encoder.outputFormatting = [
+                                            .sortedKeys, .withoutEscapingSlashes,
+                                        ]
                                         let argsObject = fc.args ?? [:]
-                                        let argsData = (try? encoder.encode(argsObject)) ?? Data("{}".utf8)
+                                        let argsData =
+                                            (try? encoder.encode(argsObject)) ?? Data("{}".utf8)
                                         if let argsStr = String(data: argsData, encoding: .utf8) {
                                             let callId = "call_\(UUID().uuidString.prefix(8))"
                                             let toolCall = ToolCall(
@@ -382,10 +414,7 @@ struct GoogleAIProvider: LLMProvider {
                         if didReceiveDone || stopDueToMalformedFunctionCall { break }
                     }
 
-                    let partCountsStr = lastPartCounts.map(String.init).joined(separator: ",")
-                    logger.info(
-                        "Gemini stream finished finishReason=\(lastFinishReason ?? "nil", privacy: .public) chunks=\(chunkCount) candidates=\(lastCandidateCount) partCounts=[\(partCountsStr, privacy: .public)] assembledLength=\(fullText.count)"
-                    )
+                    _ = lastPartCounts.map(String.init).joined(separator: ",")
 
                     // Final completion event with full message
                     let message = ChatMessage(
@@ -402,9 +431,9 @@ struct GoogleAIProvider: LLMProvider {
                     )
 
                     if lastFinishReason == "MAX_TOKENS" {
-                        logger.warning(
-                            "Gemini response truncated by provider MAX_TOKENS assembledLength=\(fullText.count)"
-                        )
+                        LLMTrace.error(
+                            provider: "Gemini",
+                            message: "Gemini response truncated by provider MAX_TOKENS")
                         continuation.yield(.truncated(message: message))
                     } else {
                         continuation.yield(.completion(message: message))

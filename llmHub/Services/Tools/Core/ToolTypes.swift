@@ -26,18 +26,46 @@ struct ToolArguments: Sendable {
     }
 
     nonisolated func int(_ key: String) -> Int? {
-        if case .number(let n) = storage[key] { return Int(n) }
-        return nil
+        switch storage[key] {
+        case .number(let n):
+            return Int(n)
+        case .string(let s):
+            let trimmed = s.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let intValue = Int(trimmed) { return intValue }
+            if let doubleValue = Double(trimmed), doubleValue == floor(doubleValue) {
+                return Int(doubleValue)
+            }
+            return nil
+        default:
+            return nil
+        }
     }
 
     nonisolated func double(_ key: String) -> Double? {
-        if case .number(let n) = storage[key] { return n }
-        return nil
+        switch storage[key] {
+        case .number(let n):
+            return n
+        case .string(let s):
+            return Double(s.trimmingCharacters(in: .whitespacesAndNewlines))
+        default:
+            return nil
+        }
     }
 
     nonisolated func bool(_ key: String) -> Bool? {
-        if case .bool(let b) = storage[key] { return b }
-        return nil
+        switch storage[key] {
+        case .bool(let b):
+            return b
+        case .number(let n):
+            return n != 0
+        case .string(let s):
+            let normalized = s.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if ["true", "yes", "1"].contains(normalized) { return true }
+            if ["false", "no", "0"].contains(normalized) { return false }
+            return nil
+        default:
+            return nil
+        }
     }
 
     nonisolated func array(_ key: String) -> [JSONValue]? {

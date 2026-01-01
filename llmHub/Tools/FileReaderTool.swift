@@ -17,7 +17,8 @@ nonisolated struct FileReaderTool: Tool {
         Read and analyze the contents of files. \
         Supports text files (txt, md, json, xml, csv), \
         PDF documents, and can describe images. \
-        Use this tool when you need to examine file contents or analyze documents.
+        Use this tool when you need to examine file contents or analyze documents. \
+        Path must be within the workspace (prefer relative paths).
         """
 
     nonisolated var parameters: ToolParametersSchema {
@@ -96,26 +97,24 @@ nonisolated struct FileReaderTool: Tool {
             fileURL = context.workspacePath.appendingPathComponent(path)
         }
 
-        context.logger.debug("Reading file: \(fileURL.path)")
+        let resolvedURL = fileURL.standardizedFileURL
+        let workspaceRoot = context.workspacePath.standardizedFileURL
+        if !resolvedURL.path.hasPrefix(workspaceRoot.path) {
+            throw ToolError.sandboxViolation(
+                "Access denied: File must be within the workspace sandbox (use a workspace-relative path).")
+        }
 
-        // Sandbox check (implicit in ToolEnvironment support check, but explicit here for safety)
-        #if os(iOS)
-            // Assuming context.workspacePath is the sandbox root or allowed dir
-            // Strict check: must start with workspacePath
-            if !fileURL.path.hasPrefix(context.workspacePath.path) {
-                throw ToolError.sandboxViolation("Access denied: File outside workspace sandbox")
-            }
-        #endif
+        context.logger.debug("Reading file: \(resolvedURL.path)")
 
         var isDirectory = ObjCBool(false)
-        guard FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDirectory) else {
+        guard FileManager.default.fileExists(atPath: resolvedURL.path, isDirectory: &isDirectory) else {
             throw ToolError.executionFailed("File not found: \(path)")
         }
         if isDirectory.boolValue {
             throw ToolError.executionFailed("Path points to a directory, not a file.")
         }
 
-        let fileExtension = fileURL.pathExtension.lowercased()
+        let fileExtension = resolvedURL.pathExtension.lowercased()
 
         do {
             let content: String
@@ -124,20 +123,20 @@ nonisolated struct FileReaderTool: Tool {
 
             switch fileExtension {
             case "pdf":
-                (content, truncated, nextOffset) = try readPDF(url: fileURL, maxLength: maxLength)
+                (content, truncated, nextOffset) = try readPDF(url: resolvedURL, maxLength: maxLength)
             case "json":
-                (content, truncated, nextOffset) = try readJSON(url: fileURL, maxLength: maxLength)
+                (content, truncated, nextOffset) = try readJSON(url: resolvedURL, maxLength: maxLength)
             case "csv":
-                (content, truncated, nextOffset) = try readCSV(url: fileURL, maxLength: maxLength)
+                (content, truncated, nextOffset) = try readCSV(url: resolvedURL, maxLength: maxLength)
             case "png", "jpg", "jpeg", "gif", "webp", "heic":
-                content = try describeImage(url: fileURL)
+                content = try describeImage(url: resolvedURL)
                 truncated = false
                 nextOffset = content.count
             case "rtf":
-                (content, truncated, nextOffset) = try readRTF(url: fileURL, maxLength: maxLength)
+                (content, truncated, nextOffset) = try readRTF(url: resolvedURL, maxLength: maxLength)
             default:
                 (content, truncated, nextOffset) = try readText(
-                    url: fileURL, encoding: encoding, maxLength: maxLength)
+                    url: resolvedURL, encoding: encoding, maxLength: maxLength)
             }
 
             let filteredContent = applyLineWindow(
@@ -162,7 +161,7 @@ nonisolated struct FileReaderTool: Tool {
                 formatFileContent(
                     path: path, content: filteredContent.text, truncated: finalTruncated),
                 metrics: .empty,
-                metadata: ["path": fileURL.path],
+                metadata: ["path": resolvedURL.path],
                 truncated: finalTruncated
             )
 

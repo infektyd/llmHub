@@ -8,13 +8,10 @@
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>remote-notification</string>
 		<string>processing</string>
 		<string>fetch</string>
 		<string>audio</string>
-		<string>bluetooth-peripheral</string>
 		<string>external-accessory</string>
-		<string>voip</string>
 	</array>
 </dict>
 </plist>

@@ -1,9 +1,8 @@
 import Foundation
-import OSLog
 
 @MainActor
 struct AnthropicProvider: LLMProvider {
-    private let logger = Logger(subsystem: "com.llmhub", category: "AnthropicProvider")
+
     nonisolated let id: String = "anthropic"
     nonisolated let name: String = "Anthropic (Claude)"
 
@@ -56,9 +55,18 @@ struct AnthropicProvider: LLMProvider {
         tools: [ToolDefinition]?,
         options: LLMRequestOptions
     ) async throws -> URLRequest {
+        LLMTrace.requestStarted(
+            provider: "Anthropic",
+            model: model,
+            messageCount: messages.count,
+            toolCount: tools?.count ?? 0
+        )
+
         guard let key = await keychain.apiKey(for: .anthropic) else {
+            LLMTrace.authStatus(provider: "Anthropic", hasKey: false)
             throw LLMProviderError.authenticationMissing
         }
+        LLMTrace.authStatus(provider: "Anthropic", hasKey: true)
 
         let manager = AnthropicManager(apiKey: key)
 
@@ -163,11 +171,16 @@ struct AnthropicProvider: LLMProvider {
                     if let bodyData = streamRequest.httpBody,
                         let bodyStr = String(data: bodyData, encoding: .utf8)
                     {
-                        Logger(subsystem: "com.llmhub", category: "AnthropicProvider").debug(
-                            "Anthropic Request: \(bodyStr)")
+                        LLMTrace.requestDetails(
+                            provider: "Anthropic",
+                            url: streamRequest.url?.absoluteString ?? "unknown",
+                            bodyPreview: bodyStr
+                        )
                     }
 
-                    let (bytes, response) = try await LLMURLSession.shared.bytes(for: streamRequest)
+                    LLMTrace.requestSent(provider: "Anthropic")
+
+                    let (bytes, response) = try await LLMURLSession.bytes(for: streamRequest)
                     guard let http = response as? HTTPURLResponse else {
                         continuation.yield(.error(.server(reason: "No HTTP response")))
                         continuation.finish()
@@ -176,10 +189,12 @@ struct AnthropicProvider: LLMProvider {
 
                     // Handle non-success status
                     if !(200...299).contains(http.statusCode) {
+                        LLMTrace.responseReceived(
+                            provider: "Anthropic", statusCode: http.statusCode)
                         var errorText = ""
                         for try await line in bytes.lines { errorText += line }
-                        Logger(subsystem: "com.llmhub", category: "AnthropicProvider").error(
-                            "Anthropic Error (\(http.statusCode)): \(errorText)")
+                        LLMTrace.errorWithBody(
+                            provider: "Anthropic", statusCode: http.statusCode, body: errorText)
                         continuation.yield(
                             .error(.server(reason: "HTTP \(http.statusCode): \(errorText)")))
                         continuation.finish()
@@ -279,8 +294,7 @@ struct AnthropicProvider: LLMProvider {
                     }
                     continuation.finish()
                 } catch {
-                    Logger(subsystem: "com.llmhub", category: "AnthropicProvider").error(
-                        "Stream error: \(error)")
+                    LLMTrace.error(provider: "Anthropic", message: "Stream error: \(error)")
                     continuation.yield(.error(.network(error as? URLError ?? URLError(.unknown))))
                     continuation.finish()
                 }

@@ -41,13 +41,13 @@ public class GeminiManager {
             stream: false
         )
 
-        let (data, response) = try await LLMURLSession.shared.data(for: request)
+        let (data, response) = try await LLMURLSession.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse,
             (200...299).contains(httpResponse.statusCode)
         else {
             if let errorText = String(data: data, encoding: .utf8) {
-                print("Gemini API Error: \(errorText)")
+                LLMTrace.error(provider: "Gemini", message: "Gemini API Error: \(errorText)")
             }
             throw GeminiError.apiError
         }
@@ -82,14 +82,15 @@ public class GeminiManager {
                         stream: true
                     )
 
-                    let (result, response) = try await LLMURLSession.shared.bytes(for: request)
+                    let (result, response) = try await LLMURLSession.bytes(for: request)
 
                     guard let httpResponse = response as? HTTPURLResponse,
                         (200...299).contains(httpResponse.statusCode)
                     else {
                         var errorText = ""
                         for try await line in result.lines { errorText += line }
-                        print("Gemini Streaming Error: \(errorText)")
+                        LLMTrace.error(
+                            provider: "Gemini", message: "Gemini Streaming Error: \(errorText)")
                         throw GeminiError.apiError
                     }
 
@@ -108,8 +109,10 @@ public class GeminiManager {
                                 // SAFETY CHECK: Malformed tool calls
                                 if let candidate = chunk.candidates?.first {
                                     if candidate.finishReason == "MALFORMED_FUNCTION_CALL" {
-                                        print(
-                                            "GeminiManager: Detected MALFORMED_FUNCTION_CALL. Stopping stream safely."
+                                        LLMTrace.error(
+                                            provider: "Gemini",
+                                            message:
+                                                "GeminiManager: Detected MALFORMED_FUNCTION_CALL. Stopping stream safely."
                                         )
                                         continuation.finish()
                                         return
@@ -120,7 +123,9 @@ public class GeminiManager {
 
                             } catch {
                                 #if DEBUG
-                                    print("GeminiManager: JSON Decode Failure: \(error)")
+                                    LLMTrace.error(
+                                        provider: "Gemini",
+                                        message: "GeminiManager: JSON Decode Failure: \(error)")
                                 #endif
                             }
                         }
@@ -179,22 +184,26 @@ public class GeminiManager {
         config.maxOutputTokens = maxOutputTokens ?? 8192  // Ensure responses aren't cut off
 
         // Build thinking config as a separate top-level field (NOT inside generationConfig)
-        // For Gemini 2.5 models, use thinkingBudget. For Gemini 3, use thinkingLevel.
+        // NOTE: thinkingConfig is only supported on certain stable models, NOT preview models.
+        // For Gemini 2.5 STABLE models, use thinkingBudget.
+        // Gemini 3 preview models do NOT support thinkingConfig yet.
         var thinkingConfig: ThinkingConfig? = nil
         if thinkingLevel != .off {
             let lower = model.lowercased()
-            let isGemini25 = lower.contains("gemini-2.5") || lower.contains("gemini-2.")
-            let isGemini3 = lower.contains("gemini-3")
+            let isPreview = lower.contains("preview")
+            let isGemini25 = lower.contains("gemini-2.5") && !isPreview
 
+            // Only Gemini 2.5 stable models support thinking currently
             if isGemini25 {
                 // Gemini 2.5 uses thinkingBudget (token count, -1 for dynamic)
                 thinkingConfig = ThinkingConfig(thinkingBudget: -1, thinkingLevel: nil)
-            } else if isGemini3 {
-                // Gemini 3 uses thinkingLevel string
-                thinkingConfig = ThinkingConfig(
-                    thinkingBudget: nil, thinkingLevel: thinkingLevel.rawValue)
+
+            } else {
+                // Preview models and Gemini 3 don't support thinkingConfig yet
+                LLMTrace.featureSkipped(
+                    provider: "Gemini", feature: "thinkingConfig",
+                    reason: "not supported for \(model)")
             }
-            // For other models, leave thinkingConfig nil (not supported)
         }
 
         let geminiTools: [GeminiTool]? = {
@@ -327,7 +336,7 @@ public class GeminiManager {
             try await Task.sleep(nanoseconds: 2 * 1_000_000_000)  // 2 seconds
 
             guard let url = URL(string: pollEndpoint) else { throw GeminiError.invalidURL }
-            let (data, response) = try await LLMURLSession.shared.data(from: url)
+            let (data, response) = try await LLMURLSession.data(from: url)
 
             guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
                 continue
@@ -373,7 +382,7 @@ public class GeminiManager {
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(payload)
 
-        let (data, response) = try await LLMURLSession.shared.data(for: request)
+        let (data, response) = try await LLMURLSession.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw GeminiError.apiError
@@ -386,7 +395,7 @@ public class GeminiManager {
                 let message = errorObj["message"] as? String
             {
 
-                print("Gemini API Error: \(message)")
+                LLMTrace.error(provider: "Gemini", message: "Gemini API Error: \(message)")
 
                 if httpResponse.statusCode == 429 {
                     throw GeminiError.rateLimited
@@ -418,7 +427,7 @@ public class GeminiManager {
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: payload)
 
-        let (data, response) = try await LLMURLSession.shared.data(for: request)
+        let (data, response) = try await LLMURLSession.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw GeminiError.apiError
@@ -429,12 +438,14 @@ public class GeminiManager {
                 let errorObj = errorJson["error"] as? [String: Any],
                 let message = errorObj["message"] as? String
             {
-                print("Gemini Raw API Error: \(message)")
+                LLMTrace.error(provider: "Gemini", message: "Gemini Raw API Error: \(message)")
                 if httpResponse.statusCode == 429 { throw GeminiError.rateLimited }
                 if message.contains("quota") { throw GeminiError.quotaExceeded }
                 throw GeminiError.custom(message)
             }
-            print("API Error: \(String(data: data, encoding: .utf8) ?? "Unknown")")
+            LLMTrace.error(
+                provider: "Gemini",
+                message: "API Error: \(String(data: data, encoding: .utf8) ?? "Unknown")")
             throw GeminiError.apiError
         }
         return data
