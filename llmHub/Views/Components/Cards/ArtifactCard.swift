@@ -28,7 +28,7 @@ struct ArtifactCard: View {
     private let maxHeight: CGFloat = 400
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .center, spacing: 0) {
             header
 
             if isExpanded {
@@ -65,7 +65,7 @@ struct ArtifactCard: View {
                     .font(.system(size: 6.5, weight: .semibold))
                     .foregroundStyle(Color.green.opacity(0.85))
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .center, spacing: 2) {
                     Text(artifact.filename)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(theme.textPrimary)
@@ -116,7 +116,7 @@ struct ArtifactCard: View {
             }
             .frame(maxHeight: maxHeight)
             .background {
-                RoundedRectangle(cornerRadius: 05, style: .continuous)
+                RoundedRectangle(cornerRadius: 01, style: .continuous)
                     .fill(Color.purple.opacity(0.08))
             }
             .overlay(
