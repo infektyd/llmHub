@@ -346,7 +346,8 @@ final class ChatService {
         userMessage: String,
         attachments: [Attachment] = [],
         references: [ChatReference] = [],
-        images: [Data] = []
+        images: [Data] = [],
+        generationID: UUID
     ) async throws -> AsyncThrowingStream<ProviderEvent, Error> {
 
         // User messages are persisted by the caller (ChatViewModel) to avoid
@@ -658,11 +659,13 @@ final class ChatService {
                                 // If we have tool calls, save assistant message with them
                                 if !accumulatedToolCalls.isEmpty {
                                     var assistantMsg = msg
+                                    assistantMsg.generationID = generationID
                                     if assistantMsg.content.isEmpty && !assistantTextBuffer.isEmpty
                                     {
                                         // Rebuild message to update immutable `parts`
                                         assistantMsg = ChatMessage(
                                             id: msg.id,
+                                            generationID: generationID,
                                             role: msg.role,
                                             content: assistantTextBuffer,
                                             thoughtProcess: msg.thoughtProcess,
@@ -685,10 +688,12 @@ final class ChatService {
                                     didPersistAssistantMessage = true
                                 } else {
                                     // Normal completion - save and we're done
+                                    var persisted = msg
+                                    persisted.generationID = generationID
                                     try await MainActor.run {
-                                        try service.appendMessage(msg, to: sessionID)
+                                        try service.appendMessage(persisted, to: sessionID)
                                     }
-                                    continuation.yield(.completion(message: msg))
+                                    continuation.yield(.completion(message: persisted))
                                     didPersistAssistantMessage = true
                                 }
 
@@ -719,16 +724,19 @@ final class ChatService {
 
                                 if !accumulatedToolCalls.isEmpty {
                                     var assistantMsg = msg
+                                    assistantMsg.generationID = generationID
                                     assistantMsg.toolCalls = accumulatedToolCalls
                                     try await MainActor.run {
                                         try service.appendMessage(assistantMsg, to: sessionID)
                                     }
                                     didPersistAssistantMessage = true
                                 } else {
+                                    var persisted = msg
+                                    persisted.generationID = generationID
                                     try await MainActor.run {
-                                        try service.appendMessage(msg, to: sessionID)
+                                        try service.appendMessage(persisted, to: sessionID)
                                     }
-                                    continuation.yield(.truncated(message: msg))
+                                    continuation.yield(.truncated(message: persisted))
                                     didPersistAssistantMessage = true
                                 }
 
@@ -747,6 +755,7 @@ final class ChatService {
                             if !didPersistAssistantMessage {
                                 let assistantMsg = ChatMessage(
                                     id: UUID(),
+                                    generationID: generationID,
                                     role: .assistant,
                                     content: assistantTextBuffer,
                                     thoughtProcess: nil,

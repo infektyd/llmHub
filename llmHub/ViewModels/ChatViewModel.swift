@@ -108,6 +108,7 @@ class ChatViewModel {
 
         return ChatMessage(
             id: messageID,
+            generationID: activeGenerationID,
             role: .assistant,
             content: streamingText,
             thoughtProcess: nil,
@@ -164,6 +165,8 @@ class ChatViewModel {
     private var chatService: ChatService?
     /// The active generation task driving the current stream (if any).
     private var generationTask: Task<Void, Never>?
+    /// Stable identity for the active generation, used to merge streaming overlay with persisted messages.
+    private var activeGenerationID: UUID?
     /// Streaming accumulator for incoming tokens.
     private let streamAccumulator = StreamAccumulator()
     /// Identifier for the current streaming message.
@@ -600,6 +603,7 @@ class ChatViewModel {
 
         isGenerating = true
         let streamToken = UUID().uuidString
+        let generationID = UUID()
         let streamingID = UUID()
         let streamingStart = Date()
 
@@ -624,6 +628,7 @@ class ChatViewModel {
                 await streamAccumulator.reset()
                 await streamAccumulator.begin(token: streamToken)
 
+                activeGenerationID = generationID
                 streamingMessageID = streamingID
                 streamingStartedAt = streamingStart
                 streamingText = nil
@@ -637,7 +642,8 @@ class ChatViewModel {
                     userMessage: userMessageText,
                     attachments: messageAttachments,
                     references: finalReferences,
-                    images: imageAttachments
+                    images: imageAttachments,
+                    generationID: generationID
                 )
 
                 for try await event in stream {
@@ -660,9 +666,7 @@ class ChatViewModel {
                         uiContinuation.finish()
                         _ = await updateTask.result
 
-                        streamingText = nil
-                        streamingMessageID = nil
-                        streamingStartedAt = nil
+                        resetStreamingState()
                         isTruncated = false
                         truncatedSessionID = nil
                         executingToolNames.removeAll()
@@ -682,9 +686,7 @@ class ChatViewModel {
                         uiContinuation.finish()
                         _ = await updateTask.result
 
-                        streamingText = nil
-                        streamingMessageID = nil
-                        streamingStartedAt = nil
+                        resetStreamingState()
                         isTruncated = true
                         truncatedSessionID = sessionID
                         executingToolNames.removeAll()
@@ -701,9 +703,7 @@ class ChatViewModel {
                         uiContinuation.finish()
                         _ = await updateTask.result
 
-                        streamingText = nil
-                        streamingMessageID = nil
-                        streamingStartedAt = nil
+                        resetStreamingState()
                         isTruncated = false
                         truncatedSessionID = nil
                         executingToolNames.removeAll()
@@ -955,6 +955,7 @@ class ChatViewModel {
         streamingText = nil
         streamingMessageID = nil
         streamingStartedAt = nil
+        activeGenerationID = nil
     }
 
     private func handleStreamCompletion(
@@ -1065,6 +1066,10 @@ class ChatViewModel {
     /// Stops the current generation if one is in progress
     func stopGeneration() async {
         guard isGenerating else { return }
+
+        if let gen = activeGenerationID {
+            await ImageLoader.shared.cancelLoads(for: gen)
+        }
 
         // Cancel all tool executions
         let toolCallIDs = Array(toolExecutionCancelHandlers.keys)
