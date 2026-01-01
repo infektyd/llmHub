@@ -14,7 +14,6 @@ struct CanvasWorkbenchWindow: View {
 
     @EnvironmentObject private var modelRegistry: ModelRegistry
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.theme) private var theme
 
     @Query(sort: \ChatSessionEntity.updatedAt, order: .reverse)
     private var sessions: [ChatSessionEntity]
@@ -30,7 +29,7 @@ struct CanvasWorkbenchWindow: View {
 
     var body: some View {
         ZStack {
-            theme.backgroundPrimary.ignoresSafeArea()
+            AppColors.backgroundPrimary.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 topBar
@@ -170,23 +169,23 @@ struct CanvasWorkbenchWindow: View {
                 Image(systemName: "sidebar.left")
             }
             .buttonStyle(.plain)
-            .foregroundStyle(theme.textSecondary)
+            .foregroundStyle(AppColors.textSecondary)
 
             if let session = selectedSession {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(session.displayTitle)
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(theme.textPrimary)
+                        .foregroundStyle(AppColors.textPrimary)
                         .lineLimit(1)
                     Text("\(displayProviderName(session.providerID)) / \(session.model)")
                         .font(.system(size: 12))
-                        .foregroundStyle(theme.textTertiary)
+                        .foregroundStyle(AppColors.textTertiary)
                         .lineLimit(1)
                 }
             } else {
                 Text("llmHub")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(theme.textPrimary)
+                    .foregroundStyle(AppColors.textPrimary)
             }
 
             Spacer()
@@ -212,7 +211,7 @@ struct CanvasWorkbenchWindow: View {
                 Image(systemName: "sidebar.right")
             }
             .buttonStyle(.plain)
-            .foregroundStyle(theme.textSecondary)
+            .foregroundStyle(AppColors.textSecondary)
 
             Button {
                 showSettings = true
@@ -220,16 +219,16 @@ struct CanvasWorkbenchWindow: View {
                 Image(systemName: "gearshape")
             }
             .buttonStyle(.plain)
-            .foregroundStyle(theme.textSecondary)
+            .foregroundStyle(AppColors.textSecondary)
         }
         .padding(10)
         .background {
-            RoundedRectangle(cornerRadius: theme.cornerRadius, style: .continuous)
-                .fill(theme.backgroundSecondary.opacity(0.65))
+            RoundedRectangle(cornerRadius: AppColors.cornerRadius, style: .continuous)
+                .fill(AppColors.backgroundSecondary.opacity(0.65))
         }
         .overlay {
-            RoundedRectangle(cornerRadius: theme.cornerRadius, style: .continuous)
-                .stroke(theme.textPrimary.opacity(0.08), lineWidth: theme.borderWidth)
+            RoundedRectangle(cornerRadius: AppColors.cornerRadius, style: .continuous)
+                .stroke(AppColors.textPrimary.opacity(0.08), lineWidth: AppColors.borderWidth)
         }
     }
 
@@ -318,26 +317,24 @@ struct CanvasWorkbenchWindow: View {
 }
 
 private struct CanvasEmptyState: View {
-    @Environment(\.theme) private var theme
     let onNewConversation: () -> Void
 
     var body: some View {
         VStack(spacing: 16) {
             Text("No conversation selected")
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(theme.textPrimary)
+                .foregroundStyle(AppColors.textPrimary)
             Button("New Conversation") {
                 onNewConversation()
             }
             .buttonStyle(.borderedProminent)
-            .tint(theme.accent)
+            .tint(AppColors.accent)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
 private struct CanvasSidebarView: View {
-    @Environment(\.theme) private var theme
     let sessions: [ChatSessionEntity]
     @Binding var selectedConversationID: UUID?
     let onNewConversation: () -> Void
@@ -355,7 +352,7 @@ private struct CanvasSidebarView: View {
             HStack {
                 Text("Conversations")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(theme.textPrimary)
+                    .foregroundStyle(AppColors.textPrimary)
                 Spacer()
                 Button {
                     onNewConversation()
@@ -364,7 +361,7 @@ private struct CanvasSidebarView: View {
                         .font(.system(size: 12, weight: .semibold))
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(theme.accent)
+                .foregroundStyle(AppColors.accent)
             }
 
             TextField("Search conversations…", text: $searchText)
@@ -373,11 +370,11 @@ private struct CanvasSidebarView: View {
                 .padding(.vertical, 8)
                 .background {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(theme.surface.opacity(0.9))
+                        .fill(AppColors.surface.opacity(0.9))
                 }
                 .overlay {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(theme.textPrimary.opacity(0.08), lineWidth: theme.borderWidth)
+                        .stroke(AppColors.textPrimary.opacity(0.08), lineWidth: AppColors.borderWidth)
                 }
 
             ScrollView {
@@ -389,18 +386,18 @@ private struct CanvasSidebarView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(session.displayTitle)
                                     .font(.system(size: 13, weight: selectedConversationID == session.id ? .semibold : .regular))
-                                    .foregroundStyle(selectedConversationID == session.id ? theme.textPrimary : theme.textSecondary)
+                                    .foregroundStyle(selectedConversationID == session.id ? AppColors.textPrimary : AppColors.textSecondary)
                                     .lineLimit(1)
                                 Text(session.updatedAt, style: .relative)
                                     .font(.system(size: 11))
-                                    .foregroundStyle(theme.textTertiary)
+                                    .foregroundStyle(AppColors.textTertiary)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 8)
                             .background {
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(selectedConversationID == session.id ? theme.surface.opacity(0.92) : Color.clear)
+                                    .fill(selectedConversationID == session.id ? AppColors.surface.opacity(0.92) : Color.clear)
                             }
                         }
                         .buttonStyle(.plain)
@@ -414,8 +411,6 @@ private struct CanvasSidebarView: View {
 }
 
 private struct CanvasModelMenu: View {
-    @Environment(\.theme) private var theme
-
     let modelRegistry: ModelRegistry
     @Binding var selectedProvider: UILLMProvider?
     @Binding var selectedModel: UILLMModel?
@@ -451,21 +446,21 @@ private struct CanvasModelMenu: View {
             HStack(spacing: 8) {
                 Text(selectedModel?.name ?? "Choose model")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(theme.textPrimary)
+                    .foregroundStyle(AppColors.textPrimary)
                     .lineLimit(1)
                 Image(systemName: "chevron.down")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(theme.textSecondary)
+                    .foregroundStyle(AppColors.textSecondary)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
             .background {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(theme.surface.opacity(0.55))
+                    .fill(AppColors.surface.opacity(0.55))
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(theme.textPrimary.opacity(0.08), lineWidth: theme.borderWidth)
+                    .stroke(AppColors.textPrimary.opacity(0.08), lineWidth: AppColors.borderWidth)
             }
         }
         #if os(macOS)
