@@ -1,0 +1,20 @@
+7248b2e refactor: replace theme usage with AppColors across the application
+984ffb3 refactor: replace theme usage with AppColors in ArtifactCard
+8c5456a style: center ArtifactCard layout and reduce corner radius
+e4cd9e8 fix: declare iOS sheet state vars unconditionally in workbench window
+b27243f refactor: replace theme environment colors with AppColors in canvas UI
+93ad350 Refactor code structure for improved readability and maintainability
+db8de48 feat: implement theme-based conditional glass effects and remove UI mode selection from settings and content view.
+30a2a35 Add CanvasTheme and CanvasWorkbench UI components
+34d0d7d Merge remote-tracking branch 'refs/remotes/origin/main'
+cc87f4f feat: enhance UI components with updated glass effects, improved previews, and refined layouts
+e978737 feat: enhance UI components with updated glass effects, improved previews, and refined layouts
+65ffdc9 refactor: update UI components for consistency and add preview support while archiving old development logs.
+2ba2111 feat: add SwiftUI previews and mock support to various views and components, and archive old dev logs
+f9e840a feat: Introduce new provider managers, unified tool architecture, Glass UI components, and updated documentation.
+9e40eb7 feat: Introduce LiquidGlass theme, new LLM providers, refactored tool architecture, and updated UI components.
+7b4e3a1 feat: reimplement Nordic theme message display to text-on-canvas, refactor root view layout, and update app icon.
+9b2823a feat: Implement NordicMessageRow without bubbles, update AppIcon, and add icon assets and documentation.
+e8e6412 feat: Add Nordic UI theme with new components, app icons, and theme management updates.
+ffd0265 feat: Add comprehensive app icon setup, introduce new Nordic and Claude Flat themes with associated UI components and theme management.
+cfe8cfc feat: Refactor project dependencies, update UI corner radii and colors, and clean up test and documentation files.

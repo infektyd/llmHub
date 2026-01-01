@@ -89,3 +89,31 @@ error reports/
 *.key
 .DS_Store
 .aider*
+
+# --- llmHub local artifacts / archives ---
+Docs/Archives/
+handoff_*.jsonl
+*.jsonl
+*.patch
+
+# --- Xcode / Swift build artifacts (additional) ---
+*.swp
+*.moved-aside
+
+# --- macOS junk (additional) ---
+
+# --- Logs / diagnostics (generic) ---
+*.log
+*.crash
+*.ips
+*.diag
+*.trace
+*.dmp
+
+# --- Compressed archives (generic) ---
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
