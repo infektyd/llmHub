@@ -25,6 +25,8 @@ class ToolAuthorizationService: ObservableObject {
 
     private let persistenceURL: URL?
 
+    static let shared = ToolAuthorizationService()
+
     init(persistenceURL: URL? = nil) {
         if let url = persistenceURL {
             self.persistenceURL = url
@@ -34,7 +36,8 @@ class ToolAuthorizationService: ObservableObject {
             let urls = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)
             let dir = urls[0].appendingPathComponent("llmhub/permissions", isDirectory: true)
             if !fileManager.fileExists(atPath: dir.path) {
-                try? fileManager.createDirectory(at: dir, withIntermediateDirectories: true, attributes: nil)
+                try? fileManager.createDirectory(
+                    at: dir, withIntermediateDirectories: true, attributes: nil)
             }
             self.persistenceURL = dir.appendingPathComponent("tool_permissions.json")
         }
@@ -164,7 +167,8 @@ class ToolAuthorizationService: ObservableObject {
         // Ensure directory exists
         let dir = url.deletingLastPathComponent()
         if !FileManager.default.fileExists(atPath: dir.path) {
-            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: nil)
+            try? FileManager.default.createDirectory(
+                at: dir, withIntermediateDirectories: true, attributes: nil)
         }
 
         do {

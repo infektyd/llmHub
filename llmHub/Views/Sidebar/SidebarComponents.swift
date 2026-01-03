@@ -50,7 +50,7 @@ struct CollapsibleSectionHeader: View {
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(AppColors.textSecondary)
 
-                Text("(\(count))")
+                Text(verbatim: "(\(count))")
                     .font(.system(size: 10))
                     .foregroundColor(AppColors.textSecondary.opacity(0.7))
 

@@ -69,7 +69,7 @@ struct ArtifactCard: View {
                         .foregroundStyle(AppColors.textPrimary)
                         .lineLimit(1)
 
-                    Text("\(languageLabel) • \(formatFileSize(artifact.sizeBytes))")
+                    Text(verbatim: "\(languageLabel) • \(formatFileSize(artifact.sizeBytes))")
                         .font(.caption2)
                         .foregroundStyle(AppColors.textSecondary)
                 }

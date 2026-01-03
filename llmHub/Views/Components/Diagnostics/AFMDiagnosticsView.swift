@@ -39,11 +39,11 @@ struct AFMDiagnosticsView: View {
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(
-                        "Status: \(viewModel.afmDiagnostics.isAvailable ? "✅ Available" : "❌ Unavailable")"
+                        verbatim: "Status: \(viewModel.afmDiagnostics.isAvailable ? "✅ Available" : "❌ Unavailable")"
                     )
                     .font(.caption2)
 
-                    Text("Last check: \(viewModel.afmDiagnostics.timeSinceCheck)")
+                    Text(verbatim: "Last check: \(viewModel.afmDiagnostics.timeSinceCheck)")
                         .font(.caption2)
 
                     HStack(spacing: 8) {

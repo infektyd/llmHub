@@ -1,78 +1,90 @@
 import SwiftUI
 
-#if canImport(UIKit)
-import UIKit
-#endif
+/// Central color tokens for the app.
+///
+/// This file intentionally keeps everything in one place so the UI can reference
+/// semantic colors (text/surface/background/etc.) without scattering raw values.
+///
+/// Colors are defined for both light and dark appearances and exposed via
+/// `static let` tokens.
+enum AppColors {
 
-#if canImport(AppKit)
-import AppKit
-#endif
+    // MARK: - Light / Dark palettes
 
-struct AppColors {
-    // MARK: - Dynamic System Adaptive Colors
+    enum Dark {
+        static let backgroundPrimary = Color(red: 0.07, green: 0.07, blue: 0.08)
+        static let backgroundSecondary = Color(red: 0.10, green: 0.10, blue: 0.12)
+
+        static let surface = Color(red: 0.12, green: 0.12, blue: 0.14)
+
+        static let textPrimary = Color.white.opacity(0.92)
+        static let textSecondary = Color.white.opacity(0.72)
+        static let textTertiary = Color.white.opacity(0.50)
+
+        static let accent = Color(red: 0.78, green: 0.44, blue: 0.28)
+        static let accentSecondary = Color(red: 0.22, green: 0.64, blue: 0.52)
+
+        static let success = Color(red: 0.22, green: 0.74, blue: 0.46)
+
+        /// Shadow color used for elevated surfaces.
+        static let shadowSmoke = Color.black.opacity(0.28)
+
+        /// A neutral, slightly warm gray used as an option in UI pickers.
+        static let smoke = Color(red: 0.55, green: 0.56, blue: 0.58)
+    }
+
+    enum Light {
+        static let backgroundPrimary = Color(red: 0.98, green: 0.98, blue: 0.99)
+        static let backgroundSecondary = Color(red: 0.94, green: 0.95, blue: 0.96)
+
+        static let surface = Color.white
+
+        static let textPrimary = Color.black.opacity(0.88)
+        static let textSecondary = Color.black.opacity(0.66)
+        static let textTertiary = Color.black.opacity(0.45)
+
+        static let accent = Color(red: 0.72, green: 0.36, blue: 0.22)
+        static let accentSecondary = Color(red: 0.18, green: 0.56, blue: 0.46)
+
+        static let success = Color(red: 0.18, green: 0.62, blue: 0.38)
+
+        /// Shadow color used for elevated surfaces.
+        static let shadowSmoke = Color.black.opacity(0.10)
+
+        /// A neutral, slightly warm gray used as an option in UI pickers.
+        static let smoke = Color(red: 0.62, green: 0.63, blue: 0.65)
+    }
+
+    // MARK: - Typography
+
+    static let monoFont: Font = .system(.body, design: .monospaced)
+
+    // MARK: - Adaptive tokens
 
     private static func adaptiveColor(dark: Color, light: Color) -> Color {
         #if canImport(UIKit)
-        Color(
-            UIColor { traits in
-                traits.userInterfaceStyle == .dark ? UIColor(dark) : UIColor(light)
+        return Color(
+            UIColor { traitCollection in
+                traitCollection.userInterfaceStyle == .dark
+                    ? UIColor(dark)
+                    : UIColor(light)
             }
         )
-        #elseif canImport(AppKit)
-        Color(
-            NSColor(
-                name: nil,
-                dynamicProvider: { appearance in
-                    let bestMatch = appearance.bestMatch(from: [.darkAqua, .aqua])
-                    return bestMatch == .darkAqua ? NSColor(dark) : NSColor(light)
-                }
-            )
-        )
         #else
-        dark
+        // macOS
+        return Color(
+            NSColor(name: nil) { appearance in
+                (appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua)
+                    ? NSColor(dark)
+                    : NSColor(light)
+            }
+        )
         #endif
     }
 
-    // MARK: - Dark Mode (CanvasDarkTheme values)
-    struct Dark {
-        static let backgroundPrimary = Color(red: 0.10, green: 0.10, blue: 0.10)
-        static let backgroundSecondary = Color(red: 0.15, green: 0.15, blue: 0.15)
-        static let surface = Color(red: 0.18, green: 0.18, blue: 0.18)
-        static let textPrimary = Color.white.opacity(0.92)
-        static let textSecondary = Color.white.opacity(0.72)
-        static let textTertiary = Color.white.opacity(0.52)
-        static let accent = Color(red: 0.78, green: 0.44, blue: 0.28)
-        static let accentSecondary = Color(red: 0.22, green: 0.64, blue: 0.52)
-        static let success = Color(red: 0.23, green: 0.78, blue: 0.33)
-        static let warning = Color(red: 0.96, green: 0.77, blue: 0.32)
-        static let error = Color(red: 0.93, green: 0.33, blue: 0.31)
-    }
+    static let backgroundPrimary: Color = adaptiveColor(dark: Dark.backgroundPrimary, light: Light.backgroundPrimary)
+    static let backgroundSecondary: Color = adaptiveColor(dark: Dark.backgroundSecondary, light: Light.backgroundSecondary)
 
-    // MARK: - Light Mode (CanvasLightTheme values)
-    struct Light {
-        static let backgroundPrimary = Color(red: 0.96, green: 0.96, blue: 0.97)
-        static let backgroundSecondary = Color(red: 0.93, green: 0.93, blue: 0.95)
-        static let surface = Color.white
-        static let textPrimary = Color.black.opacity(0.90)
-        static let textSecondary = Color.black.opacity(0.70)
-        static let textTertiary = Color.black.opacity(0.50)
-        static let accent = Color(red: 0.72, green: 0.36, blue: 0.22)
-        static let accentSecondary = Color(red: 0.18, green: 0.56, blue: 0.46)
-        static let success = Color(red: 0.18, green: 0.62, blue: 0.28)
-        static let warning = Color(red: 0.78, green: 0.52, blue: 0.10)
-        static let error = Color(red: 0.79, green: 0.18, blue: 0.16)
-    }
-
-    // MARK: - Adaptive Colors (no ColorScheme required)
-
-    static let backgroundPrimary: Color = adaptiveColor(
-        dark: Dark.backgroundPrimary,
-        light: Light.backgroundPrimary
-    )
-    static let backgroundSecondary: Color = adaptiveColor(
-        dark: Dark.backgroundSecondary,
-        light: Light.backgroundSecondary
-    )
     static let surface: Color = adaptiveColor(dark: Dark.surface, light: Light.surface)
 
     static let textPrimary: Color = adaptiveColor(dark: Dark.textPrimary, light: Light.textPrimary)
@@ -81,41 +93,24 @@ struct AppColors {
 
     static let accent: Color = adaptiveColor(dark: Dark.accent, light: Light.accent)
     static let accentSecondary: Color = adaptiveColor(dark: Dark.accentSecondary, light: Light.accentSecondary)
+
     static let success: Color = adaptiveColor(dark: Dark.success, light: Light.success)
-    static let warning: Color = adaptiveColor(dark: Dark.warning, light: Light.warning)
-    static let error: Color = adaptiveColor(dark: Dark.error, light: Light.error)
 
-    // MARK: - Adaptive Colors (explicit ColorScheme)
+    /// Shadow color used for elevated surfaces.
+    static let shadowSmoke: Color = adaptiveColor(dark: Dark.shadowSmoke, light: Light.shadowSmoke)
 
-    static func backgroundPrimary(for scheme: ColorScheme) -> Color {
-        scheme == .dark ? Dark.backgroundPrimary : Light.backgroundPrimary
-    }
-    static func backgroundSecondary(for scheme: ColorScheme) -> Color {
-        scheme == .dark ? Dark.backgroundSecondary : Light.backgroundSecondary
-    }
-    static func surface(for scheme: ColorScheme) -> Color { scheme == .dark ? Dark.surface : Light.surface }
-    static func textPrimary(for scheme: ColorScheme) -> Color {
-        scheme == .dark ? Dark.textPrimary : Light.textPrimary
-    }
-    static func textSecondary(for scheme: ColorScheme) -> Color {
-        scheme == .dark ? Dark.textSecondary : Light.textSecondary
-    }
-    static func textTertiary(for scheme: ColorScheme) -> Color {
-        scheme == .dark ? Dark.textTertiary : Light.textTertiary
-    }
-    static func accent(for scheme: ColorScheme) -> Color { scheme == .dark ? Dark.accent : Light.accent }
-    static func accentSecondary(for scheme: ColorScheme) -> Color {
-        scheme == .dark ? Dark.accentSecondary : Light.accentSecondary
-    }
-    static func success(for scheme: ColorScheme) -> Color { scheme == .dark ? Dark.success : Light.success }
-    static func warning(for scheme: ColorScheme) -> Color { scheme == .dark ? Dark.warning : Light.warning }
-    static func error(for scheme: ColorScheme) -> Color { scheme == .dark ? Dark.error : Light.error }
+    /// A neutral gray option you can reference from UI pickers.
+    static let smoke: Color = adaptiveColor(dark: Dark.smoke, light: Light.smoke)
 
-    // MARK: - Static Properties (CanvasDark values)
-    static let monoFont: Font = .system(.body, design: .monospaced)
-    static let bodyFont: Font = .system(size: 15)
-    static let responseFont: Font = .system(size: 15)
-    static let headingFont: Font = .system(size: 14, weight: .semibold)
-    static let cornerRadius: CGFloat = 14
-    static let borderWidth: CGFloat = 1
+    // MARK: - Central lists (for UI pickers)
+
+    /// A small, centralized list of colors intended for UI selection.
+    ///
+    /// If you add a new option (like `smoke`), include it here so all pickers
+    /// stay in sync.
+    static let selectableAccents: [Color] = [
+        accent,
+        accentSecondary,
+        smoke
+    ]
 }

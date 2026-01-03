@@ -63,7 +63,7 @@ struct FileOperationApprovalView: View {
                 .foregroundColor(operationColor)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("\(preview.request.operation.displayName) File")
+                Text(verbatim: "\(preview.request.operation.displayName) File")
                     .font(.headline)
 
                 Text(preview.request.path)
@@ -148,7 +148,7 @@ struct FileOperationApprovalView: View {
                     GridRow {
                         Text("Content:")
                             .foregroundColor(.secondary)
-                        Text("\(content.count) characters")
+                        Text(verbatim: "\(content.count) characters")
                     }
                 }
             }
@@ -173,7 +173,7 @@ struct FileOperationApprovalView: View {
 
                 Spacer()
 
-                Text("\(addedLinesCount) additions, \(removedLinesCount) deletions")
+                Text(verbatim: "\(addedLinesCount) additions, \(removedLinesCount) deletions")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }

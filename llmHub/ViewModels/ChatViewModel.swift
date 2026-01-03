@@ -94,7 +94,12 @@ class ChatViewModel {
     /// Whether to show the context compaction notification.
     var showContextCompactionNotification: Bool = false
     /// Indicates the response was truncated due to max_tokens limit.
-    var isTruncated: Bool = false
+    @Published var isTruncated: Bool = false
+
+    // Staging artifacts (files/code pasted into input but not sent yet)
+    @Published var stagingArtifacts: [Artifact] = []
+
+    private var task: Task<Void, Never>?
     /// The session ID of the truncated response (for continuation).
     var truncatedSessionID: UUID?
     /// Names of tools currently executing (for UI feedback).
@@ -309,6 +314,20 @@ class ChatViewModel {
 
         self.chatService = service
         return service
+    }
+
+    // MARK: - Artifact Staging
+
+    func stageArtifact(_ artifact: Artifact) {
+        stagingArtifacts.append(artifact)
+    }
+
+    func removeStagedArtifact(id: UUID) {
+        stagingArtifacts.removeAll { $0.id == id }
+    }
+
+    func clearStagedArtifacts() {
+        stagingArtifacts.removeAll()
     }
 
     /// Refresh tool toggles and authorized tool list, ensuring registry is loaded.
@@ -1190,33 +1209,33 @@ class ChatViewModel {
         }
     }
 
-#if DEBUG
-    /// Internal hook used by preview factories to set streaming-related state without initializing runtime services.
-    ///
-    /// Rationale: streaming join keys (`generationID`) and message IDs are stored in private properties so the
-    /// production pipeline can manage them consistently. Previews still need to drive those fields deterministically.
-    func _applyPreviewStreamingState(
-        isGenerating: Bool,
-        streamingText: String?,
-        generationID: UUID?,
-        streamingMessageID: UUID?,
-        streamingStartedAt: Date?,
-        executingToolNames: Set<String>
-    ) {
-        self.executingToolNames = executingToolNames
-        self.isGenerating = isGenerating
+    #if DEBUG
+        /// Internal hook used by preview factories to set streaming-related state without initializing runtime services.
+        ///
+        /// Rationale: streaming join keys (`generationID`) and message IDs are stored in private properties so the
+        /// production pipeline can manage them consistently. Previews still need to drive those fields deterministically.
+        func _applyPreviewStreamingState(
+            isGenerating: Bool,
+            streamingText: String?,
+            generationID: UUID?,
+            streamingMessageID: UUID?,
+            streamingStartedAt: Date?,
+            executingToolNames: Set<String>
+        ) {
+            self.executingToolNames = executingToolNames
+            self.isGenerating = isGenerating
 
-        if isGenerating, let text = streamingText {
-            self.streamingText = text
-            self.streamingStartedAt = streamingStartedAt
-            self.streamingMessageID = streamingMessageID
-            self.activeGenerationID = generationID
-        } else {
-            self.streamingText = nil
-            self.streamingStartedAt = nil
-            self.streamingMessageID = nil
-            self.activeGenerationID = nil
+            if isGenerating, let text = streamingText {
+                self.streamingText = text
+                self.streamingStartedAt = streamingStartedAt
+                self.streamingMessageID = streamingMessageID
+                self.activeGenerationID = generationID
+            } else {
+                self.streamingText = nil
+                self.streamingStartedAt = nil
+                self.streamingMessageID = nil
+                self.activeGenerationID = nil
+            }
         }
-    }
-#endif
+    #endif
 }

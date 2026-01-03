@@ -204,7 +204,7 @@ struct TerminalOutputView: View {
                 }
 
                 // Execution time
-                Text("\(result.executionTimeMs)ms")
+                Text(verbatim: "\(result.executionTimeMs)ms")
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 8)
@@ -219,7 +219,7 @@ struct TerminalOutputView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Text("Exit: \(result.exitCode)")
+                Text(verbatim: "Exit: \(result.exitCode)")
                     .font(.caption.monospaced())
                     .foregroundStyle(result.isSuccess ? Color.secondary : Color.red)
             }
@@ -334,12 +334,12 @@ struct CompactTerminalView: View {
                         Text("✓")
                             .foregroundStyle(.green)
                     } else {
-                        Text("Exit \(result.exitCode)")
+                        Text(verbatim: "Exit \(result.exitCode)")
                             .font(.caption.monospaced())
                             .foregroundStyle(.red)
                     }
 
-                    Text("\(result.executionTimeMs)ms")
+                    Text(verbatim: "\(result.executionTimeMs)ms")
                         .font(.caption2.monospacedDigit())
                         .foregroundStyle(.secondary)
 
