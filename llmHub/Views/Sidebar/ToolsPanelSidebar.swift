@@ -8,12 +8,7 @@
 import SwiftUI
 
 struct ToolsPanelSidebar: View {
-    @EnvironmentObject private var toolRegistry: ToolRegistry
-    // Assuming ToolAuthorizationService is a singleton or environment object.
-    // Based on usage in other files, checking if it's separate.
-    // Ideally we inject it.
-
-    // For now, let's assume we can access available tools from registry.
+    @Environment(ChatViewModel.self) private var viewModel
 
     @State private var searchText = ""
 
@@ -43,7 +38,7 @@ struct ToolsPanelSidebar: View {
                             .padding(.horizontal, 16)
                     } else {
                         ForEach(filteredTools) { tool in
-                            ToolRow(tool: tool)
+                            ToolRow(tool: tool, viewModel: viewModel)
                         }
                     }
                 }
@@ -52,20 +47,20 @@ struct ToolsPanelSidebar: View {
         }
     }
 
-    private var filteredTools: [ToolDefinition] {
-        let all = toolRegistry.availableTools
+    private var filteredTools: [UIToolToggleItem] {
+        let all = viewModel.toolToggles
         if searchText.isEmpty { return all }
         return all.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
     }
 }
 
 private struct ToolRow: View {
-    let tool: ToolDefinition
-    @State private var isEnabled: Bool = true  // This should bind to auth service
+    let tool: UIToolToggleItem
+    let viewModel: ChatViewModel
 
     var body: some View {
         HStack {
-            Image(systemName: "hammer.fill")  // Placeholder icon
+            Image(systemName: tool.icon)
                 .font(.system(size: 12))
                 .foregroundStyle(AppColors.textSecondary)
                 .frame(width: 20)
@@ -83,28 +78,29 @@ private struct ToolRow: View {
 
             Spacer()
 
-            Toggle("", isOn: $isEnabled)
-                .labelsHidden()
-                .controlSize(.mini)
-                .toggleStyle(.switch)
-                .onChange(of: isEnabled) { _, newValue in
-                    updatePermission(newValue)
-                }
+            Toggle(
+                "",
+                isOn: Binding(
+                    get: { tool.isEnabled },
+                    set: { newValue in
+                        updatePermission(newValue)
+                    }
+                )
+            )
+            .labelsHidden()
+            .controlSize(.mini)
+            .toggleStyle(.switch)
+            .disabled(!tool.isAvailable)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .contentShape(Rectangle())
-        .onAppear {
-            let status = ToolAuthorizationService.shared.checkAccess(for: tool.id)
-            isEnabled = (status == .authorized)
-        }
+        .help(tool.isAvailable ? "" : (tool.unavailableReason ?? "Unavailable"))
     }
 
     private func updatePermission(_ allowed: Bool) {
-        if allowed {
-            ToolAuthorizationService.shared.grantAccess(for: tool.id)
-        } else {
-            ToolAuthorizationService.shared.revokeAccess(for: tool.id)
+        Task {
+            await viewModel.setToolPermission(toolID: tool.id, enabled: allowed)
         }
     }
 }
