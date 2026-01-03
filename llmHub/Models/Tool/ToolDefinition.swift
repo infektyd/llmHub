@@ -9,7 +9,9 @@ import Foundation
 import OSLog
 
 /// Tool definition for LLM function calling.
-struct ToolDefinition: Sendable {
+struct ToolDefinition: Identifiable, Sendable {
+    var id: String { name }
+
     nonisolated private static let logger = Logger(
         subsystem: "com.llmhub",
         category: "ToolDefinition"
@@ -36,7 +38,8 @@ struct ToolDefinition: Sendable {
             #if DEBUG
                 assertionFailure(message)
             #endif
-            Self.logger.error("\(message, privacy: .public) Tool will be omitted from tool injection.")
+            Self.logger.error(
+                "\(message, privacy: .public) Tool will be omitted from tool injection.")
             return nil
         }
         self.inputSchema = tool.parameters.toDictionary()

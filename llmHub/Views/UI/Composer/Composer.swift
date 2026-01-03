@@ -17,8 +17,12 @@ struct ComposerBarView: View {
     @Binding var inputText: String
 
     let isStreaming: Bool
+    let stagingArtifacts: [Artifact]
+    let stagedAttachments: [Attachment]
     let onSend: () -> Void
     let onStop: () -> Void
+    let onRemoveArtifact: (UUID) -> Void
+    let onRemoveAttachment: (UUID) -> Void
 
     @FocusState private var isInputFocused: Bool
 
@@ -40,12 +44,12 @@ struct ComposerBarView: View {
             // Input Container (Bubble)
             VStack(alignment: .leading, spacing: 8) {
                 // Staged Artifacts
-                if !chatVM.stagingArtifacts.isEmpty {
+                if !stagingArtifacts.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
-                            ForEach(chatVM.stagingArtifacts) { artifact in
+                            ForEach(stagingArtifacts) { artifact in
                                 ArtifactPreviewChip(artifact: artifact) {
-                                    chatVM.removeStagedArtifact(id: artifact.id)
+                                    onRemoveArtifact(artifact.id)
                                 }
                             }
                         }
@@ -83,7 +87,18 @@ struct ComposerBarView: View {
                     }
                 }
                 // Staged attachments (images/files)
-                if !chatVM.stagedAttachments.isEmpty {
+                if !stagedAttachments.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(stagedAttachments) { attachment in
+                                AttachmentPreviewChip(attachment: attachment) {
+                                    onRemoveAttachment(attachment.id)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 4)
+                        .padding(.bottom, 4)
+                    }
                 }
             }
             .padding(.horizontal, 12)
@@ -157,9 +172,17 @@ struct ComposerBar: View {
             showSettings: $showSettings,
             inputText: $inputText,
             isStreaming: chatVM.isGenerating,
+            stagingArtifacts: chatVM.stagingArtifacts,
+            stagedAttachments: chatVM.stagedAttachments,
             onSend: sendMessage,
             onStop: {
                 Task { await chatVM.stopGeneration() }
+            },
+            onRemoveArtifact: { id in
+                chatVM.removeStagedArtifact(id: id)
+            },
+            onRemoveAttachment: { id in
+                chatVM.removeStagedAttachment(id: id)
             }
         )
     }
@@ -198,8 +221,12 @@ struct ComposerBar: View {
             showSettings: $showSettings,
             inputText: $input,
             isStreaming: false,
+            stagingArtifacts: [],
+            stagedAttachments: [],
             onSend: {},
-            onStop: {}
+            onStop: {},
+            onRemoveArtifact: { _ in },
+            onRemoveAttachment: { _ in }
         )
         .padding()
         .frame(width: 900)
@@ -217,8 +244,12 @@ struct ComposerBar: View {
             showSettings: $showSettings,
             inputText: $input,
             isStreaming: false,
+            stagingArtifacts: [],
+            stagedAttachments: [],
             onSend: {},
-            onStop: {}
+            onStop: {},
+            onRemoveArtifact: { _ in },
+            onRemoveAttachment: { _ in }
         )
         .padding()
         .frame(width: 900)
@@ -236,8 +267,12 @@ struct ComposerBar: View {
             showSettings: $showSettings,
             inputText: $input,
             isStreaming: true,
+            stagingArtifacts: [],
+            stagedAttachments: [],
             onSend: {},
-            onStop: {}
+            onStop: {},
+            onRemoveArtifact: { _ in },
+            onRemoveAttachment: { _ in }
         )
         .padding()
         .frame(width: 900)
@@ -255,8 +290,12 @@ struct ComposerBar: View {
             showSettings: $showSettings,
             inputText: $input,
             isStreaming: false,
+            stagingArtifacts: [],
+            stagedAttachments: [],
             onSend: {},
-            onStop: {}
+            onStop: {},
+            onRemoveArtifact: { _ in },
+            onRemoveAttachment: { _ in }
         )
         .padding()
         .frame(width: 900)

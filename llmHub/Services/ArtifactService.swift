@@ -46,8 +46,9 @@ enum ArtifactService {
                     messageID: messageID,
                     metadata: ArtifactMetadata(
                         filename: "Snippet.\(language)",  // accurate naming would require smarter parsing
+                        content: codeContent,
                         language: mapLanguage(language),
-                        content: codeContent
+                        sizeBytes: codeContent.utf8.count
                     )
                 )
 

@@ -5,7 +5,9 @@
 //  Created by Hans Axelsson on 12/01/25.
 //
 
+import Combine
 import Foundation
+import FoundationModels
 import OSLog
 import SwiftData
 import SwiftUI
@@ -94,10 +96,10 @@ class ChatViewModel {
     /// Whether to show the context compaction notification.
     var showContextCompactionNotification: Bool = false
     /// Indicates the response was truncated due to max_tokens limit.
-    @Published var isTruncated: Bool = false
+    var isTruncated: Bool = false
 
     // Staging artifacts (files/code pasted into input but not sent yet)
-    @Published var stagingArtifacts: [Artifact] = []
+    var stagingArtifacts: [Artifact] = []
 
     private var task: Task<Void, Never>?
     /// The session ID of the truncated response (for continuation).
@@ -342,10 +344,15 @@ class ChatViewModel {
         stagedAttachments.append(attachment)
     }
 
-    /// Removes an attachment from the staging area.
+    /// Removes an attachment from the staging area by index.
     func removeAttachment(at index: Int) {
         guard index >= 0 && index < stagedAttachments.count else { return }
         stagedAttachments.remove(at: index)
+    }
+
+    /// Removes an attachment from the staging area by ID.
+    func removeStagedAttachment(id: UUID) {
+        stagedAttachments.removeAll { $0.id == id }
     }
 
     /// Update permission state for a tool and refresh UI lists.
@@ -1139,8 +1146,7 @@ class ChatViewModel {
                 try? await Task.sleep(nanoseconds: UInt64(retryDelay * 1_000_000_000))
             }
 
-            // Check if Foundation Models framework is available
-            // This is a placeholder - actual implementation would check for the framework
+            // Use FoundationModels framework for availability check
             let isAvailable = await checkFoundationModelsAvailability()
 
             await MainActor.run {
@@ -1159,11 +1165,11 @@ class ChatViewModel {
         checkAFMAvailability(retryDelay: 2.0)
     }
 
-    /// Check if Foundation Models are available (placeholder implementation)
+    /// Check if Foundation Models are available using system APIs
     private func checkFoundationModelsAvailability() async -> Bool {
-        // This is a placeholder implementation
-        // In a real app, you would check if the Foundation Models framework is available
-        // For now, return false as it's not generally available yet
+        if #available(macOS 15.0, iOS 18.0, *) {
+            return SystemLanguageModel.default.availability == .available
+        }
         return false
     }
 
