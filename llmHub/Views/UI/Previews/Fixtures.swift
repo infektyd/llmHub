@@ -29,43 +29,43 @@ enum Canvas2PreviewFixtures {
     // MARK: - Markdown fixtures
 
     static let markdownShort: String = """
-Hi — here’s a quick checklist:
+        Hi — here’s a quick checklist:
 
-- Parse markdown
-- Render code
-- Keep previews deterministic
+        - Parse markdown
+        - Render code
+        - Keep previews deterministic
 
-Inline code like `let x = 1` should be styled.
-"""
+        Inline code like `let x = 1` should be styled.
+        """
 
     static let markdownLongWithCode: String = """
-# Canvas2 Preview Fixture
+        # Canvas2 Preview Fixture
 
-This message is intentionally long and includes common Markdown constructs:
+        This message is intentionally long and includes common Markdown constructs:
 
-## Lists
+        ## Lists
 
-1. Ordered list item one
-2. Ordered list item two
+        1. Ordered list item one
+        2. Ordered list item two
 
-- Unordered item A
-- Unordered item B
+        - Unordered item A
+        - Unordered item B
 
-> A blockquote that should render as a block.
+        > A blockquote that should render as a block.
 
-## Fenced code
+        ## Fenced code
 
-```swift
-struct Example {
-    let name: String
-    func greet() -> String { "Hello, \\(name)!" }
-}
-```
+        ```swift
+        struct Example {
+            let name: String
+            func greet() -> String { "Hello, \\(name)!" }
+        }
+        ```
 
-## Inline code + emphasis
+        ## Inline code + emphasis
 
-Use `@MainActor` for UI-facing state. **Bold** and _italic_ should render.
-"""
+        Use `@MainActor` for UI-facing state. **Bold** and _italic_ should render.
+        """
 
     static let markdownVeryLong: String = (0..<20)
         .map { i in "Paragraph \(i + 1): \(markdownShort)" }
@@ -80,12 +80,12 @@ Use `@MainActor` for UI-facing state. **Bold** and _italic_ should render.
             kind: .toolResult,
             status: .success,
             previewText: """
-{
-  "status": 200,
-  "contentType": "application/json",
-  "body": { "ok": true, "items": [1,2,3] }
-}
-""",
+                {
+                  "status": 200,
+                  "contentType": "application/json",
+                  "body": { "ok": true, "items": [1,2,3] }
+                }
+                """,
             actions: [.copy],
             metadata: nil
         )
@@ -98,15 +98,15 @@ Use `@MainActor` for UI-facing state. **Bold** and _italic_ should render.
             kind: .code,
             status: .success,
             previewText: """
-import SwiftUI
+                import SwiftUI
 
-struct TinyView: View {
-    var body: some View {
-        Text("Hello from an artifact")
-            .padding()
-    }
-}
-""",
+                struct TinyView: View {
+                    var body: some View {
+                        Text("Hello from an artifact")
+                            .padding()
+                    }
+                }
+                """,
             actions: [.copy, .open],
             metadata: nil
         )
@@ -119,11 +119,82 @@ struct TinyView: View {
             kind: .toolResult,
             status: .failure,
             previewText: """
-exit code: 127
-stderr: command not found: rg
-""",
+                exit code: 127
+                stderr: command not found: rg
+                """,
             actions: [.copy],
             metadata: nil
+        )
+    }
+
+    // MARK: - More Artifacts
+
+    /// Sample text artifact.
+    static func textArtifact() -> ArtifactPayload {
+        ArtifactPayload(
+            id: UUID(uuidString: "44444444-4444-4444-4444-444444444444")!,
+            title: "Summary",
+            kind: .text,
+            status: .success,
+            previewText:
+                "The analysis shows a 15% improvement in response latency after the optimization.",
+            actions: [.copy],
+            metadata: nil
+        )
+    }
+
+    /// Sample pending artifact.
+    static func pendingArtifact() -> ArtifactPayload {
+        ArtifactPayload(
+            id: UUID(uuidString: "55555555-5555-5555-5555-555555555555")!,
+            title: "Processing...",
+            kind: .other,
+            status: .pending,
+            previewText: "Waiting for tool output...",
+            actions: [],
+            metadata: nil
+        )
+    }
+
+    // MARK: - Tool Executions
+
+    /// Sample tool execution (running).
+    static func runningExecution() -> ToolExecution {
+        ToolExecution(
+            id: "exec-001",
+            toolID: "http_request",
+            name: "http_request",
+            icon: "network",
+            status: .running,
+            output: "GET https://api.openai.com/v1/models...",
+            timestamp: baseDate
+        )
+    }
+
+    /// Sample tool execution (completed).
+    static func completedExecution() -> ToolExecution {
+        ToolExecution(
+            id: "exec-002",
+            toolID: "run_command",
+            name: "run_command",
+            icon: "terminal",
+            status: .completed,
+            output:
+                "total 24\ndrwxr-xr-x  5 user  staff   160 Jan  1 00:00 .\ndrwxr-xr-x  3 user  staff    96 Jan  1 00:00 ..",
+            timestamp: baseDate.addingTimeInterval(-60)
+        )
+    }
+
+    /// Sample tool execution (failed).
+    static func failedExecution() -> ToolExecution {
+        ToolExecution(
+            id: "exec-003",
+            toolID: "file_read",
+            name: "file_read",
+            icon: "doc.text",
+            status: .failed,
+            output: "Error: File not found: /path/to/missing/file.txt",
+            timestamp: baseDate.addingTimeInterval(-120)
         )
     }
 
@@ -155,7 +226,8 @@ stderr: command not found: rg
     static func longTranscriptRows(messageCount: Int = 20) -> [TranscriptRowViewModel] {
         return (0..<messageCount).map { i in
             let isUser = (i % 2 == 0)
-            let id = isUser
+            let id =
+                isUser
                 ? UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", i + 1))!
                 : UUID(uuidString: String(format: "00000000-0000-0000-0001-%012d", i + 1))!
             let header = isUser ? "You" : "Assistant"
@@ -174,7 +246,9 @@ stderr: command not found: rg
                 headerLabel: header,
                 content: content,
                 isStreaming: false,
-                generationID: isUser ? nil : UUID(uuidString: String(format: "33333333-3333-3333-3333-%012d", i + 1)),
+                generationID: isUser
+                    ? nil
+                    : UUID(uuidString: String(format: "33333333-3333-3333-3333-%012d", i + 1)),
                 artifacts: artifacts
             )
         }
@@ -204,7 +278,8 @@ stderr: command not found: rg
                 createdAt: baseDate,
                 updatedAt: baseDate.addingTimeInterval(60),
                 messages: [],
-                metadata: ChatSessionMetadata(lastTokenUsage: nil, totalCostUSD: 0, referenceID: "preview-a")
+                metadata: ChatSessionMetadata(
+                    lastTokenUsage: nil, totalCostUSD: 0, referenceID: "preview-a")
             )
         )
 
@@ -217,7 +292,8 @@ stderr: command not found: rg
                 createdAt: baseDate.addingTimeInterval(-3600),
                 updatedAt: baseDate.addingTimeInterval(-1800),
                 messages: [],
-                metadata: ChatSessionMetadata(lastTokenUsage: nil, totalCostUSD: 0, referenceID: "preview-b")
+                metadata: ChatSessionMetadata(
+                    lastTokenUsage: nil, totalCostUSD: 0, referenceID: "preview-b")
             )
         )
 
@@ -290,4 +366,3 @@ stderr: command not found: rg
         }
     }
 }
-

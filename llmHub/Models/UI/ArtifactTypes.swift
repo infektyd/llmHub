@@ -1,10 +1,3 @@
-//
-//  ArtifactTypes.swift
-//  llmHub
-//
-//  UI-facing artifact type definitions for cards and inspector views.
-//
-
 import Foundation
 import SwiftUI
 
@@ -17,7 +10,7 @@ enum ArtifactKind: String, Codable, Sendable, CaseIterable {
     case image
     case toolResult
     case other
-    
+
     var displayName: String {
         switch self {
         case .code: return "Code"
@@ -27,7 +20,7 @@ enum ArtifactKind: String, Codable, Sendable, CaseIterable {
         case .other: return "Other"
         }
     }
-    
+
     var icon: String {
         switch self {
         case .code: return "chevron.left.forwardslash.chevron.right"
@@ -46,7 +39,7 @@ enum ArtifactStatus: String, Codable, Sendable {
     case pending
     case success
     case failure
-    
+
     var color: Color {
         switch self {
         case .pending: return .orange
@@ -65,7 +58,7 @@ enum ArtifactAction: String, Codable, Sendable, CaseIterable {
     case download
     case share
     case retry
-    
+
     var displayName: String {
         switch self {
         case .copy: return "Copy"
@@ -75,7 +68,7 @@ enum ArtifactAction: String, Codable, Sendable, CaseIterable {
         case .retry: return "Retry"
         }
     }
-    
+
     var icon: String {
         switch self {
         case .copy: return "doc.on.doc"
@@ -99,7 +92,7 @@ struct ArtifactPayload: Identifiable, Equatable, Sendable {
     let previewText: String
     let actions: [ArtifactAction]
     let metadata: [String: String]?
-    
+
     init(
         id: UUID = UUID(),
         title: String,
@@ -126,15 +119,15 @@ struct ArtifactMetadata: Identifiable, Equatable, Sendable {
     let id: UUID
     let filename: String
     let content: String
-    let language: ArtifactLanguage
+    let language: CodeLanguage
     let sizeBytes: Int
     let fileURL: URL?
-    
+
     init(
         id: UUID = UUID(),
         filename: String,
         content: String,
-        language: ArtifactLanguage,
+        language: CodeLanguage,
         sizeBytes: Int,
         fileURL: URL? = nil
     ) {
@@ -144,39 +137,5 @@ struct ArtifactMetadata: Identifiable, Equatable, Sendable {
         self.language = language
         self.sizeBytes = sizeBytes
         self.fileURL = fileURL
-    }
-}
-
-/// Language/syntax type for syntax highlighting.
-enum ArtifactLanguage: String, Codable, Sendable, CaseIterable {
-    case json
-    case swift
-    case python
-    case javascript
-    case markdown
-    case text
-    
-    var displayName: String {
-        switch self {
-        case .json: return "JSON"
-        case .swift: return "Swift"
-        case .python: return "Python"
-        case .javascript: return "JavaScript"
-        case .markdown: return "Markdown"
-        case .text: return "Plain Text"
-        }
-    }
-    
-    /// Infer language from filename extension.
-    static func infer(from filename: String) -> ArtifactLanguage {
-        let ext = filename.split(separator: ".").last?.lowercased() ?? ""
-        switch ext {
-        case "json", "jsonl": return .json
-        case "swift": return .swift
-        case "py": return .python
-        case "js", "ts", "jsx", "tsx": return .javascript
-        case "md", "markdown": return .markdown
-        default: return .text
-        }
     }
 }

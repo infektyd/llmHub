@@ -296,7 +296,7 @@ struct FloatingSidebarRight: View {
             ]
         )
 
-        return FloatingSidebarRight(isVisible: $visible, state: state)
+        FloatingSidebarRight(isVisible: $visible, state: state)
             .environment(ChatViewModel())
             .frame(width: 360, height: 720)
             .padding()
@@ -304,7 +304,7 @@ struct FloatingSidebarRight: View {
 
     #Preview("SidebarRight - Empty") {
         @Previewable @State var visible = true
-        return FloatingSidebarRight(isVisible: $visible, state: .empty())
+        FloatingSidebarRight(isVisible: $visible, state: .empty())
             .environment(ChatViewModel())
             .frame(width: 360, height: 720)
             .padding()
