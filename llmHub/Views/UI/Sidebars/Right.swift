@@ -100,12 +100,12 @@ struct FloatingSidebarRight: View {
             .frame(maxHeight: .infinity)
         }
         .background {
-            RoundedRectangle(cornerRadius: 04, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(AppColors.backgroundSecondary)
                 .shadow(color: AppColors.smoke, radius: 10, x: 0, y: 0)
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 04, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(AppColors.accentSecondary, lineWidth: 1)
         }
     }
@@ -297,6 +297,7 @@ struct FloatingSidebarRight: View {
         )
 
         return FloatingSidebarRight(isVisible: $visible, state: state)
+            .environment(ChatViewModel())
             .frame(width: 360, height: 720)
             .padding()
     }
@@ -304,6 +305,7 @@ struct FloatingSidebarRight: View {
     #Preview("SidebarRight - Empty") {
         @Previewable @State var visible = true
         return FloatingSidebarRight(isVisible: $visible, state: .empty())
+            .environment(ChatViewModel())
             .frame(width: 360, height: 720)
             .padding()
     }

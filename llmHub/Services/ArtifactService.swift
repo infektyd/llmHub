@@ -33,10 +33,10 @@ enum ArtifactService {
         // Heuristic: > 5 lines OR > 200 characters
         let codeBlockPattern = /```(\w+)?\n([\s\S]*?)```/
 
-        var matches = content.matches(of: codeBlockPattern)
+        let matches = content.matches(of: codeBlockPattern)
         // Process in reverse order to maintain indices while replacing
         matches.reversed().forEach { match in
-            let fullMatch = content[match.range]
+            _ = content[match.range]
             let language = String(match.output.1 ?? "text")
             let codeContent = String(match.output.2)
 

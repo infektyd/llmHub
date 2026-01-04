@@ -9,7 +9,9 @@ import Foundation
 
 enum PreviewMode {
     static var isRunning: Bool {
-        ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+        let env = ProcessInfo.processInfo.environment
+        if env["XCODE_RUNNING_FOR_PREVIEWS"] == "1" { return true }
+        if env["XCODE_RUNNING_FOR_PLAYGROUNDS"] == "1" { return true }
+        return false
     }
 }
-
