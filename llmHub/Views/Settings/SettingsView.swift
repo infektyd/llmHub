@@ -21,9 +21,10 @@ struct SettingsView: View {
         case providers = "Providers"
         case tools = "Tools"
         case appearance = "Appearance"
+        case advanced = "Advanced"
         case about = "About"
         #if DEBUG
-        case diagnostics = "Diagnostics"
+            case diagnostics = "Diagnostics"
         #endif
 
         var id: String { rawValue }
@@ -33,9 +34,10 @@ struct SettingsView: View {
             case .providers: return "key.fill"
             case .tools: return "wrench.and.screwdriver"
             case .appearance: return "paintbrush.fill"
+            case .advanced: return "gearshape.2.fill"
             case .about: return "info.circle.fill"
             #if DEBUG
-            case .diagnostics: return "stethoscope"
+                case .diagnostics: return "stethoscope"
             #endif
             }
         }
@@ -44,33 +46,35 @@ struct SettingsView: View {
     var body: some View {
         Group {
             #if os(macOS)
-            HSplitView {
-                // Sidebar navigation
-                sidebarContent
-                    .frame(minWidth: 180, maxWidth: 220)
+                HSplitView {
+                    // Sidebar navigation
+                    sidebarContent
+                        .frame(minWidth: 180, maxWidth: 220)
 
-                // Detail content
-                detailContent
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
+                    // Detail content
+                    detailContent
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             #else
-            NavigationStack {
-                List(SettingsSection.allCases) { section in
-                    NavigationLink(value: section) {
-                        SettingsSidebarRow(
-                            title: section.rawValue,
-                            icon: section.icon,
-                            isSelected: selectedSection == section
+                NavigationStack {
+                    List(SettingsSection.allCases) { section in
+                        NavigationLink(value: section) {
+                            SettingsSidebarRow(
+                                title: section.rawValue,
+                                icon: section.icon,
+                                isSelected: selectedSection == section
+                            )
+                        }
+                    }
+                    .listStyle(.insetGrouped)
+                    .navigationTitle("Settings")
+                    .navigationDestination(for: SettingsSection.self) { section in
+                        SettingsDetailView(
+                            section: section, viewModel: viewModel, afmDiagnostics: afmDiagnostics
                         )
+                        .navigationTitle(section.rawValue)
                     }
                 }
-                .listStyle(.insetGrouped)
-                .navigationTitle("Settings")
-                .navigationDestination(for: SettingsSection.self) { section in
-                    SettingsDetailView(section: section, viewModel: viewModel, afmDiagnostics: afmDiagnostics)
-                        .navigationTitle(section.rawValue)
-                }
-            }
             #endif
         }
         .background(AppColors.backgroundPrimary)
@@ -116,11 +120,13 @@ struct SettingsView: View {
                     ToolsSection(viewModel: viewModel)
                 case .appearance:
                     AppearanceSection()
+                case .advanced:
+                    AdvancedSettingsView()
                 case .about:
                     AboutSection()
                 #if DEBUG
-                case .diagnostics:
-                    DiagnosticsSection(afmDiagnostics: afmDiagnostics)
+                    case .diagnostics:
+                        DiagnosticsSection(afmDiagnostics: afmDiagnostics)
                 #endif
                 }
             }
@@ -147,11 +153,13 @@ private struct SettingsDetailView: View {
                     ToolsSection(viewModel: viewModel)
                 case .appearance:
                     AppearanceSection()
+                case .advanced:
+                    AdvancedSettingsView()
                 case .about:
                     AboutSection()
                 #if DEBUG
-                case .diagnostics:
-                    DiagnosticsSection(afmDiagnostics: afmDiagnostics)
+                    case .diagnostics:
+                        DiagnosticsSection(afmDiagnostics: afmDiagnostics)
                 #endif
                 }
             }
@@ -256,7 +264,10 @@ struct ProvidersSection: View {
 
             // Provider cards
             SettingsCard {
-                ForEach(Array(SettingsViewModel.ProviderInfo.allProviders.enumerated()), id: \.element.provider) { index, info in
+                ForEach(
+                    Array(SettingsViewModel.ProviderInfo.allProviders.enumerated()),
+                    id: \.element.provider
+                ) { index, info in
                     ProviderRow(
                         info: info,
                         keyBinding: viewModel.binding(for: info.provider),
@@ -304,7 +315,10 @@ struct ProviderRow: View {
                         .frame(width: 28, height: 28)
                         .background {
                             RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(hasKey ? AppColors.accent.opacity(0.12) : AppColors.backgroundSecondary)
+                                .fill(
+                                    hasKey
+                                        ? AppColors.accent.opacity(0.12)
+                                        : AppColors.backgroundSecondary)
                         }
 
                     VStack(alignment: .leading, spacing: 2) {
@@ -503,7 +517,8 @@ struct ToolsSection: View {
                         Spacer()
                     }
                 } else {
-                    ForEach(Array(viewModel.toolToggles.enumerated()), id: \.element.id) { index, tool in
+                    ForEach(Array(viewModel.toolToggles.enumerated()), id: \.element.id) {
+                        index, tool in
                         ToolToggleRow(
                             tool: tool,
                             onToggle: { enabled in
@@ -536,13 +551,16 @@ struct ToolToggleRow: View {
                 .frame(width: 28, height: 28)
                 .background {
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(tool.isAvailable ? AppColors.accent.opacity(0.12) : AppColors.backgroundSecondary)
+                        .fill(
+                            tool.isAvailable
+                                ? AppColors.accent.opacity(0.12) : AppColors.backgroundSecondary)
                 }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(tool.name)
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(tool.isAvailable ? AppColors.textPrimary : AppColors.textTertiary)
+                    .foregroundStyle(
+                        tool.isAvailable ? AppColors.textPrimary : AppColors.textTertiary)
 
                 Text(tool.description)
                     .font(.system(size: 11))
@@ -553,10 +571,13 @@ struct ToolToggleRow: View {
             Spacer()
 
             if tool.isAvailable {
-                Toggle("", isOn: Binding(
-                    get: { tool.isEnabled },
-                    set: { onToggle($0) }
-                ))
+                Toggle(
+                    "",
+                    isOn: Binding(
+                        get: { tool.isEnabled },
+                        set: { onToggle($0) }
+                    )
+                )
                 .toggleStyle(.switch)
                 .controlSize(.small)
             } else if let reason = tool.unavailableReason {
@@ -579,9 +600,7 @@ struct ToolToggleRow: View {
 // MARK: - Appearance Section
 
 struct AppearanceSection: View {
-    @AppStorage("preferredColorScheme") private var preferredScheme: String = "system"
-    @AppStorage("compactMode") private var compactMode: Bool = false
-    @AppStorage("showTokenCounts") private var showTokenCounts: Bool = true
+    @Environment(\.settingsManager) private var settingsManager
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -597,10 +616,16 @@ struct AppearanceSection: View {
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(AppColors.textPrimary)
 
-                    Picker("", selection: $preferredScheme) {
-                        Text("System").tag("system")
-                        Text("Light").tag("light")
-                        Text("Dark").tag("dark")
+                    Picker(
+                        "",
+                        selection: Binding(
+                            get: { settingsManager.settings.colorScheme },
+                            set: { settingsManager.settings.colorScheme = $0 }
+                        )
+                    ) {
+                        ForEach(ColorSchemeChoice.allCases, id: \.self) { choice in
+                            Text(choice.displayName).tag(choice)
+                        }
                     }
                     .pickerStyle(.segmented)
                 }
@@ -609,8 +634,44 @@ struct AppearanceSection: View {
                 Divider()
                     .padding(.horizontal, 16)
 
+                // Font size slider
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("Font Size")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(AppColors.textPrimary)
+                        Spacer()
+                        Text("\(Int(settingsManager.settings.fontSize * 100))%")
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundStyle(AppColors.textSecondary)
+                    }
+
+                    Text("Adjust the base font size throughout the application")
+                        .font(.system(size: 11))
+                        .foregroundStyle(AppColors.textTertiary)
+
+                    Slider(
+                        value: Binding(
+                            get: { settingsManager.settings.fontSize },
+                            set: { settingsManager.settings.fontSize = $0 }
+                        ),
+                        in: 0.8...1.5,
+                        step: 0.05
+                    )
+                    .tint(AppColors.accent)
+                }
+                .padding(16)
+
+                Divider()
+                    .padding(.horizontal, 16)
+
                 // Compact mode toggle
-                Toggle(isOn: $compactMode) {
+                Toggle(
+                    isOn: Binding(
+                        get: { settingsManager.settings.compactMode },
+                        set: { settingsManager.settings.compactMode = $0 }
+                    )
+                ) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Compact Mode")
                             .font(.system(size: 14, weight: .medium))
@@ -627,7 +688,12 @@ struct AppearanceSection: View {
                     .padding(.horizontal, 16)
 
                 // Token counts toggle
-                Toggle(isOn: $showTokenCounts) {
+                Toggle(
+                    isOn: Binding(
+                        get: { settingsManager.settings.showTokenCounts },
+                        set: { settingsManager.settings.showTokenCounts = $0 }
+                    )
+                ) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Show Token Counts")
                             .font(.system(size: 14, weight: .medium))
@@ -707,7 +773,9 @@ struct AboutSection: View {
                 // Links
                 VStack(alignment: .leading, spacing: 8) {
                     LinkRow(title: "GitHub Repository", icon: "link", url: "https://github.com")
-                    LinkRow(title: "Report an Issue", icon: "exclamationmark.bubble", url: "https://github.com")
+                    LinkRow(
+                        title: "Report an Issue", icon: "exclamationmark.bubble",
+                        url: "https://github.com")
                 }
                 .padding(16)
             }
@@ -716,21 +784,21 @@ struct AboutSection: View {
 
     private var platformName: String {
         #if os(macOS)
-        return "macOS \(ProcessInfo.processInfo.operatingSystemVersionString)"
+            return "macOS \(ProcessInfo.processInfo.operatingSystemVersionString)"
         #elseif os(iOS)
-        return "iOS \(UIDevice.current.systemVersion)"
+            return "iOS \(UIDevice.current.systemVersion)"
         #else
-        return "Unknown"
+            return "Unknown"
         #endif
     }
 
     private var architectureName: String {
         #if arch(arm64)
-        return "Apple Silicon (arm64)"
+            return "Apple Silicon (arm64)"
         #elseif arch(x86_64)
-        return "Intel (x86_64)"
+            return "Intel (x86_64)"
         #else
-        return "Unknown"
+            return "Unknown"
         #endif
     }
 }
@@ -788,305 +856,302 @@ struct LinkRow: View {
 // MARK: - Diagnostics Section (DEBUG only)
 
 #if DEBUG
-struct DiagnosticsSection: View {
-    let afmDiagnostics: AFMDiagnosticsState
+    struct DiagnosticsSection: View {
+        let afmDiagnostics: AFMDiagnosticsState
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            SettingsSectionHeader(
-                "Diagnostics",
-                subtitle: "Debug tools and Apple Foundation Models testing"
-            )
+        var body: some View {
+            VStack(alignment: .leading, spacing: 20) {
+                SettingsSectionHeader(
+                    "Diagnostics",
+                    subtitle: "Debug tools and Apple Foundation Models testing"
+                )
 
-            SettingsCard {
-                // AFM Status
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Text("Apple Foundation Models")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(AppColors.textPrimary)
-                        Spacer()
-                        if afmDiagnostics.availability != nil {
-                            HStack(spacing: 6) {
-                                Circle()
-                                    .fill(afmDiagnostics.statusColor)
-                                    .frame(width: 8, height: 8)
-                                Text(afmDiagnostics.reasonText)
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundStyle(afmDiagnostics.statusColor)
+                SettingsCard {
+                    // AFM Status
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("Apple Foundation Models")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(AppColors.textPrimary)
+                            Spacer()
+                            if afmDiagnostics.availability != nil {
+                                HStack(spacing: 6) {
+                                    Circle()
+                                        .fill(afmDiagnostics.statusColor)
+                                        .frame(width: 8, height: 8)
+                                    Text(afmDiagnostics.reasonText)
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundStyle(afmDiagnostics.statusColor)
+                                }
+                            }
+                        }
+
+                        Toggle(
+                            "Verbose AFM Logs",
+                            isOn: Bindable(afmDiagnostics).foundationModelsDiagnosticsEnabled
+                        )
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+
+                        HStack(spacing: 12) {
+                            Button("Run Probe") {
+                                afmDiagnostics.runProbe()
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+
+                            Button("Test Generate") {
+                                afmDiagnostics.runSmallGenerate()
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+
+                            if afmDiagnostics.lastCheckTime != nil {
+                                Spacer()
+                                Text("Last: \(afmDiagnostics.timeSinceCheck)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(AppColors.textTertiary)
                             }
                         }
                     }
-
-                    Toggle(
-                        "Verbose AFM Logs",
-                        isOn: Bindable(afmDiagnostics).foundationModelsDiagnosticsEnabled
-                    )
-                    .toggleStyle(.switch)
-                    .controlSize(.small)
-
-                    HStack(spacing: 12) {
-                        Button("Run Probe") {
-                            afmDiagnostics.runProbe()
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-
-                        Button("Test Generate") {
-                            afmDiagnostics.runSmallGenerate()
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-
-                        if afmDiagnostics.lastCheckTime != nil {
-                            Spacer()
-                            Text("Last: \(afmDiagnostics.timeSinceCheck)")
-                                .font(.system(size: 11))
-                                .foregroundStyle(AppColors.textTertiary)
-                        }
-                    }
+                    .padding(16)
                 }
-                .padding(16)
             }
         }
     }
-}
 #endif
-
-// MARK: - Bundle Extension
-
-extension Bundle {
-    var buildNumber: String? {
-        infoDictionary?["CFBundleVersion"] as? String
-    }
-}
 
 // MARK: - Previews
 
 #if DEBUG
 
-// MARK: Preview Fixtures
+    // MARK: Preview Fixtures
 
-@MainActor
-enum SettingsPreviewFixtures {
-    static func mockToolToggles() -> [UIToolToggleItem] {
-        [
-            UIToolToggleItem(
-                id: "calculator",
-                name: "Calculator",
-                icon: "function",
-                description: "Perform mathematical calculations",
-                isEnabled: true,
-                isAvailable: true,
-                unavailableReason: nil
-            ),
-            UIToolToggleItem(
-                id: "code_interpreter",
-                name: "Code Interpreter",
-                icon: "curlybraces",
-                description: "Execute Python code in a sandboxed environment",
-                isEnabled: true,
-                isAvailable: true,
-                unavailableReason: nil
-            ),
-            UIToolToggleItem(
-                id: "web_search",
-                name: "Web Search",
-                icon: "globe",
-                description: "Search the web for current information",
-                isEnabled: false,
-                isAvailable: true,
-                unavailableReason: nil
-            ),
-            UIToolToggleItem(
-                id: "shell",
-                name: "Shell",
-                icon: "terminal",
-                description: "Execute shell commands",
-                isEnabled: false,
-                isAvailable: false,
-                unavailableReason: "Requires macOS"
-            ),
-        ]
-    }
-
-    static func mockSettingsViewModel(withKeys: Bool = false, withTools: Bool = true) -> SettingsViewModel {
-        let vm = SettingsViewModel()
-        if withKeys {
-            vm.openAIKey = "sk-mock-key-12345"
-            vm.anthropicKey = "sk-ant-mock-67890"
+    @MainActor
+    enum SettingsPreviewFixtures {
+        static func mockToolToggles() -> [UIToolToggleItem] {
+            [
+                UIToolToggleItem(
+                    id: "calculator",
+                    name: "Calculator",
+                    icon: "function",
+                    description: "Perform mathematical calculations",
+                    isEnabled: true,
+                    isAvailable: true,
+                    unavailableReason: nil
+                ),
+                UIToolToggleItem(
+                    id: "code_interpreter",
+                    name: "Code Interpreter",
+                    icon: "curlybraces",
+                    description: "Execute Python code in a sandboxed environment",
+                    isEnabled: true,
+                    isAvailable: true,
+                    unavailableReason: nil
+                ),
+                UIToolToggleItem(
+                    id: "web_search",
+                    name: "Web Search",
+                    icon: "globe",
+                    description: "Search the web for current information",
+                    isEnabled: false,
+                    isAvailable: true,
+                    unavailableReason: nil
+                ),
+                UIToolToggleItem(
+                    id: "shell",
+                    name: "Shell",
+                    icon: "terminal",
+                    description: "Execute shell commands",
+                    isEnabled: false,
+                    isAvailable: false,
+                    unavailableReason: "Requires macOS"
+                ),
+            ]
         }
-        if withTools {
-            vm.toolToggles = mockToolToggles()
+
+        static func mockSettingsViewModel(withKeys: Bool = false, withTools: Bool = true)
+            -> SettingsViewModel
+        {
+            let vm = SettingsViewModel()
+            if withKeys {
+                vm.openAIKey = "sk-mock-key-12345"
+                vm.anthropicKey = "sk-ant-mock-67890"
+            }
+            if withTools {
+                vm.toolToggles = mockToolToggles()
+            }
+            return vm
         }
-        return vm
     }
-}
 
-// MARK: Full Settings Preview
+    // MARK: Full Settings Preview
 
-#Preview("Settings • Full") {
-    SettingsView()
-        .environmentObject(ModelRegistry())
-        .environment(AFMDiagnosticsState())
-        .frame(width: 800, height: 600)
-}
-
-// MARK: Section Previews (Selectable Components)
-
-#Preview("Section • Providers (Empty)") {
-    ScrollView {
-        ProvidersSection(viewModel: SettingsPreviewFixtures.mockSettingsViewModel())
-            .padding(24)
+    #Preview("Settings • Full") {
+        SettingsView()
+            .environmentObject(ModelRegistry())
+            .environment(AFMDiagnosticsState())
+            .frame(width: 800, height: 600)
     }
-    .background(AppColors.backgroundPrimary)
-    .frame(width: 600, height: 500)
-}
 
-#Preview("Section • Providers (Configured)") {
-    ScrollView {
-        ProvidersSection(viewModel: SettingsPreviewFixtures.mockSettingsViewModel(withKeys: true))
-            .padding(24)
+    // MARK: Section Previews (Selectable Components)
+
+    #Preview("Section • Providers (Empty)") {
+        ScrollView {
+            ProvidersSection(viewModel: SettingsPreviewFixtures.mockSettingsViewModel())
+                .padding(24)
+        }
+        .background(AppColors.backgroundPrimary)
+        .frame(width: 600, height: 500)
     }
-    .background(AppColors.backgroundPrimary)
-    .frame(width: 600, height: 500)
-}
 
-#Preview("Section • Tools") {
-    ScrollView {
-        ToolsSection(viewModel: SettingsPreviewFixtures.mockSettingsViewModel())
-            .padding(24)
-    }
-    .background(AppColors.backgroundPrimary)
-    .frame(width: 600, height: 400)
-}
-
-#Preview("Section • Appearance") {
-    ScrollView {
-        AppearanceSection()
-            .padding(24)
-    }
-    .background(AppColors.backgroundPrimary)
-    .frame(width: 600, height: 400)
-}
-
-#Preview("Section • About") {
-    ScrollView {
-        AboutSection()
-            .padding(24)
-    }
-    .background(AppColors.backgroundPrimary)
-    .frame(width: 600, height: 500)
-}
-
-#Preview("Section • Diagnostics") {
-    ScrollView {
-        DiagnosticsSection(afmDiagnostics: AFMDiagnosticsState())
-            .padding(24)
-    }
-    .background(AppColors.backgroundPrimary)
-    .frame(width: 600, height: 300)
-}
-
-// MARK: Component Previews (Granular Selection)
-
-#Preview("Component • Sidebar Row") {
-    VStack(spacing: 4) {
-        SettingsSidebarRow(title: "Providers", icon: "key.fill", isSelected: true)
-        SettingsSidebarRow(title: "Tools", icon: "wrench.and.screwdriver", isSelected: false)
-        SettingsSidebarRow(title: "Appearance", icon: "paintbrush.fill", isSelected: false)
-    }
-    .padding()
-    .background(AppColors.backgroundSecondary)
-    .frame(width: 200)
-}
-
-#Preview("Component • Provider Row (Collapsed)") {
-    SettingsCard {
-        ProviderRow(
-            info: SettingsViewModel.ProviderInfo.allProviders[0],
-            keyBinding: .constant(""),
-            hasKey: false,
-            isSaving: false,
-            onSave: {},
-            onDelete: {}
-        )
-    }
-    .padding(24)
-    .background(AppColors.backgroundPrimary)
-    .frame(width: 500)
-}
-
-#Preview("Component • Provider Row (Configured)") {
-    SettingsCard {
-        ProviderRow(
-            info: SettingsViewModel.ProviderInfo.allProviders[1],
-            keyBinding: .constant("sk-ant-api03-xxxxx"),
-            hasKey: true,
-            isSaving: false,
-            onSave: {},
-            onDelete: {}
-        )
-    }
-    .padding(24)
-    .background(AppColors.backgroundPrimary)
-    .frame(width: 500)
-}
-
-#Preview("Component • Tool Toggle Row") {
-    SettingsCard {
-        VStack(spacing: 0) {
-            ToolToggleRow(
-                tool: SettingsPreviewFixtures.mockToolToggles()[0],
-                onToggle: { _ in }
+    #Preview("Section • Providers (Configured)") {
+        ScrollView {
+            ProvidersSection(
+                viewModel: SettingsPreviewFixtures.mockSettingsViewModel(withKeys: true)
             )
-            Divider().padding(.horizontal, 16)
-            ToolToggleRow(
-                tool: SettingsPreviewFixtures.mockToolToggles()[3],
-                onToggle: { _ in }
+            .padding(24)
+        }
+        .background(AppColors.backgroundPrimary)
+        .frame(width: 600, height: 500)
+    }
+
+    #Preview("Section • Tools") {
+        ScrollView {
+            ToolsSection(viewModel: SettingsPreviewFixtures.mockSettingsViewModel())
+                .padding(24)
+        }
+        .background(AppColors.backgroundPrimary)
+        .frame(width: 600, height: 400)
+    }
+
+    #Preview("Section • Appearance") {
+        ScrollView {
+            AppearanceSection()
+                .padding(24)
+        }
+        .background(AppColors.backgroundPrimary)
+        .frame(width: 600, height: 400)
+    }
+
+    #Preview("Section • About") {
+        ScrollView {
+            AboutSection()
+                .padding(24)
+        }
+        .background(AppColors.backgroundPrimary)
+        .frame(width: 600, height: 500)
+    }
+
+    #Preview("Section • Diagnostics") {
+        ScrollView {
+            DiagnosticsSection(afmDiagnostics: AFMDiagnosticsState())
+                .padding(24)
+        }
+        .background(AppColors.backgroundPrimary)
+        .frame(width: 600, height: 300)
+    }
+
+    // MARK: Component Previews (Granular Selection)
+
+    #Preview("Component • Sidebar Row") {
+        VStack(spacing: 4) {
+            SettingsSidebarRow(title: "Providers", icon: "key.fill", isSelected: true)
+            SettingsSidebarRow(title: "Tools", icon: "wrench.and.screwdriver", isSelected: false)
+            SettingsSidebarRow(title: "Appearance", icon: "paintbrush.fill", isSelected: false)
+        }
+        .padding()
+        .background(AppColors.backgroundSecondary)
+        .frame(width: 200)
+    }
+
+    #Preview("Component • Provider Row (Collapsed)") {
+        SettingsCard {
+            ProviderRow(
+                info: SettingsViewModel.ProviderInfo.allProviders[0],
+                keyBinding: .constant(""),
+                hasKey: false,
+                isSaving: false,
+                onSave: {},
+                onDelete: {}
             )
         }
+        .padding(24)
+        .background(AppColors.backgroundPrimary)
+        .frame(width: 500)
     }
-    .padding(24)
-    .background(AppColors.backgroundPrimary)
-    .frame(width: 500)
-}
 
-#Preview("Component • Status Banner (Success)") {
-    VStack(spacing: 12) {
-        StatusBanner(message: "API key saved successfully", isError: false)
-        StatusBanner(message: "Failed to save key: Invalid format", isError: true)
-    }
-    .padding(24)
-    .background(AppColors.backgroundPrimary)
-    .frame(width: 500)
-}
-
-#Preview("Component • Settings Card") {
-    SettingsCard {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Card Title")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(AppColors.textPrimary)
-            Text("Card content goes here with proper styling.")
-                .font(.system(size: 13))
-                .foregroundStyle(AppColors.textSecondary)
+    #Preview("Component • Provider Row (Configured)") {
+        SettingsCard {
+            ProviderRow(
+                info: SettingsViewModel.ProviderInfo.allProviders[1],
+                keyBinding: .constant("sk-ant-api03-xxxxx"),
+                hasKey: true,
+                isSaving: false,
+                onSave: {},
+                onDelete: {}
+            )
         }
-        .padding(16)
+        .padding(24)
+        .background(AppColors.backgroundPrimary)
+        .frame(width: 500)
     }
-    .padding(24)
-    .background(AppColors.backgroundPrimary)
-    .frame(width: 400)
-}
 
-#Preview("Component • Section Header") {
-    VStack(alignment: .leading, spacing: 24) {
-        SettingsSectionHeader("Simple Header")
-        SettingsSectionHeader("Header with Subtitle", subtitle: "A helpful description of this section")
+    #Preview("Component • Tool Toggle Row") {
+        SettingsCard {
+            VStack(spacing: 0) {
+                ToolToggleRow(
+                    tool: SettingsPreviewFixtures.mockToolToggles()[0],
+                    onToggle: { _ in }
+                )
+                Divider().padding(.horizontal, 16)
+                ToolToggleRow(
+                    tool: SettingsPreviewFixtures.mockToolToggles()[3],
+                    onToggle: { _ in }
+                )
+            }
+        }
+        .padding(24)
+        .background(AppColors.backgroundPrimary)
+        .frame(width: 500)
     }
-    .padding(24)
-    .background(AppColors.backgroundPrimary)
-    .frame(width: 400)
-}
+
+    #Preview("Component • Status Banner (Success)") {
+        VStack(spacing: 12) {
+            StatusBanner(message: "API key saved successfully", isError: false)
+            StatusBanner(message: "Failed to save key: Invalid format", isError: true)
+        }
+        .padding(24)
+        .background(AppColors.backgroundPrimary)
+        .frame(width: 500)
+    }
+
+    #Preview("Component • Settings Card") {
+        SettingsCard {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Card Title")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(AppColors.textPrimary)
+                Text("Card content goes here with proper styling.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(AppColors.textSecondary)
+            }
+            .padding(16)
+        }
+        .padding(24)
+        .background(AppColors.backgroundPrimary)
+        .frame(width: 400)
+    }
+
+    #Preview("Component • Section Header") {
+        VStack(alignment: .leading, spacing: 24) {
+            SettingsSectionHeader("Simple Header")
+            SettingsSectionHeader(
+                "Header with Subtitle", subtitle: "A helpful description of this section")
+        }
+        .padding(24)
+        .background(AppColors.backgroundPrimary)
+        .frame(width: 400)
+    }
 
 #endif

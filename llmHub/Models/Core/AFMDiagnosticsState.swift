@@ -59,6 +59,19 @@ final class AFMDiagnosticsState {
 
     func runSmallGenerate() {
         Task {
+            if #available(macOS 15.0, iOS 18.0, *) {
+                let availability = SystemLanguageModel.default.availability
+                guard availability == .available else {
+                    if case .unavailable(let reason) = availability {
+                        FoundationModelsDiagnostics.logStreamEvent(
+                            "skip",
+                            reason: "small_generate_unavailable:\(String(describing: reason))"
+                        )
+                    }
+                    return
+                }
+            }
+
             FoundationModelsDiagnostics.logRequestStart(useCase: "small_generate_test")
             let start = CFAbsoluteTimeGetCurrent()
 

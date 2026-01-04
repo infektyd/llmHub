@@ -20,6 +20,9 @@ struct llmHubApp: App {
     /// State for FoundationModels diagnostics
     @State private var afmDiagnostics = AFMDiagnosticsState()
 
+    /// Settings manager for app-wide configuration
+    @State private var settingsManager = SettingsManager()
+
     // MARK: - Body
 
     var body: some Scene {
@@ -27,6 +30,8 @@ struct llmHubApp: App {
             ContentView()
                 .environmentObject(modelRegistry)
                 .environment(afmDiagnostics)
+                .environment(\.settingsManager, settingsManager)
+                .preferredColorScheme(settingsManager.settings.colorScheme.toColorScheme)
                 .background(
                     GeometryReader { geo in
                         Color.clear
@@ -71,6 +76,7 @@ struct llmHubApp: App {
                 SettingsView()
                     .environmentObject(modelRegistry)
                     .environment(afmDiagnostics)
+                    .environment(\.settingsManager, settingsManager)
             }
         #endif
     }

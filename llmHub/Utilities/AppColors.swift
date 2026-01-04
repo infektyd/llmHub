@@ -63,36 +63,130 @@ enum AppColors {
 
     private static func adaptiveColor(dark: Color, light: Color) -> Color {
         #if canImport(UIKit)
-        return Color(
-            UIColor { traitCollection in
-                traitCollection.userInterfaceStyle == .dark
-                    ? UIColor(dark)
-                    : UIColor(light)
-            }
-        )
+            return Color(
+                UIColor { traitCollection in
+                    traitCollection.userInterfaceStyle == .dark
+                        ? UIColor(dark)
+                        : UIColor(light)
+                }
+            )
         #else
-        // macOS
-        return Color(
-            NSColor(name: nil) { appearance in
-                (appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua)
-                    ? NSColor(dark)
-                    : NSColor(light)
-            }
-        )
+            // macOS
+            return Color(
+                NSColor(name: nil) { appearance in
+                    (appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua)
+                        ? NSColor(dark)
+                        : NSColor(light)
+                }
+            )
         #endif
     }
 
-    static let backgroundPrimary: Color = adaptiveColor(dark: Dark.backgroundPrimary, light: Light.backgroundPrimary)
-    static let backgroundSecondary: Color = adaptiveColor(dark: Dark.backgroundSecondary, light: Light.backgroundSecondary)
+    // MARK: - Explicit Theme Selection
+
+    /// Returns a color for explicit light or dark mode (bypassing system theme).
+    /// Use this when you need to show a specific theme for preview/export purposes.
+    public static func color(for scheme: ColorScheme, dark: Color, light: Color) -> Color {
+        scheme == .dark ? dark : light
+    }
+
+    /// Returns the appropriate palette based on color scheme selection.
+    /// Used by the theme system to apply user's preferred color scheme.
+    public static func palette(for scheme: ColorScheme?) -> Palette {
+        switch scheme {
+        case .none:
+            return Palette(
+                backgroundPrimary: backgroundPrimary,
+                backgroundSecondary: backgroundSecondary,
+                surface: surface,
+                textPrimary: textPrimary,
+                textSecondary: textSecondary,
+                textTertiary: textTertiary,
+                accent: accent,
+                accentSecondary: accentSecondary,
+                success: success,
+                shadowSmoke: shadowSmoke,
+                smoke: smoke
+            )
+        case .some(let resolvedScheme):
+            switch resolvedScheme {
+            case .dark:
+                return Palette(
+                    backgroundPrimary: Dark.backgroundPrimary,
+                    backgroundSecondary: Dark.backgroundSecondary,
+                    surface: Dark.surface,
+                    textPrimary: Dark.textPrimary,
+                    textSecondary: Dark.textSecondary,
+                    textTertiary: Dark.textTertiary,
+                    accent: Dark.accent,
+                    accentSecondary: Dark.accentSecondary,
+                    success: Dark.success,
+                    shadowSmoke: Dark.shadowSmoke,
+                    smoke: Dark.smoke
+                )
+            case .light:
+                return Palette(
+                    backgroundPrimary: Light.backgroundPrimary,
+                    backgroundSecondary: Light.backgroundSecondary,
+                    surface: Light.surface,
+                    textPrimary: Light.textPrimary,
+                    textSecondary: Light.textSecondary,
+                    textTertiary: Light.textTertiary,
+                    accent: Light.accent,
+                    accentSecondary: Light.accentSecondary,
+                    success: Light.success,
+                    shadowSmoke: Light.shadowSmoke,
+                    smoke: Light.smoke
+                )
+            @unknown default:
+                return Palette(
+                    backgroundPrimary: backgroundPrimary,
+                    backgroundSecondary: backgroundSecondary,
+                    surface: surface,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    textTertiary: textTertiary,
+                    accent: accent,
+                    accentSecondary: accentSecondary,
+                    success: success,
+                    shadowSmoke: shadowSmoke,
+                    smoke: smoke
+                )
+            }
+        }
+    }
+
+    /// Color palette struct for theme system
+    public struct Palette {
+        public let backgroundPrimary: Color
+        public let backgroundSecondary: Color
+        public let surface: Color
+        public let textPrimary: Color
+        public let textSecondary: Color
+        public let textTertiary: Color
+        public let accent: Color
+        public let accentSecondary: Color
+        public let success: Color
+        public let shadowSmoke: Color
+        public let smoke: Color
+    }
+
+    static let backgroundPrimary: Color = adaptiveColor(
+        dark: Dark.backgroundPrimary, light: Light.backgroundPrimary)
+    static let backgroundSecondary: Color = adaptiveColor(
+        dark: Dark.backgroundSecondary, light: Light.backgroundSecondary)
 
     static let surface: Color = adaptiveColor(dark: Dark.surface, light: Light.surface)
 
     static let textPrimary: Color = adaptiveColor(dark: Dark.textPrimary, light: Light.textPrimary)
-    static let textSecondary: Color = adaptiveColor(dark: Dark.textSecondary, light: Light.textSecondary)
-    static let textTertiary: Color = adaptiveColor(dark: Dark.textTertiary, light: Light.textTertiary)
+    static let textSecondary: Color = adaptiveColor(
+        dark: Dark.textSecondary, light: Light.textSecondary)
+    static let textTertiary: Color = adaptiveColor(
+        dark: Dark.textTertiary, light: Light.textTertiary)
 
     static let accent: Color = adaptiveColor(dark: Dark.accent, light: Light.accent)
-    static let accentSecondary: Color = adaptiveColor(dark: Dark.accentSecondary, light: Light.accentSecondary)
+    static let accentSecondary: Color = adaptiveColor(
+        dark: Dark.accentSecondary, light: Light.accentSecondary)
 
     static let success: Color = adaptiveColor(dark: Dark.success, light: Light.success)
 
@@ -111,6 +205,6 @@ enum AppColors {
     static let selectableAccents: [Color] = [
         accent,
         accentSecondary,
-        smoke
+        smoke,
     ]
 }

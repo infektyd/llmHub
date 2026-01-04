@@ -36,14 +36,14 @@ public enum FoundationModelsDiagnostics {
                 logger.info("\(logPrefix) availability=available")
             case .unavailable(let reason):
                 let reasonName = String(describing: reason)
-                logger.error(
+                logger.warning(
                     "\(logPrefix) availability=unavailable reason=\(reasonName) desc=\(String(describing: reason))"
                 )
             @unknown default:
                 logger.warning("\(logPrefix) availability=unknown")
             }
         } else {
-            logger.error("\(logPrefix) availability=unsupported_os")
+            logger.warning("\(logPrefix) availability=unsupported_os")
         }
 
         logger.info("\(logPrefix) --- PROBE END ---")

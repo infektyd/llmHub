@@ -44,7 +44,7 @@ extension Artifact {
             status: .success, // Staged/detected artifacts are generally "ready"
             previewText: content,
             actions: [.copy, .open],
-            metadata: nil
+            metadata: language.map { ["language": $0] }
         )
     }
 }

@@ -1,4 +1,4 @@
-//
+
 //  ComposerBar.swift
 //  llmHub
 //
@@ -8,13 +8,15 @@
 
 import SwiftData
 import SwiftUI
+import UniformTypeIdentifiers
+import Foundation
 
 /// Pure, preview-friendly composer UI (no SwiftData, no providers).
 struct ComposerBarView: View {
     @Binding var leftSidebarVisible: Bool
     @Binding var rightSidebarVisible: Bool
     @Binding var showSettings: Bool
-    @Binding var inputText: String
+    @Binding var inputText: AttributedString
 
     let isStreaming: Bool
     let stagingArtifacts: [Artifact]
@@ -23,128 +25,244 @@ struct ComposerBarView: View {
     let onStop: () -> Void
     let onRemoveArtifact: (UUID) -> Void
     let onRemoveAttachment: (UUID) -> Void
+    let onAddAttachment: () -> Void
 
     @FocusState private var isInputFocused: Bool
+    @State private var selection = AttributedTextSelection()
+    @State private var isNormalizingMarkdown = false
+
+    private var plainText: String {
+        String(inputText.characters)
+    }
+
+    private var trimmedPlainText: String {
+        plainText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var canSend: Bool {
+        !trimmedPlainText.isEmpty
+    }
 
     var body: some View {
         HStack(spacing: 12) {
-            // Left sidebar toggle
-            Button {
-                withAnimation {
-                    leftSidebarVisible.toggle()
-                }
-            } label: {
-                Image(systemName: "sidebar.left")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(
-                        leftSidebarVisible ? AppColors.accent : AppColors.textSecondary)
-            }
-            .buttonStyle(.plain)
-
-            // Input Container (Bubble)
-            VStack(alignment: .leading, spacing: 8) {
-                // Staged Artifacts
-                if !stagingArtifacts.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(stagingArtifacts) { artifact in
-                                ArtifactPreviewChip(artifact: artifact) {
-                                    onRemoveArtifact(artifact.id)
-                                }
-                            }
-                        }
-                        // Padding to align with input text
-                        .padding(.horizontal, 4)
-                        .padding(.top, 4)
-                    }
-                }
-
-                // Input field + Send Button
-                HStack(spacing: 8) {
-                    TextField("Type a message…", text: $inputText, axis: .vertical)
-                        .textFieldStyle(.plain)
-                        .focused($isInputFocused)
-                        .lineLimit(1...5)
-                        .onSubmit { onSend() }
-
-                    // Send / Stop button
-                    if isStreaming {
-                        Button(action: onStop) {
-                            Image(systemName: "stop.fill")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(AppColors.textPrimary)
-                        }
-                        .buttonStyle(.plain)
-                    } else {
-                        Button(action: onSend) {
-                            Image(systemName: "arrow.up.circle.fill")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundStyle(
-                                    inputText.isEmpty ? AppColors.textTertiary : AppColors.accent)
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(inputText.isEmpty)
-                    }
-                }
-                // Staged attachments (images/files)
-                if !stagedAttachments.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(stagedAttachments) { attachment in
-                                AttachmentPreviewChip(attachment: attachment) {
-                                    onRemoveAttachment(attachment.id)
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 4)
-                        .padding(.bottom, 4)
-                    }
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(AppColors.backgroundSecondary)
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(AppColors.textPrimary.opacity(0.08), lineWidth: 1)
-            }
-
-            // Right sidebar toggle
-            Button {
-                withAnimation {
-                    rightSidebarVisible.toggle()
-                }
-            } label: {
-                Image(systemName: "sidebar.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(
-                        rightSidebarVisible ? AppColors.accent : AppColors.textSecondary)
-            }
-            .buttonStyle(.plain)
-
-            // Settings button
-            Button {
-                showSettings = true
-            } label: {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(AppColors.textSecondary)
-            }
-            .buttonStyle(.plain)
+            attachmentButton
+            inputBubble
+            rightSidebarButton
+            settingsButton
         }
         .padding(12)
         .background {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
                 .fill(AppColors.surface)
                 .shadow(color: Color.black.opacity(0.1), radius: 16, x: 0, y: -4)
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
                 .stroke(AppColors.textPrimary.opacity(0.1), lineWidth: 1)
         }
+    }
+
+    private var attachmentButton: some View {
+        Button {
+            onAddAttachment()
+        } label: {
+            Image(systemName: "rectangle.and.paperclip")
+                .symbolRenderingMode(.hierarchical)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(AppColors.accent)
+        }
+        .buttonStyle(.plain)
+    }
+    private var inputBubble: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            stagedArtifactsStrip
+            inputRow
+            stagedAttachmentsStrip
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(AppColors.backgroundSecondary)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .stroke(AppColors.textPrimary.opacity(0.08), lineWidth: 1)
+        }
+    }
+
+    @ViewBuilder
+    private var stagedArtifactsStrip: some View {
+        if !stagingArtifacts.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 4) {
+                    ForEach(stagingArtifacts) { artifact in
+                        ArtifactPreviewChip(artifact: artifact) {
+                            onRemoveArtifact(artifact.id)
+                        }
+                    }
+                }
+                .padding(.horizontal, 4)
+                .padding(.top, 4)
+            }
+        }
+    }
+
+    private var inputRow: some View {
+        HStack(spacing: 8) {
+            inputEditor
+            sendOrStopButton
+        }
+    }
+
+    private var inputEditor: some View {
+        ZStack(alignment: .topLeading) {
+            if plainText.isEmpty {
+                Text("Type a message…")
+                    .foregroundStyle(AppColors.textTertiary)
+                    .padding(.top, 8)
+                    .padding(.leading, 5)
+                    .allowsHitTesting(false)
+            }
+
+            TextEditor(text: $inputText, selection: $selection)
+                .textFieldStyle(.plain)
+                .focused($isInputFocused)
+                .scrollContentBackground(.hidden)
+                .background(Color.clear)
+                .frame(minHeight: 20, maxHeight: 100)
+                .llmHubPasteDestination { strings in
+                    let pastedText = strings.joined(separator: "\n")
+                    guard !pastedText.isEmpty else { return }
+                    var updatedText = inputText
+                    var updatedSelection = selection
+                    updatedText.replaceSelection(&updatedSelection, with: attributedPasteContent(from: pastedText))
+                    inputText = updatedText
+                    selection = updatedSelection
+                }
+                .onChange(of: plainText) { _, newValue in
+                    normalizeMarkdownIfAppropriate(sourceText: newValue)
+                }
+                .onKeyPress(.return, phases: [.down]) { keyPress in
+                    handleReturnKey(keyPress)
+                }
+        }
+    }
+
+    @ViewBuilder
+    private var sendOrStopButton: some View {
+        if isStreaming {
+            Button(action: onStop) {
+                Image(systemName: "stop.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(AppColors.textPrimary)
+            }
+            .buttonStyle(.plain)
+        } else {
+            Button(action: onSend) {
+                Image(systemName: "arrow.up.circle.fill")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(canSend ? AppColors.accent : AppColors.textTertiary)
+            }
+            .buttonStyle(.plain)
+            .disabled(!canSend)
+        }
+    }
+
+    @ViewBuilder
+    private var stagedAttachmentsStrip: some View {
+        if !stagedAttachments.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(stagedAttachments) { attachment in
+                        AttachmentPreviewChip(attachment: attachment) {
+                            onRemoveAttachment(attachment.id)
+                        }
+                    }
+                }
+                .padding(.horizontal, 4)
+                .padding(.bottom, 4)
+            }
+        }
+    }
+
+    private var rightSidebarButton: some View {
+        Button {
+            withAnimation {
+                rightSidebarVisible.toggle()
+            }
+        } label: {
+            Image(systemName: "sidebar.right")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(rightSidebarVisible ? AppColors.accent : AppColors.textSecondary)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var settingsButton: some View {
+        Button {
+            showSettings = true
+        } label: {
+            Image(systemName: "gearshape")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(AppColors.textSecondary)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func handleReturnKey(_ keyPress: KeyPress) -> KeyPress.Result {
+        if keyPress.modifiers.contains(.shift) {
+            return .ignored
+        }
+        if canSend {
+            onSend()
+        }
+        return .handled
+    }
+
+    private func attributedPasteContent(from pastedText: String) -> AttributedString {
+        if let parsed = try? AttributedString(markdown: pastedText) {
+            if String(parsed.characters) != pastedText {
+                return parsed
+            }
+        }
+        return AttributedString(pastedText)
+    }
+
+    private func normalizeMarkdownIfAppropriate(sourceText: String) {
+        guard !isNormalizingMarkdown else { return }
+        guard sourceText.contains("*")
+                || sourceText.contains("`")
+                || sourceText.contains("[")
+                || sourceText.contains("#")
+                || sourceText.contains(">")
+                || sourceText.contains("_")
+        else { return }
+
+        guard case .insertionPoint(let insertionPoint) = selection.indices(in: inputText),
+              insertionPoint == inputText.endIndex
+        else { return }
+
+        guard let parsed = try? AttributedString(markdown: sourceText) else { return }
+        let parsedPlainText = String(parsed.characters)
+        guard parsedPlainText != sourceText else { return }
+
+        isNormalizingMarkdown = true
+        defer { isNormalizingMarkdown = false }
+
+        inputText = parsed
+        selection = AttributedTextSelection(range: parsed.endIndex..<parsed.endIndex)
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func llmHubPasteDestination(_ action: @escaping ([String]) -> Void) -> some View {
+        #if os(macOS)
+            self.pasteDestination(for: String.self, action: action)
+        #else
+            self
+        #endif
     }
 }
 
@@ -160,8 +278,9 @@ struct ComposerBar: View {
     let viewModel: WorkbenchViewModel
 
     @Environment(ChatViewModel.self) private var chatVM
-    @State private var inputText: String = ""
+    @State private var inputText: AttributedString = ""
     @State private var thinkingPreference: ThinkingPreference = .auto
+    @State private var isFilePickerPresented = false
 
     @Environment(\.modelContext) private var modelContext
 
@@ -183,27 +302,96 @@ struct ComposerBar: View {
             },
             onRemoveAttachment: { id in
                 chatVM.removeStagedAttachment(id: id)
+            },
+            onAddAttachment: {
+                isFilePickerPresented = true
             }
         )
+        .fileImporter(
+            isPresented: $isFilePickerPresented,
+            allowedContentTypes: [.item],  // Accepts any file type
+            allowsMultipleSelection: true
+        ) { result in
+            handleFileSelection(result)
+        }
     }
 
     // MARK: - Private Methods
 
     private func sendMessage() {
-        guard !inputText.isEmpty, let session = selectedSession else { return }
+        let messageText = String(inputText.characters)
+        guard !messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let session = selectedSession
+        else { return }
 
-        let messageCopy = inputText
-        inputText = ""
+        inputText = AttributedString("")
 
         // Trigger generation using ChatViewModel
         chatVM.sendMessage(
-            messageText: messageCopy,
+            messageText: messageText,
             attachments: nil,
             session: session,
             modelContext: modelContext,
             selectedProvider: viewModel.selectedProvider,
             selectedModel: viewModel.selectedModel,
             thinkingPreference: thinkingPreference
+        )
+    }
+    
+    private func handleFileSelection(_ result: Result<[URL], Error>) {
+        switch result {
+        case .success(let urls):
+            for url in urls {
+                #if os(macOS)
+                // On macOS, files may be security-scoped resources
+                let accessing = url.startAccessingSecurityScopedResource()
+                defer {
+                    if accessing {
+                        url.stopAccessingSecurityScopedResource()
+                    }
+                }
+                #endif
+                
+                // Create and add the attachment
+                let attachment = createAttachment(from: url)
+                chatVM.addAttachment(attachment)
+            }
+        case .failure(let error):
+            print("File selection error: \(error.localizedDescription)")
+        }
+    }
+    
+    private func createAttachment(from url: URL) -> Attachment {
+        let filename = url.lastPathComponent
+        let fileExtension = url.pathExtension.lowercased()
+        
+        // Determine attachment type based on file extension
+        let type: AttachmentType
+        let previewText: String?
+        
+        switch fileExtension {
+        case "jpg", "jpeg", "png", "gif", "heic", "webp":
+            type = .image
+            previewText = nil
+        case "txt", "md", "rtf":
+            type = .text
+            previewText = try? String(contentsOf: url, encoding: .utf8).prefix(200).description
+        case "swift", "py", "js", "ts", "java", "cpp", "c", "h", "m", "go", "rs":
+            type = .code
+            previewText = try? String(contentsOf: url, encoding: .utf8).prefix(200).description
+        case "pdf":
+            type = .pdf
+            previewText = nil
+        default:
+            type = .other
+            previewText = nil
+        }
+        
+        return Attachment(
+            filename: filename,
+            url: url,
+            type: type,
+            previewText: previewText
         )
     }
 }
@@ -213,7 +401,7 @@ struct ComposerBar: View {
         @Previewable @State var left = true
         @Previewable @State var right = false
         @Previewable @State var showSettings = false
-        @Previewable @State var input = ""
+        @Previewable @State var input: AttributedString = ""
 
         return ComposerBarView(
             leftSidebarVisible: $left,
@@ -226,7 +414,8 @@ struct ComposerBar: View {
             onSend: {},
             onStop: {},
             onRemoveArtifact: { _ in },
-            onRemoveAttachment: { _ in }
+            onRemoveAttachment: { _ in },
+            onAddAttachment: {}
         )
         .padding()
         .frame(width: 900)
@@ -236,7 +425,7 @@ struct ComposerBar: View {
         @Previewable @State var left = true
         @Previewable @State var right = false
         @Previewable @State var showSettings = false
-        @Previewable @State var input = "Hello, world!"
+        @Previewable @State var input: AttributedString = "Hello, world!"
 
         return ComposerBarView(
             leftSidebarVisible: $left,
@@ -249,7 +438,8 @@ struct ComposerBar: View {
             onSend: {},
             onStop: {},
             onRemoveArtifact: { _ in },
-            onRemoveAttachment: { _ in }
+            onRemoveAttachment: { _ in },
+            onAddAttachment: {}
         )
         .padding()
         .frame(width: 900)
@@ -259,7 +449,7 @@ struct ComposerBar: View {
         @Previewable @State var left = true
         @Previewable @State var right = true
         @Previewable @State var showSettings = false
-        @Previewable @State var input = "Stop me"
+        @Previewable @State var input: AttributedString = "Stop me"
 
         return ComposerBarView(
             leftSidebarVisible: $left,
@@ -272,7 +462,8 @@ struct ComposerBar: View {
             onSend: {},
             onStop: {},
             onRemoveArtifact: { _ in },
-            onRemoveAttachment: { _ in }
+            onRemoveAttachment: { _ in },
+            onAddAttachment: {}
         )
         .padding()
         .frame(width: 900)
@@ -282,7 +473,7 @@ struct ComposerBar: View {
         @Previewable @State var left = true
         @Previewable @State var right = false
         @Previewable @State var showSettings = false
-        @Previewable @State var input = "Line 1\nLine 2\nLine 3"
+        @Previewable @State var input: AttributedString = "Line 1\nLine 2\nLine 3"
 
         return ComposerBarView(
             leftSidebarVisible: $left,
@@ -295,7 +486,8 @@ struct ComposerBar: View {
             onSend: {},
             onStop: {},
             onRemoveArtifact: { _ in },
-            onRemoveAttachment: { _ in }
+            onRemoveAttachment: { _ in },
+            onAddAttachment: {}
         )
         .padding()
         .frame(width: 900)

@@ -182,6 +182,14 @@ final class ConversationClassificationService {
 
     @available(macOS 15.0, iOS 18.0, *)
     private func classifyWithAFM(messages: [ChatMessage]) async throws -> ConversationMetadata {
+        let availability = SystemLanguageModel.default.availability
+        guard availability == .available else {
+            if case .unavailable(let reason) = availability {
+                FoundationModelsDiagnostics.logStreamEvent("skip", reason: String(describing: reason))
+            }
+            return ConversationMetadata.fallback(from: messages)
+        }
+
         // Build context from first N messages (respect 4K token limit)
         let context = buildClassificationContext(from: messages, maxMessages: 10)
 
