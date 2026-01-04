@@ -311,7 +311,10 @@ struct CanvasRootView: View {
     private func makeModel(_ model: LLMModel) -> UILLMModel {
         UILLMModel(
             id: UUID(), modelID: model.id, name: model.displayName,
-            contextWindow: model.contextWindow)
+            contextWindow: model.contextWindow,
+            maxOutputTokens: model.maxOutputTokens,
+            supportsToolUse: model.supportsToolUse
+        )
     }
 
     private func titleFor(_ providerID: String) -> String {

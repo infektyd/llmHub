@@ -116,6 +116,10 @@ struct ModelPickerSheet: View {
                         Text("\(formatContextWindow(model.contextWindow)) context window")
                             .font(.system(size: 11))
                             .foregroundStyle(AppColors.textTertiary)
+                    } else {
+                        Text("Context window unknown")
+                            .font(.system(size: 11))
+                            .foregroundStyle(AppColors.textTertiary)
                     }
                 }
 
