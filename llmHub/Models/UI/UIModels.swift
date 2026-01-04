@@ -82,6 +82,10 @@ struct UILLMModel: Identifiable, Hashable {
     let name: String
     /// The context window size of the model in tokens.
     let contextWindow: Int
+    /// The maximum number of output tokens.
+    var maxOutputTokens: Int = 4096
+    /// Indicates if the model supports tool use.
+    var supportsToolUse: Bool = true
 }
 
 extension UILLMModel {

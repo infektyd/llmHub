@@ -14,18 +14,18 @@ import OSLog
 /// and curated static lists (Anthropic, xAI) for providers without model endpoints.
 @MainActor
 final class ModelFetchService {
-    
+
     private let keychainStore = KeychainStore()
     private let logger = Logger(subsystem: "com.llmhub.app", category: "ModelFetchService")
-    
+
     // MARK: - Public Methods
-    
+
     /// Fetches models for a specific provider.
     /// - Parameter provider: The provider to fetch models for
     /// - Returns: Array of available LLMModel instances
     func fetchModels(for provider: KeychainStore.ProviderKey) async throws -> [LLMModel] {
         logger.info("Fetching models for \(provider.rawValue)")
-        
+
         switch provider {
         case .anthropic:
             return try await fetchAnthropicModelsOfficial()
@@ -41,13 +41,13 @@ final class ModelFetchService {
             return try await fetchOpenRouterModels()
         }
     }
-    
+
     // MARK: - Curated Model Lists
-    
+
     /// Returns curated list of Anthropic Claude models (no API endpoint available).
     private func getCuratedAnthropicModels() -> [LLMModel] {
         logger.info("Using curated Anthropic model list")
-        
+
         return [
             LLMModel(
                 id: "claude-opus-4-5-20251101",
@@ -108,11 +108,11 @@ final class ModelFetchService {
             ),
         ]
     }
-    
+
     /// Returns curated list of xAI Grok models (no API endpoint available).
     private func getCuratedXAIModels() -> [LLMModel] {
         logger.info("Using curated xAI model list")
-        
+
         return [
             LLMModel(
                 id: "grok-4-1-fast-reasoning",
@@ -179,82 +179,57 @@ final class ModelFetchService {
             ),
         ]
     }
-    
+
     // MARK: - Dynamic Model Fetching
-    
+
     /// Fetches available models from OpenAI API.
     private func fetchOpenAIModels() async throws -> [LLMModel] {
         guard let apiKey = await keychainStore.apiKey(for: .openai) else {
             throw ModelFetchError.noAPIKey
         }
-        
+
         let url = URL(string: "https://api.openai.com/v1/models")!
         var request = URLRequest(url: url)
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        
+
         let (data, response) = try await LLMURLSession.data(for: request)
-        
+
         guard let httpResponse = response as? HTTPURLResponse else {
             throw ModelFetchError.invalidResponse
         }
-        
+
         guard httpResponse.statusCode == 200 else {
             throw ModelFetchError.httpError(statusCode: httpResponse.statusCode)
         }
-        
+
         let decoder = JSONDecoder()
         let modelResponse = try decoder.decode(FetchedOpenAIModelsResponse.self, from: data)
-        
+
         // Filter and map to our model format
         let models = modelResponse.data
             .filter { model in
                 // Only include GPT models and o-series models
                 model.id.contains("gpt") || model.id.hasPrefix("o1") || model.id.hasPrefix("o3")
             }
-            .sorted { $0.created > $1.created } // Newest first
+            .sorted { $0.created > $1.created }  // Newest first
             .map { apiModel -> LLMModel in
                 parseOpenAIModel(apiModel)
             }
-        
+
         logger.info("Fetched \(models.count) OpenAI models")
         return models
     }
-    
+
     /// Parses an OpenAI API model into our LLMModel format.
     private func parseOpenAIModel(_ apiModel: FetchedOpenAIModel) -> LLMModel {
         let id = apiModel.id
-        
+
         // Determine context window and output limits based on model ID
-        let contextWindow: Int
-        let maxOutputTokens: Int
-        let supportsToolUse: Bool
-        
-        if id.contains("gpt-4o") {
-            contextWindow = 128_000
-            maxOutputTokens = 16_384
-            supportsToolUse = true
-        } else if id.contains("gpt-4-turbo") || id.contains("gpt-4-1106") {
-            contextWindow = 128_000
-            maxOutputTokens = 4_096
-            supportsToolUse = true
-        } else if id.contains("gpt-4") {
-            contextWindow = 8_192
-            maxOutputTokens = 8_192
-            supportsToolUse = true
-        } else if id.contains("gpt-3.5") {
-            contextWindow = 16_385
-            maxOutputTokens = 4_096
-            supportsToolUse = true
-        } else if id.hasPrefix("o1") || id.hasPrefix("o3") {
-            contextWindow = 200_000
-            maxOutputTokens = 100_000
-            supportsToolUse = false // o1/o3 don't support tools yet
-        } else {
-            contextWindow = 8_192
-            maxOutputTokens = 4_096
-            supportsToolUse = false
-        }
-        
+        let metadata = ModelMetadataFallback.getMetadata(for: id, provider: .openai)
+        let contextWindow = metadata.contextWindow
+        let maxOutputTokens = metadata.maxOutputTokens
+        let supportsToolUse = metadata.supportsToolUse
+
         return LLMModel(
             id: id,
             name: formatModelName(id),
@@ -263,14 +238,15 @@ final class ModelFetchService {
             supportsToolUse: supportsToolUse
         )
     }
-    
+
     /// Fetches available models from Google AI API.
     private func fetchGoogleModels() async throws -> [LLMModel] {
         guard let apiKey = await keychainStore.apiKey(for: .google) else {
             throw ModelFetchError.noAPIKey
         }
 
-        let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models?key=\(apiKey)")!
+        let url = URL(
+            string: "https://generativelanguage.googleapis.com/v1beta/models?key=\(apiKey)")!
         let request = URLRequest(url: url)
 
         let (data, response) = try await LLMURLSession.data(for: request)
@@ -301,8 +277,8 @@ final class ModelFetchService {
             // Filter for generative models and map to our format
             let models = modelResponse.models
                 .filter { model in
-                    model.name.contains("gemini") &&
-                    (model.supportedGenerationMethods?.contains("generateContent") ?? false)
+                    model.name.contains("gemini")
+                        && (model.supportedGenerationMethods?.contains("generateContent") ?? false)
                 }
                 .map { apiModel -> LLMModel in
                     parseGoogleModel(apiModel)
@@ -319,115 +295,114 @@ final class ModelFetchService {
             throw ModelFetchError.decodingError(error)
         }
     }
-    
+
     /// Parses a Google AI API model into our LLMModel format.
     private func parseGoogleModel(_ apiModel: FetchedGoogleModel) -> LLMModel {
         // Extract model ID (e.g., "models/gemini-2.0-flash" -> "gemini-2.0-flash")
         let id = apiModel.name.replacingOccurrences(of: "models/", with: "")
-        
+
         let contextWindow = apiModel.inputTokenLimit ?? 128_000
         let maxOutputTokens = apiModel.outputTokenLimit ?? 8_192
-        
+
         return LLMModel(
             id: id,
             name: formatModelName(id),
             maxOutputTokens: maxOutputTokens,
             contextWindow: contextWindow,
-            supportsToolUse: true // All Gemini models support tools
+            supportsToolUse: true  // All Gemini models support tools
         )
     }
-    
+
     /// Fetches available models from Mistral AI API.
     private func fetchMistralModels() async throws -> [LLMModel] {
         guard let apiKey = await keychainStore.apiKey(for: .mistral) else {
             throw ModelFetchError.noAPIKey
         }
-        
+
         let url = URL(string: "https://api.mistral.ai/v1/models")!
         var request = URLRequest(url: url)
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        
+
         let (data, response) = try await LLMURLSession.data(for: request)
-        
+
         guard let httpResponse = response as? HTTPURLResponse else {
             throw ModelFetchError.invalidResponse
         }
-        
+
         guard httpResponse.statusCode == 200 else {
             throw ModelFetchError.httpError(statusCode: httpResponse.statusCode)
         }
-        
+
         let decoder = JSONDecoder()
         let modelResponse = try decoder.decode(FetchedMistralModelsResponse.self, from: data)
-        
+
         let models = modelResponse.data.map { apiModel -> LLMModel in
             parseMistralModel(apiModel)
         }
-        
+
         logger.info("Fetched \(models.count) Mistral AI models")
         return models
     }
-    
+
     /// Parses a Mistral AI API model into our LLMModel format.
     private func parseMistralModel(_ apiModel: FetchedMistralModel) -> LLMModel {
         let id = apiModel.id
-        
-        // Mistral models have varying context windows
+
+        let supportsToolUse = apiModel.capabilities?.functionCalling ?? true
+
+        // Prioritize API-provided context length
         let contextWindow: Int
-        let maxOutputTokens: Int
-        
-        if id.contains("large") {
-            contextWindow = 128_000
-            maxOutputTokens = 16_384
-        } else if id.contains("small") || id.contains("medium") {
-            contextWindow = 32_000
-            maxOutputTokens = 8_192
+        let fallback = ModelMetadataFallback.getMetadata(for: id, provider: .mistral)
+
+        if let apiContext = apiModel.maxContextLength {
+            contextWindow = apiContext
         } else {
-            contextWindow = apiModel.maxContextLength ?? 32_000
-            maxOutputTokens = 8_192
+            contextWindow = fallback.contextWindow
         }
-        
+
+        let maxOutputTokens = fallback.maxOutputTokens
+
         return LLMModel(
             id: id,
             name: formatModelName(id),
             maxOutputTokens: maxOutputTokens,
             contextWindow: contextWindow,
-            supportsToolUse: true // Most Mistral models support tools
+            supportsToolUse: supportsToolUse
         )
     }
-    
+
     /// Fetches available models from OpenRouter API.
     private func fetchOpenRouterModels() async throws -> [LLMModel] {
         guard let apiKey = await keychainStore.apiKey(for: .openrouter) else {
             throw ModelFetchError.noAPIKey
         }
-        
+
         let url = URL(string: "https://openrouter.ai/api/v1/models")!
         var request = URLRequest(url: url)
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        
+
         let (data, response) = try await LLMURLSession.data(for: request)
-        
+
         guard let httpResponse = response as? HTTPURLResponse else {
             throw ModelFetchError.invalidResponse
         }
-        
+
         guard httpResponse.statusCode == 200 else {
             throw ModelFetchError.httpError(statusCode: httpResponse.statusCode)
         }
-        
+
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
         let modelResponse = try decoder.decode(FetchedOpenRouterModelsResponse.self, from: data)
-        
+
         let models = modelResponse.data.map { apiModel -> LLMModel in
             parseOpenRouterModel(apiModel)
         }
-        
+
         logger.info("Fetched \(models.count) OpenRouter models")
         return models
     }
-    
+
     /// Parses an OpenRouter API model into our LLMModel format.
     private func parseOpenRouterModel(_ apiModel: FetchedOpenRouterModel) -> LLMModel {
         return LLMModel(
@@ -435,12 +410,12 @@ final class ModelFetchService {
             name: apiModel.name ?? formatModelName(apiModel.id),
             maxOutputTokens: apiModel.topProvider?.maxCompletionTokens ?? 4_096,
             contextWindow: apiModel.contextLength ?? 8_192,
-            supportsToolUse: true // Most OpenRouter models support tools
+            supportsToolUse: true  // Most OpenRouter models support tools
         )
     }
-    
+
     // MARK: - Official Anthropic + xAI /models
-    
+
     /// Fetches available models from Anthropic's official API.
     ///
     /// Endpoint: GET https://api.anthropic.com/v1/models
@@ -493,7 +468,8 @@ final class ModelFetchService {
 
             guard httpResponse.statusCode == 200 else {
                 let preview = String(data: data.prefix(800), encoding: .utf8) ?? "<non-utf8>"
-                logger.error("Anthropic /models HTTP \(httpResponse.statusCode). Body preview: \(preview)")
+                logger.error(
+                    "Anthropic /models HTTP \(httpResponse.statusCode). Body preview: \(preview)")
                 throw ModelFetchError.httpError(statusCode: httpResponse.statusCode)
             }
 
@@ -502,7 +478,9 @@ final class ModelFetchService {
                 page = try decoder.decode(FetchedAnthropicModelsResponse.self, from: data)
             } catch {
                 let preview = String(data: data.prefix(800), encoding: .utf8) ?? "<non-utf8>"
-                logger.error("Anthropic /models decode failed on page=\(pageIndex). Body preview: \(preview)")
+                logger.error(
+                    "Anthropic /models decode failed on page=\(pageIndex). Body preview: \(preview)"
+                )
                 throw ModelFetchError.decodingError(error)
             }
 
@@ -517,12 +495,14 @@ final class ModelFetchService {
             guard hasMore else { break }
 
             guard let cursor = page.lastID, !cursor.isEmpty else {
-                logger.warning("Anthropic /models has_more=true but missing last_id; stopping pagination")
+                logger.warning(
+                    "Anthropic /models has_more=true but missing last_id; stopping pagination")
                 break
             }
 
             if cursor == lastCursor {
-                logger.warning("Anthropic /models cursor unchanged (\(cursor)); stopping pagination")
+                logger.warning(
+                    "Anthropic /models cursor unchanged (\(cursor)); stopping pagination")
                 break
             }
 
@@ -531,11 +511,13 @@ final class ModelFetchService {
         }
 
         let models: [LLMModel] = allModels.map { apiModel in
-            LLMModel(
+            let fallback = ModelMetadataFallback.getMetadata(for: apiModel.id, provider: .anthropic)
+            return LLMModel(
                 id: apiModel.id,
-                name: apiModel.displayName?.isEmpty == false ? apiModel.displayName! : formatModelName(apiModel.id),
-                maxOutputTokens: 8_192,
-                contextWindow: 200_000,
+                name: apiModel.displayName?.isEmpty == false
+                    ? apiModel.displayName! : formatModelName(apiModel.id),
+                maxOutputTokens: apiModel.maxOutputTokens ?? fallback.maxOutputTokens,
+                contextWindow: apiModel.contextWindow ?? fallback.contextWindow,
                 supportsToolUse: true
             )
         }
@@ -581,11 +563,12 @@ final class ModelFetchService {
         }
 
         let models = modelResponse.data.map { apiModel -> LLMModel in
-            LLMModel(
+            let fallback = ModelMetadataFallback.getMetadata(for: apiModel.id, provider: .xai)
+            return LLMModel(
                 id: apiModel.id,
                 name: formatModelName(apiModel.id),
-                maxOutputTokens: 8_192,
-                contextWindow: 131_072,
+                maxOutputTokens: apiModel.maxTokens ?? fallback.maxOutputTokens,
+                contextWindow: apiModel.contextWindow ?? fallback.contextWindow,
                 supportsToolUse: true
             )
         }
@@ -595,13 +578,14 @@ final class ModelFetchService {
     }
 
     // MARK: - Helper Methods
-    
+
     /// Formats a model ID into a human-readable display name.
     private func formatModelName(_ id: String) -> String {
         // Convert "gpt-4o-mini" -> "GPT-4o Mini"
         // Convert "gemini-2.0-flash-exp" -> "Gemini 2.0 Flash Exp"
-        
-        return id
+
+        return
+            id
             .replacingOccurrences(of: "-", with: " ")
             .replacingOccurrences(of: "_", with: " ")
             .split(separator: " ")
@@ -609,6 +593,8 @@ final class ModelFetchService {
             .joined(separator: " ")
     }
 }
+
+// MARK: - API Response Models
 
 // MARK: - API Response Models
 
@@ -663,7 +649,7 @@ private struct FetchedMistralModel: Codable {
     let ownedBy: String
     let capabilities: FetchedMistralCapabilities?
     let maxContextLength: Int?
-    
+
     enum CodingKeys: String, CodingKey {
         case id, object, created
         case ownedBy = "owned_by"
@@ -676,7 +662,7 @@ private struct FetchedMistralCapabilities: Codable {
     let completionChat: Bool?
     let completionFim: Bool?
     let functionCalling: Bool?
-    
+
     enum CodingKeys: String, CodingKey {
         case completionChat = "completion_chat"
         case completionFim = "completion_fim"
@@ -730,10 +716,15 @@ struct FetchedAnthropicModelsResponse: Codable {
 struct FetchedAnthropicModel: Codable {
     let id: String
     let displayName: String?
+    // Fields potentially available in newer API versions
+    let contextWindow: Int?
+    let maxOutputTokens: Int?
 
     enum CodingKeys: String, CodingKey {
         case id
         case displayName = "display_name"
+        case contextWindow = "context_window"
+        case maxOutputTokens = "max_tokens"  // Speculative key, safe if missing
     }
 }
 
@@ -744,6 +735,15 @@ struct FetchedOpenAIStyleModelsResponse: Codable {
 
 struct FetchedOpenAIStyleModel: Codable {
     let id: String
+    // Fields potentially available in extended OpenAI-compatible APIs
+    let contextWindow: Int?
+    let maxTokens: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case contextWindow = "context_window"
+        case maxTokens = "max_tokens"
+    }
 }
 
 // MARK: - Errors
@@ -754,7 +754,7 @@ enum ModelFetchError: LocalizedError {
     case httpError(statusCode: Int)
     case decodingError(Error)
     case networkError(Error)
-    
+
     var errorDescription: String? {
         switch self {
         case .noAPIKey:
