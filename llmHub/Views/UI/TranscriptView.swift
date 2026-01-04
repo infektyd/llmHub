@@ -117,13 +117,13 @@ struct TranscriptCanvasSessionView: View {
 
         let persistedArtifacts = message.artifactMetadatas.map { meta in
             ArtifactPayload(
-                id: Canvas2StableIDs.artifactID(messageID: message.id, metadata: meta),
+                id: meta.id,
                 title: meta.filename,
                 kind: mapArtifactKind(meta.language),
                 status: .success,
                 previewText: meta.content,
                 actions: [.copy, .open],
-                metadata: meta
+                metadata: nil
             )
         }
 
@@ -186,7 +186,7 @@ struct TranscriptCanvasSessionView: View {
                 artifacts: [Canvas2PreviewFixtures.codeFileArtifact()]
             )
         ]
-        return TranscriptCanvasView(rows: rows, streamingRow: nil)
+        TranscriptCanvasView(rows: rows, streamingRow: nil)
             .frame(width: 900, height: 800)
     }
 

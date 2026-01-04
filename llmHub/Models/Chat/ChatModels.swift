@@ -163,32 +163,16 @@ enum CodeLanguage: String, Codable, Sendable {
         case .text: return "txt"
         }
     }
-}
 
-struct ArtifactMetadata: Identifiable, Sendable {
-    let id: UUID
-    let filename: String
-    /// For pasted artifacts this is the full content. For file-backed artifacts this is a preview.
-    let content: String
-    let language: CodeLanguage
-    let sizeBytes: Int
-    /// Non-nil for file-backed artifacts.
-    let fileURL: URL?
-
-    init(
-        id: UUID = UUID(),
-        filename: String,
-        content: String,
-        language: CodeLanguage,
-        sizeBytes: Int,
-        fileURL: URL? = nil
-    ) {
-        self.id = id
-        self.filename = filename
-        self.content = content
-        self.language = language
-        self.sizeBytes = sizeBytes
-        self.fileURL = fileURL
+    var displayName: String {
+        switch self {
+        case .json: return "JSON"
+        case .swift: return "Swift"
+        case .python: return "Python"
+        case .javascript: return "JavaScript"
+        case .markdown: return "Markdown"
+        case .text: return "Plain Text"
+        }
     }
 }
 

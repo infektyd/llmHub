@@ -144,39 +144,61 @@ struct ArtifactCardView: View {
 }
 
 #if DEBUG
-#Preview("ArtifactCard - Tool result") {
-    ArtifactCardView(payload: Canvas2PreviewFixtures.toolResultArtifact())
-        .padding()
-        .frame(width: 900)
-}
+    struct ArtifactCardView_Previews: PreviewProvider {
+        static var previews: some View {
+            ArtifactCardView(payload: Canvas2PreviewFixtures.toolResultArtifact())
+                .padding()
+                .frame(width: 900)
+                .previewDisplayName("ArtifactCard - Tool result")
 
-#Preview("ArtifactCard - File artifact (collapsed)") {
-    @Previewable @State var expanded = false
-    return ArtifactCardView(payload: Canvas2PreviewFixtures.codeFileArtifact(), isExpanded: $expanded)
-        .padding()
-        .frame(width: 900)
-}
+            StateWrapper(initialValue: false) { isExpanded in
+                ArtifactCardView(
+                    payload: Canvas2PreviewFixtures.codeFileArtifact(), isExpanded: isExpanded
+                )
+                .padding()
+                .frame(width: 900)
+            }
+            .previewDisplayName("ArtifactCard - File artifact (collapsed)")
 
-#Preview("ArtifactCard - Error") {
-    @Previewable @State var expanded = true
-    return ArtifactCardView(payload: Canvas2PreviewFixtures.errorArtifact(), isExpanded: $expanded)
-        .padding()
-        .frame(width: 900)
-}
+            StateWrapper(initialValue: true) { isExpanded in
+                ArtifactCardView(
+                    payload: Canvas2PreviewFixtures.errorArtifact(), isExpanded: isExpanded
+                )
+                .padding()
+                .frame(width: 900)
+            }
+            .previewDisplayName("ArtifactCard - Error")
 
-#Preview("ArtifactCard - Pending") {
-    @Previewable @State var expanded = true
-    let pending = ArtifactPayload(
-        id: UUID(uuidString: "12121212-1212-1212-1212-121212121212")!,
-        title: "Uploading…",
-        kind: .other,
-        status: .pending,
-        previewText: "Waiting for tool output…",
-        actions: [],
-        metadata: nil
-    )
-    return ArtifactCardView(payload: pending, isExpanded: $expanded)
-        .padding()
-        .frame(width: 900)
-}
+            StateWrapper(initialValue: true) { isExpanded in
+                let pending = ArtifactPayload(
+                    id: UUID(uuidString: "12121212-1212-1212-1212-121212121212")!,
+                    title: "Uploading…",
+                    kind: .other,
+                    status: .pending,
+                    previewText: "Waiting for tool output…",
+                    actions: [],
+                    metadata: nil
+                )
+                ArtifactCardView(payload: pending, isExpanded: isExpanded)
+                    .padding()
+                    .frame(width: 900)
+            }
+            .previewDisplayName("ArtifactCard - Pending")
+        }
+
+        // Helper to wrapping binding state in old-style previews
+        struct StateWrapper<Value, Content: View>: View {
+            @State private var value: Value
+            let content: (Binding<Value>) -> Content
+
+            init(initialValue: Value, @ViewBuilder content: @escaping (Binding<Value>) -> Content) {
+                _value = State(initialValue: initialValue)
+                self.content = content
+            }
+
+            var body: some View {
+                content($value)
+            }
+        }
+    }
 #endif

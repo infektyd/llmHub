@@ -138,64 +138,66 @@ struct FloatingSidebarLeft: View {
 }
 
 #if DEBUG
-#Preview("SidebarLeft - Populated") {
-    @Previewable @State var selected: UUID? = UUID(uuidString: "11111111-1111-1111-1111-111111111111")
-    @Previewable @State var visible = true
-    let sessions: [CanvasConversationSummary] = [
-        CanvasConversationSummary(
-            id: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!,
-            displayTitle: "💬 Preview Session A",
-            updatedAt: Canvas2PreviewFixtures.baseDate,
-            isArchived: false
-        ),
-        CanvasConversationSummary(
-            id: UUID(uuidString: "22222222-2222-2222-2222-222222222222")!,
-            displayTitle: "🔧 Debugging Tools",
-            updatedAt: Canvas2PreviewFixtures.baseDate.addingTimeInterval(-3600),
-            isArchived: false
-        ),
-    ]
-    return FloatingSidebarLeft(
-        isVisible: $visible,
-        sessions: sessions,
-        selectedConversationID: $selected,
-        onNewConversation: {}
-    )
-    .frame(width: 280, height: 600)
-    .padding()
-}
-
-#Preview("SidebarLeft - Empty") {
-    @Previewable @State var selected: UUID? = nil
-    @Previewable @State var visible = true
-    return FloatingSidebarLeft(
-        isVisible: $visible,
-        sessions: [],
-        selectedConversationID: $selected,
-        onNewConversation: {}
-    )
-    .frame(width: 280, height: 600)
-    .padding()
-}
-
-#Preview("SidebarLeft - Narrow") {
-    @Previewable @State var selected: UUID? = UUID(uuidString: "11111111-1111-1111-1111-111111111111")
-    @Previewable @State var visible = true
-    let sessions: [CanvasConversationSummary] = [
-        CanvasConversationSummary(
-            id: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!,
-            displayTitle: "Preview Session With A Very Long Title That Should Truncate",
-            updatedAt: Canvas2PreviewFixtures.baseDate,
-            isArchived: false
+    #Preview("SidebarLeft - Populated") {
+        @Previewable @State var selected: UUID? = UUID(
+            uuidString: "11111111-1111-1111-1111-111111111111")
+        @Previewable @State var visible = true
+        let sessions: [CanvasConversationSummary] = [
+            CanvasConversationSummary(
+                id: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!,
+                displayTitle: "💬 Preview Session A",
+                updatedAt: Canvas2PreviewFixtures.baseDate,
+                isArchived: false
+            ),
+            CanvasConversationSummary(
+                id: UUID(uuidString: "22222222-2222-2222-2222-222222222222")!,
+                displayTitle: "🔧 Debugging Tools",
+                updatedAt: Canvas2PreviewFixtures.baseDate.addingTimeInterval(-3600),
+                isArchived: false
+            ),
+        ]
+        FloatingSidebarLeft(
+            isVisible: $visible,
+            sessions: sessions,
+            selectedConversationID: $selected,
+            onNewConversation: {}
         )
-    ]
-    return FloatingSidebarLeft(
-        isVisible: $visible,
-        sessions: sessions,
-        selectedConversationID: $selected,
-        onNewConversation: {}
-    )
-    .frame(width: 200, height: 600)
-    .padding()
-}
+        .frame(width: 280, height: 600)
+        .padding()
+    }
+
+    #Preview("SidebarLeft - Empty") {
+        @Previewable @State var selected: UUID? = nil
+        @Previewable @State var visible = true
+        FloatingSidebarLeft(
+            isVisible: $visible,
+            sessions: [],
+            selectedConversationID: $selected,
+            onNewConversation: {}
+        )
+        .frame(width: 280, height: 600)
+        .padding()
+    }
+
+    #Preview("SidebarLeft - Narrow") {
+        @Previewable @State var selected: UUID? = UUID(
+            uuidString: "11111111-1111-1111-1111-111111111111")
+        @Previewable @State var visible = true
+        let sessions: [CanvasConversationSummary] = [
+            CanvasConversationSummary(
+                id: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!,
+                displayTitle: "Preview Session With A Very Long Title That Should Truncate",
+                updatedAt: Canvas2PreviewFixtures.baseDate,
+                isArchived: false
+            )
+        ]
+        FloatingSidebarLeft(
+            isVisible: $visible,
+            sessions: sessions,
+            selectedConversationID: $selected,
+            onNewConversation: {}
+        )
+        .frame(width: 200, height: 600)
+        .padding()
+    }
 #endif

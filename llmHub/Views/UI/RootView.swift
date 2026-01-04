@@ -348,7 +348,11 @@ struct CanvasRootView: View {
                         status: .success,
                         previewText: meta.content,
                         actions: [.copy, .open],
-                        metadata: meta
+                        metadata: [
+                            "filename": meta.filename,
+                            "language": meta.language.rawValue,
+                            "sizeBytes": "\(meta.sizeBytes)"
+                        ]
                     )
                 }
             }
