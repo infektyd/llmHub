@@ -116,7 +116,9 @@ The agent can read and modify files with your explicit permission. A diff previe
 
 ## 🤝 Contributing
 
-This project uses **Swift 6.2** with strict concurrency, **SwiftData** for persistence, and **Liquid Glass** for all UI. Please adhere to the architecture defined in `Docs/Architecture.md` when contributing.
+This project uses **Swift 6.2** with strict concurrency, **SwiftData** for persistence, and **Liquid Glass** for all UI. Please adhere to the architecture defined in [`Docs/AGENTS.md`](Docs/AGENTS.md) when contributing.
+
+> **🤖 AI Assistants**: Please read [`Docs/ONBOARDING_AGENTS.md`](Docs/ONBOARDING_AGENTS.md) for critical context and operational parameters.
 
 ### Architecture Guidelines
 
