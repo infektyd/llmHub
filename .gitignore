@@ -78,12 +78,11 @@ fastlane/test_output
 # Archives and Docs
 *.doccarchive/
 llmHub.doccarchive/
-Scaffold/*.zip
-llmHub/Views/_ViewsArchive-*.zip
 Docs/Archives/*
-# Allow specific useful archives if needed
-!Docs/Archives/UI_Glass_*.zip
-!Docs/Archives/OldUI_*.zip
+
+
+*.zip
+!Dependencies/*.zip
 
 # Cleaned up / Old Scripts
 cleanup_old_ui.sh
@@ -100,3 +99,13 @@ handoff_*.jsonl
 *.pem
 *.key
 .aider*
+
+# System files (Explicit)
+**/.DS_Store
+
+# Build artifacts (New)
+.tmp/
+build_output.txt
+output.jsonl
+xcrun_db
+**/*.xcresult
