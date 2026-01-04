@@ -79,12 +79,12 @@ struct ChatHeaderBar: View {
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
                         .fill(AppColors.surface)
                         .shadow(color: AppColors.shadowSmoke, radius: 4, x: 0, y: 1)
                 }
                 .overlay {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
                         .stroke(AppColors.textPrimary.opacity(0.05), lineWidth: 1)
                 }
             }

@@ -328,9 +328,9 @@ final class ModelRegistry: ObservableObject {
         }
 
         // Baseline capability policy for new models (conservative).
-        let defaultContextWindow = defaults.map { $0.contextWindow }.max() ?? 128_000
-        let defaultMaxOutput = min(defaults.map { $0.maxOutputTokens }.max() ?? 8_192, 16_384)
-        let defaultSupportsTools = defaults.contains(where: { $0.supportsToolUse })
+        _ = defaults.map { $0.contextWindow }.max() ?? 128_000
+        _ = min(defaults.map { $0.maxOutputTokens }.max() ?? 8_192, 16_384)
+        _ = defaults.contains(where: { $0.supportsToolUse })
 
         var mergedByID: [String: LLMModel] = Dictionary(
             uniqueKeysWithValues: defaults.map { ($0.id, $0) })
