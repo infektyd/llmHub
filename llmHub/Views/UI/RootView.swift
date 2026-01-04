@@ -46,6 +46,35 @@ struct CanvasRootView: View {
             // Center: Transcript canvas
             VStack(spacing: 0) {
                 if let session = selectedSession {
+                    ChatHeaderBar(
+                        title: Binding(
+                            get: { session.displayTitle },
+                            set: {
+                                session.title = $0
+                                session.afmTitle = nil
+                                try? modelContext.save()
+                            }
+                        ),
+                        selectedProviderID: Binding(
+                            get: { session.providerID },
+                            set: {
+                                session.providerID = $0
+                                hydrateSelection(from: session)
+                                try? modelContext.save()
+                            }
+                        ),
+                        selectedModelID: Binding(
+                            get: { session.model },
+                            set: {
+                                session.model = $0
+                                hydrateSelection(from: session)
+                                try? modelContext.save()
+                            }
+                        ),
+                        leftSidebarVisible: $leftSidebarVisible
+                    )
+                    .environmentObject(modelRegistry)
+
                     TranscriptCanvasSessionView(session: session)
                         .environment(viewModel)
                 } else {
@@ -76,36 +105,6 @@ struct CanvasRootView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .transition(.move(edge: .leading).combined(with: .opacity))
                 .zIndex(100)
-            }
-
-            // Reveal affordance when left sidebar is collapsed
-            if !leftSidebarVisible {
-                Button {
-                    withAnimation {
-                        leftSidebarVisible = true
-                    }
-                } label: {
-                    Image(systemName: "sidebar.left")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(AppColors.textSecondary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .background {
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(AppColors.surface)
-                                .shadow(color: AppColors.shadowSmoke, radius: 10, x: 0, y: 0)
-                        }
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .stroke(AppColors.textPrimary.opacity(0.1), lineWidth: 1)
-                        }
-                }
-                .buttonStyle(.plain)
-                .padding(.leading, 16)
-                .padding(.top, 16)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .transition(.move(edge: .leading).combined(with: .opacity))
-                .zIndex(101)
             }
 
             // Overlay right: Floating sidebar (inspector)
@@ -351,7 +350,7 @@ struct CanvasRootView: View {
                         metadata: [
                             "filename": meta.filename,
                             "language": meta.language.rawValue,
-                            "sizeBytes": "\(meta.sizeBytes)"
+                            "sizeBytes": "\(meta.sizeBytes)",
                         ]
                     )
                 }
@@ -387,59 +386,58 @@ struct CanvasRootView: View {
 }
 
 #if DEBUG
-#Preview("CanvasRoot • Wide") {
-    let container = PreviewContainer.shared
-    Canvas2PreviewFixtures.ensureSeeded(into: container.context)
+    #Preview("CanvasRoot • Wide") {
+        let container = PreviewContainer.shared
+        Canvas2PreviewFixtures.ensureSeeded(into: container.context)
 
-    return CanvasRootView(chatVM: ChatViewModel.preview())
+        return CanvasRootView(chatVM: ChatViewModel.preview())
+            .environmentObject(ModelRegistry())
+            .modelContainer(container.container)
+            .frame(width: 1200, height: 800)
+    }
+
+    #Preview("CanvasRoot • Compact") {
+        let container = PreviewContainer.shared
+        Canvas2PreviewFixtures.ensureSeeded(into: container.context)
+
+        return CanvasRootView(
+            chatVM: ChatViewModel.preview(),
+            leftSidebarVisible: false,
+            rightSidebarVisible: false
+        )
+        .environmentObject(ModelRegistry())
+        .modelContainer(container.container)
+        .frame(width: 520, height: 820)
+    }
+
+    #Preview("CanvasRoot • Streaming ON") {
+        let container = PreviewContainer.shared
+        Canvas2PreviewFixtures.ensureSeeded(into: container.context)
+
+        let vm = ChatViewModel.preview(
+            isGenerating: true,
+            streamingText: Canvas2PreviewFixtures.streamingRow().content,
+            generationID: Canvas2PreviewFixtures.IDs.streamingGeneration,
+            streamingMessageID: Canvas2PreviewFixtures.IDs.streamingMessage
+        )
+
+        return CanvasRootView(chatVM: vm, leftSidebarVisible: true, rightSidebarVisible: true)
+            .environmentObject(ModelRegistry())
+            .modelContainer(container.container)
+            .frame(width: 1200, height: 800)
+    }
+
+    #Preview("CanvasRoot • Sidebars Expanded") {
+        let container = PreviewContainer.shared
+        Canvas2PreviewFixtures.ensureSeeded(into: container.context)
+
+        return CanvasRootView(
+            chatVM: ChatViewModel.preview(),
+            leftSidebarVisible: true,
+            rightSidebarVisible: true
+        )
         .environmentObject(ModelRegistry())
         .modelContainer(container.container)
         .frame(width: 1200, height: 800)
-}
-
-#Preview("CanvasRoot • Compact") {
-    let container = PreviewContainer.shared
-    Canvas2PreviewFixtures.ensureSeeded(into: container.context)
-
-    return CanvasRootView(
-        chatVM: ChatViewModel.preview(),
-        leftSidebarVisible: false,
-        rightSidebarVisible: false
-    )
-    .environmentObject(ModelRegistry())
-    .modelContainer(container.container)
-    .frame(width: 520, height: 820)
-}
-
-#Preview("CanvasRoot • Streaming ON") {
-    let container = PreviewContainer.shared
-    Canvas2PreviewFixtures.ensureSeeded(into: container.context)
-
-    let vm = ChatViewModel.preview(
-        isGenerating: true,
-        streamingText: Canvas2PreviewFixtures.streamingRow().content,
-        generationID: Canvas2PreviewFixtures.IDs.streamingGeneration,
-        streamingMessageID: Canvas2PreviewFixtures.IDs.streamingMessage
-    )
-
-    return CanvasRootView(chatVM: vm, leftSidebarVisible: true, rightSidebarVisible: true)
-        .environmentObject(ModelRegistry())
-        .modelContainer(container.container)
-        .frame(width: 1200, height: 800)
-}
-
-#Preview("CanvasRoot • Sidebars Expanded") {
-    let container = PreviewContainer.shared
-    Canvas2PreviewFixtures.ensureSeeded(into: container.context)
-
-    return CanvasRootView(
-        chatVM: ChatViewModel.preview(),
-        leftSidebarVisible: true,
-        rightSidebarVisible: true
-    )
-    .environmentObject(ModelRegistry())
-    .modelContainer(container.container)
-    .frame(width: 1200, height: 800)
-}
+    }
 #endif
-
