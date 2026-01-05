@@ -21,6 +21,9 @@ struct CanvasRootView: View {
     @Query(sort: \ChatSessionEntity.updatedAt, order: .reverse)
     private var sessions: [ChatSessionEntity]
 
+    @Query(sort: \ChatFolderEntity.orderIndex, order: .forward)
+    private var folders: [ChatFolderEntity]
+
     @State private var leftSidebarVisible: Bool
     @State private var rightSidebarVisible: Bool
     @State private var showSettings: Bool = false
@@ -83,22 +86,32 @@ struct CanvasRootView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
+            // Tap-to-dismiss layer: click canvas to collapse the left sidebar.
+            // Excludes both sidebar regions so their controls remain interactive.
+            if leftSidebarVisible {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .padding(.leading, 352)  // 320 sidebar + ~padding
+                    .padding(.trailing, rightSidebarVisible ? 352 : 0)
+                    .onTapGesture {
+                        withAnimation {
+                            leftSidebarVisible = false
+                        }
+                    }
+                    .ignoresSafeArea()
+            }
+
             // Overlay left: Floating sidebar (chat threads)
             if leftSidebarVisible {
-                FloatingSidebarLeft(
+                ModernSidebarLeft(
                     isVisible: $leftSidebarVisible,
-                    sessions: sessions.map {
-                        CanvasConversationSummary(
-                            id: $0.id,
-                            displayTitle: $0.displayTitle,
-                            updatedAt: $0.updatedAt,
-                            isArchived: $0.isArchived
-                        )
-                    },
+                    rightSidebarVisible: $rightSidebarVisible,
+                    sessions: sessions,
+                    folders: folders,
                     selectedConversationID: $viewModel.selectedConversationID,
                     onNewConversation: createAndSelectConversation
                 )
-                .frame(width: 280)
+                .frame(width: 320)
                 .padding(.leading, 16)
                 .padding(.top, 16)
                 .padding(.bottom, 16)

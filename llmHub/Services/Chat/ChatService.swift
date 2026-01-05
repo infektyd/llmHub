@@ -1076,8 +1076,10 @@ final class ChatService {
                 throw ChatServiceError.folderMissing
             }
             sessionEntity.folder = folderEntity
+            sessionEntity.parentProjectID = folderID
         } else {
             sessionEntity.folder = nil
+            sessionEntity.parentProjectID = nil
         }
         try modelContext.save()
     }

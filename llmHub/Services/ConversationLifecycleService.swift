@@ -92,7 +92,8 @@ final class ConversationLifecycleService {
 
         // Rule 1: >3 days inactive + intent == .quickQuestion → flag
         if daysSinceActivity > Self.quickQuestionStaleDays {
-            if session.lifecycleIntent == ConversationIntent.quickQuestion.rawValue {
+            let intent = session.afmIntent ?? session.lifecycleIntent
+            if intent == ConversationIntent.quickQuestion.rawValue {
                 return true
             }
         }
