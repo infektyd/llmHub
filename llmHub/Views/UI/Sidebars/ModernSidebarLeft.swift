@@ -849,7 +849,7 @@ struct ModernSidebarLeft: View {
         session.afmEmoji = metadata.emoji
         session.afmCategory = metadata.category.rawValue
         session.afmIntent = metadata.intent.rawValue
-        session.afmTopics = try? JSONEncoder().encode(metadata.topics)
+        session.afmTopics = metadata.topics
         session.afmClassifiedAt = Date()
         session.lifecycleIntent = metadata.intent.rawValue
         session.lifecycleRetention = metadata.suggestedRetention.rawValue

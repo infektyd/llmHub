@@ -332,6 +332,54 @@ final class ChatService {
         entity.messages.append(messageEntity)
         entity.updatedAt = Date()
         try modelContext.save()
+
+        // Example usage (Phase 1): schedule a single background classification after message #3.
+        // User messages are often persisted outside ChatService, so this is best-effort.
+        if entity.messages.count == 3 {
+            scheduleClassificationIfNeeded(sessionID: sessionID)
+        }
+    }
+
+    /// Schedules a single debounced classification after message #3.
+    /// - Note: Runs classification in `Task.detached(priority: .utility)` and persists results on MainActor.
+    func scheduleClassificationIfNeeded(sessionID: UUID) {
+        Task { @MainActor in
+            guard
+                let session = try? self.modelContext.fetch(
+                    FetchDescriptor<ChatSessionEntity>(predicate: #Predicate { $0.id == sessionID })
+                ).first
+            else { return }
+
+            guard session.afmClassifiedAt == nil else { return }
+            guard session.messages.count >= 3 else { return }
+
+            let debouncer = ConversationClassificationDebouncer.shared
+            guard await debouncer.begin(sessionID: sessionID) else { return }
+            defer { Task { await debouncer.end(sessionID: sessionID) } }
+
+            let messages = session.messages.sorted { $0.createdAt < $1.createdAt }.map { $0.asDomain() }
+
+            let service = ConversationClassificationService()
+
+            let task = Task.detached(priority: .utility) {
+                return (try? await service.classify(messages: messages)) ?? ConversationMetadata.fallback(from: messages)
+            }
+
+            let metadata = await task.value
+
+            session.afmTitle = metadata.title
+            session.afmEmoji = metadata.emoji
+            session.afmCategory = metadata.category.rawValue
+            session.afmIntent = metadata.intent.rawValue
+            session.afmTopics = metadata.topics
+            session.afmClassifiedAt = Date()
+            session.lifecycleIntent = metadata.intent.rawValue
+            session.lifecycleRetention = metadata.suggestedRetention.rawValue
+            session.isComplete = metadata.isComplete
+            session.hasArtifacts = metadata.hasArtifacts
+
+            try? self.modelContext.save()
+        }
     }
 
     /// Streams a completion response from the LLM for a given session.

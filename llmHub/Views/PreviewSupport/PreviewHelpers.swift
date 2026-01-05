@@ -17,6 +17,8 @@ class PreviewContainer {
             ChatMessageEntity.self,
             ChatFolderEntity.self,
             ChatTagEntity.self,
+            ProjectEntity.self,
+            ArtifactEntity.self,
         ])
 
         let configuration = ModelConfiguration(

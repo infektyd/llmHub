@@ -54,6 +54,8 @@ struct llmHubApp: App {
             ChatMessageEntity.self,
             ChatFolderEntity.self,
             ChatTagEntity.self,
+            ProjectEntity.self,
+            ArtifactEntity.self,
             MemoryEntity.self,
         ])
         #if os(macOS)

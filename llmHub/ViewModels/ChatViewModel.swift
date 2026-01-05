@@ -1023,8 +1023,8 @@ class ChatViewModel {
                     self.generateConversationTitle(for: session, modelName: modelID)
                 }
 
-                // Schedule AFM classification after first message or at 5 messages
-                if count == 2 || count == 5 {
+                // Schedule AFM classification after message #3 (debounced; max 1 per conversation)
+                if count == 3 {
                     self.scheduleClassification(for: session, modelContext: modelContext)
                 }
 
@@ -1040,35 +1040,42 @@ class ChatViewModel {
     private func scheduleClassification(for session: ChatSessionEntity, modelContext: ModelContext)
     {
         Task { @MainActor [weak self] in
-            guard let self = self else { return }
+            guard let self else { return }
+            guard session.afmClassifiedAt == nil else { return }
 
-            let classificationService = ConversationClassificationService()
+            let sessionID = session.id
+            let debouncer = ConversationClassificationDebouncer.shared
+            guard await debouncer.begin(sessionID: sessionID) else { return }
+            defer { Task { await debouncer.end(sessionID: sessionID) } }
 
-            // Convert entities to domain messages for classification
-            let messages = session.messages.sorted { $0.createdAt < $1.createdAt }.map {
-                $0.asDomain()
+            // Snapshot value types for background classification.
+            let messages = session.messages.sorted { $0.createdAt < $1.createdAt }.map { $0.asDomain() }
+
+            let service = ConversationClassificationService()
+
+            let task = Task.detached(priority: .utility) {
+                return (try? await service.classify(messages: messages)) ?? ConversationMetadata.fallback(from: messages)
             }
 
+            let metadata = await task.value
+
+            // Persist back on MainActor.
+            session.afmTitle = metadata.title
+            session.afmEmoji = metadata.emoji
+            session.afmCategory = metadata.category.rawValue
+            session.afmIntent = metadata.intent.rawValue
+            session.afmTopics = metadata.topics
+            session.afmClassifiedAt = Date()
+            session.lifecycleIntent = metadata.intent.rawValue
+            session.lifecycleRetention = metadata.suggestedRetention.rawValue
+            session.isComplete = metadata.isComplete
+            session.hasArtifacts = metadata.hasArtifacts
+
             do {
-                let metadata = try await classificationService.classify(messages: messages)
-
-                // Update session with classification results
-                session.afmTitle = metadata.title
-                session.afmEmoji = metadata.emoji
-                session.afmCategory = metadata.category.rawValue
-                session.afmIntent = metadata.intent.rawValue
-                session.afmTopics = try? JSONEncoder().encode(metadata.topics)
-                session.afmClassifiedAt = Date()
-                session.lifecycleIntent = metadata.intent.rawValue
-                session.lifecycleRetention = metadata.suggestedRetention.rawValue
-                session.isComplete = metadata.isComplete
-                session.hasArtifacts = metadata.hasArtifacts
-
                 try modelContext.save()
-                self.logger.info(
-                    "Classification completed for session \(session.id): \(metadata.title)")
+                self.logger.info("Classification completed for session \(session.id): \(metadata.title)")
             } catch {
-                self.logger.error("Classification failed: \(error.localizedDescription)")
+                self.logger.error("Failed saving classification: \(error.localizedDescription)")
             }
         }
     }
