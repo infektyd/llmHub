@@ -11,7 +11,7 @@ import FoundationModels
 // MARK: - Classification Types
 
 /// The primary category of a conversation.
-enum ConversationCategory: String, CaseIterable, Codable, Sendable {
+nonisolated enum ConversationCategory: String, CaseIterable, Codable, Sendable {
     case coding = "coding"  // Programming, debugging, code review
     case research = "research"  // Information gathering, learning
     case creative = "creative"  // Writing, brainstorming, design
@@ -32,7 +32,7 @@ enum ConversationCategory: String, CaseIterable, Codable, Sendable {
 }
 
 /// The user's apparent intent for a conversation.
-enum ConversationIntent: String, CaseIterable, Codable, Sendable {
+nonisolated enum ConversationIntent: String, CaseIterable, Codable, Sendable {
     case quickQuestion = "quickQuestion"  // Short, one-off query
     case debugging = "debugging"  // Problem-solving session
     case exploration = "exploration"  // Open-ended discussion
@@ -51,7 +51,7 @@ enum ConversationIntent: String, CaseIterable, Codable, Sendable {
 }
 
 /// Suggested retention policy based on content value.
-enum RetentionPolicy: String, CaseIterable, Codable, Sendable {
+nonisolated enum RetentionPolicy: String, CaseIterable, Codable, Sendable {
     case keep = "keep"  // Explicitly valuable
     case archive = "archive"  // Done but may reference
     case reviewIn7Days = "reviewIn7Days"  // Flag for cleanup review
@@ -68,7 +68,7 @@ enum RetentionPolicy: String, CaseIterable, Codable, Sendable {
 }
 
 /// Metadata extracted from a conversation by classification.
-struct ConversationMetadata: Sendable {
+nonisolated struct ConversationMetadata: Sendable {
     /// A concise title for the conversation (max 50 chars).
     let title: String
     /// A single emoji representing the topic.
@@ -154,12 +154,18 @@ struct ConversationMetadata: Sendable {
 // MARK: - Classification Service
 
 /// Service for classifying conversations using Apple Foundation Models.
-@MainActor
-final class ConversationClassificationService {
+nonisolated final class ConversationClassificationService: Sendable {
     private let keychainStore: KeychainStore
+    private let fallbackClassifier: AFMFallbackClassifier
 
-    init(keychainStore: KeychainStore = KeychainStore()) {
+    init(keychainStore: KeychainStore) {
         self.keychainStore = keychainStore
+        self.fallbackClassifier = AFMFallbackClassifier(keychainStore: keychainStore)
+    }
+
+    @MainActor
+    convenience init() {
+        self.init(keychainStore: KeychainStore())
     }
 
     /// Check if AFM is available on this device.
@@ -174,18 +180,16 @@ final class ConversationClassificationService {
     /// Classifies a conversation based on its messages.
     /// Falls back to heuristic classification when AFM is unavailable.
     func classify(messages: [ChatMessage]) async throws -> ConversationMetadata {
-        if let gemini = try await classifyWithGemini(messages: messages) {
-            return gemini
-        }
-
-        guard isAvailable else { return ConversationMetadata.fallback(from: messages) }
-
-        if #available(macOS 15.0, iOS 18.0, *) {
+        if isAvailable, #available(macOS 15.0, iOS 18.0, *) {
             do {
                 return try await classifyWithAFM(messages: messages)
             } catch {
-                return ConversationMetadata.fallback(from: messages)
+                // Fall through to Gemini fallback and finally heuristics.
             }
+        }
+
+        if let gemini = await fallbackClassifier.classify(messages: messages) {
+            return gemini
         }
 
         return ConversationMetadata.fallback(from: messages)
@@ -196,7 +200,7 @@ final class ConversationClassificationService {
         // Build context from first N messages (respect 4K token limit)
         let context = buildClassificationContext(from: messages, maxMessages: 10)
 
-        FoundationModelsDiagnostics.logRequestStart(useCase: "conversation_classification")
+        await FoundationModelsDiagnostics.logRequestStart(useCase: "conversation_classification")
         let start = CFAbsoluteTimeGetCurrent()
 
         do {
@@ -224,13 +228,13 @@ final class ConversationClassificationService {
             let response = try await session.respond(to: prompt)
 
             let latency = (CFAbsoluteTimeGetCurrent() - start) * 1000
-            FoundationModelsDiagnostics.logRequestSuccess(latencyMs: latency)
+            await FoundationModelsDiagnostics.logRequestSuccess(latencyMs: latency)
 
             // Parse the response - in production, use @Generable for structured output
             return try parseAFMResponse(response.content, messages: messages)
         } catch {
             let latency = (CFAbsoluteTimeGetCurrent() - start) * 1000
-            FoundationModelsDiagnostics.logRequestFail(latencyMs: latency, error: error)
+            await FoundationModelsDiagnostics.logRequestFail(latencyMs: latency, error: error)
             throw error
         }
     }
@@ -250,53 +254,10 @@ final class ConversationClassificationService {
     private func parseAFMResponse(_ content: String, messages: [ChatMessage]) throws
         -> ConversationMetadata
     {
-        decodeMetadata(from: content, messages: messages)
+        try decodeMetadata(from: content, messages: messages)
     }
 
-    private func classifyWithGemini(messages: [ChatMessage]) async throws -> ConversationMetadata? {
-        guard let apiKey = await keychainStore.apiKey(for: .google), !apiKey.isEmpty else {
-            return nil
-        }
-
-        guard #available(iOS 26.1, macOS 26.1, *) else { return nil }
-
-        let context = buildClassificationContext(from: messages, maxMessages: 12)
-        let prompt = """
-        Classify this conversation. Return ONLY valid JSON (no backticks, no prose):
-        {
-          "title": "<max 50 chars>",
-          "emoji": "<single emoji>",
-          "category": "<coding|research|creative|planning|support|general>",
-          "topics": ["topic1", "topic2"],
-          "intent": "<quickQuestion|debugging|exploration|creation|reference>",
-          "isComplete": <true|false>,
-          "hasArtifacts": <true|false>,
-          "suggestedRetention": "<keep|archive|reviewIn7Days|autoDeleteOK>"
-        }
-
-        Conversation:
-        \(context)
-        """
-
-        do {
-            let manager = GeminiManager(apiKey: apiKey)
-            let response = try await manager.generateContent(
-                prompt: prompt,
-                model: "gemini-2.0-flash"
-            )
-            let text = response.text ?? ""
-            let metadata = decodeMetadata(from: text, messages: messages)
-            return metadata
-        } catch {
-            return nil
-        }
-    }
-
-    private func decodeMetadata(from content: String, messages: [ChatMessage]) -> ConversationMetadata {
-        guard let data = extractJSONData(from: content) else {
-            return ConversationMetadata.fallback(from: messages)
-        }
-
+    private func decodeMetadata(from content: String, messages: [ChatMessage]) throws -> ConversationMetadata {
         struct LLMResponse: Decodable {
             let title: String?
             let emoji: String?
@@ -309,24 +270,41 @@ final class ConversationClassificationService {
             let retention: String?
         }
 
+        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        let jsonString: String
+        if let start = trimmed.firstIndex(of: "{"), let end = trimmed.lastIndex(of: "}") {
+            jsonString = String(trimmed[start...end])
+        } else {
+            jsonString = trimmed
+        }
+
+        guard let data = jsonString.data(using: .utf8) else {
+            return ConversationMetadata.fallback(from: messages)
+        }
+
         do {
             let decoded = try JSONDecoder().decode(LLMResponse.self, from: data)
-            let title =
-                decoded.title?.trimmingCharacters(in: .whitespacesAndNewlines)
-                ?? ConversationMetadata.fallback(from: messages).title
-            let emoji = decoded.emoji?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "💬"
+            let fallback = ConversationMetadata.fallback(from: messages)
 
-            let category = ConversationCategory(rawValue: decoded.category ?? "") ?? .general
-            let intent = ConversationIntent(rawValue: decoded.intent ?? "") ?? .exploration
+            let title = (decoded.title?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap {
+                $0.isEmpty ? nil : String($0.prefix(50))
+            } ?? fallback.title
+
+            let emoji = (decoded.emoji?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap {
+                $0.isEmpty ? nil : $0
+            } ?? fallback.emoji
+
+            let category = ConversationCategory(rawValue: decoded.category ?? "") ?? fallback.category
+            let intent = ConversationIntent(rawValue: decoded.intent ?? "") ?? fallback.intent
             let topics = decoded.topics ?? []
-            let isComplete = decoded.isComplete ?? false
-            let hasArtifacts = decoded.hasArtifacts ?? messages.contains { !$0.codeBlocks.isEmpty }
+            let isComplete = decoded.isComplete ?? fallback.isComplete
+            let hasArtifacts = decoded.hasArtifacts ?? fallback.hasArtifacts
 
-            let retentionRaw = decoded.suggestedRetention ?? decoded.retention ?? RetentionPolicy.reviewIn7Days.rawValue
-            let retention = RetentionPolicy(rawValue: retentionRaw) ?? .reviewIn7Days
+            let retentionRaw = decoded.suggestedRetention ?? decoded.retention
+            let retention = RetentionPolicy(rawValue: retentionRaw ?? "") ?? fallback.suggestedRetention
 
             return ConversationMetadata(
-                title: String(title.prefix(50)),
+                title: title,
                 emoji: emoji,
                 category: category,
                 topics: topics,
@@ -340,11 +318,4 @@ final class ConversationClassificationService {
         }
     }
 
-    private func extractJSONData(from content: String) -> Data? {
-        guard let jsonStart = content.firstIndex(of: "{"),
-            let jsonEnd = content.lastIndex(of: "}")
-        else { return nil }
-        let jsonString = String(content[jsonStart...jsonEnd])
-        return jsonString.data(using: .utf8)
-    }
 }

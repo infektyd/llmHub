@@ -430,6 +430,38 @@ final class ChatFolderEntity {
     }
 }
 
+/// A SwiftData entity representing a project for hierarchical sidebar organization.
+@Model
+final class ProjectEntity {
+    /// The unique identifier of the project.
+    @Attribute(.unique) var id: UUID
+    /// The display name of the project.
+    var name: String
+    /// The SF Symbol name used for the project icon.
+    var icon: String
+    /// The hex string representation of the project color.
+    var color: String
+    /// The creation date of the project.
+    var createdAt: Date
+    /// The sessions associated with this project.
+    @Relationship(deleteRule: .nullify, inverse: \ChatSessionEntity.parentProject) var sessions:
+        [ChatSessionEntity] = []
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        icon: String = "folder",
+        color: String = "#A3A3A3",
+        createdAt: Date = Date()
+    ) {
+        self.id = id
+        self.name = name
+        self.icon = icon
+        self.color = color
+        self.createdAt = createdAt
+    }
+}
+
 /// A SwiftData entity representing a chat tag for persistence.
 @Model
 final class ChatTagEntity {
@@ -493,6 +525,9 @@ final class ChatSessionEntity {
     // Organization
     /// The folder this session belongs to.
     var folder: ChatFolderEntity?
+
+    /// Optional project relationship for hierarchical sidebar grouping.
+    var parentProject: ProjectEntity?
     /// The tags associated with this session.
     @Relationship(deleteRule: .nullify) var tags: [ChatTagEntity] = []
     /// Indicates if the session is pinned.
@@ -506,6 +541,10 @@ final class ChatSessionEntity {
     /// JSON-encoded array of artifact IDs (references into a future artifacts store).
     var artifactIDsData: Data?
 
+    /// Artifacts associated with this session.
+    @Relationship(deleteRule: .cascade, inverse: \ArtifactEntity.session) var artifacts:
+        [ArtifactEntity] = []
+
     // MARK: - AFM-Generated Metadata
     /// AI-generated title for the conversation (e.g., "Swift concurrency debugging").
     var afmTitle: String?
@@ -516,7 +555,7 @@ final class ChatSessionEntity {
     /// User intent: "quickQuestion", "debugging", "exploration", "creation", "reference".
     var afmIntent: String?
     /// JSON-encoded array of topic strings (e.g., ["swift", "async", "actors"]).
-    var afmTopics: Data?
+    @Attribute(originalName: "afmTopics") var afmTopicsData: Data?
     /// When AFM last classified this conversation.
     var afmClassifiedAt: Date?
 
@@ -534,15 +573,27 @@ final class ChatSessionEntity {
     /// When this conversation was flagged for cleanup review.
     var flaggedForCleanupAt: Date?
 
-    /// Decoded topics array from JSON data.
-    var afmTopicsArray: [String] {
-        guard let data = afmTopics else { return [] }
-        return (try? JSONDecoder().decode([String].self, from: data)) ?? []
+    /// Topics extracted from AFM/fallback classification.
+    /// Backed by JSON-encoded storage for SwiftData persistence.
+    var afmTopics: [String] {
+        get {
+            guard let data = afmTopicsData else { return [] }
+            return (try? JSONDecoder().decode([String].self, from: data)) ?? []
+        }
+        set {
+            afmTopicsData = try? JSONEncoder().encode(newValue)
+        }
     }
+
+    /// Backward-compatible alias used by existing UI/search code.
+    var afmTopicsArray: [String] { afmTopics }
 
     /// Decoded artifact IDs array from JSON data.
     var artifactIDs: [UUID] {
         get {
+            if !artifacts.isEmpty {
+                return artifacts.map { $0.id }
+            }
             guard let data = artifactIDsData else { return [] }
             return (try? JSONDecoder().decode([UUID].self, from: data)) ?? []
         }
@@ -591,7 +642,19 @@ final class ChatSessionEntity {
     /// Converts the entity back to a domain model.
     /// - Returns: A `ChatSession` instance.
     func asDomain() -> ChatSession {
-        ChatSession(
+        let lastTokenUsage: TokenUsage? = {
+            guard let inputTokens = lastTokenUsageInputTokens,
+                let outputTokens = lastTokenUsageOutputTokens,
+                let cachedTokens = lastTokenUsageCachedTokens
+            else { return nil }
+            return TokenUsage(
+                inputTokens: inputTokens,
+                outputTokens: outputTokens,
+                cachedTokens: cachedTokens
+            )
+        }()
+
+        return ChatSession(
             id: id,
             title: title,
             providerID: providerID,
@@ -600,11 +663,7 @@ final class ChatSessionEntity {
             updatedAt: updatedAt,
             messages: messages.map { $0.asDomain() },
             metadata: ChatSessionMetadata(
-                lastTokenUsage: lastTokenUsageInputTokens.map {
-                    TokenUsage(
-                        inputTokens: $0, outputTokens: lastTokenUsageOutputTokens!,
-                        cachedTokens: lastTokenUsageCachedTokens!)
-                },
+                lastTokenUsage: lastTokenUsage,
                 totalCostUSD: totalCostUSD,
                 referenceID: referenceID
             ),
@@ -614,6 +673,45 @@ final class ChatSessionEntity {
             tags: tags.map { $0.asDomain() },
             isPinned: isPinned
         )
+    }
+}
+
+/// A SwiftData entity representing an artifact extracted from a chat session.
+@Model
+final class ArtifactEntity {
+    /// The unique identifier of the artifact.
+    @Attribute(.unique) var id: UUID
+    /// Display title for the artifact.
+    var title: String
+    /// Artifact kind (e.g., "code", "text", "pdf").
+    var kind: String
+    /// Foreign-key convenience for querying.
+    var sessionID: UUID
+    /// The creation date of the artifact.
+    var createdAt: Date
+    /// Short preview used in the sidebar.
+    var previewText: String
+    /// Binary content storage (externalized for large payloads).
+    @Attribute(.externalStorage) var content: Data?
+    /// Owning session.
+    var session: ChatSessionEntity?
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        kind: String,
+        sessionID: UUID,
+        createdAt: Date = Date(),
+        previewText: String = "",
+        content: Data? = nil
+    ) {
+        self.id = id
+        self.title = title
+        self.kind = kind
+        self.sessionID = sessionID
+        self.createdAt = createdAt
+        self.previewText = previewText
+        self.content = content
     }
 }
 

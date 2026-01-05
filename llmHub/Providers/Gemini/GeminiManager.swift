@@ -30,7 +30,8 @@ public class GeminiManager {
         files: [MediaFile] = [],
         model: String = "gemini-1.5-pro",
         thinkingLevel: ThinkingLevel = .off,
-        history: [Content] = []
+        history: [Content] = [],
+        responseMimeType: String? = nil
     ) async throws -> GenerationResponse {
         let request = try makeGenerateContentRequest(
             prompt: prompt,
@@ -38,6 +39,7 @@ public class GeminiManager {
             model: model,
             thinkingLevel: thinkingLevel,
             history: history,
+            responseMimeType: responseMimeType,
             stream: false
         )
 
@@ -68,7 +70,8 @@ public class GeminiManager {
         files: [MediaFile] = [],
         model: String = "gemini-1.5-pro",
         thinkingLevel: ThinkingLevel = .off,
-        history: [Content] = []
+        history: [Content] = [],
+        responseMimeType: String? = nil
     ) -> AsyncThrowingStream<GenerationResponse, Error> {
         AsyncThrowingStream { continuation in
             Task {
@@ -79,6 +82,7 @@ public class GeminiManager {
                         model: model,
                         thinkingLevel: thinkingLevel,
                         history: history,
+                        responseMimeType: responseMimeType,
                         stream: true
                     )
 
@@ -156,6 +160,7 @@ public class GeminiManager {
         history: [Content] = [],
         tools: [ToolDefinition]? = nil,
         maxOutputTokens: Int? = nil,
+        responseMimeType: String? = nil,
         stream: Bool = false
     ) throws -> URLRequest {
         let action = stream ? "streamGenerateContent" : "generateContent"
@@ -182,6 +187,7 @@ public class GeminiManager {
         // Config
         var config = GenerationConfig()
         config.maxOutputTokens = maxOutputTokens ?? 8192  // Ensure responses aren't cut off
+        config.responseMimeType = responseMimeType
 
         // Build thinking config as a separate top-level field (NOT inside generationConfig)
         // NOTE: thinkingConfig is only supported on certain stable models, NOT preview models.
@@ -586,6 +592,8 @@ struct GenerationConfig: Codable {
     var temperature: Float? = nil  // Default 1.0 is best for Gemini 3
     /// Response modalities (e.g., TEXT, IMAGE).
     var responseModalities: [String]?  // ["TEXT", "IMAGE"]
+    /// Response MIME type for native formatting (e.g., "application/json").
+    var responseMimeType: String?
     /// Maximum number of output tokens.
     var maxOutputTokens: Int?
 }
