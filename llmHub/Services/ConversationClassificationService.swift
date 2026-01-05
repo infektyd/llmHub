@@ -156,6 +156,11 @@ struct ConversationMetadata: Sendable {
 /// Service for classifying conversations using Apple Foundation Models.
 @MainActor
 final class ConversationClassificationService {
+    private let keychainStore: KeychainStore
+
+    init(keychainStore: KeychainStore = KeychainStore()) {
+        self.keychainStore = keychainStore
+    }
 
     /// Check if AFM is available on this device.
     /// AFM requires macOS 26+ / iOS 26+ with Apple Intelligence enabled.
@@ -169,12 +174,18 @@ final class ConversationClassificationService {
     /// Classifies a conversation based on its messages.
     /// Falls back to heuristic classification when AFM is unavailable.
     func classify(messages: [ChatMessage]) async throws -> ConversationMetadata {
-        guard isAvailable else {
-            return ConversationMetadata.fallback(from: messages)
+        if let gemini = try await classifyWithGemini(messages: messages) {
+            return gemini
         }
 
+        guard isAvailable else { return ConversationMetadata.fallback(from: messages) }
+
         if #available(macOS 15.0, iOS 18.0, *) {
-            return try await classifyWithAFM(messages: messages)
+            do {
+                return try await classifyWithAFM(messages: messages)
+            } catch {
+                return ConversationMetadata.fallback(from: messages)
+            }
         }
 
         return ConversationMetadata.fallback(from: messages)
@@ -182,14 +193,6 @@ final class ConversationClassificationService {
 
     @available(macOS 15.0, iOS 18.0, *)
     private func classifyWithAFM(messages: [ChatMessage]) async throws -> ConversationMetadata {
-        let availability = SystemLanguageModel.default.availability
-        guard availability == .available else {
-            if case .unavailable(let reason) = availability {
-                FoundationModelsDiagnostics.logStreamEvent("skip", reason: String(describing: reason))
-            }
-            return ConversationMetadata.fallback(from: messages)
-        }
-
         // Build context from first N messages (respect 4K token limit)
         let context = buildClassificationContext(from: messages, maxMessages: 10)
 
@@ -247,44 +250,101 @@ final class ConversationClassificationService {
     private func parseAFMResponse(_ content: String, messages: [ChatMessage]) throws
         -> ConversationMetadata
     {
-        // Try to extract JSON from the response
-        guard let jsonStart = content.firstIndex(of: "{"),
-            let jsonEnd = content.lastIndex(of: "}")
-        else {
+        decodeMetadata(from: content, messages: messages)
+    }
+
+    private func classifyWithGemini(messages: [ChatMessage]) async throws -> ConversationMetadata? {
+        guard let apiKey = await keychainStore.apiKey(for: .google), !apiKey.isEmpty else {
+            return nil
+        }
+
+        guard #available(iOS 26.1, macOS 26.1, *) else { return nil }
+
+        let context = buildClassificationContext(from: messages, maxMessages: 12)
+        let prompt = """
+        Classify this conversation. Return ONLY valid JSON (no backticks, no prose):
+        {
+          "title": "<max 50 chars>",
+          "emoji": "<single emoji>",
+          "category": "<coding|research|creative|planning|support|general>",
+          "topics": ["topic1", "topic2"],
+          "intent": "<quickQuestion|debugging|exploration|creation|reference>",
+          "isComplete": <true|false>,
+          "hasArtifacts": <true|false>,
+          "suggestedRetention": "<keep|archive|reviewIn7Days|autoDeleteOK>"
+        }
+
+        Conversation:
+        \(context)
+        """
+
+        do {
+            let manager = GeminiManager(apiKey: apiKey)
+            let response = try await manager.generateContent(
+                prompt: prompt,
+                model: "gemini-2.0-flash"
+            )
+            let text = response.text ?? ""
+            let metadata = decodeMetadata(from: text, messages: messages)
+            return metadata
+        } catch {
+            return nil
+        }
+    }
+
+    private func decodeMetadata(from content: String, messages: [ChatMessage]) -> ConversationMetadata {
+        guard let data = extractJSONData(from: content) else {
             return ConversationMetadata.fallback(from: messages)
         }
 
-        let jsonString = String(content[jsonStart...jsonEnd])
-        guard let data = jsonString.data(using: .utf8) else {
-            return ConversationMetadata.fallback(from: messages)
-        }
-
-        struct AFMResponse: Decodable {
-            let title: String
-            let emoji: String
-            let category: String
-            let topics: [String]
-            let intent: String
-            let isComplete: Bool
-            let hasArtifacts: Bool
-            let suggestedRetention: String
+        struct LLMResponse: Decodable {
+            let title: String?
+            let emoji: String?
+            let category: String?
+            let topics: [String]?
+            let intent: String?
+            let isComplete: Bool?
+            let hasArtifacts: Bool?
+            let suggestedRetention: String?
+            let retention: String?
         }
 
         do {
-            let decoded = try JSONDecoder().decode(AFMResponse.self, from: data)
+            let decoded = try JSONDecoder().decode(LLMResponse.self, from: data)
+            let title =
+                decoded.title?.trimmingCharacters(in: .whitespacesAndNewlines)
+                ?? ConversationMetadata.fallback(from: messages).title
+            let emoji = decoded.emoji?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "💬"
+
+            let category = ConversationCategory(rawValue: decoded.category ?? "") ?? .general
+            let intent = ConversationIntent(rawValue: decoded.intent ?? "") ?? .exploration
+            let topics = decoded.topics ?? []
+            let isComplete = decoded.isComplete ?? false
+            let hasArtifacts = decoded.hasArtifacts ?? messages.contains { !$0.codeBlocks.isEmpty }
+
+            let retentionRaw = decoded.suggestedRetention ?? decoded.retention ?? RetentionPolicy.reviewIn7Days.rawValue
+            let retention = RetentionPolicy(rawValue: retentionRaw) ?? .reviewIn7Days
+
             return ConversationMetadata(
-                title: decoded.title,
-                emoji: decoded.emoji,
-                category: ConversationCategory(rawValue: decoded.category) ?? .general,
-                topics: decoded.topics,
-                intent: ConversationIntent(rawValue: decoded.intent) ?? .exploration,
-                isComplete: decoded.isComplete,
-                hasArtifacts: decoded.hasArtifacts,
-                suggestedRetention: RetentionPolicy(rawValue: decoded.suggestedRetention)
-                    ?? .reviewIn7Days
+                title: String(title.prefix(50)),
+                emoji: emoji,
+                category: category,
+                topics: topics,
+                intent: intent,
+                isComplete: isComplete,
+                hasArtifacts: hasArtifacts,
+                suggestedRetention: retention
             )
         } catch {
             return ConversationMetadata.fallback(from: messages)
         }
+    }
+
+    private func extractJSONData(from content: String) -> Data? {
+        guard let jsonStart = content.firstIndex(of: "{"),
+            let jsonEnd = content.lastIndex(of: "}")
+        else { return nil }
+        let jsonString = String(content[jsonStart...jsonEnd])
+        return jsonString.data(using: .utf8)
     }
 }

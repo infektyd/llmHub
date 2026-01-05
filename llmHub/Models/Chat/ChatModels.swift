@@ -497,8 +497,14 @@ final class ChatSessionEntity {
     @Relationship(deleteRule: .nullify) var tags: [ChatTagEntity] = []
     /// Indicates if the session is pinned.
     var isPinned: Bool = false
+    /// Optional custom symbol shown for pinned sessions (nil = use defaults).
+    var pinnedSymbol: String?
     /// Indicates if the session is archived (hidden from main view).
     var isArchived: Bool = false
+    /// Optional project scope for the session (used for hierarchical sidebar grouping).
+    var parentProjectID: UUID?
+    /// JSON-encoded array of artifact IDs (references into a future artifacts store).
+    var artifactIDsData: Data?
 
     // MARK: - AFM-Generated Metadata
     /// AI-generated title for the conversation (e.g., "Swift concurrency debugging").
@@ -507,6 +513,8 @@ final class ChatSessionEntity {
     var afmEmoji: String?
     /// Primary category: "coding", "research", "creative", "planning", "support", "general".
     var afmCategory: String?
+    /// User intent: "quickQuestion", "debugging", "exploration", "creation", "reference".
+    var afmIntent: String?
     /// JSON-encoded array of topic strings (e.g., ["swift", "async", "actors"]).
     var afmTopics: Data?
     /// When AFM last classified this conversation.
@@ -530,6 +538,17 @@ final class ChatSessionEntity {
     var afmTopicsArray: [String] {
         guard let data = afmTopics else { return [] }
         return (try? JSONDecoder().decode([String].self, from: data)) ?? []
+    }
+
+    /// Decoded artifact IDs array from JSON data.
+    var artifactIDs: [UUID] {
+        get {
+            guard let data = artifactIDsData else { return [] }
+            return (try? JSONDecoder().decode([UUID].self, from: data)) ?? []
+        }
+        set {
+            artifactIDsData = try? JSONEncoder().encode(newValue)
+        }
     }
 
     /// Display title preferring AFM-generated title over default.
@@ -561,6 +580,7 @@ final class ChatSessionEntity {
         jsonMode = session.jsonMode
         thinkingPreferenceRaw = session.thinkingPreference.rawValue
         isPinned = session.isPinned
+        parentProjectID = session.folderID
         // Initialize lifecycle tracking
         lastActivityAt = session.createdAt
         // Relationships (folder and tags) are usually set via service update methods,
