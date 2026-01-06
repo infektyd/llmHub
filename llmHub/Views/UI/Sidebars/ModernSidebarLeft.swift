@@ -8,6 +8,10 @@
 import SwiftData
 import SwiftUI
 
+#if os(macOS)
+import AppKit
+#endif
+
 private enum SidebarMode: String, CaseIterable {
     case chat
     case code
@@ -67,6 +71,9 @@ struct ModernSidebarLeft: View {
     @State private var expandedProjectIDs: Set<UUID> = []
     @State private var didLoadExpandedProjects = false
 
+    @State private var selectedConversationIDs: Set<UUID> = []
+    @State private var selectionAnchorConversationID: UUID?
+
     @FocusState private var searchFocused: Bool
 
     private let lifecycleService = ConversationLifecycleService()
@@ -110,6 +117,22 @@ struct ModernSidebarLeft: View {
                 expandedProjectIDs = loadExpandedProjectIDs()
                 didLoadExpandedProjects = true
             }
+
+            if let id = selectedConversationID {
+                selectedConversationIDs = [id]
+                selectionAnchorConversationID = id
+            }
+        }
+        .onChange(of: selectedConversationID) { _, newValue in
+            guard let id = newValue else {
+                selectedConversationIDs.removeAll()
+                selectionAnchorConversationID = nil
+                return
+            }
+            if !selectedConversationIDs.contains(id) {
+                selectedConversationIDs = [id]
+            }
+            selectionAnchorConversationID = id
         }
         .onChange(of: state.searchText) { _, newValue in
             debounceTask?.cancel()
@@ -525,7 +548,7 @@ struct ModernSidebarLeft: View {
 
     private func conversationRow(_ session: ChatSessionEntity, leadingSymbol: String? = nil) -> some View {
         Button {
-            selectedConversationID = session.id
+            handleConversationSelection(sessionID: session.id)
         } label: {
             HStack(alignment: .center, spacing: 10) {
                 if let leadingSymbol {
@@ -545,10 +568,10 @@ struct ModernSidebarLeft: View {
                         .font(
                             .system(
                                 size: 12,
-                                weight: selectedConversationID == session.id ? .semibold : .regular)
+                                weight: selectedConversationIDs.contains(session.id) ? .semibold : .regular)
                         )
                         .foregroundStyle(
-                            selectedConversationID == session.id
+                            selectedConversationIDs.contains(session.id)
                                 ? AppColors.textPrimary : AppColors.textSecondary
                         )
                         .lineLimit(1)
@@ -564,13 +587,97 @@ struct ModernSidebarLeft: View {
             .padding(.vertical, 9)
             .background {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(selectedConversationID == session.id ? AppColors.accent.opacity(0.12) : Color.clear)
+                    .fill(selectedConversationIDs.contains(session.id) ? AppColors.accent.opacity(0.12) : Color.clear)
             }
         }
         .buttonStyle(.plain)
         .contextMenu {
             sessionContextMenu(session)
         }
+    }
+
+    private func handleConversationSelection(sessionID: UUID) {
+#if os(macOS)
+        let modifiers = NSEvent.modifierFlags
+        if modifiers.contains(.shift) {
+            let ordering = visibleConversationIDsInOrder()
+            let anchor = selectionAnchorConversationID
+                ?? selectedConversationIDs.first
+                ?? selectedConversationID
+                ?? sessionID
+
+            selectionAnchorConversationID = anchor
+
+            if let a = ordering.firstIndex(of: anchor), let b = ordering.firstIndex(of: sessionID) {
+                let range = a <= b ? ordering[a...b] : ordering[b...a]
+                selectedConversationIDs = Set(range)
+            } else {
+                selectedConversationIDs = [sessionID]
+                selectionAnchorConversationID = sessionID
+            }
+
+            if selectedConversationIDs.isEmpty, let active = selectedConversationID {
+                selectedConversationIDs = [active]
+            }
+            return
+        }
+
+        if modifiers.contains(.command) {
+            selectionAnchorConversationID = sessionID
+
+            if selectedConversationIDs.contains(sessionID) {
+                selectedConversationIDs.remove(sessionID)
+            } else {
+                selectedConversationIDs.insert(sessionID)
+            }
+
+            if selectedConversationIDs.isEmpty, let active = selectedConversationID {
+                selectedConversationIDs = [active]
+            }
+            return
+        }
+#endif
+
+        selectedConversationIDs = [sessionID]
+        selectedConversationID = sessionID
+        selectionAnchorConversationID = sessionID
+    }
+
+    private func visibleConversationIDsInOrder() -> [UUID] {
+        var ids: [UUID] = []
+        ids.reserveCapacity(240)
+
+        if pinnedExpanded {
+            ids.append(contentsOf: pinnedSessions.prefix(50).map(\.id))
+        }
+
+        if projectsExpanded {
+            let inbox = inboxSessions
+            if !inbox.isEmpty {
+                ids.append(contentsOf: inbox.prefix(50).map(\.id))
+            }
+
+            for folder in folders {
+                if expandedProjectIDs.contains(folder.id) {
+                    ids.append(contentsOf: sessionsForProject(folder.id).prefix(50).map(\.id))
+                }
+            }
+        }
+
+        if recentExpanded {
+            let grouped = Dictionary(grouping: recentSessions) { categoryKey(for: $0) }
+            for key in grouped.keys.sorted(by: { categorySortKey($0) < categorySortKey($1) }) {
+                guard let items = grouped[key] else { continue }
+                let sorted = items.sorted { $0.updatedAt > $1.updatedAt }.prefix(20)
+                ids.append(contentsOf: sorted.map(\.id))
+            }
+        }
+
+        if archiveExpanded {
+            ids.append(contentsOf: archivedSessions.prefix(50).map(\.id))
+        }
+
+        return ids
     }
 
     private func sessionContextMenu(_ session: ChatSessionEntity) -> some View {
