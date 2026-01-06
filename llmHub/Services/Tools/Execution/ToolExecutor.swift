@@ -350,7 +350,14 @@ actor ToolExecutor {
         switch (schemaType, value) {
         case (.string, .string): return true
         case (.number, .number): return true
+        case (.number, .string(let s)):
+            return Double(s.trimmingCharacters(in: .whitespacesAndNewlines)) != nil
         case (.integer, .number(let n)): return n.rounded() == n
+        case (.integer, .string(let s)):
+            let trimmed = s.trimmingCharacters(in: .whitespacesAndNewlines)
+            if Int(trimmed) != nil { return true }
+            if let d = Double(trimmed), d.rounded() == d { return true }
+            return false
         case (.boolean, .bool): return true
         case (.array, .array): return true
         case (.object, .object): return true

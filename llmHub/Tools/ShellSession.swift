@@ -147,7 +147,8 @@ import OSLog
             let process = Process()
             process.launchPath = "/bin/zsh"
             let (sanitizedCommand, didRewriteTmp) = rewriteTmpPaths(in: command)
-            process.arguments = ["-lc", sanitizedCommand]
+            // Avoid login shell startup file overhead/hangs; run without rc files.
+            process.arguments = ["-f", "-c", sanitizedCommand]
             process.currentDirectoryURL = currentWorkingDirectory
             process.environment = environment
 
@@ -163,15 +164,21 @@ import OSLog
                 process.standardInput = stdinPipe
             }
 
-            // Create termination stream
-            let terminationStream = AsyncStream<Void> { continuation in
-                process.terminationHandler = { _ in
-                    continuation.yield(())
-                    continuation.finish()
-                }
-            }
-
             try process.run()
+
+            // Close parent-side write handles so reads can observe EOF when the child exits.
+            // Without this, readToEnd() may block because this process still holds a writer.
+            try? stdoutPipe.fileHandleForWriting.close()
+            try? stderrPipe.fileHandleForWriting.close()
+
+            // Drain stdout/stderr concurrently while the process runs.
+            // Waiting for termination before reading can deadlock if pipe buffers fill.
+            let stdoutReadTask = Task.detached(priority: nil) {
+                (try? stdoutPipe.fileHandleForReading.readToEnd()) ?? Data()
+            }
+            let stderrReadTask = Task.detached(priority: nil) {
+                (try? stderrPipe.fileHandleForReading.readToEnd()) ?? Data()
+            }
             if didRewriteTmp {
                 logger.info("Rewrote /tmp to \(self.tmpDirectory.path)")
             }
@@ -179,26 +186,32 @@ import OSLog
 
             // Wait for completion or timeout
             let didTimeout = await withTaskGroup(of: Bool.self) { group in
+                let waitTask = Task.detached(priority: nil) {
+                    process.waitUntilExit()
+                }
                 group.addTask {
-                    for await _ in terminationStream {
-                        break
-                    }
+                    await waitTask.value
                     return false
                 }
                 group.addTask {
                     try? await Task.sleep(nanoseconds: UInt64(timeout) * 1_000_000_000)
                     return true
                 }
-                return await group.next() ?? true
+
+                let first = await group.next() ?? true
+                group.cancelAll()
+                return first
             }
 
             if didTimeout {
                 process.terminate()
+                stdoutReadTask.cancel()
+                stderrReadTask.cancel()
                 throw ShellSessionError.timeout(command: command, seconds: timeout)
             }
 
-            let stdoutData = (try? stdoutPipe.fileHandleForReading.readToEnd()) ?? Data()
-            let stderrData = (try? stderrPipe.fileHandleForReading.readToEnd()) ?? Data()
+            let stdoutData = await stdoutReadTask.value
+            let stderrData = await stderrReadTask.value
 
             let duration = Date().timeIntervalSince(startTime)
 
