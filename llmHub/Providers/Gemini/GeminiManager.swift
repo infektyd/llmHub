@@ -29,6 +29,7 @@ public class GeminiManager {
         prompt: String,
         files: [MediaFile] = [],
         model: String = "gemini-1.5-pro",
+        temperature: Float? = nil,
         thinkingLevel: ThinkingLevel = .off,
         history: [Content] = [],
         responseMimeType: String? = nil
@@ -37,6 +38,7 @@ public class GeminiManager {
             prompt: prompt,
             files: files,
             model: model,
+            temperature: temperature,
             thinkingLevel: thinkingLevel,
             history: history,
             responseMimeType: responseMimeType,
@@ -69,6 +71,7 @@ public class GeminiManager {
         prompt: String,
         files: [MediaFile] = [],
         model: String = "gemini-1.5-pro",
+        temperature: Float? = nil,
         thinkingLevel: ThinkingLevel = .off,
         history: [Content] = [],
         responseMimeType: String? = nil
@@ -80,6 +83,7 @@ public class GeminiManager {
                         prompt: prompt,
                         files: files,
                         model: model,
+                        temperature: temperature,
                         thinkingLevel: thinkingLevel,
                         history: history,
                         responseMimeType: responseMimeType,
@@ -156,6 +160,7 @@ public class GeminiManager {
         prompt: String,
         files: [MediaFile] = [],
         model: String = "gemini-1.5-pro",
+        temperature: Float? = nil,
         thinkingLevel: ThinkingLevel = .off,
         history: [Content] = [],
         tools: [ToolDefinition]? = nil,
@@ -187,6 +192,7 @@ public class GeminiManager {
         // Config
         var config = GenerationConfig()
         config.maxOutputTokens = maxOutputTokens ?? 8192  // Ensure responses aren't cut off
+        config.temperature = temperature
         config.responseMimeType = responseMimeType
 
         // Build thinking config as a separate top-level field (NOT inside generationConfig)

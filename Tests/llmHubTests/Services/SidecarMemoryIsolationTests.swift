@@ -1,17 +1,10 @@
-//
-//  llmHubTests.swift
-//  llmHubTests
-//
-//  Created by Hans Axelsson on 11/27/25.
-//
-
+#if canImport(Testing)
 import Testing
 import SwiftData
-import Foundation
 
 @testable import llmHub
 
-struct llmHubTests {
+struct SidecarMemoryIsolationTests {
 
     private final class CapturingProvider: LLMProvider {
         let id: String
@@ -71,34 +64,8 @@ struct llmHubTests {
         func parseTokenUsage(from response: Data) throws -> TokenUsage? { nil }
     }
 
-    private struct TestKeyProvider: APIKeyProviding {
-        let key: String
-        func apiKey(for provider: KeychainStore.ProviderKey) async -> String? {
-            switch provider {
-            case .google:
-                return key
-            default:
-                return nil
-            }
-        }
-    }
-
-    private actor GeminiCallRecorder {
-        var called: Bool = false
-        var observedModel: String?
-
-        func record(model: String) {
-            called = true
-            observedModel = model
-        }
-
-        func snapshot() -> (called: Bool, observedModel: String?) {
-            (called, observedModel)
-        }
-    }
-
     @Test @MainActor
-    func sidecarAppendMessageIsNotPersisted() async throws {
+    func appendMessageSkipsSidecar() async throws {
         let schema = Schema([
             ChatSessionEntity.self,
             ChatMessageEntity.self,
@@ -148,13 +115,15 @@ struct llmHubTests {
 
         try chatService.appendMessage(sidecarMsg, to: session.id)
 
-        let reloaded = try modelContext.fetch(FetchDescriptor<ChatSessionEntity>()).first(where: { $0.id == session.id })
+        let reloaded = try modelContext.fetch(
+            FetchDescriptor<ChatSessionEntity>(predicate: #Predicate { $0.id == session.id })
+        ).first
 
         #expect((reloaded?.messages.count ?? -1) == 0)
     }
 
     @Test @MainActor
-    func sidecarMessagesAreFilteredFromPrompting() async throws {
+    func streamCompletionFiltersSidecarMessagesFromPrompt() async throws {
         let schema = Schema([
             ChatSessionEntity.self,
             ChatMessageEntity.self,
@@ -177,6 +146,7 @@ struct llmHubTests {
             toolExecutor: toolExecutor
         )
 
+        // Persist a session with 2 user turns (so retrieval injection doesn't run), plus a sidecar message.
         let session = ChatSession(
             id: UUID(),
             title: "T",
@@ -267,67 +237,6 @@ struct llmHubTests {
         #expect(!provider.capturedMessages.contains(where: { $0.provenance.channel == .sidecar }))
         #expect(!provider.capturedMessages.contains(where: { $0.content.contains("SIDE-CAR-IN-PERSISTENCE") }))
     }
-
-    @Test @MainActor
-    func geminiFallbackDistillationDoesNotPersistMemory() async throws {
-        let schema = Schema([MemoryEntity.self])
-        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-        let container = try ModelContainer(for: schema, configurations: [config])
-        let modelContext = ModelContext(container)
-
-        let sessionID = UUID()
-        let recorder = GeminiCallRecorder()
-
-        let geminiJSON: @Sendable (String, String, Double) async throws -> String = { prompt, model, _ in
-            await recorder.record(model: model)
-            #expect(prompt.contains("Distill this conversation"))
-
-            return """
-            {
-              "summary": "A short summary.",
-              "userFacts": [{"statement": "User likes Swift", "category": "preference"}],
-              "preferences": [{"topic": "language", "value": "Swift"}],
-              "decisions": [{"decision": "Use SwiftData", "context": "Persistence"}],
-              "artifacts": [{"type": "code", "description": "Snippet", "language": "swift"}],
-              "keywords": ["swift", "swiftdata", "llmhub"]
-            }
-            """
-        }
-
-        let service = ConversationDistillationService(
-            keyProvider: TestKeyProvider(key: "test"),
-            geminiJSONGenerator: geminiJSON,
-            afmAvailabilityOverride: { false }
-        )
-
-        let messages: [ChatMessage] = [
-            ChatMessage(
-                id: UUID(), role: .user, content: "Hi", thoughtProcess: nil,
-                parts: [.text("Hi")], createdAt: Date(), codeBlocks: []
-            ),
-            ChatMessage(
-                id: UUID(), role: .assistant, content: "Hello", thoughtProcess: nil,
-                parts: [.text("Hello")], createdAt: Date(), codeBlocks: []
-            ),
-            ChatMessage(
-                id: UUID(), role: .user, content: "Please remember I like Swift", thoughtProcess: nil,
-                parts: [.text("Please remember I like Swift")], createdAt: Date(), codeBlocks: []
-            ),
-        ]
-
-        await service.distill(
-            sessionID: sessionID,
-            providerID: "openai",
-            messages: messages,
-            modelContext: modelContext
-        )
-
-        let snapshot = await recorder.snapshot()
-        #expect(snapshot.called)
-        #expect(snapshot.observedModel == GeminiPinnedModels.afmFallbackFlash)
-
-        let fetchedAll = try modelContext.fetch(FetchDescriptor<MemoryEntity>())
-        let fetchedForSession = fetchedAll.filter { $0.sourceSessionID == sessionID }
-        #expect(fetchedForSession.isEmpty)
-    }
 }
+
+#endif

@@ -311,6 +311,15 @@ final class ChatService {
     ///   - message: The message to append.
     ///   - sessionID: The ID of the session.
     func appendMessage(_ message: ChatMessage, to sessionID: UUID) throws {
+        // Hard guard: never persist sidecar-origin messages into the main transcript.
+        // Sidecar outputs are allowed only as ephemeral UI artifacts/logs.
+        if message.provenance.channel == .sidecar {
+            logger.info(
+                "Skipping append of sidecar message (id=\(message.id), model=\(message.provenance.model ?? "unknown"))"
+            )
+            return
+        }
+
         guard
             let entity = try modelContext.fetch(
                 FetchDescriptor<ChatSessionEntity>(predicate: #Predicate { $0.id == sessionID })
@@ -441,6 +450,10 @@ final class ChatService {
                         // Start from persisted history, but enrich the most recent user message
                         // with any inline images/attachments for this request only.
                         var llmMessages = currentSession.messages
+
+                        // Defense-in-depth: never include sidecar-origin content in chat prompting,
+                        // even if it somehow made it into persistence.
+                        llmMessages.removeAll { $0.provenance.channel == .sidecar }
                         if !images.isEmpty || !attachments.isEmpty || !references.isEmpty,
                             let lastUserIndex = llmMessages.lastIndex(where: { $0.role == .user })
                         {

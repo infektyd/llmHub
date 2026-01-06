@@ -9,6 +9,10 @@ import LocalAuthentication
 import OSLog
 import Security
 
+protocol APIKeyProviding: Sendable {
+    func apiKey(for provider: KeychainStore.ProviderKey) async -> String?
+}
+
 final class KeychainStore: Sendable {
     enum ProviderKey: String, CaseIterable {
         case openai
@@ -291,6 +295,8 @@ final class KeychainStore: Sendable {
     private static var didLogDiagnostics = false
     private static let diagnosticsLock = NSLock()
 }
+
+extension KeychainStore: APIKeyProviding {}
 
 private extension KeychainStore.ProviderKey {
     var legacyAccounts: [String] {

@@ -68,6 +68,11 @@ struct LLMRequestOptions: Sendable {
     var thinkingPreference: ThinkingPreference = .auto
     /// Optional provider-specific thinking budget hint.
     var thinkingBudgetTokens: Int? = nil
+    /// Optional provider-specific temperature override.
+    ///
+    /// When set, providers that support sampling temperature should pass this through
+    /// to their request payloads.
+    var temperatureOverride: Double? = nil
     /// Optional provider-specific thinking level hint (for Gemini 3 models).
     ///
     /// Expected values are model-dependent; see Gemini "Thinking levels" docs.

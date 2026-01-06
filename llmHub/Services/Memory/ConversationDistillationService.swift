@@ -21,6 +21,23 @@ private let logger = AppLogger.category("Memory")
 @MainActor
 final class ConversationDistillationService {
 
+    private static var loggedGeminiFallbackSessions: Set<UUID> = []
+    private static var loggedMemoryWriteSkips: Set<UUID> = []
+
+    private let keyProvider: APIKeyProviding
+    private let geminiJSONGenerator: (@Sendable (_ prompt: String, _ model: String, _ temperature: Double) async throws -> String)?
+    private let afmAvailabilityOverride: (@Sendable () -> Bool)?
+
+    init(
+        keyProvider: APIKeyProviding = KeychainStore(),
+        geminiJSONGenerator: (@Sendable (_ prompt: String, _ model: String, _ temperature: Double) async throws -> String)? = nil,
+        afmAvailabilityOverride: (@Sendable () -> Bool)? = nil
+    ) {
+        self.keyProvider = keyProvider
+        self.geminiJSONGenerator = geminiJSONGenerator
+        self.afmAvailabilityOverride = afmAvailabilityOverride
+    }
+
     // MARK: - Configuration
 
     /// Maximum messages to consider for distillation (token budget safety).
@@ -34,6 +51,9 @@ final class ConversationDistillationService {
 
     /// Check if AFM is available on this device.
     var isAvailable: Bool {
+        if let afmAvailabilityOverride {
+            return afmAvailabilityOverride()
+        }
         #if canImport(FoundationModels)
             if #available(macOS 26.0, iOS 26.0, *) {
                 // In production, check SystemLanguageModel.default.availability
@@ -78,9 +98,15 @@ final class ConversationDistillationService {
             return
         }
 
-        // Guard: Silent skip if AFM unavailable
-        guard isAvailable else {
-            logger.debug("Skipping distillation for session \(sessionID): AFM unavailable")
+        // If AFM is unavailable, we may still run the sidecar fallback for diagnostics/telemetry,
+        // but we MUST NOT persist its output into chat memory.
+        if !isAvailable {
+            _ = await distillWithGeminiFallback(
+                messages: messages,
+                providerID: providerID,
+                sessionID: sessionID
+            )
+            // No persistence.
             return
         }
 
@@ -112,8 +138,12 @@ final class ConversationDistillationService {
                         providerID: providerID,
                         sessionID: sessionID
                     )
-                    try persist(memory: memory, modelContext: modelContext)
-                    logger.info("Distilled session \(sessionID) into memory")
+                    // Sidecar output: never persist into chat memory.
+                    try persist(
+                        memory: memory,
+                        modelContext: modelContext,
+                        provenance: .sidecar(model: "afm")
+                    )
                 } else {
                     logger.debug("Skipping distillation for session \(sessionID): unsupported OS")
                 }
@@ -121,15 +151,102 @@ final class ConversationDistillationService {
                 logger.debug("Skipping distillation for session \(sessionID): FoundationModels unavailable")
             #endif
         } catch {
-            // Attempt partial save on error/interrupt.
+            // AFM failed at runtime; attempt fixed remote Gemini fallback for diagnostics/telemetry,
+            // but never persist its output.
+            _ = await distillWithGeminiFallback(
+                messages: truncated,
+                providerID: providerID,
+                sessionID: sessionID
+            )
+
+            // Hard rule: sidecar distillation must not write to memory, even as a partial.
             logger.error("Distillation failed for session \(sessionID): \(error.localizedDescription)")
-            let partial = partialMemory(from: truncated, providerID: providerID, sessionID: sessionID)
-            do {
-                try persist(memory: partial, modelContext: modelContext)
-                logger.debug("Saved partial memory for session \(sessionID)")
-            } catch {
-                logger.error("Failed to save partial memory for session \(sessionID): \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: - Fixed Remote Fallback (Gemini)
+
+    private func distillWithGeminiFallback(
+        messages: [ChatMessage],
+        providerID: String,
+        sessionID: UUID
+    ) async -> Memory? {
+        guard let apiKey = await keyProvider.apiKey(for: .google), !apiKey.isEmpty else {
+            return nil
+        }
+
+        // Log once per session to avoid background spam.
+        if !Self.loggedGeminiFallbackSessions.contains(sessionID) {
+            Self.loggedGeminiFallbackSessions.insert(sessionID)
+            logger.info("AFM unavailable/failed → using Gemini Flash fallback for distillation")
+        }
+
+        let context = buildDistillationContext(from: messages)
+        let prompt = """
+        Distill this conversation into a structured essence for future retrieval.
+
+        CONVERSATION:
+        \(context)
+
+        OUTPUT:
+        Return ONLY valid JSON with this exact schema:
+        {
+          "summary": string,
+          "userFacts": [{"statement": string, "category": string}],
+          "preferences": [{"topic": string, "value": string}],
+          "decisions": [{"decision": string, "context": string}],
+          "artifacts": [{"type": string, "description": string, "language": string|null}],
+          "keywords": [string]
+        }
+
+        REQUIREMENTS:
+        - summary: concise 1-2 sentences.
+        - userFacts: max 5.
+        - preferences: max 5.
+        - decisions: max 3.
+        - artifacts: max 3.
+        - keywords: 10-20 items, STRICT MAX 20.
+        """
+
+        do {
+            let jsonText: String
+
+            if let geminiJSONGenerator {
+                jsonText = try await geminiJSONGenerator(
+                    prompt,
+                    GeminiPinnedModels.afmFallbackFlash,
+                    GeminiPinnedModels.afmFallbackTemperature
+                )
+            } else {
+                guard #available(iOS 26.1, macOS 26.1, *) else { return nil }
+                let manager = GeminiManager(apiKey: apiKey)
+                let response = try await manager.generateContent(
+                    prompt: prompt,
+                    model: GeminiPinnedModels.afmFallbackFlash,
+                    temperature: Float(GeminiPinnedModels.afmFallbackTemperature),
+                    responseMimeType: "application/json"
+                )
+                jsonText = response.text ?? ""
             }
+
+            guard let data = jsonText.data(using: .utf8) else { return nil }
+
+            let decoded = try JSONDecoder().decode(FallbackEssence.self, from: data)
+
+            return Memory(
+                providerID: providerID,
+                summary: decoded.summary,
+                userFacts: Array(decoded.userFacts.prefix(5)),
+                preferences: Array(decoded.preferences.prefix(5)),
+                decisions: Array(decoded.decisions.prefix(3)),
+                artifacts: Array(decoded.artifacts.prefix(3)),
+                keywords: Array(decoded.keywords.prefix(20)),
+                isComplete: true,
+                confidence: 0.75,
+                sourceSessionID: sessionID
+            )
+        } catch {
+            return nil
         }
     }
 
@@ -249,7 +366,24 @@ final class ConversationDistillationService {
         )
     }
 
-    private func persist(memory: Memory, modelContext: ModelContext) throws {
+    private func persist(
+        memory: Memory,
+        modelContext: ModelContext,
+        provenance: MessageProvenance
+    ) throws {
+        guard provenance.channel == .chat else {
+            let sessionKey = memory.sourceSessionID ?? memory.id
+            if !Self.loggedMemoryWriteSkips.contains(sessionKey) {
+                Self.loggedMemoryWriteSkips.insert(sessionKey)
+                let sessionDescription = memory.sourceSessionID?.uuidString ?? "nil"
+                let modelDescription = provenance.model ?? "unknown"
+                logger.info(
+                    "Skipping memory write for sidecar output (session=\(sessionDescription), model=\(modelDescription))"
+                )
+            }
+            return
+        }
+
         let entity = MemoryEntity(memory: memory)
         modelContext.insert(entity)
         try modelContext.save()

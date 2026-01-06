@@ -262,11 +262,13 @@ struct GoogleAIProvider: LLMProvider {
         // We build a non-streaming request by default.
         // streamResponse will convert it to a streaming request if needed.
         let maxOutputTokens = config.models.first(where: { $0.id == model })?.maxOutputTokens
+        let temperature: Float? = options.temperatureOverride.map { Float($0) }
 
         let request = try manager.makeGenerateContentRequest(
             prompt: prompt,
             files: mediaFiles,  // Only new files attached to the current prompt
             model: model,
+            temperature: temperature,
             thinkingLevel: requestedThinkingLevel,
             history: history,
             tools: tools,

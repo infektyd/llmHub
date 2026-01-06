@@ -15,6 +15,8 @@ private let logger = Logger(subsystem: "com.llmhub", category: "MemoryManagement
 @MainActor
 final class MemoryManagementService {
 
+    private static var loggedSidecarWriteSkips: Set<UUID> = []
+
     // MARK: - Configuration
 
     /// Days without access before flagging for cleanup.
@@ -28,7 +30,21 @@ final class MemoryManagementService {
     /// - Parameters:
     ///   - memory: The memory domain model to persist.
     ///   - modelContext: The SwiftData model context.
-    func create(_ memory: Memory, modelContext: ModelContext) throws {
+    func create(
+        _ memory: Memory,
+        modelContext: ModelContext,
+        provenance: MessageProvenance = .chat
+    ) throws {
+        guard provenance.channel == .chat else {
+            if !Self.loggedSidecarWriteSkips.contains(memory.id) {
+                Self.loggedSidecarWriteSkips.insert(memory.id)
+                logger.info(
+                    "Skipping memory create from sidecar output (memory=\(memory.id), model=\(provenance.model ?? "unknown"))"
+                )
+            }
+            return
+        }
+
         let entity = MemoryEntity(memory: memory)
         modelContext.insert(entity)
         try modelContext.save()
@@ -40,7 +56,21 @@ final class MemoryManagementService {
     /// - Parameters:
     ///   - memory: The updated memory domain model.
     ///   - modelContext: The SwiftData model context.
-    func update(_ memory: Memory, modelContext: ModelContext) throws {
+    func update(
+        _ memory: Memory,
+        modelContext: ModelContext,
+        provenance: MessageProvenance = .chat
+    ) throws {
+        guard provenance.channel == .chat else {
+            if !Self.loggedSidecarWriteSkips.contains(memory.id) {
+                Self.loggedSidecarWriteSkips.insert(memory.id)
+                logger.info(
+                    "Skipping memory update from sidecar output (memory=\(memory.id), model=\(provenance.model ?? "unknown"))"
+                )
+            }
+            return
+        }
+
         let memoryID = memory.id
         guard
             let entity = try modelContext.fetch(
