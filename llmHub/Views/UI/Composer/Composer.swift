@@ -1,4 +1,3 @@
-
 //  ComposerBar.swift
 //  llmHub
 //
@@ -6,10 +5,10 @@
 //  Flat design with shadow, no glass effects
 //
 
+import Foundation
 import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
-import Foundation
 
 /// Pure, preview-friendly composer UI (no SwiftData, no providers).
 struct ComposerBarView: View {
@@ -136,7 +135,8 @@ struct ComposerBarView: View {
                     guard !pastedText.isEmpty else { return }
                     var updatedText = inputText
                     var updatedSelection = selection
-                    updatedText.replaceSelection(&updatedSelection, with: attributedPasteContent(from: pastedText))
+                    updatedText.replaceSelection(
+                        &updatedSelection, with: attributedPasteContent(from: pastedText))
                     inputText = updatedText
                     selection = updatedSelection
                 }
@@ -229,9 +229,15 @@ struct ComposerBarView: View {
         return AttributedString(pastedText)
     }
 
+    /// Normalizes markdown formatting in the input text when typing special characters.
+    ///
+    /// Note: This function mutates `inputText` which can trigger "AnyTextLayoutCollection updated
+    /// multiple times per frame" warning when called synchronously from onChange(of: plainText).
+    /// The mutation is deferred via Task.detached to break the layout feedback loop.
     private func normalizeMarkdownIfAppropriate(sourceText: String) {
         guard !isNormalizingMarkdown else { return }
-        guard sourceText.contains("*")
+        guard
+            sourceText.contains("*")
                 || sourceText.contains("`")
                 || sourceText.contains("[")
                 || sourceText.contains("#")
@@ -240,7 +246,7 @@ struct ComposerBarView: View {
         else { return }
 
         guard case .insertionPoint(let insertionPoint) = selection.indices(in: inputText),
-              insertionPoint == inputText.endIndex
+            insertionPoint == inputText.endIndex
         else { return }
 
         guard let parsed = try? AttributedString(markdown: sourceText) else { return }
@@ -248,16 +254,18 @@ struct ComposerBarView: View {
         guard parsedPlainText != sourceText else { return }
 
         isNormalizingMarkdown = true
-        defer { isNormalizingMarkdown = false }
-
-        inputText = parsed
-        selection = AttributedTextSelection(range: parsed.endIndex..<parsed.endIndex)
+        // Defer mutation to next run loop iteration to avoid layout re-entry
+        Task { @MainActor in
+            defer { isNormalizingMarkdown = false }
+            inputText = parsed
+            selection = AttributedTextSelection(range: parsed.endIndex..<parsed.endIndex)
+        }
     }
 }
 
-private extension View {
+extension View {
     @ViewBuilder
-    func llmHubPasteDestination(_ action: @escaping ([String]) -> Void) -> some View {
+    fileprivate func llmHubPasteDestination(_ action: @escaping ([String]) -> Void) -> some View {
         #if os(macOS)
             self.pasteDestination(for: String.self, action: action)
         #else
@@ -321,7 +329,7 @@ struct ComposerBar: View {
     private func sendMessage() {
         let messageText = String(inputText.characters)
         guard !messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-              let session = selectedSession
+            let session = selectedSession
         else { return }
 
         inputText = AttributedString("")
@@ -337,21 +345,21 @@ struct ComposerBar: View {
             thinkingPreference: thinkingPreference
         )
     }
-    
+
     private func handleFileSelection(_ result: Result<[URL], Error>) {
         switch result {
         case .success(let urls):
             for url in urls {
                 #if os(macOS)
-                // On macOS, files may be security-scoped resources
-                let accessing = url.startAccessingSecurityScopedResource()
-                defer {
-                    if accessing {
-                        url.stopAccessingSecurityScopedResource()
+                    // On macOS, files may be security-scoped resources
+                    let accessing = url.startAccessingSecurityScopedResource()
+                    defer {
+                        if accessing {
+                            url.stopAccessingSecurityScopedResource()
+                        }
                     }
-                }
                 #endif
-                
+
                 // Create and add the attachment
                 let attachment = createAttachment(from: url)
                 chatVM.addAttachment(attachment)
@@ -360,15 +368,15 @@ struct ComposerBar: View {
             print("File selection error: \(error.localizedDescription)")
         }
     }
-    
+
     private func createAttachment(from url: URL) -> Attachment {
         let filename = url.lastPathComponent
         let fileExtension = url.pathExtension.lowercased()
-        
+
         // Determine attachment type based on file extension
         let type: AttachmentType
         let previewText: String?
-        
+
         switch fileExtension {
         case "jpg", "jpeg", "png", "gif", "heic", "webp":
             type = .image
@@ -386,7 +394,7 @@ struct ComposerBar: View {
             type = .other
             previewText = nil
         }
-        
+
         return Attachment(
             filename: filename,
             url: url,

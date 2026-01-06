@@ -10,6 +10,28 @@ import SwiftUI
 
 // Note: Textual will be imported once package is added
 
+// MARK: - Composer Height Environment
+
+/// Environment key for injecting composer height to enable bottom safe area inset
+private struct ComposerHeightKey: EnvironmentKey {
+    static let defaultValue: CGFloat = 100  // Reasonable fallback
+}
+
+extension EnvironmentValues {
+    var composerHeight: CGFloat {
+        get { self[ComposerHeightKey.self] }
+        set { self[ComposerHeightKey.self] = newValue }
+    }
+}
+
+/// PreferenceKey for measuring composer height from RootView
+struct ComposerHeightPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 /// Canvas view for displaying the conversation transcript
 /// No message bubbles - flat design with role labels
 struct TranscriptCanvasView: View {
@@ -17,6 +39,7 @@ struct TranscriptCanvasView: View {
     let streamingRow: TranscriptRowViewModel?
 
     @State private var scrollProxy: ScrollViewProxy?
+    @Environment(\.composerHeight) private var composerHeight
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -29,6 +52,10 @@ struct TranscriptCanvasView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 24)
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                // Reserve space for the overlaid composer bar
+                Color.clear.frame(height: composerHeight)
             }
             .background(AppColors.backgroundPrimary)
             .onAppear {
@@ -108,7 +135,41 @@ struct TranscriptCanvasSessionView: View {
     private func mapToViewModel(_ message: ChatMessage, isStreaming: Bool, rowID: String)
         -> TranscriptRowViewModel
     {
-        // Runtime artifact detection
+        // Handle tool result messages as compact artifact cards
+        if message.role == .tool {
+            let meta = message.toolResultMeta
+            let toolName = meta?.toolName ?? "Tool"
+            let status: ArtifactStatus = (meta?.success ?? true) ? .success : .failure
+
+            // Truncate preview for compact display
+            let previewLines = message.content.components(separatedBy: "\n")
+            let maxPreviewLines = 50
+            let truncatedPreview = previewLines.prefix(maxPreviewLines).joined(separator: "\n")
+            let wasTruncated = previewLines.count > maxPreviewLines || (meta?.truncated ?? false)
+            let truncationNote = wasTruncated ? "\n... (\(previewLines.count) lines total)" : ""
+
+            let toolArtifact = ArtifactPayload(
+                id: message.id,
+                title: "Tool Result • \(toolName)",
+                kind: .toolResult,
+                status: status,
+                previewText: truncatedPreview + truncationNote,
+                actions: [.copy],
+                metadata: meta?.metadata
+            )
+
+            return TranscriptRowViewModel(
+                id: rowID,
+                role: message.role,
+                headerLabel: toolName,
+                content: "",  // Empty content - card renders the result
+                isStreaming: isStreaming,
+                generationID: message.generationID,
+                artifacts: [toolArtifact]
+            )
+        }
+
+        // Runtime artifact detection for non-tool messages
         let detection = ArtifactService.detect(from: message.content, messageID: message.id)
         let cleanContent = detection.cleanContent
 

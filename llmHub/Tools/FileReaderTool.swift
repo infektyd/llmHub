@@ -69,7 +69,9 @@ nonisolated struct FileReaderTool: Tool {
 
     init() {}
 
-    nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
+    nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws
+        -> ToolResult
+    {
         guard let path = arguments.string("path"), !path.isEmpty else {
             throw ToolError.invalidArguments("path is required")
         }
@@ -101,17 +103,28 @@ nonisolated struct FileReaderTool: Tool {
         let workspaceRoot = context.workspacePath.standardizedFileURL
         if !resolvedURL.path.hasPrefix(workspaceRoot.path) {
             throw ToolError.sandboxViolation(
-                "Access denied: File must be within the workspace sandbox (use a workspace-relative path).")
+                "Access denied: File must be within the workspace sandbox (use a workspace-relative path)."
+            )
         }
 
-        context.logger.debug("Reading file: \(resolvedURL.path)")
+        context.logger.debug("Reading file: \(resolvedURL.path) (workspace: \(workspaceRoot.path))")
 
         var isDirectory = ObjCBool(false)
-        guard FileManager.default.fileExists(atPath: resolvedURL.path, isDirectory: &isDirectory) else {
-            throw ToolError.executionFailed("File not found: \(path)")
+        guard FileManager.default.fileExists(atPath: resolvedURL.path, isDirectory: &isDirectory)
+        else {
+            // Improved error message: shows requested path without leaking absolute path
+            context.logger.warning("File not found at resolved path: \(resolvedURL.path)")
+            throw ToolError.executionFailed(
+                "File not found: '\(path)' (resolved relative to workspace root). "
+                    + "Verify the file exists and the path is correct. "
+                    + "If the file was just created, ensure the previous operation completed successfully."
+            )
         }
         if isDirectory.boolValue {
-            throw ToolError.executionFailed("Path points to a directory, not a file.")
+            throw ToolError.executionFailed(
+                "Path '\(path)' is a directory, not a file. "
+                    + "Use the workspace tool to list directory contents instead."
+            )
         }
 
         let fileExtension = resolvedURL.pathExtension.lowercased()
@@ -123,17 +136,21 @@ nonisolated struct FileReaderTool: Tool {
 
             switch fileExtension {
             case "pdf":
-                (content, truncated, nextOffset) = try readPDF(url: resolvedURL, maxLength: maxLength)
+                (content, truncated, nextOffset) = try readPDF(
+                    url: resolvedURL, maxLength: maxLength)
             case "json":
-                (content, truncated, nextOffset) = try readJSON(url: resolvedURL, maxLength: maxLength)
+                (content, truncated, nextOffset) = try readJSON(
+                    url: resolvedURL, maxLength: maxLength)
             case "csv":
-                (content, truncated, nextOffset) = try readCSV(url: resolvedURL, maxLength: maxLength)
+                (content, truncated, nextOffset) = try readCSV(
+                    url: resolvedURL, maxLength: maxLength)
             case "png", "jpg", "jpeg", "gif", "webp", "heic":
                 content = try describeImage(url: resolvedURL)
                 truncated = false
                 nextOffset = content.count
             case "rtf":
-                (content, truncated, nextOffset) = try readRTF(url: resolvedURL, maxLength: maxLength)
+                (content, truncated, nextOffset) = try readRTF(
+                    url: resolvedURL, maxLength: maxLength)
             default:
                 (content, truncated, nextOffset) = try readText(
                     url: resolvedURL, encoding: encoding, maxLength: maxLength)

@@ -357,12 +357,15 @@ final class ChatService {
             guard await debouncer.begin(sessionID: sessionID) else { return }
             defer { Task { await debouncer.end(sessionID: sessionID) } }
 
-            let messages = session.messages.sorted { $0.createdAt < $1.createdAt }.map { $0.asDomain() }
+            let messages = session.messages.sorted { $0.createdAt < $1.createdAt }.map {
+                $0.asDomain()
+            }
 
             let service = ConversationClassificationService()
 
             let task = Task.detached(priority: .utility) {
-                return (try? await service.classify(messages: messages)) ?? ConversationMetadata.fallback(from: messages)
+                return (try? await service.classify(messages: messages))
+                    ?? ConversationMetadata.fallback(from: messages)
             }
 
             let metadata = await task.value
@@ -580,7 +583,8 @@ final class ChatService {
                             messages: messagesForCompaction,
                             maxTokens: nil,  // Will use model's context window or config default
                             providerID: currentSession.providerID,
-                            rollingSummaryGenerator: { @MainActor messagesToSummarize, summaryMaxTokens in
+                            rollingSummaryGenerator: {
+                                @MainActor messagesToSummarize, summaryMaxTokens in
                                 try await service.generateRollingSummary(
                                     provider: provider,
                                     model: currentSession.model,
@@ -852,6 +856,15 @@ final class ChatService {
                                 )
 
                                 // Create and save tool result message
+                                let toolMeta = ToolResultMeta(
+                                    toolName: toolName,
+                                    success: callResult.success,
+                                    truncated: callResult.result.truncated,
+                                    error: callResult.success ? nil : callResult.output,
+                                    metadata: callResult.result.metadata.isEmpty
+                                        ? nil : callResult.result.metadata
+                                )
+
                                 let toolResultMessage = ChatMessage(
                                     id: UUID(),
                                     role: .tool,
@@ -862,7 +875,8 @@ final class ChatService {
                                     codeBlocks: [],
                                     tokenUsage: nil,
                                     costBreakdown: nil,
-                                    toolCallID: toolCallID
+                                    toolCallID: toolCallID,
+                                    toolResultMeta: toolMeta
                                 )
 
                                 try await MainActor.run {
@@ -924,18 +938,18 @@ final class ChatService {
         let transcript = format(messagesToSummarize)
 
         let instruction = """
-        You are generating a rolling summary for context compaction.
+            You are generating a rolling summary for context compaction.
 
-        Output rules:
-        - Be concise, factual, and actionable.
-        - Preserve user intent, constraints, decisions, plans, and open tasks.
-        - Avoid fluff and avoid quoting large blocks.
-        - Do not mention tool schemas or tool manifests.
-        - Hard limit: ~\(summaryMaxTokens) tokens.
+            Output rules:
+            - Be concise, factual, and actionable.
+            - Preserve user intent, constraints, decisions, plans, and open tasks.
+            - Avoid fluff and avoid quoting large blocks.
+            - Do not mention tool schemas or tool manifests.
+            - Hard limit: ~\(summaryMaxTokens) tokens.
 
-        TRANSCRIPT (oldest → newest):
-        \(transcript)
-        """
+            TRANSCRIPT (oldest → newest):
+            \(transcript)
+            """
 
         let system = ChatMessage(
             id: UUID(),
