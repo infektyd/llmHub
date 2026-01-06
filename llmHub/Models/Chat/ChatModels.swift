@@ -88,7 +88,7 @@ enum AttachmentType: String, Codable, Equatable, Sendable {
 }
 
 /// Represents a file attachment in a message.
-struct Attachment: Identifiable, Codable, Equatable, Sendable {
+nonisolated struct Attachment: Identifiable, Codable, Equatable, Sendable {
     let id: UUID
     let filename: String
     let url: URL
@@ -177,7 +177,7 @@ enum CodeLanguage: String, Codable, Sendable {
 }
 
 /// Represents a single message within a chat session.
-struct ChatMessage: Identifiable, Equatable, Sendable {
+nonisolated struct ChatMessage: Identifiable, Equatable, Sendable {
     /// The unique identifier of the message.
     let id: UUID
     /// Stable identity for joining a streaming overlay message with its persisted assistant message.
@@ -203,6 +203,10 @@ struct ChatMessage: Identifiable, Equatable, Sendable {
     /// The cost breakdown associated with generating this message.
     var costBreakdown: CostBreakdown?
 
+    /// Provenance of this message's content.
+    /// `.sidecar` MUST NOT be persisted into transcript memory/prompting.
+    var provenance: MessageProvenance = .chat
+
     // Tool calling support
     /// The ID of the tool call this message is a response to (only for tool role).
     var toolCallID: String? = nil
@@ -217,7 +221,8 @@ struct ChatMessage: Identifiable, Equatable, Sendable {
             && lhs.thoughtProcess == rhs.thoughtProcess && lhs.parts == rhs.parts
             && lhs.attachments == rhs.attachments && lhs.createdAt == rhs.createdAt
             && lhs.codeBlocks == rhs.codeBlocks && lhs.tokenUsage == rhs.tokenUsage
-            && lhs.costBreakdown == rhs.costBreakdown && lhs.toolCallID == rhs.toolCallID
+            && lhs.costBreakdown == rhs.costBreakdown && lhs.provenance == rhs.provenance
+            && lhs.toolCallID == rhs.toolCallID
             && lhs.toolCalls == rhs.toolCalls && lhs.toolResultMeta == rhs.toolResultMeta
     }
 }
@@ -308,7 +313,7 @@ struct ToolCall: Codable, Sendable, Equatable {
 }
 
 /// Structured metadata for tool result messages, enabling rich UI rendering.
-struct ToolResultMeta: Equatable, Sendable {
+nonisolated struct ToolResultMeta: Equatable, Sendable {
     /// The name of the tool that was executed (e.g., "workspace", "read_file").
     let toolName: String
     /// Whether the tool execution succeeded (from ToolResult.success).
@@ -337,7 +342,7 @@ struct ToolResultMeta: Equatable, Sendable {
 
 // MARK: - ToolResultMeta Codable (nonisolated)
 
-extension ToolResultMeta: Codable {
+nonisolated extension ToolResultMeta: Codable {
     private enum CodingKeys: String, CodingKey {
         case toolName, success, truncated, error, metadata
     }
@@ -389,7 +394,7 @@ struct ChatReference: Identifiable, Codable, Equatable, Sendable {
 }
 
 /// Represents a part of the message content, supporting text and images.
-enum ChatContentPart: Codable, Sendable, Equatable {
+nonisolated enum ChatContentPart: Codable, Sendable, Equatable {
     /// A text part.
     case text(String)
     /// An image part containing raw data and a mime type.
@@ -409,7 +414,7 @@ struct ChatSessionMetadata: Sendable {
 }
 
 /// Represents token usage statistics.
-struct TokenUsage: Equatable, Sendable {
+nonisolated struct TokenUsage: Equatable, Sendable {
     /// The number of input tokens used.
     let inputTokens: Int
     /// The number of output tokens generated.
@@ -419,7 +424,7 @@ struct TokenUsage: Equatable, Sendable {
 }
 
 /// Represents the cost breakdown for a request.
-struct CostBreakdown: Codable, Equatable, Sendable {
+nonisolated struct CostBreakdown: Codable, Equatable, Sendable {
     /// The cost associated with input tokens.
     let inputCost: Decimal
     /// The cost associated with output tokens.
@@ -431,7 +436,7 @@ struct CostBreakdown: Codable, Equatable, Sendable {
 }
 
 /// Represents a block of code within a message.
-struct CodeBlock: Codable, Equatable, Sendable {
+nonisolated struct CodeBlock: Codable, Equatable, Sendable {
     /// The programming language of the code block.
     let language: String?
     /// The code content.
@@ -841,6 +846,12 @@ final class ChatMessageEntity {
     /// The JSON encoded data for tool result metadata.
     var toolResultMetaData: Data?  // JSON encoded ToolResultMeta
 
+    /// Whether this message is eligible to influence chat memory/prompting.
+    /// Defaults to `chat` for legacy rows.
+    var provenanceChannelRaw: String?
+    /// Optional model identifier for sidecar-origin messages.
+    var provenanceModel: String?
+
     /// Initializes a new `ChatMessageEntity` from a domain model.
     /// - Parameter message: The `ChatMessage` domain model.
     init(message: ChatMessage) {
@@ -863,6 +874,9 @@ final class ChatMessageEntity {
         toolCallID = message.toolCallID
         toolCallsData = try? JSONEncoder().encode(message.toolCalls)
         toolResultMetaData = try? JSONEncoder().encode(message.toolResultMeta)
+
+        provenanceChannelRaw = message.provenance.channel.rawValue
+        provenanceModel = message.provenance.model
     }
 
     /// Converts the entity back to a domain model.
@@ -893,6 +907,11 @@ final class ChatMessageEntity {
             toolCallID: toolCallID,
             toolCalls: (try? JSONDecoder().decode([ToolCall].self, from: toolCallsData ?? Data()))
         )
+
+        // Provenance (default to chat for legacy rows).
+        let channel = MessageProvenance.Channel(rawValue: provenanceChannelRaw ?? "chat") ?? .chat
+        domainMsg.provenance = MessageProvenance(channel: channel, model: provenanceModel)
+
         domainMsg.thoughtProcess = thoughtProcess
         // Decode tool result metadata only if data is present and non-empty
         if let metaData = toolResultMetaData, !metaData.isEmpty {

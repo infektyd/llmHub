@@ -38,7 +38,8 @@ nonisolated struct AFMFallbackClassifier: Sendable {
             let manager = await MainActor.run { GeminiManager(apiKey: apiKey) }
             let response = try await manager.generateContent(
                 prompt: prompt,
-                model: "gemini-2.0-flash",
+                model: GeminiPinnedModels.afmFallbackFlash,
+                temperature: Float(GeminiPinnedModels.afmFallbackTemperature),
                 responseMimeType: "application/json"
             )
 
