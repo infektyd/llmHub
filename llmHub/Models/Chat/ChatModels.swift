@@ -208,6 +208,8 @@ struct ChatMessage: Identifiable, Equatable, Sendable {
     var toolCallID: String? = nil
     /// The list of tool calls requested by the assistant (only for assistant role).
     var toolCalls: [ToolCall]? = nil
+    /// Structured metadata for tool result messages (only for tool role).
+    var toolResultMeta: ToolResultMeta? = nil
 
     static func == (lhs: ChatMessage, rhs: ChatMessage) -> Bool {
         lhs.id == rhs.id && lhs.generationID == rhs.generationID && lhs.role == rhs.role
@@ -216,7 +218,7 @@ struct ChatMessage: Identifiable, Equatable, Sendable {
             && lhs.attachments == rhs.attachments && lhs.createdAt == rhs.createdAt
             && lhs.codeBlocks == rhs.codeBlocks && lhs.tokenUsage == rhs.tokenUsage
             && lhs.costBreakdown == rhs.costBreakdown && lhs.toolCallID == rhs.toolCallID
-            && lhs.toolCalls == rhs.toolCalls
+            && lhs.toolCalls == rhs.toolCalls && lhs.toolResultMeta == rhs.toolResultMeta
     }
 }
 
@@ -303,6 +305,60 @@ struct ToolCall: Codable, Sendable, Equatable {
     let input: String
     /// Gemini-only: thought signature that must be round-tripped for function calling (Gemini 3).
     var geminiThoughtSignature: String? = nil
+}
+
+/// Structured metadata for tool result messages, enabling rich UI rendering.
+struct ToolResultMeta: Equatable, Sendable {
+    /// The name of the tool that was executed (e.g., "workspace", "read_file").
+    let toolName: String
+    /// Whether the tool execution succeeded (from ToolResult.success).
+    let success: Bool
+    /// Whether the output was truncated due to size limits.
+    let truncated: Bool
+    /// Error message if success is false, nil otherwise.
+    let error: String?
+    /// Additional metadata from the tool (e.g., file counts, line numbers).
+    let metadata: [String: String]?
+
+    nonisolated init(
+        toolName: String,
+        success: Bool,
+        truncated: Bool = false,
+        error: String? = nil,
+        metadata: [String: String]? = nil
+    ) {
+        self.toolName = toolName
+        self.success = success
+        self.truncated = truncated
+        self.error = error
+        self.metadata = metadata
+    }
+}
+
+// MARK: - ToolResultMeta Codable (nonisolated)
+
+extension ToolResultMeta: Codable {
+    private enum CodingKeys: String, CodingKey {
+        case toolName, success, truncated, error, metadata
+    }
+
+    nonisolated init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        toolName = try container.decode(String.self, forKey: .toolName)
+        success = try container.decode(Bool.self, forKey: .success)
+        truncated = try container.decode(Bool.self, forKey: .truncated)
+        error = try container.decodeIfPresent(String.self, forKey: .error)
+        metadata = try container.decodeIfPresent([String: String].self, forKey: .metadata)
+    }
+
+    nonisolated func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(toolName, forKey: .toolName)
+        try container.encode(success, forKey: .success)
+        try container.encode(truncated, forKey: .truncated)
+        try container.encodeIfPresent(error, forKey: .error)
+        try container.encodeIfPresent(metadata, forKey: .metadata)
+    }
 }
 
 /// Defines the role of the message sender.
@@ -782,6 +838,8 @@ final class ChatMessageEntity {
     var toolCallID: String?
     /// The JSON encoded data for tool calls.
     var toolCallsData: Data?  // JSON encoded [ToolCall]
+    /// The JSON encoded data for tool result metadata.
+    var toolResultMetaData: Data?  // JSON encoded ToolResultMeta
 
     /// Initializes a new `ChatMessageEntity` from a domain model.
     /// - Parameter message: The `ChatMessage` domain model.
@@ -804,6 +862,7 @@ final class ChatMessageEntity {
         costBreakdownTotalCost = message.costBreakdown?.totalCost
         toolCallID = message.toolCallID
         toolCallsData = try? JSONEncoder().encode(message.toolCalls)
+        toolResultMetaData = try? JSONEncoder().encode(message.toolResultMeta)
     }
 
     /// Converts the entity back to a domain model.
@@ -835,6 +894,11 @@ final class ChatMessageEntity {
             toolCalls: (try? JSONDecoder().decode([ToolCall].self, from: toolCallsData ?? Data()))
         )
         domainMsg.thoughtProcess = thoughtProcess
+        // Decode tool result metadata only if data is present and non-empty
+        if let metaData = toolResultMetaData, !metaData.isEmpty {
+            domainMsg.toolResultMeta = try? JSONDecoder().decode(
+                ToolResultMeta.self, from: metaData)
+        }
         return domainMsg
     }
 }

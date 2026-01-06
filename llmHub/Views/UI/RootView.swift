@@ -27,6 +27,7 @@ struct CanvasRootView: View {
     @State private var leftSidebarVisible: Bool
     @State private var rightSidebarVisible: Bool
     @State private var showSettings: Bool = false
+    @State private var composerHeight: CGFloat = 100  // Measured dynamically
 
     init(
         viewModel: WorkbenchViewModel = WorkbenchViewModel(),
@@ -80,6 +81,7 @@ struct CanvasRootView: View {
 
                     TranscriptCanvasSessionView(session: session)
                         .environment(viewModel)
+                        .environment(\.composerHeight, composerHeight)
                 } else {
                     emptyState
                 }
@@ -135,18 +137,34 @@ struct CanvasRootView: View {
                 .zIndex(100)
             }
 
-            // Bottom overlay: Composer bar
-            ComposerBar(
-                leftSidebarVisible: $leftSidebarVisible,
-                rightSidebarVisible: $rightSidebarVisible,
-                showSettings: $showSettings,
-                selectedSession: selectedSession,
-                modelRegistry: modelRegistry,
-                viewModel: viewModel
-            )
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
+
+                ComposerBar(
+                    leftSidebarVisible: $leftSidebarVisible,
+                    rightSidebarVisible: $rightSidebarVisible,
+                    showSettings: $showSettings,
+                    selectedSession: selectedSession,
+                    modelRegistry: modelRegistry,
+                    viewModel: viewModel
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
+                .background(
+                    GeometryReader { geo in
+                        Color.clear
+                            .preference(
+                                key: ComposerHeightPreferenceKey.self,
+                                value: geo.size.height
+                            )
+                    }
+                )
+            }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        }
+        .onPreferenceChange(ComposerHeightPreferenceKey.self) { height in
+            guard abs(composerHeight - height) > 0.5 else { return }
+            composerHeight = height
         }
         // Rationale: ChatViewModel is owned once at the CanvasRootView level and must be available
         // throughout the canvas UI tree (composer, transcript, diagnostics) via SwiftUI's

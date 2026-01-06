@@ -13,16 +13,20 @@ import SwiftUI
 struct ArtifactCardView: View {
     let payload: ArtifactPayload
     private var expandedBinding: Binding<Bool>?
-    @State private var internalExpanded: Bool = true
+    @State private var internalExpanded: Bool
 
-    init(payload: ArtifactPayload) {
+    /// Standard initializer with optional startExpanded (defaults to true for backward compatibility)
+    init(payload: ArtifactPayload, startExpanded: Bool = true) {
         self.payload = payload
         self.expandedBinding = nil
+        _internalExpanded = State(initialValue: startExpanded)
     }
 
+    /// Initializer with external binding control
     init(payload: ArtifactPayload, isExpanded: Binding<Bool>) {
         self.payload = payload
         self.expandedBinding = isExpanded
+        _internalExpanded = State(initialValue: isExpanded.wrappedValue)
     }
 
     var body: some View {
