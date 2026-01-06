@@ -164,21 +164,20 @@ struct ModernSidebarLeft: View {
                         state.mode = mode
                     }
                 } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: mode.icon)
-                            .font(.system(size: 12, weight: .semibold))
-                        Text(mode.title)
-                            .font(.system(size: 12, weight: .semibold))
-                    }
+                    Image(systemName: mode.icon)
+                        .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(state.mode == mode ? AppColors.textPrimary : AppColors.textSecondary)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
+                    .frame(minWidth: 36)
                     .background {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .fill(state.mode == mode ? AppColors.surface.opacity(0.9) : Color.clear)
                     }
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(mode.title)
+                .help(mode.title)
             }
         }
         .padding(.horizontal, 12)
