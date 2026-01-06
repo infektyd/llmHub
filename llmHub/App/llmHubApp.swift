@@ -43,7 +43,7 @@ struct llmHubApp: App {
                 .task {
                     guard !PreviewMode.isRunning else { return }
                     // Log AFM availability status once on launch (debug aid for Apple Intelligence)
-                    AppLogger.logAFMStatusOnLaunch()
+                    FoundationModelsDiagnostics.probe()
 
                     // Fetch models on app launch
                     await modelRegistry.fetchAllModels()
