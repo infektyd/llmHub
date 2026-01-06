@@ -80,6 +80,10 @@ fastlane/test_output
 llmHub.doccarchive/
 Docs/Archives/*
 
+# Local-only legacy UI snapshots (keep out of git)
+Legacy_UI/
+Docs/Legacy_UI/
+
 
 *.zip
 !Dependencies/*.zip
