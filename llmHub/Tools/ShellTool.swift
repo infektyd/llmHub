@@ -79,7 +79,10 @@ nonisolated struct ShellTool: Tool {
 
             let process = Process()
             process.launchPath = "/bin/zsh"
-            process.arguments = ["-lc", sanitizedCommand]
+            // Use a fast, predictable shell invocation.
+            // `-l` (login shell) loads user startup files which can introduce significant delays
+            // (or even hang) for trivial commands. `-f` skips startup files.
+            process.arguments = ["-f", "-c", sanitizedCommand]
 
             if let wd = workingDirectory {
                 process.currentDirectoryURL = URL(fileURLWithPath: wd)
@@ -107,14 +110,21 @@ nonisolated struct ShellTool: Tool {
                 process.standardInput = stdinPipe
             }
 
-            let terminationStream = AsyncStream<Void> { continuation in
-                process.terminationHandler = { _ in
-                    continuation.yield(())
-                    continuation.finish()
-                }
-            }
-
             try process.run()
+
+            // Close parent-side write handles so reads can observe EOF when the child exits.
+            // Without this, readToEnd() may block indefinitely because this process still holds a writer.
+            try? stdoutPipe.fileHandleForWriting.close()
+            try? stderrPipe.fileHandleForWriting.close()
+
+            // Drain stdout/stderr concurrently while the process runs.
+            // Waiting for termination before reading can deadlock if pipe buffers fill.
+            let stdoutReadTask = Task.detached(priority: nil) {
+                (try? stdoutPipe.fileHandleForReading.readToEnd()) ?? Data()
+            }
+            let stderrReadTask = Task.detached(priority: nil) {
+                (try? stderrPipe.fileHandleForReading.readToEnd()) ?? Data()
+            }
 
             if runInBackground {
                 return ToolResult.success(
@@ -125,24 +135,32 @@ nonisolated struct ShellTool: Tool {
 
             // Timeout Logic
             let didTimeout = await withTaskGroup(of: Bool.self) { group in
+                let waitTask = Task.detached(priority: nil) {
+                    process.waitUntilExit()
+                }
                 group.addTask {
-                    for await _ in terminationStream { break }
+                    await waitTask.value
                     return false
                 }
                 group.addTask {
                     try? await Task.sleep(nanoseconds: UInt64(timeoutSeconds) * 1_000_000_000)
                     return true
                 }
-                return await group.next() ?? true
+
+                let first = await group.next() ?? true
+                group.cancelAll()
+                return first
             }
 
             if didTimeout {
                 process.terminate()
+                stdoutReadTask.cancel()
+                stderrReadTask.cancel()
                 throw ToolError.timeout(after: TimeInterval(timeoutSeconds))
             }
 
-            let stdoutData = (try? stdoutPipe.fileHandleForReading.readToEnd()) ?? Data()
-            let stderrData = (try? stderrPipe.fileHandleForReading.readToEnd()) ?? Data()
+            let stdoutData = await stdoutReadTask.value
+            let stderrData = await stderrReadTask.value
 
             let exitCode = process.terminationStatus
             let stdoutText = String(data: stdoutData, encoding: .utf8) ?? ""
