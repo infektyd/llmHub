@@ -54,9 +54,9 @@ actor ToolExecutor {
         var metrics = ToolMetrics()
         metrics.markStart()
 
-        let arguments: ToolArguments
+        let rawArguments: ToolArguments
         do {
-            arguments = try parseArguments(from: call.input)
+            rawArguments = try parseArguments(from: call.input)
         } catch {
             metrics.markEnd()
             metrics.errorClass = .validationError
@@ -97,6 +97,11 @@ actor ToolExecutor {
                 )
             )
         }
+
+        // Normalize common argument-key variations before validation/execution.
+        // Rationale: Different providers/models sometimes emit camelCase keys even when schema uses snake_case.
+        // Example: read_file might be called with {"filePath":..., "startLine":...}.
+        let arguments = normalizeArguments(rawArguments, for: tool.parameters)
 
         guard tool.availability(in: environment).isAvailable else {
             metrics.markEnd()
@@ -267,6 +272,52 @@ actor ToolExecutor {
             throw ToolError.invalidArguments("Expected a JSON object")
         }
         return ToolArguments(dict)
+    }
+
+    private func normalizeArguments(
+        _ arguments: ToolArguments,
+        for schema: ToolParametersSchema
+    ) -> ToolArguments {
+        var values = arguments.jsonValuesByKey
+
+        // 1) camelCase -> snake_case when the schema expects snake_case.
+        for (key, value) in values {
+            let snake = Self.camelToSnake(key)
+            guard snake != key else { continue }
+            guard values[snake] == nil else { continue }
+            guard schema.properties[snake] != nil else { continue }
+            values[snake] = value
+        }
+
+        // 2) Common aliases: filePath -> path, file_path -> path (used by read_file and file tools).
+        if schema.properties["path"] != nil, values["path"] == nil {
+            if let v = values["filePath"] ?? values["file_path"] {
+                values["path"] = v
+            }
+        }
+
+        return ToolArguments(values)
+    }
+
+    private static func camelToSnake(_ s: String) -> String {
+        guard !s.isEmpty else { return s }
+        var result: [Character] = []
+        result.reserveCapacity(s.count + 4)
+
+        var previousWasUpper = false
+        for ch in s {
+            if ch.isUppercase {
+                if !result.isEmpty && !previousWasUpper {
+                    result.append("_")
+                }
+                result.append(Character(ch.lowercased()))
+                previousWasUpper = true
+            } else {
+                result.append(ch)
+                previousWasUpper = false
+            }
+        }
+        return String(result)
     }
 
     // MARK: - Tool Call Validation / Rejection
