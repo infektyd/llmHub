@@ -161,6 +161,16 @@ struct CanvasRootView: View {
                 )
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+
+#if os(macOS)
+            if showSettings {
+                SettingsOverlay(
+                    isPresented: $showSettings,
+                    modelRegistry: modelRegistry
+                )
+                .zIndex(1000)
+            }
+#endif
         }
         .onPreferenceChange(ComposerHeightPreferenceKey.self) { height in
             guard abs(composerHeight - height) > 0.5 else { return }
@@ -172,11 +182,20 @@ struct CanvasRootView: View {
         .environment(chatVM)
         .animation(.easeInOut(duration: 0.2), value: leftSidebarVisible)
         .animation(.easeInOut(duration: 0.2), value: rightSidebarVisible)
+#if !os(macOS)
         .sheet(isPresented: $showSettings) {
             NavigationStack {
                 SettingsView()
                     .navigationTitle("Settings")
                     .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button {
+                                showSettings = false
+                            } label: {
+                                Image(systemName: "xmark")
+                            }
+                        }
+
                         ToolbarItem(placement: .primaryAction) {
                             Button("Done") { showSettings = false }
                         }
@@ -184,6 +203,7 @@ struct CanvasRootView: View {
                     .environmentObject(modelRegistry)
             }
         }
+#endif
         .onAppear {
             print("DEBUG: CanvasRootView chatVM ID: \(ObjectIdentifier(chatVM))")
             ensureDefaultConversationSelection()
@@ -418,6 +438,68 @@ struct CanvasRootView: View {
         )
     }
 }
+    #if os(macOS)
+    private struct SettingsOverlay: View {
+        @Binding var isPresented: Bool
+        let modelRegistry: ModelRegistry
+
+        var body: some View {
+            ZStack {
+                AppColors.shadowSmoke
+                    .ignoresSafeArea()
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        isPresented = false
+                    }
+
+                VStack(spacing: 0) {
+                    HStack(spacing: 10) {
+                        Text("Settings")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(AppColors.textPrimary)
+
+                        Spacer()
+
+                        Button {
+                            isPresented = false
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(AppColors.textSecondary)
+                                .padding(6)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Close Settings")
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .background(AppColors.backgroundSecondary)
+
+                    Divider()
+
+                    SettingsView()
+                        .environmentObject(modelRegistry)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .frame(width: 920, height: 640)
+                .background {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(AppColors.backgroundPrimary)
+                        .shadow(color: AppColors.shadowSmoke, radius: 18, x: 0, y: 4)
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(AppColors.textPrimary.opacity(0.08), lineWidth: 1)
+                }
+                .onTapGesture { }
+                .onExitCommand {
+                    isPresented = false
+                }
+                .accessibilityAddTraits(.isModal)
+            }
+        }
+    }
+    #endif
 
 #if DEBUG
     #Preview("CanvasRoot • Wide") {
