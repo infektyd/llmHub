@@ -91,7 +91,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				llmHubTests/llmHubTests.swift,
-				llmHubTests/ToolRegressionTests.swift,
 				llmHubUITests/llmHubUITests.swift,
 				llmHubUITests/llmHubUITestsLaunchTests.swift,
 			);
@@ -101,7 +100,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				llmHubTests/llmHubTests.swift,
-				llmHubTests/ToolRegressionTests.swift,
 			);
 			target = A3C71F362ED9389B0088DF32 /* llmHubTests */;
 		};

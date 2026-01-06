@@ -57,7 +57,7 @@ nonisolated struct WebSearchTool: Tool {
             throw ToolError.invalidArguments("query is required")
         }
 
-        let numResults = max(1, min(arguments.int("num_results") ?? 5, 10))
+        let numResults = min(arguments.int("num_results") ?? 5, 10)
         let timeRange = arguments.string("time_range")
         let region = arguments.string("region")
         let safeSearch = arguments.bool("safe_search") ?? true
