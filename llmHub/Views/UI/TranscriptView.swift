@@ -138,7 +138,8 @@ struct TranscriptCanvasSessionView: View {
         // Handle tool result messages as compact artifact cards
         if message.role == .tool {
             let meta = message.toolResultMeta
-            let toolName = meta?.toolName ?? "Tool"
+            let toolName = meta?.toolName ?? inferredToolName(from: message.content) ?? "Tool"
+            let statusEmoji = (meta?.success ?? true) ? "🔧" : "❌"
             let status: ArtifactStatus = (meta?.success ?? true) ? .success : .failure
 
             // Truncate preview for compact display
@@ -150,7 +151,7 @@ struct TranscriptCanvasSessionView: View {
 
             let toolArtifact = ArtifactPayload(
                 id: message.id,
-                title: "Tool Result • \(toolName)",
+                title: "\(statusEmoji) \(toolName)",
                 kind: .toolResult,
                 status: status,
                 previewText: truncatedPreview + truncationNote,
@@ -161,7 +162,7 @@ struct TranscriptCanvasSessionView: View {
             return TranscriptRowViewModel(
                 id: rowID,
                 role: message.role,
-                headerLabel: toolName,
+                headerLabel: "\(statusEmoji) \(toolName)",
                 content: "",  // Empty content - card renders the result
                 isStreaming: isStreaming,
                 generationID: message.generationID,
@@ -202,6 +203,17 @@ struct TranscriptCanvasSessionView: View {
             generationID: message.generationID,
             artifacts: mergedArtifacts
         )
+    }
+
+    private func inferredToolName(from content: String) -> String? {
+        guard let data = content.data(using: .utf8) else { return nil }
+        guard let any = try? JSONSerialization.jsonObject(with: data, options: []) else { return nil }
+        guard let dict = any as? [String: Any] else { return nil }
+
+        if let s = dict["toolName"] as? String, !s.isEmpty { return s }
+        if let s = dict["tool_name"] as? String, !s.isEmpty { return s }
+        if let s = dict["name"] as? String, !s.isEmpty { return s }
+        return nil
     }
 
     private func providerLabel() -> String {
