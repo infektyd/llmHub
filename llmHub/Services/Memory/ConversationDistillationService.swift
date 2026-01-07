@@ -90,6 +90,11 @@ final class ConversationDistillationService {
         messages: [ChatMessage],
         modelContext: ModelContext
     ) async {
+        if Task.isCancelled {
+            logger.debug("Skipping distillation for session \(sessionID): cancelled")
+            return
+        }
+
         // Guard: Skip if too few messages
         guard messages.count >= Self.minMessagesForDistillation else {
             logger.debug(
@@ -98,9 +103,18 @@ final class ConversationDistillationService {
             return
         }
 
+        if Task.isCancelled {
+            logger.debug("Skipping distillation for session \(sessionID): cancelled")
+            return
+        }
+
         // If AFM is unavailable, we may still run the sidecar fallback for diagnostics/telemetry,
         // but we MUST NOT persist its output into chat memory.
         if !isAvailable {
+            if Task.isCancelled {
+                logger.debug("Skipping distillation for session \(sessionID): cancelled")
+                return
+            }
             _ = await distillWithGeminiFallback(
                 messages: messages,
                 providerID: providerID,
@@ -151,6 +165,11 @@ final class ConversationDistillationService {
                 logger.debug("Skipping distillation for session \(sessionID): FoundationModels unavailable")
             #endif
         } catch {
+            if error is CancellationError {
+                logger.debug("Skipping distillation for session \(sessionID): cancelled")
+                return
+            }
+
             // AFM failed at runtime; attempt fixed remote Gemini fallback for diagnostics/telemetry,
             // but never persist its output.
             _ = await distillWithGeminiFallback(
@@ -171,6 +190,7 @@ final class ConversationDistillationService {
         providerID: String,
         sessionID: UUID
     ) async -> Memory? {
+        if Task.isCancelled { return nil }
         guard let apiKey = await keyProvider.apiKey(for: .google), !apiKey.isEmpty else {
             return nil
         }
@@ -229,6 +249,7 @@ final class ConversationDistillationService {
                 jsonText = response.text ?? ""
             }
 
+            if Task.isCancelled { return nil }
             guard let data = jsonText.data(using: .utf8) else { return nil }
 
             let decoded = try JSONDecoder().decode(FallbackEssence.self, from: data)
@@ -246,6 +267,7 @@ final class ConversationDistillationService {
                 sourceSessionID: sessionID
             )
         } catch {
+            if error is CancellationError { return nil }
             return nil
         }
     }

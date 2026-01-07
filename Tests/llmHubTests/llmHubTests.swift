@@ -330,4 +330,155 @@ struct llmHubTests {
         let fetchedForSession = fetchedAll.filter { $0.sourceSessionID == sessionID }
         #expect(fetchedForSession.isEmpty)
     }
+
+    // MARK: - Session deletion vs distillation
+
+    @MainActor
+    private final class FakeDistillationScheduler: ConversationDistillationScheduling {
+        struct ScheduleCall: Equatable {
+            let sessionID: UUID
+            let reason: SessionEndReason
+        }
+
+        private(set) var scheduleCalls: [ScheduleCall] = []
+        private(set) var cancelledSessionIDs: [UUID] = []
+
+        func scheduleDistillation(
+            sessionID: UUID,
+            providerID: String,
+            messages: [ChatMessage],
+            modelContext: ModelContext,
+            reason: SessionEndReason
+        ) {
+            scheduleCalls.append(ScheduleCall(sessionID: sessionID, reason: reason))
+        }
+
+        func cancelDistillation(sessionID: UUID) {
+            cancelledSessionIDs.append(sessionID)
+        }
+
+        func cancelDistillation(sessionIDs: [UUID]) {
+            cancelledSessionIDs.append(contentsOf: sessionIDs)
+        }
+    }
+
+    @Test @MainActor
+    func deletingASessionDoesNotScheduleDistillation() throws {
+        let schema = Schema([
+            ChatSessionEntity.self,
+            ChatMessageEntity.self,
+            ChatFolderEntity.self,
+            ChatTagEntity.self,
+        ])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let modelContext = ModelContext(container)
+
+        let session = ChatSession(
+            id: UUID(),
+            title: "T",
+            providerID: "openai",
+            model: "gpt-4o",
+            createdAt: Date(),
+            updatedAt: Date(),
+            messages: [],
+            metadata: ChatSessionMetadata(lastTokenUsage: nil, totalCostUSD: 0, referenceID: "ref")
+        )
+        let entity = ChatSessionEntity(session: session)
+        modelContext.insert(entity)
+        try modelContext.save()
+
+        let fake = FakeDistillationScheduler()
+        let lifecycle = ConversationLifecycleService(distillationScheduler: fake)
+
+        lifecycle.delete(session: entity, modelContext: modelContext)
+
+        #expect(fake.scheduleCalls.isEmpty)
+        #expect(fake.cancelledSessionIDs.contains(entity.id))
+    }
+
+    @Test @MainActor
+    func bulkDeleteDoesNotScheduleDistillationForAnyDeletedSession() throws {
+        let schema = Schema([
+            ChatSessionEntity.self,
+            ChatMessageEntity.self,
+            ChatFolderEntity.self,
+            ChatTagEntity.self,
+        ])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let modelContext = ModelContext(container)
+
+        let s1 = ChatSession(
+            id: UUID(),
+            title: "S1",
+            providerID: "openai",
+            model: "gpt-4o",
+            createdAt: Date(),
+            updatedAt: Date(),
+            messages: [],
+            metadata: ChatSessionMetadata(lastTokenUsage: nil, totalCostUSD: 0, referenceID: "ref1")
+        )
+        let s2 = ChatSession(
+            id: UUID(),
+            title: "S2",
+            providerID: "openai",
+            model: "gpt-4o",
+            createdAt: Date(),
+            updatedAt: Date(),
+            messages: [],
+            metadata: ChatSessionMetadata(lastTokenUsage: nil, totalCostUSD: 0, referenceID: "ref2")
+        )
+
+        let e1 = ChatSessionEntity(session: s1)
+        let e2 = ChatSessionEntity(session: s2)
+        modelContext.insert(e1)
+        modelContext.insert(e2)
+        try modelContext.save()
+
+        let fake = FakeDistillationScheduler()
+        let lifecycle = ConversationLifecycleService(distillationScheduler: fake)
+
+        lifecycle.deleteAll([e1, e2], modelContext: modelContext)
+
+        #expect(fake.scheduleCalls.isEmpty)
+        #expect(fake.cancelledSessionIDs.contains(e1.id))
+        #expect(fake.cancelledSessionIDs.contains(e2.id))
+    }
+
+    @Test @MainActor
+    func archivingSchedulesDistillation() throws {
+        let schema = Schema([
+            ChatSessionEntity.self,
+            ChatMessageEntity.self,
+            ChatFolderEntity.self,
+            ChatTagEntity.self,
+        ])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let modelContext = ModelContext(container)
+
+        let session = ChatSession(
+            id: UUID(),
+            title: "T",
+            providerID: "openai",
+            model: "gpt-4o",
+            createdAt: Date(),
+            updatedAt: Date(),
+            messages: [],
+            metadata: ChatSessionMetadata(lastTokenUsage: nil, totalCostUSD: 0, referenceID: "ref")
+        )
+        let entity = ChatSessionEntity(session: session)
+        modelContext.insert(entity)
+        try modelContext.save()
+
+        let fake = FakeDistillationScheduler()
+        let lifecycle = ConversationLifecycleService(distillationScheduler: fake)
+
+        lifecycle.archive(session: entity, modelContext: modelContext)
+
+        #expect(fake.scheduleCalls.count == 1)
+        #expect(fake.scheduleCalls.first?.sessionID == entity.id)
+        #expect(fake.scheduleCalls.first?.reason == .userArchived)
+    }
 }
