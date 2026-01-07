@@ -49,7 +49,7 @@ class WorkbenchViewModel {
     /// Detail string to help the user resolve availability issues.
     var afmUnavailableHintReason: String = ""
 
-    private let distillationService = ConversationDistillationService()
+    private let lifecycleService = ConversationLifecycleService()
 
     // Search
     /// The current search text for filtering conversations.
@@ -158,31 +158,13 @@ class WorkbenchViewModel {
     ///   - id: The UUID of the conversation to delete.
     ///   - modelContext: The SwiftData context.
     func deleteConversation(id: UUID, modelContext: ModelContext) {
-        let fetchDescriptor = FetchDescriptor<ChatSessionEntity>(
-            predicate: #Predicate { $0.id == id }
-        )
+        lifecycleService.delete(sessionID: id, reason: .userDeleted, modelContext: modelContext)
 
-        do {
-            let sessions = try modelContext.fetch(fetchDescriptor)
-            if let session = sessions.first {
-                // Phase 2 Memory: schedule background distillation on deletion.
-                session.triggerDistillation(
-                    distillationService: distillationService,
-                    modelContext: modelContext
-                )
-
-                modelContext.delete(session)
-                try modelContext.save()
-
-                // Clear selection if deleted
-                if selectedConversationID == id {
-                    selectedConversationID = nil
-                }
-                selectedConversationIDs.remove(id)
-            }
-        } catch {
-            print("Failed to delete conversation: \(error)")
+        // Clear selection if deleted
+        if selectedConversationID == id {
+            selectedConversationID = nil
         }
+        selectedConversationIDs.remove(id)
     }
 
     /// Requests deletion for a single conversation, warning if incomplete memories exist.
@@ -202,10 +184,7 @@ class WorkbenchViewModel {
         guard !selectedConversationIDs.isEmpty else { return }
 
         let idsToDelete = Array(selectedConversationIDs)
-
-        for id in idsToDelete {
-            deleteConversation(id: id, modelContext: modelContext)
-        }
+        lifecycleService.deleteAll(sessionIDs: idsToDelete, reason: .userDeleted, modelContext: modelContext)
 
         selectedConversationIDs.removeAll()
     }
@@ -236,8 +215,14 @@ class WorkbenchViewModel {
             return
         }
 
+        lifecycleService.deleteAll(sessionIDs: ids, reason: .userDeleted, modelContext: modelContext)
+
+        // Clear selection if deleted
+        if let selected = selectedConversationID, ids.contains(selected) {
+            selectedConversationID = nil
+        }
         for id in ids {
-            deleteConversation(id: id, modelContext: modelContext)
+            selectedConversationIDs.remove(id)
         }
 
         pendingDeleteConversationIDs.removeAll()

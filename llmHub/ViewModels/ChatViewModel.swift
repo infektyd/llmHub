@@ -187,9 +187,6 @@ class ChatViewModel {
     private var toolExecutionCancelHandlers: [String: () -> Void] = [:]
     private var toolTimerTask: Task<Void, Never>?
 
-    /// Service for conversation distillation.
-    private var distillationService: ConversationDistillationService?
-
     /// Tracks the previous session to trigger cleanup/distillation on switch.
     private var previousSessionID: UUID?
 
@@ -240,9 +237,6 @@ class ChatViewModel {
 
         // Initialize providers config
         let config = makeDefaultConfig()
-
-        // Initialize distillation service
-        self.distillationService = ConversationDistillationService()
 
         // Initialize keychain
         let keychain = KeychainStore()
@@ -411,14 +405,9 @@ class ChatViewModel {
     }
 
     /// Called when user switches sessions or session becomes inactive.
-    /// Triggers background distillation of the session into memory.
+    /// Distillation is intentionally NOT triggered here (archive-only policy).
     func onSessionDeactivated(session: ChatSessionEntity, modelContext: ModelContext) {
-        guard let distillationService = distillationService else { return }
-
-        session.triggerDistillation(
-            distillationService: distillationService,
-            modelContext: modelContext
-        )
+        logger.debug("Skipping distillation on session deactivated (archive-only policy, id=\(session.id))")
     }
 
     // MARK: - Session Management

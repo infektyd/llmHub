@@ -14,8 +14,13 @@ private let logger = Logger(subsystem: "com.llmhub", category: "LifecycleService
 /// Service for managing conversation lifecycle and cleanup flagging.
 @MainActor
 final class ConversationLifecycleService {
+    private static var loggedDeletionDistillationSkips: Set<UUID> = []
 
-    private let distillationService = ConversationDistillationService()
+    private let distillationScheduler: ConversationDistillationScheduling
+
+    init(distillationScheduler: ConversationDistillationScheduling = ConversationDistillationScheduler.shared) {
+        self.distillationScheduler = distillationScheduler
+    }
 
     // MARK: - Staleness Configuration
 
@@ -153,7 +158,11 @@ final class ConversationLifecycleService {
 
     /// Archives a session (moves to archived state).
     func archive(session: ChatSessionEntity, modelContext: ModelContext) {
-        session.triggerDistillation(distillationService: distillationService, modelContext: modelContext)
+        session.triggerDistillation(
+            distillationScheduler: distillationScheduler,
+            modelContext: modelContext,
+            reason: .userArchived
+        )
         session.isArchived = true
         session.flaggedForCleanupAt = nil
         session.updatedAt = Date()
@@ -169,7 +178,11 @@ final class ConversationLifecycleService {
     /// Archives multiple sessions.
     func archiveAll(_ sessions: [ChatSessionEntity], modelContext: ModelContext) {
         for session in sessions {
-            session.triggerDistillation(distillationService: distillationService, modelContext: modelContext)
+            session.triggerDistillation(
+                distillationScheduler: distillationScheduler,
+                modelContext: modelContext,
+                reason: .userArchived
+            )
             session.isArchived = true
             session.flaggedForCleanupAt = nil
             session.updatedAt = Date()
@@ -214,32 +227,85 @@ final class ConversationLifecycleService {
     }
 
     /// Deletes a session permanently.
-    func delete(session: ChatSessionEntity, modelContext: ModelContext) {
+    func delete(
+        session: ChatSessionEntity,
+        reason: SessionEndReason = .userDeleted,
+        modelContext: ModelContext
+    ) {
         let sessionID = session.id
-        session.triggerDistillation(distillationService: distillationService, modelContext: modelContext)
+
+        // Explicit deletion must never distill; cancel any pending/in-flight work first.
+        distillationScheduler.cancelDistillation(sessionID: sessionID)
+
         modelContext.delete(session)
 
         do {
             try modelContext.save()
             logger.info("Deleted session \(sessionID)")
+            if reason == .userDeleted, !Self.loggedDeletionDistillationSkips.contains(sessionID) {
+                Self.loggedDeletionDistillationSkips.insert(sessionID)
+                logger.info("Skipping distillation: session deleted by user (id=\(sessionID))")
+            }
         } catch {
             logger.error("Failed to delete session: \(error.localizedDescription)")
         }
     }
 
     /// Deletes multiple sessions permanently.
-    func deleteAll(_ sessions: [ChatSessionEntity], modelContext: ModelContext) {
+    func deleteAll(
+        _ sessions: [ChatSessionEntity],
+        reason: SessionEndReason = .userDeleted,
+        modelContext: ModelContext
+    ) {
         let count = sessions.count
         for session in sessions {
-            session.triggerDistillation(distillationService: distillationService, modelContext: modelContext)
+            distillationScheduler.cancelDistillation(sessionID: session.id)
             modelContext.delete(session)
         }
 
         do {
             try modelContext.save()
             logger.info("Deleted \(count) sessions")
+            if reason == .userDeleted {
+                for session in sessions {
+                    let id = session.id
+                    if !Self.loggedDeletionDistillationSkips.contains(id) {
+                        Self.loggedDeletionDistillationSkips.insert(id)
+                        logger.info("Skipping distillation: session deleted by user (id=\(id))")
+                    }
+                }
+            }
         } catch {
             logger.error("Failed to delete sessions: \(error.localizedDescription)")
+        }
+    }
+
+    /// Deletes a session permanently by ID.
+    func delete(sessionID: UUID, reason: SessionEndReason = .userDeleted, modelContext: ModelContext) {
+        do {
+            let descriptor = FetchDescriptor<ChatSessionEntity>(
+                predicate: #Predicate { $0.id == sessionID }
+            )
+            if let session = try modelContext.fetch(descriptor).first {
+                delete(session: session, reason: reason, modelContext: modelContext)
+            }
+        } catch {
+            logger.error("Failed to delete session by id: \(error.localizedDescription)")
+        }
+    }
+
+    /// Deletes sessions permanently by IDs.
+    func deleteAll(sessionIDs: [UUID], reason: SessionEndReason = .userDeleted, modelContext: ModelContext) {
+        guard !sessionIDs.isEmpty else { return }
+        do {
+            let ids = Set(sessionIDs)
+            let descriptor = FetchDescriptor<ChatSessionEntity>(
+                predicate: #Predicate { ids.contains($0.id) }
+            )
+            let sessions = try modelContext.fetch(descriptor)
+            deleteAll(sessions, reason: reason, modelContext: modelContext)
+        } catch {
+            logger.error("Failed to delete sessions by ids: \(error.localizedDescription)")
         }
     }
 

@@ -17,37 +17,40 @@ private let logger = Logger(subsystem: "com.llmhub", category: "SessionMemory")
 extension ChatSessionEntity {
 
     /// Triggers conversation distillation in background.
-    /// Call on deactivation, archival, or deletion.
+    /// Call on explicit user archival only.
     /// - Parameters:
-    ///   - distillationService: The distillation service.
+    ///   - distillationScheduler: The distillation scheduler (debounce + dedupe + cancellation + guards).
     ///   - modelContext: The SwiftData model context.
+    ///   - reason: The explicit reason for ending/transitioning the session.
     func triggerDistillation(
-        distillationService: ConversationDistillationService,
-        modelContext: ModelContext
+        distillationScheduler: ConversationDistillationScheduling = ConversationDistillationScheduler.shared,
+        modelContext: ModelContext,
+        reason: SessionEndReason
     ) {
-        // Skip if too few messages (minimum for meaningful distillation)
-        guard messages.count >= 3 else {
-            logger.debug("Session \(self.id): skipping distillation (< 3 messages)")
-            return
-        }
-
-        logger.info("Session \(self.id): scheduling distillation (\(self.messages.count) messages)")
-
-        // Snapshot the data so distillation can proceed even if the session is deleted.
-        let sessionID = self.id
+        // Snapshot the data so scheduling is stable even if session state changes after the call.
+        let sessionID = id
         let providerID = self.providerID
-        let snapshotMessages = self.messages
+        let snapshotMessages = messages
             .sorted { $0.createdAt < $1.createdAt }
             .map { $0.asDomain() }
 
-        Task { @MainActor in
-            await distillationService.distill(
-                sessionID: sessionID,
-                providerID: providerID,
-                messages: snapshotMessages,
-                modelContext: modelContext
-            )
+        // Skip if too few messages (minimum for meaningful distillation).
+        guard snapshotMessages.count >= 3 else {
+            logger.debug("Session \(sessionID): skipping distillation (< 3 messages, reason=\(String(describing: reason)))")
+            return
         }
+
+        logger.info(
+            "Session \(sessionID): distillation request (reason=\(String(describing: reason)), messages=\(snapshotMessages.count))"
+        )
+
+        distillationScheduler.scheduleDistillation(
+            sessionID: sessionID,
+            providerID: providerID,
+            messages: snapshotMessages,
+            modelContext: modelContext,
+            reason: reason
+        )
     }
 
     /// Checks if this session has been distilled into a memory.
