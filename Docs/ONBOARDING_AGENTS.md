@@ -79,7 +79,7 @@
 ## 🧠 "Brain/Hand/Loop" Architecture Refresher
 
 - **The Brain**: The LLM Provider (`Services/ModelFetch/ModelRegistry.swift` manages them).
-- **The Hand**: The Tool System (`Tools/`). Tools are strictly typed and sandboxed.
+- **The Hand**: The Tool System (`llmHub/llmHub/Tools/`). Tools are strictly typed and sandboxed.
 - **The Loop**: `ChatService.swift`. Handles the recursive `Model -> Tool -> Result -> Model` cycle.
 
 ---
@@ -92,7 +92,7 @@
 4.  `FileReaderTool`
 5.  `WebSearchTool`
 6.  `ShellTool` (macOS)
-7.  ...and others in `llmHub/Tools/`.
+7.  ...and others in `llmHub/llmHub/Tools/`.
 
 ---
 

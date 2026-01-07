@@ -36,7 +36,7 @@ Successfully implemented a unified tool system for llmHub with 13 tools (5 exist
 - Added `ToolParameter` and `ToolDescriptor` structs for LLM serialization
 
 ### Phase 2: Created 8 New Stub Tools ✅
-**Location:** `llmHub/Tools/`
+**Location:** `llmHub/llmHub/Tools/`
 
 All stub tools have:
 - Proper `inputSchema` for LLM function calling
@@ -250,18 +250,18 @@ To activate stub tools:
 1. `llmHub/Services/ToolEnvironment.swift` - Enhanced capabilities and availability
 2. `llmHub/Services/Tools/ToolSelector.swift` - Added manifest generation
 3. `llmHub/Services/ToolRegistry.swift` - Registered all 13 tools
-4. `llmHub/Tools/CodeInterpreterTool.swift` - Updated for new availability format
-5. `llmHub/Tools/FileEditorTool.swift` - Updated for new availability format
+4. `llmHub/llmHub/Tools/Core/CodeInterpreterTool.swift` - Updated for new availability format
+5. `llmHub/llmHub/Tools/Core/FileEditorTool.swift` - Updated for new availability format
 
 ### Created (8 new files):
-1. `llmHub/Tools/ShellTool.swift`
-2. `llmHub/Tools/HTTPRequestTool.swift`
-3. `llmHub/Tools/DataVisualizationTool.swift`
-4. `llmHub/Tools/DatabaseQueryTool.swift`
-5. `llmHub/Tools/ImageGenerationTool.swift`
-6. `llmHub/Tools/EmailNotificationTool.swift`
-7. `llmHub/Tools/TaskSchedulerTool.swift`
-8. `llmHub/Tools/BrowserAutomationTool.swift`
+1. `llmHub/llmHub/Tools/Core/ShellTool.swift`
+2. `llmHub/llmHub/Tools/Core/HTTPRequestTool.swift`
+3. `llmHub/llmHub/Tools/Core/DataVisualizationTool.swift`
+4. `llmHub/llmHub/Tools/Stubs/DatabaseQueryTool.swift`
+5. `llmHub/llmHub/Tools/Stubs/ImageGenerationTool.swift`
+6. `llmHub/llmHub/Tools/Stubs/EmailNotificationTool.swift`
+7. `llmHub/llmHub/Tools/Stubs/TaskSchedulerTool.swift`
+8. `llmHub/llmHub/Tools/Stubs/BrowserAutomationTool.swift`
 
 ## Verification Results
 
