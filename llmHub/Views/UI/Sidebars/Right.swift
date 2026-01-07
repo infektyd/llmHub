@@ -47,14 +47,14 @@ extension Optional where Wrapped == ToolExecution {
             return true
         case (nil, .some), (.some, nil):
             return false
-        case (.some(let a), .some(let b)):
-            return a.id == b.id
-                && a.toolID == b.toolID
-                && a.name == b.name
-                && a.icon == b.icon
-                && a.status.rawValue == b.status.rawValue
-                && a.output == b.output
-                && a.timestamp == b.timestamp
+        case (.some(let left), .some(let right)):
+            return left.id == right.id
+                && left.toolID == right.toolID
+                && left.name == right.name
+                && left.icon == right.icon
+                && left.status.rawValue == right.status.rawValue
+                && left.output == right.output
+                && left.timestamp == right.timestamp
         }
     }
 }
@@ -280,19 +280,19 @@ struct FloatingSidebarRight: View {
             toolExecution: execution,
             artifacts: [
                 Canvas2PreviewFixtures.toolResultArtifact(),
-                Canvas2PreviewFixtures.codeFileArtifact(),
+                Canvas2PreviewFixtures.codeFileArtifact()
             ],
             tokenStats: .init(tokens: 1234, costUSD: 0.0123, percentOfContext: 1.5),
             logs: [
                 "isGenerating=true",
                 "executingTools=http_request",
                 "streamingTokenEstimate=42",
-                "mergeOverlay=shown",
+                "mergeOverlay=shown"
             ],
             contextSummary: [
                 "providerID=openai",
                 "model=gpt-4o",
-                "messages=12",
+                "messages=12"
             ]
         )
 

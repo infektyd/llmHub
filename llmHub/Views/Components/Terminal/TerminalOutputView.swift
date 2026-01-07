@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+// swiftlint:disable file_length
+
 // MARK: - ANSI Parser
 
 /// Parses strings containing ANSI escape codes into `AttributedString`s.
@@ -76,8 +78,9 @@ struct ANSIAttributes {
     var isUnderline = false
     var isDim = false
 
-    /// Updates attributes based on ANSI escape codes.
-    /// - Parameter codes: The ANSI code string (e.g., "1;31").
+    // Updates attributes based on ANSI escape codes.
+    // - Parameter codes: The ANSI code string (e.g., "1;31").
+    // swiftlint:disable:next cyclomatic_complexity
     mutating func parse(codes: String) {
         let codeList = codes.split(separator: ";").compactMap { Int($0) }
 

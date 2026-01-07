@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+// swiftlint:disable file_length
+
 /// View for approving file operations with a diff preview.
 struct FileOperationApprovalView: View {
     /// The preview of the file operation to approve.
@@ -121,8 +123,7 @@ struct FileOperationApprovalView: View {
 
                 if preview.request.operation == .edit,
                     let oldString = preview.request.oldString,
-                    let newString = preview.request.newString
-                {
+                    let newString = preview.request.newString {
                     GridRow {
                         Text("Find:")
                             .foregroundColor(.secondary)
@@ -180,7 +181,7 @@ struct FileOperationApprovalView: View {
 
             ScrollView(.horizontal, showsIndicators: true) {
                 VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(preview.diffLines.enumerated()), id: \.offset) { index, line in
+                    ForEach(Array(preview.diffLines.enumerated()), id: \.offset) { _, line in
                         DiffLineView(line: line)
                     }
                 }
@@ -371,7 +372,7 @@ extension View {
             diffLines: [
                 DiffLine(type: .added, content: "import Foundation", lineNumber: 1),
                 DiffLine(type: .added, content: "", lineNumber: 2),
-                DiffLine(type: .added, content: "print(\"Hello, World!\")", lineNumber: 3),
+                DiffLine(type: .added, content: "print(\"Hello, World!\")", lineNumber: 3)
             ]
         ),
         onApprove: {},
@@ -393,7 +394,7 @@ extension View {
             proposedContent: "print(\"Goodbye, World!\")",
             diffLines: [
                 DiffLine(type: .removed, content: "print(\"Hello, World!\")", lineNumber: 1),
-                DiffLine(type: .added, content: "print(\"Goodbye, World!\")", lineNumber: 1),
+                DiffLine(type: .added, content: "print(\"Goodbye, World!\")", lineNumber: 1)
             ]
         ),
         onApprove: {},

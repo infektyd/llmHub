@@ -127,4 +127,3 @@ private struct RemoteImageAttachmentView: View {
         #endif
     }
 }
-

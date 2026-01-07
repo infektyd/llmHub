@@ -26,4 +26,3 @@ nonisolated final class RemoteImageSizeCache: @unchecked Sendable {
         lock.unlock()
     }
 }
-

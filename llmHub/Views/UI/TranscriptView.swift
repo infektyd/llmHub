@@ -132,9 +132,9 @@ struct TranscriptCanvasSessionView: View {
         mapToViewModel(entity.asDomain(), isStreaming: false, rowID: persistedRowID(entity.id))
     }
 
+    // swiftlint:disable:next function_body_length
     private func mapToViewModel(_ message: ChatMessage, isStreaming: Bool, rowID: String)
-        -> TranscriptRowViewModel
-    {
+        -> TranscriptRowViewModel {
         // Handle tool result messages as compact artifact cards
         if message.role == .tool {
             let meta = message.toolResultMeta
@@ -210,9 +210,9 @@ struct TranscriptCanvasSessionView: View {
         guard let any = try? JSONSerialization.jsonObject(with: data, options: []) else { return nil }
         guard let dict = any as? [String: Any] else { return nil }
 
-        if let s = dict["toolName"] as? String, !s.isEmpty { return s }
-        if let s = dict["tool_name"] as? String, !s.isEmpty { return s }
-        if let s = dict["name"] as? String, !s.isEmpty { return s }
+        if let toolName = dict["toolName"] as? String, !toolName.isEmpty { return toolName }
+        if let toolName = dict["tool_name"] as? String, !toolName.isEmpty { return toolName }
+        if let toolName = dict["name"] as? String, !toolName.isEmpty { return toolName }
         return nil
     }
 

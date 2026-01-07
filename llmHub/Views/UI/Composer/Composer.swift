@@ -10,6 +10,8 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
+// swiftlint:disable file_length
+
 /// Pure, preview-friendly composer UI (no SwiftData, no providers).
 struct ComposerBarView: View {
     @Binding var leftSidebarVisible: Bool

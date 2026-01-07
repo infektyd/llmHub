@@ -11,12 +11,13 @@ import SwiftUI
     import Splash
 #endif
 
+// swiftlint:disable:next type_body_length
 struct ArtifactCard: View {
     let artifact: ArtifactMetadata
 
     @State private var isExpanded = false
-    @State private var loadedContent: String? = nil
-    @State private var highlightedContent: AttributedString? = nil
+    @State private var loadedContent: String?
+    @State private var highlightedContent: AttributedString?
 
     @State private var copiedContent: Bool = false
     @State private var copiedAll: Bool = false
@@ -336,10 +337,10 @@ struct ArtifactCard: View {
 
     private func formatFileSize(_ bytes: Int) -> String {
         if bytes < 1024 { return "\(bytes) B" }
-        let kb = Double(bytes) / 1024.0
-        if kb < 1024 { return String(format: "%.1f KB", kb) }
-        let mb = kb / 1024.0
-        return String(format: "%.1f MB", mb)
+        let kiloBytes = Double(bytes) / 1024.0
+        if kiloBytes < 1024 { return String(format: "%.1f KB", kiloBytes) }
+        let megaBytes = kiloBytes / 1024.0
+        return String(format: "%.1f MB", megaBytes)
     }
 }
 

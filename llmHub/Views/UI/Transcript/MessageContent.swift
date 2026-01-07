@@ -68,7 +68,7 @@ struct TextualMessageView: View, Equatable {
             "\n1. ",
             "\n2. ",
             "\n|",
-            "\n---",
+            "\n---"
         ]
         return blockMarkers.contains { markdown.contains($0) } || markdown.hasPrefix("#")
     }

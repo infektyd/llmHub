@@ -8,6 +8,8 @@
 
 import SwiftUI
 
+// swiftlint:disable file_length
+
 // MARK: - Main Settings View
 
 struct SettingsView: View {
@@ -517,8 +519,7 @@ struct ToolsSection: View {
                         Spacer()
                     }
                 } else {
-                    ForEach(Array(viewModel.toolToggles.enumerated()), id: \.element.id) {
-                        index, tool in
+                    ForEach(Array(viewModel.toolToggles.enumerated()), id: \.element.id) { index, tool in
                         ToolToggleRow(
                             tool: tool,
                             onToggle: { enabled in
@@ -966,22 +967,21 @@ struct LinkRow: View {
                     isEnabled: false,
                     isAvailable: false,
                     unavailableReason: "Requires macOS"
-                ),
+                )
             ]
         }
 
         static func mockSettingsViewModel(withKeys: Bool = false, withTools: Bool = true)
-            -> SettingsViewModel
-        {
-            let vm = SettingsViewModel()
+            -> SettingsViewModel {
+            let viewModel = SettingsViewModel()
             if withKeys {
-                vm.openAIKey = "sk-mock-key-12345"
-                vm.anthropicKey = "sk-ant-mock-67890"
+                viewModel.openAIKey = "sk-mock-key-12345"
+                viewModel.anthropicKey = "sk-ant-mock-67890"
             }
             if withTools {
-                vm.toolToggles = mockToolToggles()
+                viewModel.toolToggles = mockToolToggles()
             }
-            return vm
+            return viewModel
         }
     }
 
