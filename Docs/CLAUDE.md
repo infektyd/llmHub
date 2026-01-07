@@ -31,7 +31,7 @@ llmHub is a native macOS AI Workbench for LLMs with a modular architecture:
 - Implementations: OpenAI, Anthropic, Gemini, Mistral, xAI, OpenRouter
 - Handle API communication, streaming via `AsyncThrowingStream<ProviderEvent, Error>`
 
-**Hand (Tools)** - Deterministic tools in `llmHub/Tools/`
+**Hand (Tools)** - Deterministic tools in `llmHub/llmHub/Tools/`
 
 - Conform to `Tool` protocol with platform-aware availability
 - **Core Tools**: Calculator, CodeInterpreterTool (Swift/Python/JS via XPC), FileEditorTool, FileReaderTool, WebSearchTool
@@ -80,7 +80,7 @@ llmHub is a native macOS AI Workbench for LLMs with a modular architecture:
 | Entry point        | `llmHub/App/llmHubApp.swift`                                       |
 | Chat orchestration | `llmHub/Services/ChatService.swift`                                |
 | Provider protocol  | `llmHub/Providers/LLMProviderProtocol.swift`                       |
-| Provider registry  | `llmHub/Services/ProviderRegistry.swift`                           |
+| Provider registry  | `llmHub/Services/Providers/ProviderRegistry.swift`                 |
 | Model caching      | `llmHub/Services/ModelFetch/ModelRegistry.swift`                   |
 | Tool registry      | `llmHub/Services/ToolRegistry.swift`                               |
 | Context management | `llmHub/Services/ContextManagement/ContextManagementService.swift` |
