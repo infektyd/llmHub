@@ -56,8 +56,8 @@ final class ConversationDistillationService {
         }
         #if canImport(FoundationModels)
             if #available(macOS 26.0, iOS 26.0, *) {
-                // In production, check SystemLanguageModel.default.availability
-                return true
+                // IMPORTANT: do not attempt any AFM/local prewarm path when Apple Intelligence is disabled.
+                return SystemLanguageModel.default.availability == .available
             }
             return false
         #else
@@ -108,21 +108,33 @@ final class ConversationDistillationService {
             return
         }
 
-        // If AFM is unavailable, we may still run the sidecar fallback for diagnostics/telemetry,
-        // but we MUST NOT persist its output into chat memory.
+        // If AFM is unavailable, fall back to Gemini HTTP. Persist into the app memory store,
+        // but mark as sidecar so it is never injected into chat prompting.
         if !isAvailable {
             if Task.isCancelled {
                 logger.debug("Skipping distillation for session \(sessionID): cancelled")
                 return
             }
-            _ = await distillWithGeminiFallback(
+            logger.info("Distillation path: AFM unavailable → Gemini HTTP (session=\(sessionID))")
+            if let memory = await distillWithGeminiFallback(
                 messages: messages,
                 providerID: providerID,
                 sessionID: sessionID
-            )
-            // No persistence.
+            ) {
+                do {
+                    try persist(
+                        memory: memory,
+                        modelContext: modelContext,
+                        provenance: .sidecar(model: GeminiPinnedModels.afmFallbackFlash)
+                    )
+                } catch {
+                    logger.error("Failed to persist Gemini distillation memory (session=\(sessionID)): \(error.localizedDescription)")
+                }
+            }
             return
         }
+
+        logger.info("Distillation path: AFM available → AFM local model (session=\(sessionID))")
 
         // Check if already has a memory
         let existingMemory = try? modelContext.fetch(
@@ -152,7 +164,7 @@ final class ConversationDistillationService {
                         providerID: providerID,
                         sessionID: sessionID
                     )
-                    // Sidecar output: never persist into chat memory.
+                    // Persist into the app memory store, but mark as sidecar so it is never injected into chat prompting.
                     try persist(
                         memory: memory,
                         modelContext: modelContext,
@@ -170,15 +182,24 @@ final class ConversationDistillationService {
                 return
             }
 
-            // AFM failed at runtime; attempt fixed remote Gemini fallback for diagnostics/telemetry,
-            // but never persist its output.
-            _ = await distillWithGeminiFallback(
+            // AFM failed at runtime; attempt fixed remote Gemini fallback.
+            logger.info("Distillation path: AFM failed → Gemini HTTP (session=\(sessionID))")
+            if let memory = await distillWithGeminiFallback(
                 messages: truncated,
                 providerID: providerID,
                 sessionID: sessionID
-            )
+            ) {
+                do {
+                    try persist(
+                        memory: memory,
+                        modelContext: modelContext,
+                        provenance: .sidecar(model: GeminiPinnedModels.afmFallbackFlash)
+                    )
+                } catch {
+                    logger.error("Failed to persist Gemini distillation memory after AFM failure (session=\(sessionID)): \(error.localizedDescription)")
+                }
+            }
 
-            // Hard rule: sidecar distillation must not write to memory, even as a partial.
             logger.error("Distillation failed for session \(sessionID): \(error.localizedDescription)")
         }
     }
@@ -232,6 +253,9 @@ final class ConversationDistillationService {
             let jsonText: String
 
             if let geminiJSONGenerator {
+                logger.info(
+                    "Gemini distillation request (injected generator): model=\(GeminiPinnedModels.afmFallbackFlash) host=generativelanguage.googleapis.com maxOutputTokens=1024 temperature=\(GeminiPinnedModels.afmFallbackTemperature)"
+                )
                 jsonText = try await geminiJSONGenerator(
                     prompt,
                     GeminiPinnedModels.afmFallbackFlash,
@@ -239,14 +263,40 @@ final class ConversationDistillationService {
                 )
             } else {
                 guard #available(iOS 26.1, macOS 26.1, *) else { return nil }
+
+                // Build a direct HTTP request (no tools) to avoid any Apple/local-model pathways.
+                // This must go to generativelanguage.googleapis.com.
                 let manager = GeminiManager(apiKey: apiKey)
-                let response = try await manager.generateContent(
+                let maxOutputTokens = 1024
+                let request = try manager.makeGenerateContentRequest(
                     prompt: prompt,
+                    files: [],
                     model: GeminiPinnedModels.afmFallbackFlash,
                     temperature: Float(GeminiPinnedModels.afmFallbackTemperature),
-                    responseMimeType: "application/json"
+                    thinkingLevel: .off,
+                    history: [],
+                    tools: nil,
+                    maxOutputTokens: maxOutputTokens,
+                    responseMimeType: "application/json",
+                    stream: false
                 )
-                jsonText = response.text ?? ""
+
+                let host = request.url?.host ?? "(unknown)"
+                logger.info(
+                    "Gemini distillation request built: model=\(GeminiPinnedModels.afmFallbackFlash) host=\(host) maxOutputTokens=\(maxOutputTokens)"
+                )
+
+                let started = Date()
+                logger.debug("Gemini distillation request sending (session=\(sessionID))")
+                let (data, response) = try await LLMURLSession.data(for: request)
+                let elapsedMs = Int(Date().timeIntervalSince(started) * 1000)
+                let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+                logger.info(
+                    "Gemini distillation request finished: status=\(status) elapsedMs=\(elapsedMs) bytes=\(data.count) (session=\(sessionID))"
+                )
+
+                let decoded = try JSONDecoder().decode(GenerationResponse.self, from: data)
+                jsonText = decoded.text ?? ""
             }
 
             if Task.isCancelled { return nil }
@@ -393,20 +443,7 @@ final class ConversationDistillationService {
         modelContext: ModelContext,
         provenance: MessageProvenance
     ) throws {
-        guard provenance.channel == .chat else {
-            let sessionKey = memory.sourceSessionID ?? memory.id
-            if !Self.loggedMemoryWriteSkips.contains(sessionKey) {
-                Self.loggedMemoryWriteSkips.insert(sessionKey)
-                let sessionDescription = memory.sourceSessionID?.uuidString ?? "nil"
-                let modelDescription = provenance.model ?? "unknown"
-                logger.info(
-                    "Skipping memory write for sidecar output (session=\(sessionDescription), model=\(modelDescription))"
-                )
-            }
-            return
-        }
-
-        let entity = MemoryEntity(memory: memory)
+        let entity = MemoryEntity(memory: memory, provenance: provenance)
         modelContext.insert(entity)
         try modelContext.save()
         entity.logCreation()

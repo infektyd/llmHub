@@ -732,13 +732,67 @@ struct ModernSidebarLeft: View {
                 }
             } else {
                 Button("Archive") {
-                    lifecycleService.archive(session: session, modelContext: modelContext)
+                    archiveFromContextMenu(clickedSessionID: session.id)
                 }
             }
 
             Button("Delete", role: .destructive) {
-                lifecycleService.delete(session: session, modelContext: modelContext)
+                deleteFromContextMenu(clickedSessionID: session.id)
             }
+        }
+    }
+
+    private func archiveFromContextMenu(clickedSessionID: UUID) {
+        let targetIDs = ConversationContextMenuTargetResolver.targetIDs(
+            clickedID: clickedSessionID,
+            selectedIDs: selectedConversationIDs
+        )
+
+        // Fast path: single session.
+        if targetIDs.count == 1, let onlyID = targetIDs.first {
+            if let session = fetchSession(id: onlyID) {
+                lifecycleService.archive(session: session, modelContext: modelContext)
+            }
+            return
+        }
+
+        let sessions = fetchSessions(ids: Array(targetIDs))
+        lifecycleService.archiveAll(sessions, modelContext: modelContext)
+    }
+
+    private func deleteFromContextMenu(clickedSessionID: UUID) {
+        let targetIDs = ConversationContextMenuTargetResolver.targetIDs(
+            clickedID: clickedSessionID,
+            selectedIDs: selectedConversationIDs
+        )
+
+        lifecycleService.deleteAll(sessionIDs: Array(targetIDs), modelContext: modelContext)
+
+        // Keep selection stable and avoid thrashing the active conversation.
+        selectedConversationIDs.subtract(targetIDs)
+        if let active = selectedConversationID, targetIDs.contains(active) {
+            selectedConversationID = nil
+        }
+        selectionAnchorConversationID = nil
+    }
+
+    private func fetchSession(id: UUID) -> ChatSessionEntity? {
+        do {
+            let descriptor = FetchDescriptor<ChatSessionEntity>(predicate: #Predicate { $0.id == id })
+            return try modelContext.fetch(descriptor).first
+        } catch {
+            return nil
+        }
+    }
+
+    private func fetchSessions(ids: [UUID]) -> [ChatSessionEntity] {
+        guard !ids.isEmpty else { return [] }
+        do {
+            let idSet = Set(ids)
+            let descriptor = FetchDescriptor<ChatSessionEntity>(predicate: #Predicate { idSet.contains($0.id) })
+            return try modelContext.fetch(descriptor)
+        } catch {
+            return []
         }
     }
 

@@ -19,7 +19,7 @@ struct ConversationDistillationGeminiFallbackTests {
     }
 
     @Test @MainActor
-    func afmUnavailableTriggersGeminiFallbackButDoesNotPersistMemory() async throws {
+    func afmUnavailableTriggersGeminiFallbackPersistsSidecarMemoryButIsNotPromptInjectable() async throws {
         let schema = Schema([MemoryEntity.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: schema, configurations: [config])
@@ -87,7 +87,16 @@ struct ConversationDistillationGeminiFallbackTests {
             FetchDescriptor<MemoryEntity>(predicate: #Predicate { $0.sourceSessionID == sessionID })
         )
 
-        #expect(fetched.count == 0)
+        #expect(fetched.count == 1)
+        #expect(fetched.first?.provenanceChannelRaw == "sidecar")
+
+        let retrieval = MemoryRetrievalService()
+        let hits = await retrieval.retrieveRelevant(
+            for: "swift",
+            providerID: nil,
+            modelContext: modelContext
+        )
+        #expect(hits.isEmpty)
     }
 }
 

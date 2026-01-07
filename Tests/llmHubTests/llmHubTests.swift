@@ -328,7 +328,16 @@ struct llmHubTests {
 
         let fetchedAll = try modelContext.fetch(FetchDescriptor<MemoryEntity>())
         let fetchedForSession = fetchedAll.filter { $0.sourceSessionID == sessionID }
-        #expect(fetchedForSession.isEmpty)
+        #expect(fetchedForSession.count == 1)
+        #expect(fetchedForSession.first?.provenanceChannelRaw == "sidecar")
+
+        let retrieval = MemoryRetrievalService()
+        let hits = await retrieval.retrieveRelevant(
+            for: "swift",
+            providerID: nil,
+            modelContext: modelContext
+        )
+        #expect(hits.isEmpty)
     }
 
     // MARK: - Session deletion vs distillation
@@ -458,6 +467,21 @@ struct llmHubTests {
         let container = try ModelContainer(for: schema, configurations: [config])
         let modelContext = ModelContext(container)
 
+        let messages: [ChatMessage] = [
+            ChatMessage(
+                id: UUID(), role: .user, content: "u1", thoughtProcess: nil,
+                parts: [.text("u1")], createdAt: Date(), codeBlocks: []
+            ),
+            ChatMessage(
+                id: UUID(), role: .assistant, content: "a1", thoughtProcess: nil,
+                parts: [.text("a1")], createdAt: Date(), codeBlocks: []
+            ),
+            ChatMessage(
+                id: UUID(), role: .user, content: "u2", thoughtProcess: nil,
+                parts: [.text("u2")], createdAt: Date(), codeBlocks: []
+            ),
+        ]
+
         let session = ChatSession(
             id: UUID(),
             title: "T",
@@ -465,7 +489,7 @@ struct llmHubTests {
             model: "gpt-4o",
             createdAt: Date(),
             updatedAt: Date(),
-            messages: [],
+            messages: messages,
             metadata: ChatSessionMetadata(lastTokenUsage: nil, totalCostUSD: 0, referenceID: "ref")
         )
         let entity = ChatSessionEntity(session: session)
