@@ -18,7 +18,7 @@ final class ConversationDistillationGeminiFallbackTests: XCTestCase {
     }
 
     @MainActor
-    func testAFMUnavailableTriggersGeminiFallbackButDoesNotPersistMemory() async throws {
+    func testAFMUnavailableTriggersGeminiFallbackPersistsSidecarMemoryButIsNotPromptInjectable() async throws {
         let schema = Schema([MemoryEntity.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: schema, configurations: [config])
@@ -80,6 +80,16 @@ final class ConversationDistillationGeminiFallbackTests: XCTestCase {
             FetchDescriptor<MemoryEntity>(predicate: #Predicate { $0.sourceSessionID == sessionID })
         )
 
-        XCTAssertEqual(fetched.count, 0)
+        XCTAssertEqual(fetched.count, 1)
+        XCTAssertEqual(fetched.first?.provenanceChannelRaw, "sidecar")
+
+        // Sidecar memories must never be eligible for retrieval/prompt injection.
+        let retrieval = MemoryRetrievalService()
+        let hits = await retrieval.retrieveRelevant(
+            for: "swift",
+            providerID: nil,
+            modelContext: modelContext
+        )
+        XCTAssertTrue(hits.isEmpty)
     }
 }

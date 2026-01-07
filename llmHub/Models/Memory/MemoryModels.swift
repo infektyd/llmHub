@@ -223,6 +223,13 @@ final class MemoryEntity {
     /// Whether this memory has been flagged for cleanup.
     var isFlaggedForCleanup: Bool
 
+    /// Provenance channel for this memory. "chat" memories may be injected into prompts;
+    /// "sidecar" memories must never be used for chat prompting.
+    var provenanceChannelRaw: String = "chat"
+
+    /// Optional model identifier associated with the provenance.
+    var provenanceModel: String?
+
     /// Computed scope from raw string.
     var scope: MemoryScope {
         get { MemoryScope(rawValue: scopeRaw) ?? .global }
@@ -232,7 +239,7 @@ final class MemoryEntity {
     // Logger specifically for MemoryEntity to avoid top-level isolation issues
     private static let logger = Logger(subsystem: "com.llmhub", category: "Memory")
 
-    init(memory: Memory) {
+    init(memory: Memory, provenance: MessageProvenance = .chat) {
         self.id = memory.id
         self.scopeRaw =
             (memory.providerID == nil ? MemoryScope.global.rawValue : MemoryScope.provider.rawValue)
@@ -253,6 +260,9 @@ final class MemoryEntity {
         self.lastAccessedAt = memory.lastAccessedAt
         self.accessCount = memory.accessCount
         self.isFlaggedForCleanup = false
+
+        self.provenanceChannelRaw = provenance.channel.rawValue
+        self.provenanceModel = provenance.model
     }
 
     /// Converts entity to domain model.

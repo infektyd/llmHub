@@ -57,9 +57,12 @@ final class MemoryRetrievalService: Sendable {
         logger.debug("Extracted query keywords: \(queryKeywords.joined(separator: ", "))")
 
         do {
-            // Fetch all non-flagged memories
+            // Fetch all non-flagged memories that are eligible for chat prompting.
+            // Distillation/sidecar memories are persisted for diagnostics/UI, but must never be injected.
             let descriptor = FetchDescriptor<MemoryEntity>(
-                predicate: #Predicate { !$0.isFlaggedForCleanup }
+                predicate: #Predicate {
+                    !$0.isFlaggedForCleanup && $0.provenanceChannelRaw == "chat"
+                }
             )
             let allMemories = try modelContext.fetch(descriptor)
 
