@@ -45,8 +45,8 @@ actor ImageLoader {
                 return "Invalid image response"
             case .nonHTTPURL:
                 return "Unsupported image URL"
-            case .unsupportedContentType(let ct):
-                return "Unsupported content type \(ct ?? "unknown")"
+            case .unsupportedContentType(let contentType):
+                return "Unsupported content type \(contentType ?? "unknown")"
             case .exceededSizeLimit(let maxBytes):
                 return "Image exceeded size limit (\(maxBytes) bytes)"
             case .decodeFailed:
@@ -77,6 +77,7 @@ actor ImageLoader {
         self.urlSession = urlSession
     }
 
+    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func load(url: URL, generationID: UUID?) async throws -> PlatformImage {
         guard let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" else {
             throw ImageLoaderError.nonHTTPURL
@@ -90,8 +91,7 @@ actor ImageLoader {
         }
 
         if let diskData = (try? loadFromDisk(url: url)) ?? nil,
-            let decoded = decodeImage(data: diskData)
-        {
+            let decoded = decodeImage(data: diskData) {
             memoryCache.setObject(decoded, forKey: url as NSURL)
 #if DEBUG
             logger.debug("DISK hit: \(url.absoluteString, privacy: .public)")
@@ -121,7 +121,7 @@ actor ImageLoader {
             }
 
             let contentType = http.value(forHTTPHeaderField: "Content-Type")
-            if let ct = contentType?.lowercased(), !ct.hasPrefix("image/") {
+            if let lowercasedContentType = contentType?.lowercased(), !lowercasedContentType.hasPrefix("image/") {
                 throw ImageLoaderError.unsupportedContentType(contentType)
             }
 
@@ -241,4 +241,3 @@ actor ImageLoader {
         try data.write(to: fileURL, options: [.atomic])
     }
 }
-

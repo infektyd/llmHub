@@ -179,10 +179,8 @@ struct ModelPickerSheet: View {
     private func checkConfiguredProviders() async {
         let keychain = KeychainStore()
         var configured = Set<String>()
-        for provider in providers {
-            if await keychain.apiKey(for: provider) != nil {
-                configured.insert(provider.rawValue)
-            }
+        for provider in providers where await keychain.apiKey(for: provider) != nil {
+            configured.insert(provider.rawValue)
         }
         configuredProviders = configured
     }

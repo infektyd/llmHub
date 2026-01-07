@@ -18,7 +18,7 @@ class PreviewContainer {
             ChatFolderEntity.self,
             ChatTagEntity.self,
             ProjectEntity.self,
-            ArtifactEntity.self,
+            ArtifactEntity.self
         ])
 
         let configuration = ModelConfiguration(
@@ -104,11 +104,11 @@ enum MockData {
             model: "gpt-4o",
             createdAt: Date(),
             updatedAt: Date(),
-            messages: (0..<messageCount).map { i in
+            messages: (0..<messageCount).map { index in
                 ChatMessage(
                     id: UUID(),
-                    role: i % 2 == 0 ? .user : .assistant,
-                    content: "Message \(i + 1)",
+                    role: index % 2 == 0 ? .user : .assistant,
+                    content: "Message \(index + 1)",
                     parts: [],
                     createdAt: Date(),
                     codeBlocks: []

@@ -12,6 +12,8 @@ import SwiftUI
 import AppKit
 #endif
 
+// swiftlint:disable file_length
+
 private enum SidebarMode: String, CaseIterable {
     case chat
     case code
@@ -47,6 +49,7 @@ private final class ModernSidebarState {
     var searchText: String = ""
 }
 
+// swiftlint:disable:next type_body_length
 struct ModernSidebarLeft: View {
     @Binding var isVisible: Bool
     @Binding var rightSidebarVisible: Bool
@@ -275,8 +278,8 @@ struct ModernSidebarLeft: View {
                         .foregroundStyle(AppColors.accent)
                 }
                 .buttonStyle(.plain)
-            }
-        ) {
+            },
+            content: {
             let inbox = inboxSessions
             if !inbox.isEmpty {
                 projectGroup(
@@ -299,7 +302,8 @@ struct ModernSidebarLeft: View {
                     )
                 }
             }
-        }
+            }
+        )
     }
 
     private var artifactsSection: some View {
@@ -382,14 +386,14 @@ struct ModernSidebarLeft: View {
     }
 
     private func matchesSearch(_ session: ChatSessionEntity) -> Bool {
-        let q = effectiveSearchQuery
-        guard !q.isEmpty else { return true }
+        let query = effectiveSearchQuery
+        guard !query.isEmpty else { return true }
 
-        if session.displayTitle.lowercased().contains(q) { return true }
-        if (session.afmCategory ?? "").lowercased().contains(q) { return true }
-        if (session.afmIntent ?? session.lifecycleIntent ?? "").lowercased().contains(q) { return true }
-        if session.afmTopicsArray.contains(where: { $0.lowercased().contains(q) }) { return true }
-        if let folderName = session.folder?.name.lowercased(), folderName.contains(q) { return true }
+        if session.displayTitle.lowercased().contains(query) { return true }
+        if (session.afmCategory ?? "").lowercased().contains(query) { return true }
+        if (session.afmIntent ?? session.lifecycleIntent ?? "").lowercased().contains(query) { return true }
+        if session.afmTopicsArray.contains(where: { $0.lowercased().contains(query) }) { return true }
+        if let folderName = session.folder?.name.lowercased(), folderName.contains(query) { return true }
         return false
     }
 
@@ -608,8 +612,11 @@ struct ModernSidebarLeft: View {
 
             selectionAnchorConversationID = anchor
 
-            if let a = ordering.firstIndex(of: anchor), let b = ordering.firstIndex(of: sessionID) {
-                let range = a <= b ? ordering[a...b] : ordering[b...a]
+            if let startIndex = ordering.firstIndex(of: anchor),
+                let endIndex = ordering.firstIndex(of: sessionID) {
+                let range = startIndex <= endIndex
+                    ? ordering[startIndex...endIndex]
+                    : ordering[endIndex...startIndex]
                 selectedConversationIDs = Set(range)
             } else {
                 selectedConversationIDs = [sessionID]
@@ -657,10 +664,8 @@ struct ModernSidebarLeft: View {
                 ids.append(contentsOf: inbox.prefix(50).map(\.id))
             }
 
-            for folder in folders {
-                if expandedProjectIDs.contains(folder.id) {
-                    ids.append(contentsOf: sessionsForProject(folder.id).prefix(50).map(\.id))
-                }
+            for folder in folders where expandedProjectIDs.contains(folder.id) {
+                ids.append(contentsOf: sessionsForProject(folder.id).prefix(50).map(\.id))
             }
         }
 
@@ -764,6 +769,7 @@ struct ModernSidebarLeft: View {
         try? modelContext.save()
     }
 
+    // swiftlint:disable:next function_body_length
     private func projectGroup(
         title: String,
         systemImage: String,
@@ -970,7 +976,7 @@ struct ModernSidebarLeft: View {
     #Preview("ModernSidebarLeft") {
         @Previewable @State var visible = true
         @Previewable @State var right = false
-        @Previewable @State var selected: UUID? = nil
+        @Previewable @State var selected: UUID?
 
         let container = PreviewContainer.shared
         Canvas2PreviewFixtures.ensureSeeded(into: container.context)

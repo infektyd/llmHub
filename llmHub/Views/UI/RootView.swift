@@ -9,8 +9,10 @@
 import SwiftData
 import SwiftUI
 
-/// Root view for the canvas-based UI
-/// Layout: ZStack with canvas background, center transcript, overlay sidebars, bottom composer
+// Root view for the canvas-based UI.
+// Layout: ZStack with canvas background, center transcript, overlay sidebars, bottom composer.
+// swiftlint:disable file_length
+// swiftlint:disable:next type_body_length
 struct CanvasRootView: View {
     @State private var viewModel: WorkbenchViewModel
     @State private var chatVM: ChatViewModel
@@ -404,7 +406,7 @@ struct CanvasRootView: View {
                         metadata: [
                             "filename": meta.filename,
                             "language": meta.language.rawValue,
-                            "sizeBytes": "\(meta.sizeBytes)",
+                            "sizeBytes": "\(meta.sizeBytes)"
                         ]
                     )
                 }
@@ -414,13 +416,13 @@ struct CanvasRootView: View {
             "isGenerating=\(chatVM.isGenerating)",
             "executingTools=\(chatVM.executingToolNames.sorted().joined(separator: ","))",
             "streamingTokenEstimate=\(chatVM.streamingTokenEstimate)",
-            "isTruncated=\(chatVM.isTruncated)",
+            "isTruncated=\(chatVM.isTruncated)"
         ]
 
         let contextSummary: [String] = [
             "providerID=\(session.providerID)",
             "model=\(session.model)",
-            "messages=\(session.messages.count)",
+            "messages=\(session.messages.count)"
         ]
 
         let tokenStats = CanvasInspectorState.TokenStats(
@@ -530,14 +532,14 @@ struct CanvasRootView: View {
         let container = PreviewContainer.shared
         Canvas2PreviewFixtures.ensureSeeded(into: container.context)
 
-        let vm = ChatViewModel.preview(
+        let viewModel = ChatViewModel.preview(
             isGenerating: true,
             streamingText: Canvas2PreviewFixtures.streamingRow().content,
             generationID: Canvas2PreviewFixtures.IDs.streamingGeneration,
             streamingMessageID: Canvas2PreviewFixtures.IDs.streamingMessage
         )
 
-        return CanvasRootView(chatVM: vm, leftSidebarVisible: true, rightSidebarVisible: true)
+        return CanvasRootView(chatVM: viewModel, leftSidebarVisible: true, rightSidebarVisible: true)
             .environmentObject(ModelRegistry())
             .modelContainer(container.container)
             .frame(width: 1200, height: 800)

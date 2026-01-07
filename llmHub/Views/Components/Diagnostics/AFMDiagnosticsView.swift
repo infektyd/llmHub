@@ -27,10 +27,13 @@ struct AFMDiagnosticsView: View {
 
                 Spacer()
 
-                Button(action: { withAnimation { isExpanded.toggle() } }) {
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.caption)
-                }
+                Button(
+                    action: { withAnimation { isExpanded.toggle() } },
+                    label: {
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .font(.caption)
+                    }
+                )
                 .buttonStyle(.plain)
             }
 
@@ -95,9 +98,9 @@ struct AFMDiagnosticsView: View {
 
 extension ChatViewModel {
     static func mock(isAvailable: Bool) -> ChatViewModel {
-        let vm = ChatViewModel()
+        let viewModel = ChatViewModel()
         // Here we'd normally set the state, but since we can't easily access private properties
         // we'll assume the mock setup handles it or we'd add a specialized init/method for previews.
-        return vm
+        return viewModel
     }
 }

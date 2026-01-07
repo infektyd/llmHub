@@ -9,6 +9,7 @@ import Foundation
 import SwiftData
 
 @MainActor
+// swiftlint:disable:next type_body_length
 enum Canvas2PreviewFixtures {
     // MARK: - Stable constants
 
@@ -68,7 +69,7 @@ enum Canvas2PreviewFixtures {
         """
 
     static let markdownVeryLong: String = (0..<20)
-        .map { i in "Paragraph \(i + 1): \(markdownShort)" }
+        .map { index in "Paragraph \(index + 1): \(markdownShort)" }
         .joined(separator: "\n\n")
 
     // MARK: - Artifacts
@@ -179,8 +180,11 @@ enum Canvas2PreviewFixtures {
             name: "run_command",
             icon: "terminal",
             status: .completed,
-            output:
-                "total 24\ndrwxr-xr-x  5 user  staff   160 Jan  1 00:00 .\ndrwxr-xr-x  3 user  staff    96 Jan  1 00:00 ..",
+            output: """
+                total 24
+                drwxr-xr-x  5 user  staff   160 Jan  1 00:00 .
+                drwxr-xr-x  3 user  staff    96 Jan  1 00:00 ..
+                """,
             timestamp: baseDate.addingTimeInterval(-60)
         )
     }
@@ -219,25 +223,25 @@ enum Canvas2PreviewFixtures {
                 isStreaming: false,
                 generationID: UUID(uuidString: "12121212-1212-1212-1212-121212121212"),
                 artifacts: [toolResultArtifact()]
-            ),
+            )
         ]
     }
 
     static func longTranscriptRows(messageCount: Int = 20) -> [TranscriptRowViewModel] {
-        return (0..<messageCount).map { i in
-            let isUser = (i % 2 == 0)
+        return (0..<messageCount).map { index in
+            let isUser = (index % 2 == 0)
             let id =
                 isUser
-                ? UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", i + 1))!
-                : UUID(uuidString: String(format: "00000000-0000-0000-0001-%012d", i + 1))!
+                ? UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", index + 1))!
+                : UUID(uuidString: String(format: "00000000-0000-0000-0001-%012d", index + 1))!
             let header = isUser ? "You" : "Assistant"
             let content =
-                (i == 3)
+                (index == 3)
                 ? markdownLongWithCode
-                : "Message \(i + 1) • deterministic preview content (no Date.now)"
+                : "Message \(index + 1) • deterministic preview content (no Date.now)"
             let artifacts: [ArtifactPayload] = {
-                if i == 5 { return [codeFileArtifact()] }
-                if i == 8 { return [toolResultArtifact(), errorArtifact()] }
+                if index == 5 { return [codeFileArtifact()] }
+                if index == 8 { return [toolResultArtifact(), errorArtifact()] }
                 return []
             }()
             return TranscriptRowViewModel(
@@ -248,7 +252,7 @@ enum Canvas2PreviewFixtures {
                 isStreaming: false,
                 generationID: isUser
                     ? nil
-                    : UUID(uuidString: String(format: "33333333-3333-3333-3333-%012d", i + 1)),
+                    : UUID(uuidString: String(format: "33333333-3333-3333-3333-%012d", index + 1)),
                 artifacts: artifacts
             )
         }
@@ -268,8 +272,9 @@ enum Canvas2PreviewFixtures {
 
     // MARK: - SwiftData seeding (for root previews)
 
+    // swiftlint:disable:next function_body_length
     static func seedSessions(into context: ModelContext) throws {
-        let s1 = ChatSessionEntity(
+        let sessionA = ChatSessionEntity(
             session: ChatSession(
                 id: IDs.sessionA,
                 title: "Canvas2 • Preview Session",
@@ -283,7 +288,7 @@ enum Canvas2PreviewFixtures {
             )
         )
 
-        let s2 = ChatSessionEntity(
+        let sessionB = ChatSessionEntity(
             session: ChatSession(
                 id: IDs.sessionB,
                 title: "Canvas2 • Empty Session",
@@ -297,8 +302,8 @@ enum Canvas2PreviewFixtures {
             )
         )
 
-        // Messages for s1
-        let m1 = ChatMessageEntity(
+        // Messages for sessionA
+        let message1 = ChatMessageEntity(
             message: ChatMessage(
                 id: IDs.user1,
                 role: .user,
@@ -308,9 +313,9 @@ enum Canvas2PreviewFixtures {
                 codeBlocks: []
             )
         )
-        m1.session = s1
+        message1.session = sessionA
 
-        let m2 = ChatMessageEntity(
+        let message2 = ChatMessageEntity(
             message: ChatMessage(
                 id: IDs.assistant1,
                 role: .assistant,
@@ -320,9 +325,9 @@ enum Canvas2PreviewFixtures {
                 codeBlocks: []
             )
         )
-        m2.session = s1
+        message2.session = sessionA
 
-        let m3 = ChatMessageEntity(
+        let message3 = ChatMessageEntity(
             message: ChatMessage(
                 id: IDs.assistant2,
                 role: .assistant,
@@ -341,13 +346,13 @@ enum Canvas2PreviewFixtures {
                 codeBlocks: []
             )
         )
-        m3.session = s1
+        message3.session = sessionA
 
-        context.insert(s1)
-        context.insert(s2)
-        context.insert(m1)
-        context.insert(m2)
-        context.insert(m3)
+        context.insert(sessionA)
+        context.insert(sessionB)
+        context.insert(message1)
+        context.insert(message2)
+        context.insert(message3)
 
         try context.save()
     }
