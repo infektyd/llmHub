@@ -16,8 +16,12 @@ import SwiftUI
 struct TranscriptRow: View {
     let viewModel: TranscriptRowViewModel
 
+    @Environment(\.settingsManager) private var settingsManager
+    @Environment(\.uiCompactMode) private var uiCompactMode
+    @Environment(\.uiScale) private var uiScale
+
     var body: some View {
-        VStack(alignment: roleAlignment, spacing: 8) {
+        VStack(alignment: roleAlignment, spacing: uiCompactMode ? 6 : 8) {
             // Role label
             roleLabel
 
@@ -61,11 +65,21 @@ struct TranscriptRow: View {
         HStack(spacing: 6) {
             if isUser {
                 Text(viewModel.headerLabel)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(
+                        .system(
+                            size: 12 * uiScale,
+                            weight: .semibold
+                        )
+                    )
                     .foregroundStyle(AppColors.textSecondary)
             } else {
                 Text(viewModel.headerLabel)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(
+                        .system(
+                            size: 12 * uiScale,
+                            weight: .semibold
+                        )
+                    )
                     .foregroundStyle(AppColors.textSecondary)
 
                 // Optional: visual indicator for streaming
@@ -74,6 +88,21 @@ struct TranscriptRow: View {
                         .controlSize(.mini)
                         .padding(.leading, 4)
                 }
+            }
+
+            if settingsManager.settings.showTokenCounts,
+                let meta = viewModel.headerMetaText,
+                !meta.isEmpty
+            {
+                Text(meta)
+                    .font(
+                        .system(
+                            size: 11 * uiScale,
+                            weight: .medium,
+                            design: .monospaced
+                        )
+                    )
+                    .foregroundStyle(AppColors.textTertiary)
             }
         }
     }
@@ -86,6 +115,7 @@ struct TranscriptRow: View {
                 id: "row-assistant",
                 role: .assistant,
                 headerLabel: "Assistant",
+                headerMetaText: "123t",
                 content: Canvas2PreviewFixtures.markdownShort,
                 isStreaming: false,
                 generationID: UUID(uuidString: "11111111-2222-3333-4444-555555555555"),
@@ -102,6 +132,7 @@ struct TranscriptRow: View {
                 id: "row-user",
                 role: .user,
                 headerLabel: "You",
+                headerMetaText: "≈42t",
                 content: "Short user message aligned to the trailing edge.",
                 isStreaming: false,
                 generationID: nil,
@@ -118,6 +149,7 @@ struct TranscriptRow: View {
                 id: "row-code",
                 role: .assistant,
                 headerLabel: "Assistant",
+                headerMetaText: nil,
                 content: Canvas2PreviewFixtures.markdownLongWithCode,
                 isStreaming: false,
                 generationID: UUID(uuidString: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
@@ -134,6 +166,7 @@ struct TranscriptRow: View {
                 id: "row-long",
                 role: .assistant,
                 headerLabel: "Assistant",
+                headerMetaText: nil,
                 content: Canvas2PreviewFixtures.markdownVeryLong,
                 isStreaming: false,
                 generationID: UUID(uuidString: "99999999-8888-7777-6666-555555555555"),

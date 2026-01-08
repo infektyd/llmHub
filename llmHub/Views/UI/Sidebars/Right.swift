@@ -67,6 +67,10 @@ struct FloatingSidebarRight: View {
 
     @State private var selectedTab: InspectorTab = .tools
 
+    @Environment(\.settingsManager) private var settingsManager
+    @Environment(\.uiCompactMode) private var uiCompactMode
+    @Environment(\.uiScale) private var uiScale
+
     enum InspectorTab: String, CaseIterable {
         case tools = "Tools"
         case artifacts = "Artifacts"
@@ -116,7 +120,7 @@ struct FloatingSidebarRight: View {
         VStack(spacing: 12) {
             HStack {
                 Text("Inspector")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 14 * uiScale, weight: .semibold))
                     .foregroundStyle(AppColors.textPrimary)
 
                 Spacer()
@@ -125,7 +129,7 @@ struct FloatingSidebarRight: View {
                     isVisible = false
                 } label: {
                     Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 12 * uiScale, weight: .semibold))
                         .foregroundStyle(AppColors.textSecondary)
                 }
                 .buttonStyle(.plain)
@@ -139,7 +143,7 @@ struct FloatingSidebarRight: View {
             }
             .pickerStyle(.segmented)
         }
-        .padding(16)
+        .padding(uiCompactMode ? 12 : 16)
     }
 
     private var toolsContent: some View {
@@ -148,25 +152,25 @@ struct FloatingSidebarRight: View {
             if let execution = state.toolExecution {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(execution.name)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 13 * uiScale, weight: .semibold))
                         .foregroundStyle(AppColors.textPrimary)
 
                     Text(verbatim: "Status: \(execution.status.rawValue)")
-                        .font(.system(size: 12))
+                        .font(.system(size: 12 * uiScale))
                         .foregroundStyle(AppColors.textSecondary)
 
                     if !execution.output.isEmpty {
                         Text("Output:")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.system(size: 12 * uiScale, weight: .semibold))
                             .foregroundStyle(AppColors.textPrimary)
 
                         Text(execution.output)
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(.system(size: 11 * uiScale, design: .monospaced))
                             .foregroundStyle(AppColors.textSecondary)
                             .textSelection(.enabled)
                     }
                 }
-                .padding(12)
+                .padding(uiCompactMode ? 10 : 12)
                 .background {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .fill(AppColors.backgroundPrimary.opacity(0.5))
@@ -178,79 +182,84 @@ struct FloatingSidebarRight: View {
 
             // Available Tools List
             Text("Available Tools")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 13 * uiScale, weight: .semibold))
                 .foregroundStyle(AppColors.textPrimary)
                 .padding(.horizontal, 4)
 
             ToolsPanelSidebar()
                 .frame(maxHeight: .infinity)
         }
-        .padding(16)
+        .padding(uiCompactMode ? 12 : 16)
     }
 
     private var contextContent: some View {
         VStack(alignment: .leading, spacing: 8) {
             if state.contextSummary.isEmpty {
                 Text("No context information")
-                    .font(.system(size: 13))
+                    .font(.system(size: 13 * uiScale))
                     .foregroundStyle(AppColors.textTertiary)
             } else {
                 ForEach(state.contextSummary, id: \.self) { line in
                     Text(line)
-                        .font(.system(size: 12))
+                        .font(.system(size: 12 * uiScale))
                         .foregroundStyle(AppColors.textSecondary)
                 }
             }
         }
-        .padding(16)
+        .padding(uiCompactMode ? 12 : 16)
     }
 
     private var tokensContent: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if !settingsManager.settings.showTokenCounts {
+                Text("Token counts are disabled in Appearance")
+                    .font(.system(size: 13 * uiScale))
+                    .foregroundStyle(AppColors.textTertiary)
+            } else
             if let stats = state.tokenStats {
                 Text("Tokens: \(stats.tokens, format: .number)")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 13 * uiScale, weight: .semibold))
                     .foregroundStyle(AppColors.textPrimary)
 
                 Text("Cost: $\(stats.costUSD, format: .number)")
-                    .font(.system(size: 12))
+                    .font(.system(size: 12 * uiScale))
                     .foregroundStyle(AppColors.textSecondary)
 
                 Text(String(format: "Context used: %.1f%%", stats.percentOfContext))
-                    .font(.system(size: 12))
+                    .font(.system(size: 12 * uiScale))
                     .foregroundStyle(AppColors.textSecondary)
             } else {
                 Text("No token stats available")
-                    .font(.system(size: 13))
+                    .font(.system(size: 13 * uiScale))
                     .foregroundStyle(AppColors.textTertiary)
             }
         }
-        .padding(16)
+        .padding(uiCompactMode ? 12 : 16)
     }
 
     private var logsContent: some View {
         VStack(alignment: .leading, spacing: 8) {
             if state.logs.isEmpty {
                 Text("No logs")
-                    .font(.system(size: 13))
+                    .font(.system(size: 13 * uiScale))
                     .foregroundStyle(AppColors.textTertiary)
             } else {
                 ForEach(state.logs, id: \.self) { line in
                     Text(line)
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(.system(size: 11 * uiScale, design: .monospaced))
                         .foregroundStyle(AppColors.textSecondary)
                         .textSelection(.enabled)
                 }
             }
         }
-        .padding(16)
+        .padding(uiCompactMode ? 12 : 16)
     }
 
     private var artifactsContent: some View {
         VStack(alignment: .leading, spacing: 12) {
             if state.artifacts.isEmpty {
                 Text("No artifacts")
-                    .font(.system(size: 13))
+                    .font(.system(size: 13 * uiScale))
                     .foregroundStyle(AppColors.textTertiary)
             } else {
                 ForEach(state.artifacts) { artifact in

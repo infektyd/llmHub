@@ -31,6 +31,9 @@ struct CanvasRootView: View {
     @State private var showSettings: Bool = false
     @State private var composerHeight: CGFloat = 100  // Measured dynamically
 
+    @Environment(\.uiCompactMode) private var uiCompactMode
+    @Environment(\.uiScale) private var uiScale
+
     init(
         viewModel: WorkbenchViewModel = WorkbenchViewModel(),
         chatVM: ChatViewModel = ChatViewModel(),
@@ -44,6 +47,7 @@ struct CanvasRootView: View {
     }
 
     var body: some View {
+        let outerPadding: CGFloat = uiCompactMode ? 12 : 16
         ZStack {
             // Canvas background (flat matte)
             AppColors.backgroundPrimary
@@ -116,9 +120,9 @@ struct CanvasRootView: View {
                     onNewConversation: createAndSelectConversation
                 )
                 .frame(width: 320)
-                .padding(.leading, 16)
-                .padding(.top, 16)
-                .padding(.bottom, 16)
+                .padding(.leading, outerPadding)
+                .padding(.top, outerPadding)
+                .padding(.bottom, outerPadding)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .transition(.move(edge: .leading).combined(with: .opacity))
                 .zIndex(100)
@@ -131,9 +135,9 @@ struct CanvasRootView: View {
                     state: inspectorState
                 )
                 .frame(width: 320)
-                .padding(.trailing, 16)
-                .padding(.top, 16)
-                .padding(.bottom, 16)
+                .padding(.trailing, outerPadding)
+                .padding(.top, outerPadding)
+                .padding(.bottom, outerPadding)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                 .transition(.move(edge: .trailing).combined(with: .opacity))
                 .zIndex(100)
@@ -150,8 +154,8 @@ struct CanvasRootView: View {
                     modelRegistry: modelRegistry,
                     viewModel: viewModel
                 )
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
+                .padding(.horizontal, outerPadding)
+                .padding(.bottom, outerPadding)
                 .background(
                     GeometryReader { geo in
                         Color.clear
@@ -234,7 +238,7 @@ struct CanvasRootView: View {
     private var emptyState: some View {
         VStack(spacing: 16) {
             Text("No conversation selected")
-                .font(.system(size: 18, weight: .semibold))
+                .font(.system(size: 18 * uiScale, weight: .semibold))
                 .foregroundStyle(AppColors.textPrimary)
             Button("New Conversation") {
                 createAndSelectConversation()
@@ -445,6 +449,9 @@ struct CanvasRootView: View {
         @Binding var isPresented: Bool
         let modelRegistry: ModelRegistry
 
+        @Environment(\.uiCompactMode) private var uiCompactMode
+        @Environment(\.uiScale) private var uiScale
+
         var body: some View {
             ZStack {
                 AppColors.shadowSmoke
@@ -457,7 +464,7 @@ struct CanvasRootView: View {
                 VStack(spacing: 0) {
                     HStack(spacing: 10) {
                         Text("Settings")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: 14 * uiScale, weight: .semibold))
                             .foregroundStyle(AppColors.textPrimary)
 
                         Spacer()
@@ -466,15 +473,15 @@ struct CanvasRootView: View {
                             isPresented = false
                         } label: {
                             Image(systemName: "xmark")
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(.system(size: 12 * uiScale, weight: .semibold))
                                 .foregroundStyle(AppColors.textSecondary)
-                                .padding(6)
+                                .padding(uiCompactMode ? 5 : 6)
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel("Close Settings")
                     }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
+                    .padding(.horizontal, uiCompactMode ? 12 : 14)
+                    .padding(.vertical, uiCompactMode ? 10 : 12)
                     .background(AppColors.backgroundSecondary)
 
                     Divider()

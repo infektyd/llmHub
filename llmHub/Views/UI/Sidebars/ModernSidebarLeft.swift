@@ -79,10 +79,13 @@ struct ModernSidebarLeft: View {
 
     @FocusState private var searchFocused: Bool
 
+    @Environment(\.uiCompactMode) private var uiCompactMode
+    @Environment(\.uiScale) private var uiScale
+
     private let lifecycleService = ConversationLifecycleService()
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: uiCompactMode ? 8 : 10) {
             header
 
             modeTabs
@@ -90,18 +93,18 @@ struct ModernSidebarLeft: View {
             searchBar
 
             Divider()
-                .padding(.horizontal, 14)
+                .padding(.horizontal, uiCompactMode ? 12 : 14)
 
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 10) {
+                LazyVStack(alignment: .leading, spacing: uiCompactMode ? 8 : 10) {
                     pinnedSection
                     projectsSection
                     artifactsSection
                     recentSection
                     archiveSection
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
+                .padding(.horizontal, uiCompactMode ? 10 : 12)
+                .padding(.vertical, uiCompactMode ? 8 : 10)
             }
         }
         .frame(maxHeight: .infinity)
@@ -151,9 +154,9 @@ struct ModernSidebarLeft: View {
     }
 
     private var header: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: uiCompactMode ? 8 : 10) {
             Text("llmHub")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 14 * uiScale, weight: .semibold))
                 .foregroundStyle(AppColors.textPrimary)
 
             Spacer()
@@ -162,7 +165,7 @@ struct ModernSidebarLeft: View {
                 onNewConversation()
             } label: {
                 Image(systemName: "plus")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 13 * uiScale, weight: .semibold))
                     .foregroundStyle(AppColors.accent)
             }
             .buttonStyle(.plain)
@@ -173,13 +176,13 @@ struct ModernSidebarLeft: View {
                 }
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 12 * uiScale, weight: .semibold))
                     .foregroundStyle(AppColors.textSecondary)
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 14)
-        .padding(.top, 14)
+        .padding(.horizontal, uiCompactMode ? 12 : 14)
+        .padding(.top, uiCompactMode ? 12 : 14)
     }
 
     private var modeTabs: some View {
@@ -191,10 +194,10 @@ struct ModernSidebarLeft: View {
                     }
                 } label: {
                     Image(systemName: mode.icon)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 14 * uiScale, weight: .semibold))
                     .foregroundStyle(state.mode == mode ? AppColors.textPrimary : AppColors.textSecondary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, uiCompactMode ? 9 : 10)
+                    .padding(.vertical, uiCompactMode ? 5 : 6)
                     .frame(minWidth: 36)
                     .background {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -206,13 +209,13 @@ struct ModernSidebarLeft: View {
                 .help(mode.title)
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, uiCompactMode ? 10 : 12)
     }
 
     private var searchBar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: uiCompactMode ? 7 : 8) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 12 * uiScale, weight: .semibold))
                 .foregroundStyle(AppColors.textTertiary)
 
             TextField("Search", text: $state.searchText)
@@ -223,7 +226,7 @@ struct ModernSidebarLeft: View {
             Spacer(minLength: 8)
 
             Text("⌘K")
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .font(.system(size: 11 * uiScale, weight: .semibold, design: .monospaced))
                 .foregroundStyle(AppColors.textTertiary)
 
             Button("Focus Search") {
@@ -233,8 +236,8 @@ struct ModernSidebarLeft: View {
             .opacity(0)
             .frame(width: 0, height: 0)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
+        .padding(.horizontal, uiCompactMode ? 10 : 12)
+        .padding(.vertical, uiCompactMode ? 8 : 9)
         .background {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(AppColors.backgroundPrimary.opacity(0.35))
@@ -243,7 +246,7 @@ struct ModernSidebarLeft: View {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .stroke(AppColors.textPrimary.opacity(0.08), lineWidth: 1)
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, uiCompactMode ? 12 : 14)
     }
 
     private var pinnedSection: some View {
@@ -274,7 +277,7 @@ struct ModernSidebarLeft: View {
                     createProject()
                 } label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 12 * uiScale, weight: .semibold))
                         .foregroundStyle(AppColors.accent)
                 }
                 .buttonStyle(.plain)
@@ -492,18 +495,18 @@ struct ModernSidebarLeft: View {
         @ViewBuilder trailing: @escaping () -> Trailing = { EmptyView() },
         @ViewBuilder content: @escaping () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: uiCompactMode ? 5 : 6) {
+            HStack(spacing: uiCompactMode ? 7 : 8) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 12 * uiScale, weight: .semibold))
                     .foregroundStyle(AppColors.textSecondary)
 
                 Text(title)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 12 * uiScale, weight: .semibold))
                     .foregroundStyle(AppColors.textSecondary)
 
                 Text("\(count)")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .font(.system(size: 11 * uiScale, weight: .semibold, design: .monospaced))
                     .foregroundStyle(AppColors.textTertiary)
 
                 Spacer()
@@ -511,7 +514,7 @@ struct ModernSidebarLeft: View {
                 trailing()
 
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 11 * uiScale, weight: .semibold))
                     .foregroundStyle(AppColors.textTertiary)
                     .rotationEffect(isExpanded.wrappedValue ? .degrees(0) : .degrees(-90))
                     .animation(.easeInOut(duration: 0.15), value: isExpanded.wrappedValue)
@@ -522,8 +525,8 @@ struct ModernSidebarLeft: View {
                     isExpanded.wrappedValue.toggle()
                 }
             }
-            .padding(.horizontal, 6)
-            .padding(.vertical, 6)
+            .padding(.horizontal, uiCompactMode ? 5 : 6)
+            .padding(.vertical, uiCompactMode ? 5 : 6)
             .background {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(AppColors.surface.opacity(0.35))
@@ -544,26 +547,26 @@ struct ModernSidebarLeft: View {
 
     private func emptyRow(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 12))
+            .font(.system(size: 12 * uiScale))
             .foregroundStyle(AppColors.textTertiary)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
+            .padding(.horizontal, uiCompactMode ? 9 : 10)
+            .padding(.vertical, uiCompactMode ? 7 : 8)
     }
 
     private func conversationRow(_ session: ChatSessionEntity, leadingSymbol: String? = nil) -> some View {
         Button {
             handleConversationSelection(sessionID: session.id)
         } label: {
-            HStack(alignment: .center, spacing: 10) {
+            HStack(alignment: .center, spacing: uiCompactMode ? 9 : 10) {
                 if let leadingSymbol {
                     Text(leadingSymbol)
-                        .font(.system(size: 14))
+                        .font(.system(size: 14 * uiScale))
                 } else if let emoji = session.afmEmoji, !emoji.isEmpty {
                     Text(emoji)
-                        .font(.system(size: 14))
+                        .font(.system(size: 14 * uiScale))
                 } else {
                     Image(systemName: "bubble.left")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 13 * uiScale, weight: .semibold))
                         .foregroundStyle(AppColors.textTertiary)
                 }
 
@@ -571,7 +574,7 @@ struct ModernSidebarLeft: View {
                     Text(session.displayTitle)
                         .font(
                             .system(
-                                size: 12,
+                                size: 12 * uiScale,
                                 weight: selectedConversationIDs.contains(session.id) ? .semibold : .regular)
                         )
                         .foregroundStyle(
@@ -581,14 +584,14 @@ struct ModernSidebarLeft: View {
                         .lineLimit(1)
 
                     Text(session.updatedAt, style: .relative)
-                        .font(.system(size: 11))
+                        .font(.system(size: 11 * uiScale))
                         .foregroundStyle(AppColors.textTertiary)
                 }
 
                 Spacer(minLength: 8)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 9)
+            .padding(.horizontal, uiCompactMode ? 9 : 10)
+            .padding(.vertical, uiCompactMode ? 8 : 9)
             .background {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(selectedConversationIDs.contains(session.id) ? AppColors.accent.opacity(0.12) : Color.clear)
@@ -849,21 +852,21 @@ struct ModernSidebarLeft: View {
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: systemImage)
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 12 * uiScale, weight: .semibold))
                         .foregroundStyle(AppColors.textSecondary)
 
                     Text(title)
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 12 * uiScale, weight: .semibold))
                         .foregroundStyle(AppColors.textSecondary)
 
                     Text("\(min(sessions.count, 999))")
-                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                        .font(.system(size: 11 * uiScale, weight: .semibold, design: .monospaced))
                         .foregroundStyle(AppColors.textTertiary)
 
                     Spacer()
 
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.system(size: 11 * uiScale, weight: .semibold))
                         .foregroundStyle(AppColors.textTertiary)
                         .rotationEffect(isExpanded.wrappedValue ? .degrees(0) : .degrees(-90))
                         .animation(.easeInOut(duration: 0.15), value: isExpanded.wrappedValue)
@@ -871,8 +874,8 @@ struct ModernSidebarLeft: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
+            .padding(.horizontal, uiCompactMode ? 9 : 10)
+            .padding(.vertical, uiCompactMode ? 7 : 8)
             .background {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(AppColors.surface.opacity(0.18))
@@ -901,18 +904,18 @@ struct ModernSidebarLeft: View {
         return VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
                 Image(systemName: kind.icon)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 12 * uiScale, weight: .semibold))
                     .foregroundStyle(AppColors.textSecondary)
                 Text(kind.displayName)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 12 * uiScale, weight: .semibold))
                     .foregroundStyle(AppColors.textSecondary)
                 Text("\(sorted.count)")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .font(.system(size: 11 * uiScale, weight: .semibold, design: .monospaced))
                     .foregroundStyle(AppColors.textTertiary)
                 Spacer()
             }
-            .padding(.horizontal, 10)
-            .padding(.top, 6)
+            .padding(.horizontal, uiCompactMode ? 9 : 10)
+            .padding(.top, uiCompactMode ? 5 : 6)
 
             ForEach(sorted) { artifact in
                 Button {
@@ -921,19 +924,19 @@ struct ModernSidebarLeft: View {
                 } label: {
                     HStack(spacing: 10) {
                         Image(systemName: kind.icon)
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.system(size: 12 * uiScale, weight: .semibold))
                             .foregroundStyle(AppColors.textTertiary)
                         Text(artifact.title)
-                            .font(.system(size: 12))
+                            .font(.system(size: 12 * uiScale))
                             .foregroundStyle(AppColors.textSecondary)
                             .lineLimit(1)
                         Spacer()
                         Text(artifact.createdAt, style: .relative)
-                            .font(.system(size: 11))
+                            .font(.system(size: 11 * uiScale))
                             .foregroundStyle(AppColors.textTertiary)
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, uiCompactMode ? 9 : 10)
+                    .padding(.vertical, uiCompactMode ? 7 : 8)
                     .background {
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
                             .fill(Color.clear)
@@ -971,10 +974,10 @@ struct ModernSidebarLeft: View {
         let sorted = sessions.sorted { $0.updatedAt > $1.updatedAt }.prefix(20)
         return VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 12 * uiScale, weight: .semibold))
                 .foregroundStyle(AppColors.textSecondary)
-                .padding(.horizontal, 10)
-                .padding(.top, 6)
+                .padding(.horizontal, uiCompactMode ? 9 : 10)
+                .padding(.top, uiCompactMode ? 5 : 6)
             ForEach(sorted) { session in
                 conversationRow(session)
                     .padding(.leading, 6)

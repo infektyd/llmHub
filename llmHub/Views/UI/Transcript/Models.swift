@@ -15,6 +15,7 @@ struct TranscriptRowViewModel: Identifiable, Equatable {
     let id: String
     let role: MessageRole
     let headerLabel: String  // e.g. "Claude 3.5 Sonnet", "You"
+    let headerMetaText: String?
     let content: String  // Markdown body
     let isStreaming: Bool
     let generationID: UUID?
@@ -23,6 +24,7 @@ struct TranscriptRowViewModel: Identifiable, Equatable {
     // Equatable conformance for efficient SwiftUI diffing
     static func == (lhs: TranscriptRowViewModel, rhs: TranscriptRowViewModel) -> Bool {
         return lhs.id == rhs.id && lhs.role == rhs.role && lhs.headerLabel == rhs.headerLabel
+            && lhs.headerMetaText == rhs.headerMetaText
             && lhs.content == rhs.content && lhs.isStreaming == rhs.isStreaming
             && lhs.generationID == rhs.generationID
             && lhs.artifacts == rhs.artifacts

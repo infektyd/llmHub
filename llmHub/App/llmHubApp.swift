@@ -31,6 +31,7 @@ struct llmHubApp: App {
                 .environmentObject(modelRegistry)
                 .environment(afmDiagnostics)
                 .environment(\.settingsManager, settingsManager)
+                .applyUIAppearance(from: settingsManager.settings)
                 .preferredColorScheme(settingsManager.settings.colorScheme.toColorScheme)
                 .background(
                     GeometryReader { geo in
@@ -79,6 +80,7 @@ struct llmHubApp: App {
                     .environmentObject(modelRegistry)
                     .environment(afmDiagnostics)
                     .environment(\.settingsManager, settingsManager)
+                    .applyUIAppearance(from: settingsManager.settings)
             }
         #endif
     }
