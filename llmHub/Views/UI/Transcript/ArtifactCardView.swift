@@ -15,6 +15,9 @@ struct ArtifactCardView: View {
     private var expandedBinding: Binding<Bool>?
     @State private var internalExpanded: Bool
 
+    @Environment(\.uiCompactMode) private var uiCompactMode
+    @Environment(\.uiScale) private var uiScale
+
     /// Standard initializer with optional startExpanded (defaults to true for backward compatibility)
     init(payload: ArtifactPayload, startExpanded: Bool = true) {
         self.payload = payload
@@ -31,15 +34,15 @@ struct ArtifactCardView: View {
 
     var body: some View {
         let isExpanded = expandedState.wrappedValue
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: uiCompactMode ? 10 : 12) {
             // Header
             HStack {
                 Image(systemName: iconForKind)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 14 * uiScale, weight: .semibold))
                     .foregroundStyle(statusTint)
 
                 Text(payload.title)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 14 * uiScale, weight: .semibold))
                     .foregroundStyle(AppColors.textPrimary)
 
                 Spacer()
@@ -50,7 +53,7 @@ struct ArtifactCardView: View {
                     }
                 } label: {
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 12 * uiScale, weight: .semibold))
                         .foregroundStyle(AppColors.textSecondary)
                 }
                 .buttonStyle(.plain)
@@ -67,15 +70,15 @@ struct ArtifactCardView: View {
 
             if payload.status == .failure {
                 Text("Error")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 12 * uiScale, weight: .semibold))
                     .foregroundStyle(AppColors.textSecondary)
             } else if payload.status == .pending {
                 Text("Pending…")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 12 * uiScale, weight: .semibold))
                     .foregroundStyle(AppColors.textSecondary)
             }
         }
-        .padding(16)
+        .padding(uiCompactMode ? 12 : 16)
         .background {
             RoundedRectangle(cornerRadius: 06, style: .continuous)
                 .fill(AppColors.surface)
@@ -92,10 +95,10 @@ struct ArtifactCardView: View {
     private var codeContent: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             Text(payload.previewText)
-                .font(.system(size: 13, design: .monospaced))
+                .font(.system(size: 13 * uiScale, design: .monospaced))
                 .foregroundStyle(AppColors.textPrimary)
                 .textSelection(.enabled)
-                .padding(12)
+                .padding(uiCompactMode ? 10 : 12)
                 .background {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .fill(AppColors.backgroundPrimary.opacity(0.5))
@@ -105,7 +108,7 @@ struct ArtifactCardView: View {
 
     private var textContent: some View {
         Text(payload.previewText)
-            .font(.system(size: 14))
+            .font(.system(size: 14 * uiScale))
             .foregroundStyle(AppColors.textPrimary)
             .textSelection(.enabled)
     }

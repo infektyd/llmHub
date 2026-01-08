@@ -32,6 +32,9 @@ struct ComposerBarView: View {
     @State private var selection = AttributedTextSelection()
     @State private var isNormalizingMarkdown = false
 
+    @Environment(\.uiCompactMode) private var uiCompactMode
+    @Environment(\.uiScale) private var uiScale
+
     private var plainText: String {
         String(inputText.characters)
     }
@@ -45,13 +48,13 @@ struct ComposerBarView: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: uiCompactMode ? 10 : 12) {
             attachmentButton
             inputBubble
             rightSidebarButton
             settingsButton
         }
-        .padding(12)
+        .padding(uiCompactMode ? 10 : 12)
         .background {
             RoundedRectangle(cornerRadius: 7, style: .continuous)
                 .fill(AppColors.surface)
@@ -69,7 +72,7 @@ struct ComposerBarView: View {
         } label: {
             Image(systemName: "rectangle.and.paperclip")
                 .symbolRenderingMode(.hierarchical)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 14 * uiScale, weight: .semibold))
                 .foregroundStyle(AppColors.accent)
         }
         .buttonStyle(.plain)
@@ -80,8 +83,8 @@ struct ComposerBarView: View {
             inputRow
             stagedAttachmentsStrip
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, uiCompactMode ? 10 : 12)
+        .padding(.vertical, uiCompactMode ? 8 : 10)
         .background {
             RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill(AppColors.backgroundSecondary)
@@ -156,14 +159,14 @@ struct ComposerBarView: View {
         if isStreaming {
             Button(action: onStop) {
                 Image(systemName: "stop.fill")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 14 * uiScale, weight: .semibold))
                     .foregroundStyle(AppColors.textPrimary)
             }
             .buttonStyle(.plain)
         } else {
             Button(action: onSend) {
                 Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 20 * uiScale, weight: .semibold))
                     .foregroundStyle(canSend ? AppColors.accent : AppColors.textTertiary)
             }
             .buttonStyle(.plain)
@@ -195,7 +198,7 @@ struct ComposerBarView: View {
             }
         } label: {
             Image(systemName: "sidebar.right")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 14 * uiScale, weight: .semibold))
                 .foregroundStyle(rightSidebarVisible ? AppColors.accent : AppColors.textSecondary)
         }
         .buttonStyle(.plain)
@@ -206,7 +209,7 @@ struct ComposerBarView: View {
             showSettings = true
         } label: {
             Image(systemName: "gearshape")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 14 * uiScale, weight: .semibold))
                 .foregroundStyle(AppColors.textSecondary)
         }
         .buttonStyle(.plain)

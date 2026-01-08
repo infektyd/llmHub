@@ -16,6 +16,8 @@ struct TextualMessageView: View, Equatable {
     let generationID: UUID?
     @State private var didCopy: Bool = false
 
+    @Environment(\.uiScale) private var uiScale
+
     static func == (lhs: TextualMessageView, rhs: TextualMessageView) -> Bool {
         lhs.content == rhs.content
             && lhs.isStreaming == rhs.isStreaming
@@ -35,7 +37,7 @@ struct TextualMessageView: View, Equatable {
                     .textual.imageAttachmentLoader(LLMHubImageAttachmentLoader(generationID: generationID))
             }
         }
-        .font(.system(size: 14))
+        .font(.system(size: 14 * uiScale))
         .foregroundStyle(AppColors.textPrimary)
         .fixedSize(horizontal: false, vertical: true)
         .contextMenu {

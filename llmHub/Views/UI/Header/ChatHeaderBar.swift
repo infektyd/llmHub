@@ -16,19 +16,22 @@ struct ChatHeaderBar: View {
     @State private var showModelPicker = false
     @FocusState private var isTitleFocused: Bool
 
+    @Environment(\.uiCompactMode) private var uiCompactMode
+    @Environment(\.uiScale) private var uiScale
+
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: uiCompactMode ? 10 : 12) {
             // Left section: Sidebar toggle + Title
-            HStack(spacing: 8) {
+            HStack(spacing: uiCompactMode ? 6 : 8) {
                 Button {
                     withAnimation {
                         leftSidebarVisible.toggle()
                     }
                 } label: {
                     Image(systemName: "sidebar.left")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 14 * uiScale, weight: .semibold))
                         .foregroundStyle(AppColors.textSecondary)
-                        .padding(8)
+                        .padding(uiCompactMode ? 7 : 8)
                         .background {
                             RoundedRectangle(cornerRadius: 8, style: .continuous)
                                 .fill(AppColors.surface)
@@ -40,7 +43,7 @@ struct ChatHeaderBar: View {
                 if isEditingTitle {
                     TextField("Chat Title", text: $title)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 14 * uiScale, weight: .semibold))
                         .focused($isTitleFocused)
                         .onSubmit {
                             isEditingTitle = false
@@ -48,7 +51,7 @@ struct ChatHeaderBar: View {
                         .frame(maxWidth: 300)
                 } else {
                     Text(title.isEmpty ? "New Chat" : title)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 14 * uiScale, weight: .semibold))
                         .foregroundStyle(
                             title.isEmpty ? AppColors.textTertiary : AppColors.textPrimary
                         )
@@ -67,17 +70,17 @@ struct ChatHeaderBar: View {
             } label: {
                 HStack(spacing: 6) {
                     providerIcon(providerID: selectedProviderID)
-                        .font(.system(size: 12))
+                        .font(.system(size: 12 * uiScale))
 
                     Text(currentModelName)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 13 * uiScale, weight: .medium))
 
                     Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 10))
+                        .font(.system(size: 10 * uiScale))
                 }
                 .foregroundStyle(AppColors.textSecondary)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
+                .padding(.horizontal, uiCompactMode ? 9 : 10)
+                .padding(.vertical, uiCompactMode ? 5 : 6)
                 .background {
                     RoundedRectangle(cornerRadius: 5, style: .continuous)
                         .fill(AppColors.surface)
@@ -91,8 +94,8 @@ struct ChatHeaderBar: View {
             .buttonStyle(.plain)
             .keyboardShortcut("m", modifiers: [.command, .shift])
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, uiCompactMode ? 12 : 16)
+        .padding(.vertical, uiCompactMode ? 10 : 12)
         .background(AppColors.backgroundPrimary)
         .overlay(alignment: .bottom) {
             Rectangle()

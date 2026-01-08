@@ -40,18 +40,22 @@ struct TranscriptCanvasView: View {
 
     @State private var scrollProxy: ScrollViewProxy?
     @Environment(\.composerHeight) private var composerHeight
+    @Environment(\.uiCompactMode) private var uiCompactMode
 
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 24) {
+                LazyVStack(
+                    alignment: .leading,
+                    spacing: uiCompactMode ? 16 : 24
+                ) {
                     ForEach(mergedRows) { rowVM in
                         TranscriptRow(viewModel: rowVM)
                             .id(rowVM.id)
                     }
                 }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 24)
+                .padding(.horizontal, uiCompactMode ? 16 : 24)
+                .padding(.vertical, uiCompactMode ? 16 : 24)
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 // Reserve space for the overlaid composer bar
@@ -135,6 +139,8 @@ struct TranscriptCanvasSessionView: View {
     // swiftlint:disable:next function_body_length
     private func mapToViewModel(_ message: ChatMessage, isStreaming: Bool, rowID: String)
         -> TranscriptRowViewModel {
+        let headerMetaText = tokenMetaText(for: message)
+
         // Handle tool result messages as compact artifact cards
         if message.role == .tool {
             let meta = message.toolResultMeta
@@ -163,6 +169,7 @@ struct TranscriptCanvasSessionView: View {
                 id: rowID,
                 role: message.role,
                 headerLabel: "\(statusEmoji) \(toolName)",
+                headerMetaText: headerMetaText,
                 content: "",  // Empty content - card renders the result
                 isStreaming: isStreaming,
                 generationID: message.generationID,
@@ -198,11 +205,25 @@ struct TranscriptCanvasSessionView: View {
             id: rowID,
             role: message.role,
             headerLabel: label,
+            headerMetaText: headerMetaText,
             content: cleanContent,  // Use cleaned content
             isStreaming: isStreaming,
             generationID: message.generationID,
             artifacts: mergedArtifacts
         )
+    }
+
+    private func tokenMetaText(for message: ChatMessage) -> String? {
+        // Prefer real token usage when available; otherwise fall back to an estimate.
+        if let usage = message.tokenUsage {
+            let total = usage.inputTokens + usage.outputTokens + usage.cachedTokens
+            return "\(total)t"
+        }
+        // If the message is empty, avoid showing a noisy estimate.
+        guard !message.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        return "≈\(message.estimatedTokens)t"
     }
 
     private func inferredToolName(from content: String) -> String? {
@@ -253,6 +274,7 @@ struct TranscriptCanvasSessionView: View {
                 id: "message:\(Canvas2PreviewFixtures.IDs.assistant1.uuidString)",
                 role: .assistant,
                 headerLabel: "Assistant",
+                headerMetaText: "123t",
                 content: Canvas2PreviewFixtures.markdownLongWithCode,
                 isStreaming: false,
                 generationID: UUID(uuidString: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),

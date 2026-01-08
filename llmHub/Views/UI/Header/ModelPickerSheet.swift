@@ -11,6 +11,8 @@ struct ModelPickerSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var modelRegistry: ModelRegistry
 
+    @Environment(\.uiScale) private var uiScale
+
     @Binding var selectedProviderID: String
     @Binding var selectedModelID: String
 
@@ -49,7 +51,7 @@ struct ModelPickerSheet: View {
                             if isConfigured {
                                 if models.isEmpty {
                                     Text("No models available")
-                                        .font(.system(size: 13))
+                                        .font(.system(size: 13 * uiScale))
                                         .foregroundStyle(AppColors.textTertiary)
                                         .padding(.leading, 24)
                                         .padding(.vertical, 8)
@@ -61,12 +63,12 @@ struct ModelPickerSheet: View {
                             } else {
                                 HStack {
                                     Image(systemName: "lock.fill")
-                                        .font(.system(size: 12))
+                                        .font(.system(size: 12 * uiScale))
                                     Text("Not configured")
-                                        .font(.system(size: 13))
+                                        .font(.system(size: 13 * uiScale))
                                     Spacer()
                                     Text("Configure in Settings")
-                                        .font(.system(size: 11))
+                                        .font(.system(size: 11 * uiScale))
                                         .foregroundStyle(AppColors.accent)
                                 }
                                 .foregroundStyle(AppColors.textSecondary)
@@ -77,9 +79,9 @@ struct ModelPickerSheet: View {
                     } label: {
                         HStack {
                             providerIcon(providerID: providerID)
-                                .font(.system(size: 14))
+                                .font(.system(size: 14 * uiScale))
                             Text(titleFor(providerID))
-                                .font(.system(size: 14, weight: .bold))
+                                .font(.system(size: 14 * uiScale, weight: .bold))
                                 .foregroundStyle(AppColors.textPrimary)
                         }
                     }
@@ -109,16 +111,16 @@ struct ModelPickerSheet: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(model.displayName)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 13 * uiScale, weight: .medium))
                         .foregroundStyle(AppColors.textPrimary)
 
                     if model.contextWindow > 0 {
                         Text("\(formatContextWindow(model.contextWindow)) context window")
-                            .font(.system(size: 11))
+                            .font(.system(size: 11 * uiScale))
                             .foregroundStyle(AppColors.textTertiary)
                     } else {
                         Text("Context window unknown")
-                            .font(.system(size: 11))
+                            .font(.system(size: 11 * uiScale))
                             .foregroundStyle(AppColors.textTertiary)
                     }
                 }

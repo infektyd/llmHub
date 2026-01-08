@@ -19,6 +19,9 @@ struct SettingsView: View {
 
     @State private var selectedSection: SettingsSection = .providers
 
+    @Environment(\.uiCompactMode) private var uiCompactMode
+    @Environment(\.uiScale) private var uiScale
+
     enum SettingsSection: String, CaseIterable, Identifiable, Hashable {
         case providers = "Providers"
         case tools = "Tools"
@@ -89,7 +92,7 @@ struct SettingsView: View {
     // MARK: - Sidebar
 
     private var sidebarContent: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: uiCompactMode ? 3 : 4) {
             ForEach(SettingsSection.allCases) { section in
                 SettingsSidebarRow(
                     title: section.rawValue,
@@ -104,8 +107,8 @@ struct SettingsView: View {
             }
             Spacer()
         }
-        .padding(.vertical, 16)
-        .padding(.horizontal, 12)
+        .padding(.vertical, uiCompactMode ? 12 : 16)
+        .padding(.horizontal, uiCompactMode ? 10 : 12)
         .background(AppColors.backgroundSecondary)
     }
 
@@ -114,7 +117,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var detailContent: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: uiCompactMode ? 18 : 24) {
                 switch selectedSection {
                 case .providers:
                     ProvidersSection(viewModel: viewModel)
@@ -132,7 +135,7 @@ struct SettingsView: View {
                 #endif
                 }
             }
-            .padding(24)
+            .padding(uiCompactMode ? 16 : 24)
         }
         .background(AppColors.backgroundPrimary)
     }
@@ -178,21 +181,24 @@ struct SettingsSidebarRow: View {
     let icon: String
     let isSelected: Bool
 
+    @Environment(\.uiCompactMode) private var uiCompactMode
+    @Environment(\.uiScale) private var uiScale
+
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: uiCompactMode ? 8 : 10) {
             Image(systemName: icon)
-                .font(.system(size: 14, weight: .medium))
+                .font(.system(size: 14 * uiScale, weight: .medium))
                 .foregroundStyle(isSelected ? AppColors.accent : AppColors.textSecondary)
                 .frame(width: 20)
 
             Text(title)
-                .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                .font(.system(size: 13 * uiScale, weight: isSelected ? .semibold : .regular))
                 .foregroundStyle(isSelected ? AppColors.textPrimary : AppColors.textSecondary)
 
             Spacer()
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, uiCompactMode ? 10 : 12)
+        .padding(.vertical, uiCompactMode ? 8 : 10)
         .background {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(isSelected ? AppColors.accent.opacity(0.12) : Color.clear)
@@ -212,15 +218,17 @@ struct SettingsSectionHeader: View {
         self.subtitle = subtitle
     }
 
+    @Environment(\.uiScale) private var uiScale
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.system(size: 20, weight: .semibold))
+                .font(.system(size: 20 * uiScale, weight: .semibold))
                 .foregroundStyle(AppColors.textPrimary)
 
             if let subtitle {
                 Text(subtitle)
-                    .font(.system(size: 13))
+                    .font(.system(size: 13 * uiScale))
                     .foregroundStyle(AppColors.textSecondary)
             }
         }
@@ -299,6 +307,9 @@ struct ProviderRow: View {
     let onSave: () -> Void
     let onDelete: () -> Void
 
+    @Environment(\.uiScale) private var uiScale
+    @Environment(\.uiCompactMode) private var uiCompactMode
+
     @State private var isExpanded = false
     @State private var isKeyVisible = false
 
@@ -312,7 +323,7 @@ struct ProviderRow: View {
             } label: {
                 HStack(spacing: 12) {
                     Image(systemName: info.icon)
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.system(size: 16 * uiScale, weight: .medium))
                         .foregroundStyle(hasKey ? AppColors.accent : AppColors.textTertiary)
                         .frame(width: 28, height: 28)
                         .background {
@@ -325,12 +336,12 @@ struct ProviderRow: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(info.name)
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: 14 * uiScale, weight: .medium))
                             .foregroundStyle(AppColors.textPrimary)
 
                         if let desc = info.description {
                             Text(desc)
-                                .font(.system(size: 11))
+                                .font(.system(size: 11 * uiScale))
                                 .foregroundStyle(AppColors.textTertiary)
                         }
                     }
@@ -344,12 +355,12 @@ struct ProviderRow: View {
                             .frame(width: 8, height: 8)
 
                         Text(hasKey ? "Configured" : "Not set")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.system(size: 11 * uiScale, weight: .medium))
                             .foregroundStyle(hasKey ? AppColors.success : AppColors.textTertiary)
                     }
 
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 12 * uiScale, weight: .semibold))
                         .foregroundStyle(AppColors.textTertiary)
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
                 }
@@ -370,9 +381,9 @@ struct ProviderRow: View {
                             }
                         }
                         .textFieldStyle(.plain)
-                        .font(.system(size: 13, design: .monospaced))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
+                        .font(.system(size: 13 * uiScale, design: .monospaced))
+                        .padding(.horizontal, uiCompactMode ? 10 : 12)
+                        .padding(.vertical, uiCompactMode ? 9 : 10)
                         .background {
                             RoundedRectangle(cornerRadius: 8, style: .continuous)
                                 .fill(AppColors.backgroundPrimary)
@@ -387,7 +398,7 @@ struct ProviderRow: View {
                             isKeyVisible.toggle()
                         } label: {
                             Image(systemName: isKeyVisible ? "eye.slash" : "eye")
-                                .font(.system(size: 13))
+                                .font(.system(size: 13 * uiScale))
                                 .foregroundStyle(AppColors.textSecondary)
                         }
                         .buttonStyle(.plain)
@@ -404,13 +415,13 @@ struct ProviderRow: View {
                                         .controlSize(.small)
                                 } else {
                                     Image(systemName: "checkmark")
-                                        .font(.system(size: 11, weight: .semibold))
+                                        .font(.system(size: 11 * uiScale, weight: .semibold))
                                 }
                                 Text("Save")
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(.system(size: 12 * uiScale, weight: .medium))
                             }
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
+                            .padding(.horizontal, uiCompactMode ? 12 : 14)
+                            .padding(.vertical, uiCompactMode ? 7 : 8)
                             .background {
                                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                                     .fill(AppColors.accent)
@@ -427,12 +438,12 @@ struct ProviderRow: View {
                             } label: {
                                 HStack(spacing: 6) {
                                     Image(systemName: "trash")
-                                        .font(.system(size: 11, weight: .semibold))
+                                        .font(.system(size: 11 * uiScale, weight: .semibold))
                                     Text("Remove")
-                                        .font(.system(size: 12, weight: .medium))
+                                        .font(.system(size: 12 * uiScale, weight: .medium))
                                 }
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 8)
+                                .padding(.horizontal, uiCompactMode ? 12 : 14)
+                                .padding(.vertical, uiCompactMode ? 7 : 8)
                                 .background {
                                     RoundedRectangle(cornerRadius: 6, style: .continuous)
                                         .stroke(AppColors.textTertiary.opacity(0.5), lineWidth: 1)
@@ -449,9 +460,9 @@ struct ProviderRow: View {
                             Link(destination: url) {
                                 HStack(spacing: 4) {
                                     Text("Get API Key")
-                                        .font(.system(size: 12, weight: .medium))
+                                        .font(.system(size: 12 * uiScale, weight: .medium))
                                     Image(systemName: "arrow.up.right")
-                                        .font(.system(size: 10, weight: .semibold))
+                                        .font(.system(size: 10 * uiScale, weight: .semibold))
                                 }
                                 .foregroundStyle(AppColors.accent)
                             }
@@ -462,7 +473,7 @@ struct ProviderRow: View {
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .padding(16)
+        .padding(uiCompactMode ? 14 : 16)
         .animation(.easeInOut(duration: 0.2), value: isExpanded)
     }
 }
@@ -473,17 +484,20 @@ struct StatusBanner: View {
     let message: String
     let isError: Bool
 
+    @Environment(\.uiScale) private var uiScale
+    @Environment(\.uiCompactMode) private var uiCompactMode
+
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: isError ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
-                .font(.system(size: 14))
+                .font(.system(size: 14 * uiScale))
 
             Text(message)
-                .font(.system(size: 13, weight: .medium))
+                .font(.system(size: 13 * uiScale, weight: .medium))
 
             Spacer()
         }
-        .padding(12)
+        .padding(uiCompactMode ? 10 : 12)
         .foregroundStyle(isError ? Color.red : AppColors.success)
         .background {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -512,7 +526,7 @@ struct ToolsSection: View {
                             ProgressView()
                                 .controlSize(.small)
                             Text("Loading tools…")
-                                .font(.system(size: 12))
+                                .font(.system(size: 12 * uiScale))
                                 .foregroundStyle(AppColors.textTertiary)
                         }
                         .padding(24)
@@ -544,10 +558,13 @@ struct ToolToggleRow: View {
     let tool: UIToolToggleItem
     let onToggle: (Bool) -> Void
 
+    @Environment(\.uiScale) private var uiScale
+    @Environment(\.uiCompactMode) private var uiCompactMode
+
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: tool.icon)
-                .font(.system(size: 14, weight: .medium))
+                .font(.system(size: 14 * uiScale, weight: .medium))
                 .foregroundStyle(tool.isAvailable ? AppColors.accent : AppColors.textTertiary)
                 .frame(width: 28, height: 28)
                 .background {
@@ -559,12 +576,12 @@ struct ToolToggleRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(tool.name)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 14 * uiScale, weight: .medium))
                     .foregroundStyle(
                         tool.isAvailable ? AppColors.textPrimary : AppColors.textTertiary)
 
                 Text(tool.description)
-                    .font(.system(size: 11))
+                    .font(.system(size: 11 * uiScale))
                     .foregroundStyle(AppColors.textTertiary)
                     .lineLimit(2)
             }
@@ -583,7 +600,7 @@ struct ToolToggleRow: View {
                 .controlSize(.small)
             } else if let reason = tool.unavailableReason {
                 Text(reason)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: 10 * uiScale, weight: .medium))
                     .foregroundStyle(AppColors.textTertiary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
@@ -593,7 +610,7 @@ struct ToolToggleRow: View {
                     }
             }
         }
-        .padding(16)
+        .padding(uiCompactMode ? 14 : 16)
         .opacity(tool.isAvailable ? 1 : 0.6)
     }
 }
@@ -602,6 +619,8 @@ struct ToolToggleRow: View {
 
 struct AppearanceSection: View {
     @Environment(\.settingsManager) private var settingsManager
+    @Environment(\.uiScale) private var uiScale
+    @Environment(\.uiCompactMode) private var uiCompactMode
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -614,7 +633,7 @@ struct AppearanceSection: View {
                 // Color scheme
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Color Scheme")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 13 * uiScale, weight: .medium))
                         .foregroundStyle(AppColors.textPrimary)
 
                     Picker(
@@ -630,25 +649,25 @@ struct AppearanceSection: View {
                     }
                     .pickerStyle(.segmented)
                 }
-                .padding(16)
+                .padding(uiCompactMode ? 14 : 16)
 
                 Divider()
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, uiCompactMode ? 14 : 16)
 
                 // Font size slider
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
                         Text("Font Size")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: 14 * uiScale, weight: .medium))
                             .foregroundStyle(AppColors.textPrimary)
                         Spacer()
                         Text("\(Int(settingsManager.settings.fontSize * 100))%")
-                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .font(.system(size: 12 * uiScale, weight: .medium, design: .monospaced))
                             .foregroundStyle(AppColors.textSecondary)
                     }
 
                     Text("Adjust the base font size throughout the application")
-                        .font(.system(size: 11))
+                        .font(.system(size: 11 * uiScale))
                         .foregroundStyle(AppColors.textTertiary)
 
                     Slider(
@@ -661,10 +680,10 @@ struct AppearanceSection: View {
                     )
                     .tint(AppColors.accent)
                 }
-                .padding(16)
+                .padding(uiCompactMode ? 14 : 16)
 
                 Divider()
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, uiCompactMode ? 14 : 16)
 
                 // Compact mode toggle
                 Toggle(
@@ -675,18 +694,18 @@ struct AppearanceSection: View {
                 ) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Compact Mode")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: 14 * uiScale, weight: .medium))
                             .foregroundStyle(AppColors.textPrimary)
                         Text("Reduce spacing and padding throughout the UI")
-                            .font(.system(size: 11))
+                            .font(.system(size: 11 * uiScale))
                             .foregroundStyle(AppColors.textTertiary)
                     }
                 }
                 .toggleStyle(.switch)
-                .padding(16)
+                .padding(uiCompactMode ? 14 : 16)
 
                 Divider()
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, uiCompactMode ? 14 : 16)
 
                 // Token counts toggle
                 Toggle(
@@ -697,15 +716,15 @@ struct AppearanceSection: View {
                 ) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Show Token Counts")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: 14 * uiScale, weight: .medium))
                             .foregroundStyle(AppColors.textPrimary)
                         Text("Display token usage in message headers")
-                            .font(.system(size: 11))
+                            .font(.system(size: 11 * uiScale))
                             .foregroundStyle(AppColors.textTertiary)
                     }
                 }
                 .toggleStyle(.switch)
-                .padding(16)
+                .padding(uiCompactMode ? 14 : 16)
             }
         }
     }
@@ -714,6 +733,9 @@ struct AppearanceSection: View {
 // MARK: - About Section
 
 struct AboutSection: View {
+    @Environment(\.uiScale) private var uiScale
+    @Environment(\.uiCompactMode) private var uiCompactMode
+
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             SettingsSectionHeader(
@@ -736,29 +758,29 @@ struct AboutSection: View {
                             .frame(width: 64, height: 64)
                             .overlay {
                                 Image(systemName: "brain.head.profile")
-                                    .font(.system(size: 28, weight: .medium))
+                                    .font(.system(size: 28 * uiScale, weight: .medium))
                                     .foregroundStyle(.white)
                             }
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text("llmHub")
-                                .font(.system(size: 18, weight: .semibold))
+                                .font(.system(size: 18 * uiScale, weight: .semibold))
                                 .foregroundStyle(AppColors.textPrimary)
 
                             Text("Version 2.0 (Canvas)")
-                                .font(.system(size: 13))
+                                .font(.system(size: 13 * uiScale))
                                 .foregroundStyle(AppColors.textSecondary)
 
                             Text("AI Workbench for macOS & iOS")
-                                .font(.system(size: 12))
+                                .font(.system(size: 12 * uiScale))
                                 .foregroundStyle(AppColors.textTertiary)
                         }
                     }
                 }
-                .padding(16)
+                .padding(uiCompactMode ? 14 : 16)
 
                 Divider()
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, uiCompactMode ? 14 : 16)
 
                 // Build info
                 VStack(alignment: .leading, spacing: 8) {
@@ -766,10 +788,10 @@ struct AboutSection: View {
                     InfoRow(label: "Platform", value: platformName)
                     InfoRow(label: "Architecture", value: architectureName)
                 }
-                .padding(16)
+                .padding(uiCompactMode ? 14 : 16)
 
                 Divider()
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, uiCompactMode ? 14 : 16)
 
                 // Links
                 VStack(alignment: .leading, spacing: 8) {
@@ -778,7 +800,7 @@ struct AboutSection: View {
                         title: "Report an Issue", icon: "exclamationmark.bubble",
                         url: "https://github.com")
                 }
-                .padding(16)
+                .padding(uiCompactMode ? 14 : 16)
             }
         }
     }
@@ -810,14 +832,16 @@ struct InfoRow: View {
     let label: String
     let value: String
 
+    @Environment(\.uiScale) private var uiScale
+
     var body: some View {
         HStack {
             Text(label)
-                .font(.system(size: 13))
+                .font(.system(size: 13 * uiScale))
                 .foregroundStyle(AppColors.textSecondary)
             Spacer()
             Text(value)
-                .font(.system(size: 13, design: .monospaced))
+                .font(.system(size: 13 * uiScale, design: .monospaced))
                 .foregroundStyle(AppColors.textPrimary)
         }
     }
@@ -830,23 +854,25 @@ struct LinkRow: View {
     let icon: String
     let url: String
 
+    @Environment(\.uiScale) private var uiScale
+
     var body: some View {
         if let linkURL = URL(string: url) {
             Link(destination: linkURL) {
                 HStack(spacing: 10) {
                     Image(systemName: icon)
-                        .font(.system(size: 13))
+                        .font(.system(size: 13 * uiScale))
                         .foregroundStyle(AppColors.accent)
                         .frame(width: 20)
 
                     Text(title)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 13 * uiScale, weight: .medium))
                         .foregroundStyle(AppColors.textPrimary)
 
                     Spacer()
 
                     Image(systemName: "arrow.up.right")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.system(size: 11 * uiScale, weight: .semibold))
                         .foregroundStyle(AppColors.textTertiary)
                 }
             }
@@ -860,6 +886,9 @@ struct LinkRow: View {
     struct DiagnosticsSection: View {
         let afmDiagnostics: AFMDiagnosticsState
 
+        @Environment(\.uiScale) private var uiScale
+        @Environment(\.uiCompactMode) private var uiCompactMode
+
         var body: some View {
             VStack(alignment: .leading, spacing: 20) {
                 SettingsSectionHeader(
@@ -872,7 +901,7 @@ struct LinkRow: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Text("Apple Foundation Models")
-                                .font(.system(size: 14, weight: .medium))
+                                .font(.system(size: 14 * uiScale, weight: .medium))
                                 .foregroundStyle(AppColors.textPrimary)
                             Spacer()
                             if afmDiagnostics.availability != nil {
@@ -881,7 +910,7 @@ struct LinkRow: View {
                                         .fill(afmDiagnostics.statusColor)
                                         .frame(width: 8, height: 8)
                                     Text(afmDiagnostics.reasonText)
-                                        .font(.system(size: 11, weight: .medium))
+                                        .font(.system(size: 11 * uiScale, weight: .medium))
                                         .foregroundStyle(afmDiagnostics.statusColor)
                                 }
                             }
@@ -910,12 +939,12 @@ struct LinkRow: View {
                             if afmDiagnostics.lastCheckTime != nil {
                                 Spacer()
                                 Text("Last: \(afmDiagnostics.timeSinceCheck)")
-                                    .font(.system(size: 11))
+                                    .font(.system(size: 11 * uiScale))
                                     .foregroundStyle(AppColors.textTertiary)
                             }
                         }
                     }
-                    .padding(16)
+                    .padding(uiCompactMode ? 14 : 16)
                 }
             }
         }
@@ -1130,10 +1159,10 @@ struct LinkRow: View {
         SettingsCard {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Card Title")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.headline)
                     .foregroundStyle(AppColors.textPrimary)
                 Text("Card content goes here with proper styling.")
-                    .font(.system(size: 13))
+                    .font(.subheadline)
                     .foregroundStyle(AppColors.textSecondary)
             }
             .padding(16)
