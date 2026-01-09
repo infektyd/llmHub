@@ -34,7 +34,7 @@ nonisolated struct WebSearchTool: Tool {
                 "region": ToolProperty(
                     type: .string, description: "Region code (e.g., us-en, uk-en)"),
                 "safe_search": ToolProperty(
-                    type: .boolean, description: "Enable safe search (default: true)"),
+                    type: .boolean, description: "Enable safe search (default: true)")
             ],
             required: ["query"]
         )
@@ -100,11 +100,11 @@ nonisolated struct WebSearchTool: Tool {
         }
 
         var queryItems = [URLQueryItem(name: "q", value: query)]
-        if let df = timeRange, ["d", "w", "m", "y"].contains(df) {
-            queryItems.append(URLQueryItem(name: "df", value: df))
+        if let dateFilter = timeRange, ["d", "w", "m", "y"].contains(dateFilter) {
+            queryItems.append(URLQueryItem(name: "df", value: dateFilter))
         }
-        if let kl = region, !kl.isEmpty {
-            queryItems.append(URLQueryItem(name: "kl", value: kl))
+        if let regionCode = region, !regionCode.isEmpty {
+            queryItems.append(URLQueryItem(name: "kl", value: regionCode))
         }
         if !safeSearch {
             queryItems.append(URLQueryItem(name: "kp", value: "-2"))

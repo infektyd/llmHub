@@ -21,7 +21,7 @@ private typealias Complex = ComplexModule.Complex<Double>
 private nonisolated struct CalculatorEngine {
     private enum Token {
         case number(Complex)
-        case op(String)
+        case `operator`(String)
         case function(String)
         case leftParen
         case rightParen
@@ -42,7 +42,7 @@ private nonisolated struct CalculatorEngine {
             rightAssociative: false,
             apply: { lhs, rhs in lhs / rhs }
         ),
-        "^": OperatorInfo(precedence: 3, rightAssociative: true, apply: { Complex.pow($0, $1) }),
+        "^": OperatorInfo(precedence: 3, rightAssociative: true, apply: { Complex.pow($0, $1) })
     ]
 
     private static let functions: [String: @Sendable (Complex) -> Complex] = [
@@ -52,7 +52,7 @@ private nonisolated struct CalculatorEngine {
         "exp": { Complex.exp($0) },
         "log": { Complex.log($0) },
         "ln": { Complex.log($0) },
-        "sqrt": { Complex.sqrt($0) },
+        "sqrt": { Complex.sqrt($0) }
     ]
 
     func evaluate(_ expression: String) throws -> Complex {
@@ -93,7 +93,7 @@ private nonisolated struct CalculatorEngine {
                     let next = input[lookahead]
                     if !(next.isNumber || next == "." || next == "i") {
                         result.append(.number(.zero))
-                        result.append(.op("-"))
+                        result.append(.operator("-"))
                         index = lookahead
                         continue
                     }
@@ -172,11 +172,11 @@ private nonisolated struct CalculatorEngine {
             }
 
             switch char {
-            case "+": result.append(.op("+"))
-            case "-": result.append(.op("-"))
-            case "*": result.append(.op("*"))
-            case "/": result.append(.op("/"))
-            case "^": result.append(.op("^"))
+            case "+": result.append(.operator("+"))
+            case "-": result.append(.operator("-"))
+            case "*": result.append(.operator("*"))
+            case "/": result.append(.operator("/"))
+            case "^": result.append(.operator("^"))
             case "(": result.append(.leftParen)
             case ")": result.append(.rightParen)
             default:
@@ -201,16 +201,15 @@ private nonisolated struct CalculatorEngine {
             case .function:
                 stack.append(token)
 
-            case .op(let symbol):
+            case .operator(let symbol):
                 guard let opInfo = Self.operators[symbol] else { throw CalculatorError.invalidExpression }
 
                 while let top = stack.last {
                     switch top {
-                    case .op(let topSymbol):
+                    case .operator(let topSymbol):
                         guard let topInfo = Self.operators[topSymbol] else { break }
                         if (opInfo.rightAssociative && opInfo.precedence < topInfo.precedence)
-                            || (!opInfo.rightAssociative && opInfo.precedence <= topInfo.precedence)
-                        {
+                            || (!opInfo.rightAssociative && opInfo.precedence <= topInfo.precedence) {
                             output.append(stack.removeLast())
                             continue
                         }
@@ -260,7 +259,7 @@ private nonisolated struct CalculatorEngine {
             case .number(let value):
                 stack.append(value)
 
-            case .op(let symbol):
+            case .operator(let symbol):
                 guard let opInfo = Self.operators[symbol], let rhs = stack.popLast(),
                     let lhs = stack.popLast()
                 else {
@@ -269,10 +268,10 @@ private nonisolated struct CalculatorEngine {
                 stack.append(try opInfo.apply(lhs, rhs))
 
             case .function(let name):
-                guard let value = stack.popLast(), let fn = Self.functions[name] else {
+                guard let value = stack.popLast(), let mathFunction = Self.functions[name] else {
                     throw CalculatorError.invalidExpression
                 }
-                stack.append(fn(value))
+                stack.append(mathFunction(value))
 
             default:
                 throw CalculatorError.invalidExpression
@@ -333,7 +332,7 @@ nonisolated struct CalculatorTool: Tool {
                     type: .string,
                     description: "Output format (default: decimal)",
                     enumValues: ["decimal", "scientific"]
-                ),
+                )
             ],
             required: ["expression"]
         )

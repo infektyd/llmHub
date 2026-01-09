@@ -459,7 +459,7 @@ final class ConversationDistillationService {
             "this", "that", "these", "those", "i", "you", "he", "she", "it",
             "we", "they", "what", "which", "who", "whom", "how", "when", "where",
             "why", "if", "then", "because", "so", "than", "too", "very", "just",
-            "also", "only", "such", "no", "not", "yes", "up", "down", "out", "about",
+            "also", "only", "such", "no", "not", "yes", "up", "down", "out", "about"
         ]
 
         let words =

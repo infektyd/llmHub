@@ -30,7 +30,7 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
                     type: .string,
                     description: "The programming language of the code",
                     enumValues: SupportedLanguage.allCases.map { $0.rawValue }
-                ),
+                )
             ],
             required: ["code", "language"]
         )
@@ -157,8 +157,7 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
     ///   - language: The programming language.
     /// - Returns: A `CodeExecutionResult` object.
     func executeWithResult(code: String, language: SupportedLanguage) async throws
-        -> CodeExecutionResult
-    {
+        -> CodeExecutionResult {
         // Check for approval if required
         if securityMode == .approval {
             guard let handler = approvalHandler else {
@@ -241,7 +240,7 @@ extension CodeInterpreterTool {
             ("rm -rf", "⚠️ Code contains 'rm -rf' which can delete files"),
             ("system\\(", "⚠️ Code uses system() which can execute shell commands"),
             ("exec\\(", "⚠️ Code uses exec() which can execute arbitrary commands"),
-            ("eval\\(", "⚠️ Code uses eval() which can execute arbitrary code"),
+            ("eval\\(", "⚠️ Code uses eval() which can execute arbitrary code")
         ]
 
         // Add language-specific patterns
@@ -267,8 +266,7 @@ extension CodeInterpreterTool {
         }
 
         for (pattern, warning) in dangerousPatterns {
-            if code.contains(pattern) || code.range(of: pattern, options: .regularExpression) != nil
-            {
+            if code.contains(pattern) || code.range(of: pattern, options: .regularExpression) != nil {
                 warnings.append(warning)
             }
         }
@@ -279,14 +277,12 @@ extension CodeInterpreterTool {
             "while True",
             "while 1",
             "for \\(;;\\)",
-            "loop \\{",
+            "loop \\{"
         ]
 
-        for pattern in infiniteLoopPatterns {
-            if code.range(of: pattern, options: .regularExpression) != nil {
-                warnings.append("⚠️ Code may contain an infinite loop")
-                break
-            }
+        for pattern in infiniteLoopPatterns where code.range(of: pattern, options: .regularExpression) != nil {
+            warnings.append("⚠️ Code may contain an infinite loop")
+            break
         }
 
         return warnings

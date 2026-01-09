@@ -29,7 +29,7 @@ struct MistralProvider: LLMProvider {
             guard let key = await keychain.apiKey(for: .mistral) else { return [:] }
             return [
                 "Authorization": "Bearer \(key)",
-                "Content-Type": "application/json",
+                "Content-Type": "application/json"
             ]
         }
     }
@@ -153,16 +153,14 @@ struct MistralProvider: LLMProvider {
                     // Ensure stream=true in body
                     if let bodyData = request.httpBody,
                         var json = try? JSONSerialization.jsonObject(with: bodyData)
-                            as? [String: Any]
-                    {
+                            as? [String: Any] {
                         json["stream"] = true
                         streamRequest.httpBody = try JSONSerialization.data(withJSONObject: json)
                     }
                     streamRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
 
                     if let bodyData = streamRequest.httpBody,
-                        let bodyStr = String(data: bodyData, encoding: .utf8)
-                    {
+                        let bodyStr = String(data: bodyData, encoding: .utf8) {
                         LLMTrace.requestDetails(
                             provider: "Mistral",
                             url: streamRequest.url?.absoluteString ?? "unknown",
@@ -197,7 +195,7 @@ struct MistralProvider: LLMProvider {
                     var thinkExtractor = ThinkTagStreamExtractor()
                     var toolAssembler = PartialToolCallAssembler()
                     var finalizedToolCalls: [ToolCall] = []
-                    var lastFinishReason: String? = nil
+                    var lastFinishReason: String?
 
                     for try await line in result.lines {
                         let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)

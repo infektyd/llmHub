@@ -13,7 +13,7 @@ import Foundation
 /// Protocol defining the XPC interface for code execution
 /// The helper implements this, and the main app calls it via XPC
 @objc public protocol CodeExecutionXPCProtocol {
-    
+
     /// Execute code in the specified language
     /// - Parameters:
     ///   - code: The source code to execute
@@ -28,7 +28,7 @@ import Foundation
         workingDirectory: String?,
         reply: @escaping (Data?, Error?) -> Void
     )
-    
+
     /// Check if an interpreter is available for the given language
     /// - Parameters:
     ///   - language: Language identifier
@@ -37,11 +37,11 @@ import Foundation
         _ language: String,
         reply: @escaping (String?, String?, Error?) -> Void
     )
-    
+
     /// Get the version of the XPC helper
     /// - Parameter reply: Callback with version string
     func getVersion(reply: @escaping (String) -> Void)
-    
+
     /// Ping to verify connection is alive
     /// - Parameter reply: Callback confirming connection
     func ping(reply: @escaping (Bool) -> Void)
@@ -58,7 +58,7 @@ public struct XPCExecutionResult: Codable, Sendable {
     public let exitCode: Int32
     public let executionTimeMs: Int
     public let interpreterPath: String?
-    
+
     public init(
         id: String,
         language: String,
@@ -76,7 +76,7 @@ public struct XPCExecutionResult: Codable, Sendable {
         self.executionTimeMs = executionTimeMs
         self.interpreterPath = interpreterPath
     }
-    
+
     public var isSuccess: Bool {
         exitCode == 0
     }
@@ -93,7 +93,7 @@ public enum XPCExecutionError: LocalizedError, Codable, Sendable {
     case fileWriteFailed(String)
     case connectionFailed
     case invalidResponse
-    
+
     public var errorDescription: String? {
         switch self {
         case .interpreterNotFound(let lang):
@@ -119,4 +119,3 @@ public enum XPCExecutionError: LocalizedError, Codable, Sendable {
 /// The Mach service name for the XPC helper
 /// Must match the bundle identifier of the XPC service
 public let kCodeExecutionXPCServiceName = "Syntra.llmHub.CodeExecutionHelper"
-

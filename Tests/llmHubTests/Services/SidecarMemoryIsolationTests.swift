@@ -70,7 +70,7 @@ struct SidecarMemoryIsolationTests {
             ChatSessionEntity.self,
             ChatMessageEntity.self,
             ChatFolderEntity.self,
-            ChatTagEntity.self,
+            ChatTagEntity.self
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: schema, configurations: [config])
@@ -128,7 +128,7 @@ struct SidecarMemoryIsolationTests {
             ChatSessionEntity.self,
             ChatMessageEntity.self,
             ChatFolderEntity.self,
-            ChatTagEntity.self,
+            ChatTagEntity.self
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: schema, configurations: [config])

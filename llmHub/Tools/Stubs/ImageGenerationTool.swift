@@ -46,7 +46,7 @@ struct ImageGenerationTool: Tool {
                     type: .string,
                     description: "Image style (default: vivid)",
                     enumValues: ["vivid", "natural"]
-                ),
+                )
             ],
             required: ["prompt"]
         )

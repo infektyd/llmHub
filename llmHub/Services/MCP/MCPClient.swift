@@ -219,8 +219,7 @@ actor MCPClient {
     ///   - params: The method parameters.
     /// - Returns: The server's response.
     private func sendRequest<T: Encodable & Sendable>(method: String, params: T) async throws
-        -> MCPResponse
-    {
+        -> MCPResponse {
         guard isConnected, let stdin = stdin else {
             throw MCPError.notConnected
         }
@@ -291,8 +290,7 @@ actor MCPClient {
                     let messageData = buffer[..<newlineIndex]
                     buffer = buffer[(newlineIndex + 1)...]
 
-                    if let response = try? JSONDecoder().decode(MCPResponse.self, from: messageData)
-                    {
+                    if let response = try? JSONDecoder().decode(MCPResponse.self, from: messageData) {
                         handleResponse(response)
                     }
                 }

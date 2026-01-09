@@ -60,14 +60,12 @@ protocol LLMProvider: Identifiable {
 
 extension LLMProvider {
     func buildRequest(messages: [ChatMessage], model: String, options: LLMRequestOptions = .default)
-        async throws -> URLRequest
-    {
+        async throws -> URLRequest {
         try await buildRequest(messages: messages, model: model, tools: nil, options: options)
     }
 
     func buildRequest(messages: [ChatMessage], model: String, tools: [ToolDefinition]?) async throws
-        -> URLRequest
-    {
+        -> URLRequest {
         try await buildRequest(messages: messages, model: model, tools: tools, options: .default)
     }
 }

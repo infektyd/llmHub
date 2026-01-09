@@ -326,7 +326,7 @@ extension MCPToolBridge {
                 args: ["-y", "@modelcontextprotocol/server-memory"],
                 env: nil,
                 isEnabled: false
-            ),
+            )
         ]
     }
 }

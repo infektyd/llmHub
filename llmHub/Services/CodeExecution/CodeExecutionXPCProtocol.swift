@@ -13,7 +13,7 @@ import Foundation
 /// Protocol defining the XPC interface for code execution.
 /// The helper implements this, and the main app calls it via XPC.
 @objc public protocol CodeExecutionXPCProtocol {
-    
+
     /// Execute code in the specified language.
     /// - Parameters:
     ///   - code: The source code to execute.
@@ -28,7 +28,7 @@ import Foundation
         workingDirectory: String?,
         reply: @escaping (Data?, Error?) -> Void
     )
-    
+
     /// Check if an interpreter is available for the given language.
     /// - Parameters:
     ///   - language: Language identifier.
@@ -37,11 +37,11 @@ import Foundation
         _ language: String,
         reply: @escaping (String?, String?, Error?) -> Void
     )
-    
+
     /// Get the version of the XPC helper.
     /// - Parameter reply: Callback with version string.
     func getVersion(reply: @escaping (String) -> Void)
-    
+
     /// Ping to verify connection is alive.
     /// - Parameter reply: Callback confirming connection.
     func ping(reply: @escaping (Bool) -> Void)
@@ -65,7 +65,7 @@ public struct XPCExecutionResult: Codable, Sendable {
     public let executionTimeMs: Int
     /// The path of the interpreter used.
     public let interpreterPath: String?
-    
+
     /// Initializes a new `XPCExecutionResult`.
     public init(
         id: String,
@@ -84,7 +84,7 @@ public struct XPCExecutionResult: Codable, Sendable {
         self.executionTimeMs = executionTimeMs
         self.interpreterPath = interpreterPath
     }
-    
+
     /// Indicates if execution was successful (exit code 0).
     public var isSuccess: Bool {
         exitCode == 0
@@ -109,7 +109,7 @@ public enum XPCExecutionError: LocalizedError, Codable, Sendable {
     case connectionFailed
     /// The response from the helper was invalid.
     case invalidResponse
-    
+
     /// A localized description of the error.
     public var errorDescription: String? {
         switch self {

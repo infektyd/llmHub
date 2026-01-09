@@ -111,8 +111,7 @@ public class AnthropicManager {
 
                             guard let data = jsonStr.data(using: .utf8) else { continue }
                             if let event = try? decoder.decode(
-                                AnthropicStreamEvent.self, from: data)
-                            {
+                                AnthropicStreamEvent.self, from: data) {
                                 continuation.yield(event)
                             }
                         }
@@ -215,7 +214,7 @@ public class AnthropicManager {
             "interleaved-thinking-2025-05-14",
             "structured-outputs-2025-11-13",
             "effort-2025-11-24",
-            "prompt-caching-2024-07-31",
+            "prompt-caching-2024-07-31"
         ]
         request.setValue(betas.joined(separator: ","), forHTTPHeaderField: "anthropic-beta")
 
@@ -235,8 +234,7 @@ public class AnthropicManager {
         if !(200...299).contains(http.statusCode) {
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                 let errorObj = json["error"] as? [String: Any],
-                let message = errorObj["message"] as? String
-            {
+                let message = errorObj["message"] as? String {
                 throw AnthropicError.apiError(message: message)
             }
             throw AnthropicError.serverError(statusCode: http.statusCode)

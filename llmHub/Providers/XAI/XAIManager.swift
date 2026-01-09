@@ -54,8 +54,7 @@ public class XAIManager {
         if !(200...299).contains(http.statusCode) {
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                 let errorObj = json["error"] as? [String: Any],
-                let message = errorObj["message"] as? String
-            {
+                let message = errorObj["message"] as? String {
                 throw XAIError.apiError(message: message)
             }
             throw XAIError.serverError(statusCode: http.statusCode)
@@ -148,8 +147,7 @@ public class XAIManager {
 
                             if let data = json.data(using: .utf8),
                                 let chunk = try? JSONDecoder().decode(
-                                    XAIChatStreamChunk.self, from: data)
-                            {
+                                    XAIChatStreamChunk.self, from: data) {
                                 continuation.yield(chunk)
                             }
                         }
@@ -181,8 +179,7 @@ public class XAIManager {
         if !(200...299).contains(http.statusCode) {
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                 let errorObj = json["error"] as? [String: Any],
-                let message = errorObj["message"] as? String
-            {
+                let message = errorObj["message"] as? String {
                 throw XAIError.apiError(message: message)
             }
             throw XAIError.serverError(statusCode: http.statusCode)

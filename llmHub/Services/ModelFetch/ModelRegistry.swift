@@ -124,8 +124,7 @@ final class ModelRegistry: ObservableObject {
     ///   - forceRefresh: If true, bypasses cache even if not expired
     /// - Returns: Array of available models
     func fetchModelsForProvider(_ provider: KeychainStore.ProviderKey, forceRefresh: Bool = false)
-        async throws -> [LLMModel]
-    {
+        async throws -> [LLMModel] {
         let providerID = provider.rawValue
         let canonicalProviderID = ProviderID.canonicalID(from: providerID)
 
@@ -318,8 +317,7 @@ final class ModelRegistry: ObservableObject {
     /// Merge fetched models onto curated defaults. Defaults win for numeric capability fields;
     /// fetched models may contribute new IDs and (optionally) better display names.
     private func overlayWithProvidersConfig(providerID: String, fetchedModels: [LLMModel])
-        -> [LLMModel]
-    {
+        -> [LLMModel] {
         let canonicalProviderID = ProviderID.canonicalID(from: providerID)
         let defaults = curatedModels(forCanonicalProviderID: canonicalProviderID)
 
@@ -341,8 +339,7 @@ final class ModelRegistry: ObservableObject {
                 let incomingName = model.displayName
                 let finalName: String
                 if shouldAdoptDisplayName(
-                    incomingName, forModelID: model.id, currentDisplayName: existing.displayName)
-                {
+                    incomingName, forModelID: model.id, currentDisplayName: existing.displayName) {
                     finalName = incomingName
                 } else {
                     finalName = existing.displayName

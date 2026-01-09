@@ -32,7 +32,7 @@ final class SchemaValidationTests: XCTestCase {
             WebSearchTool(),
             FileEditorTool(),
             FilePatchTool(),
-            WorkspaceTool(),
+            WorkspaceTool()
         ]
 
         for tool in tools {

@@ -36,7 +36,7 @@ struct DatabaseQueryTool: Tool {
                 "limit": ToolProperty(
                     type: .integer,
                     description: "Maximum number of rows to return (default: 100)"
-                ),
+                )
             ],
             required: ["query"]
         )

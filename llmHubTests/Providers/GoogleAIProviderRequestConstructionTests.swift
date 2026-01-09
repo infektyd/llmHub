@@ -56,9 +56,9 @@ final class GoogleAIProviderRequestConstructionTests: XCTestCase {
                 "type": "object",
                 "properties": [
                     "operation": ["type": "string"],
-                    "path": ["type": "string"],
+                    "path": ["type": "string"]
                 ],
-                "required": ["operation"],
+                "required": ["operation"]
             ]
         )
 

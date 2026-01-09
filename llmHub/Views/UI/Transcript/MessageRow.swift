@@ -92,8 +92,7 @@ struct TranscriptRow: View {
 
             if settingsManager.settings.showTokenCounts,
                 let meta = viewModel.headerMetaText,
-                !meta.isEmpty
-            {
+                !meta.isEmpty {
                 Text(meta)
                     .font(
                         .system(

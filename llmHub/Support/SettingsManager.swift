@@ -40,8 +40,7 @@ public final class SettingsManager {
 
         // Load settings from UserDefaults or use defaults
         if let data = userDefaults.data(forKey: Self.settingsKey),
-            var loadedSettings = try? JSONDecoder().decode(AppSettings.self, from: data)
-        {
+            var loadedSettings = try? JSONDecoder().decode(AppSettings.self, from: data) {
             // Validate loaded settings
             loadedSettings.validate()
             self.settings = loadedSettings

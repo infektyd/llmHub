@@ -39,16 +39,16 @@ final class KeychainStore: Sendable {
             try await deleteKeys(for: provider, includeLegacy: true)
             return
         }
-        
+
         // Delete existing items first to keep storage deterministic.
         try? await deleteKeys(for: provider, includeLegacy: true)
-        
+
         let status = addOrUpdateKey(
             data: data,
             account: provider.rawValue,
             accessGroup: primaryAccessGroup
         )
-        
+
         if status != errSecSuccess {
             logKeychainError(
                 status,
@@ -116,7 +116,7 @@ final class KeychainStore: Sendable {
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrAccount as String: account,
-            kSecAttrService as String: service,
+            kSecAttrService as String: service
         ]
 
         if let accessGroup = accessGroup {
@@ -161,7 +161,7 @@ final class KeychainStore: Sendable {
         if status == errSecDuplicateItem {
             let attributes: [String: Any] = [
                 kSecValueData as String: data,
-                kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
+                kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
             ]
             return backend.update(query as CFDictionary, attributes: attributes as CFDictionary)
         }
@@ -319,7 +319,7 @@ private extension KeychainStore.ProviderKey {
 
 enum KeychainError: LocalizedError {
     case operationFailed(OSStatus)
-    
+
     var errorDescription: String? {
         switch self {
         case .operationFailed(let status):

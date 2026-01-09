@@ -22,4 +22,3 @@ enum SessionEndReason: Sendable, Equatable {
     case appLifecycleEnded
     case inactivityTimeout
 }
-

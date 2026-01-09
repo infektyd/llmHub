@@ -64,8 +64,7 @@ final class ProviderRegistry {
 
         // 1. Try Fast Lookup via Alias Map
         if let canonicalID = aliasToCanonicalID[requestedKey],
-            let provider = providers[canonicalID]
-        {
+            let provider = providers[canonicalID] {
             return provider
         }
 
@@ -133,7 +132,7 @@ enum ProviderID {
         "mistral": "mistral",
         "xai": "xai",
         "grok": "xai",
-        "openrouter": "openrouter",
+        "openrouter": "openrouter"
     ]
 
     static func lookupKey(from raw: String) -> String {

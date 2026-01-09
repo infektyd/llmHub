@@ -199,7 +199,7 @@ public class GeminiManager {
         // NOTE: thinkingConfig is only supported on certain stable models, NOT preview models.
         // For Gemini 2.5 STABLE models, use thinkingBudget.
         // Gemini 3 preview models do NOT support thinkingConfig yet.
-        var thinkingConfig: ThinkingConfig? = nil
+        var thinkingConfig: ThinkingConfig?
         if thinkingLevel != .off {
             let lower = model.lowercased()
             let isPreview = lower.contains("preview")
@@ -268,8 +268,8 @@ public class GeminiManager {
             ],
             "parameters": [
                 "aspectRatio": aspectRatio,
-                "sampleCount": 1,
-            ],
+                "sampleCount": 1
+            ]
         ]
 
         let data = try await performRawRequest(endpoint: endpoint, payload: payload)
@@ -305,12 +305,12 @@ public class GeminiManager {
             "instances": [
                 [
                     "prompt": prompt,
-                    "video_length": "5s",
+                    "video_length": "5s"
                 ]
             ],
             "parameters": [
                 "sampleCount": 1
-            ],
+            ]
         ]
 
         let data = try await performRawRequest(endpoint: endpoint, payload: payload)
@@ -319,16 +319,14 @@ public class GeminiManager {
         if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
             let predictions = json["predictions"] as? [[String: Any]],
             let first = predictions.first,
-            let videoUri = first["videoUri"] as? String
-        {
+            let videoUri = first["videoUri"] as? String {
             return videoUri
         }
 
         // 2. Check for Operation (long running)
         // If the API returns an "name" field indicating an operation
         if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-            let operationName = json["name"] as? String
-        {
+            let operationName = json["name"] as? String {
             return try await pollOperation(name: operationName)
         }
 
@@ -363,15 +361,13 @@ public class GeminiManager {
                     }
 
                     if let response = json["response"] as? [String: Any],
-                        let videoUri = response["videoUri"] as? String
-                    {  // Schema varies; adjust based on real response
+                        let videoUri = response["videoUri"] as? String {  // Schema varies; adjust based on real response
                         return videoUri
                     }
 
                     // Fallback: sometimes result is in metadata or result field
                     if let result = json["result"] as? [String: Any],
-                        let videoUri = result["videoUri"] as? String
-                    {
+                        let videoUri = result["videoUri"] as? String {
                         return videoUri
                     }
                 }
@@ -385,8 +381,7 @@ public class GeminiManager {
 
     /// Performs a strongly-typed API request.
     private func performRequest<T: Encodable, U: Decodable>(endpoint: String, payload: T)
-        async throws -> U
-    {
+        async throws -> U {
         guard let url = URL(string: endpoint) else { throw GeminiError.invalidURL }
 
         var request = URLRequest(url: url)
@@ -404,8 +399,7 @@ public class GeminiManager {
             // Try to parse detailed error
             if let errorJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                 let errorObj = errorJson["error"] as? [String: Any],
-                let message = errorObj["message"] as? String
-            {
+                let message = errorObj["message"] as? String {
 
                 LLMTrace.error(provider: "Gemini", message: "Gemini API Error: \(message)")
 
@@ -448,8 +442,7 @@ public class GeminiManager {
         if !(200...299).contains(httpResponse.statusCode) {
             if let errorJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                 let errorObj = errorJson["error"] as? [String: Any],
-                let message = errorObj["message"] as? String
-            {
+                let message = errorObj["message"] as? String {
                 LLMTrace.error(provider: "Gemini", message: "Gemini Raw API Error: \(message)")
                 if httpResponse.statusCode == 429 { throw GeminiError.rateLimited }
                 if message.contains("quota") { throw GeminiError.quotaExceeded }
@@ -595,7 +588,7 @@ public nonisolated struct InlineData: Codable, Sendable {
 /// Configuration for generation parameters.
 struct GenerationConfig: Codable {
     /// Sampling temperature (0.0 - 2.0).
-    var temperature: Float? = nil  // Default 1.0 is best for Gemini 3
+    var temperature: Float?  // Default 1.0 is best for Gemini 3
     /// Response modalities (e.g., TEXT, IMAGE).
     var responseModalities: [String]?  // ["TEXT", "IMAGE"]
     /// Response MIME type for native formatting (e.g., "application/json").

@@ -12,12 +12,12 @@ import FoundationModels
 
 /// The primary category of a conversation.
 nonisolated enum ConversationCategory: String, CaseIterable, Codable, Sendable {
-    case coding = "coding"  // Programming, debugging, code review
-    case research = "research"  // Information gathering, learning
-    case creative = "creative"  // Writing, brainstorming, design
-    case planning = "planning"  // Project planning, organization
-    case support = "support"  // Help, troubleshooting, explanations
-    case general = "general"  // General conversation, misc
+    case coding  // Programming, debugging, code review
+    case research  // Information gathering, learning
+    case creative  // Writing, brainstorming, design
+    case planning  // Project planning, organization
+    case support  // Help, troubleshooting, explanations
+    case general  // General conversation, misc
 
     var icon: String {
         switch self {
@@ -33,11 +33,11 @@ nonisolated enum ConversationCategory: String, CaseIterable, Codable, Sendable {
 
 /// The user's apparent intent for a conversation.
 nonisolated enum ConversationIntent: String, CaseIterable, Codable, Sendable {
-    case quickQuestion = "quickQuestion"  // Short, one-off query
-    case debugging = "debugging"  // Problem-solving session
-    case exploration = "exploration"  // Open-ended discussion
-    case creation = "creation"  // Creating content/code
-    case reference = "reference"  // Seeking knowledge to retain
+    case quickQuestion  // Short, one-off query
+    case debugging  // Problem-solving session
+    case exploration  // Open-ended discussion
+    case creation  // Creating content/code
+    case reference  // Seeking knowledge to retain
 
     var displayName: String {
         switch self {
@@ -52,10 +52,10 @@ nonisolated enum ConversationIntent: String, CaseIterable, Codable, Sendable {
 
 /// Suggested retention policy based on content value.
 nonisolated enum RetentionPolicy: String, CaseIterable, Codable, Sendable {
-    case keep = "keep"  // Explicitly valuable
-    case archive = "archive"  // Done but may reference
-    case reviewIn7Days = "reviewIn7Days"  // Flag for cleanup review
-    case autoDeleteOK = "autoDeleteOK"  // Low value, safe to purge
+    case keep  // Explicitly valuable
+    case archive  // Done but may reference
+    case reviewIn7Days  // Flag for cleanup review
+    case autoDeleteOK  // Low value, safe to purge
 
     var displayName: String {
         switch self {
@@ -97,16 +97,13 @@ nonisolated struct ConversationMetadata: Sendable {
         let category: ConversationCategory
         if allContent.contains("code") || allContent.contains("function")
             || allContent.contains("error") || allContent.contains("swift")
-            || allContent.contains("python") || allContent.contains("javascript")
-        {
+            || allContent.contains("python") || allContent.contains("javascript") {
             category = .coding
         } else if allContent.contains("how to") || allContent.contains("what is")
-            || allContent.contains("explain")
-        {
+            || allContent.contains("explain") {
             category = .research
         } else if allContent.contains("write") || allContent.contains("create")
-            || allContent.contains("generate")
-        {
+            || allContent.contains("generate") {
             category = .creative
         } else {
             category = .general
@@ -120,8 +117,7 @@ nonisolated struct ConversationMetadata: Sendable {
         if messages.count <= 2 {
             intent = .quickQuestion
         } else if allContent.contains("debug") || allContent.contains("fix")
-            || allContent.contains("error")
-        {
+            || allContent.contains("error") {
             intent = .debugging
         } else {
             intent = .exploration
@@ -240,8 +236,7 @@ nonisolated final class ConversationClassificationService: Sendable {
     }
 
     private func buildClassificationContext(from messages: [ChatMessage], maxMessages: Int)
-        -> String
-    {
+        -> String {
         let relevantMessages = Array(messages.prefix(maxMessages))
         return relevantMessages.map { msg in
             let role = msg.role.rawValue.capitalized
@@ -252,8 +247,7 @@ nonisolated final class ConversationClassificationService: Sendable {
 
     @available(macOS 15.0, iOS 18.0, *)
     private func parseAFMResponse(_ content: String, messages: [ChatMessage]) throws
-        -> ConversationMetadata
-    {
+        -> ConversationMetadata {
         try decodeMetadata(from: content, messages: messages)
     }
 

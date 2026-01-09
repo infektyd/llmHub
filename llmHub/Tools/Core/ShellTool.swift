@@ -39,7 +39,7 @@ nonisolated struct ShellTool: Tool {
                 "background": ToolProperty(
                     type: .boolean,
                     description: "Run without waiting for completion (default: false)"
-                ),
+                )
             ],
             required: ["command"]
         )
@@ -81,8 +81,8 @@ nonisolated struct ShellTool: Tool {
             process.launchPath = "/bin/zsh"
             process.arguments = ["-lc", sanitizedCommand]
 
-            if let wd = workingDirectory {
-                process.currentDirectoryURL = URL(fileURLWithPath: wd)
+            if let workingDir = workingDirectory {
+                process.currentDirectoryURL = URL(fileURLWithPath: workingDir)
             } else {
                 // Use workspace path by default if not specified
                 process.currentDirectoryURL = context.workspacePath

@@ -26,22 +26,22 @@ import SwiftUI
 	        var alphaValue: Double = 1.0 // Window alpha value (entire window transparency)
 
 	        typealias NSViewType = NSView
-	        
+
 	        final class Coordinator {
 	            private var pendingWorkItem: DispatchWorkItem?
 	            private var lastAppliedOpacity: Double?
 	            private var lastAppliedAlphaValue: Double?
-	
+
 	            func scheduleApply(opacity: Double, alphaValue: Double, to view: NSView) {
 	                guard lastAppliedOpacity != opacity || lastAppliedAlphaValue != alphaValue else { return }
-	
+
 	                pendingWorkItem?.cancel()
 	                let workItem = DispatchWorkItem { [weak view] in
 	                    guard let view else { return }
 	                    guard let window = view.window else { return }
-	
+
 	                    window.alphaValue = CGFloat(alphaValue)
-	
+
 	                    if opacity < 1.0 {
 	                        window.isOpaque = false
 	                        window.backgroundColor = NSColor.clear
@@ -49,7 +49,7 @@ import SwiftUI
 	                        window.isOpaque = true
 	                        window.backgroundColor = NSColor.windowBackgroundColor
 	                    }
-	
+
 	                    self.lastAppliedOpacity = opacity
 	                    self.lastAppliedAlphaValue = alphaValue
 	                }
@@ -57,7 +57,7 @@ import SwiftUI
 	                DispatchQueue.main.async(execute: workItem)
 	            }
 	        }
-	
+
 	        func makeCoordinator() -> Coordinator {
 	            Coordinator()
 	        }
@@ -79,7 +79,7 @@ import SwiftUI
         func transparentWindow(opacity: Binding<Double>) -> some View {
             self.background(WindowAccessor(opacity: opacity.wrappedValue))
         }
-        
+
         /// Controls window alpha and background opacity.
         func windowAppearance(opacity: Double, alpha: Double) -> some View {
             self.background(WindowAccessor(opacity: opacity, alphaValue: alpha))

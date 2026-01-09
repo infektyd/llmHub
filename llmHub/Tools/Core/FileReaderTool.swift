@@ -54,7 +54,7 @@ nonisolated struct FileReaderTool: Tool {
                     description:
                         "Output format. annotated adds line numbers and truncation markers (default: annotated)",
                     enumValues: ["raw", "annotated"]
-                ),
+                )
             ],
             required: ["path"]
         )
@@ -70,8 +70,7 @@ nonisolated struct FileReaderTool: Tool {
     init() {}
 
     nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws
-        -> ToolResult
-    {
+        -> ToolResult {
         guard let path = arguments.string("path"), !path.isEmpty else {
             throw ToolError.invalidArguments("path is required")
         }
@@ -207,8 +206,7 @@ nonisolated struct FileReaderTool: Tool {
         if let json = try? JSONSerialization.jsonObject(with: data),
             let prettyData = try? JSONSerialization.data(
                 withJSONObject: json, options: [.prettyPrinted, .sortedKeys]),
-            let prettyString = String(data: prettyData, encoding: .utf8)
-        {
+            let prettyString = String(data: prettyData, encoding: .utf8) {
 
             if prettyString.count > maxLength {
                 return (

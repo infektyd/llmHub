@@ -153,7 +153,7 @@ actor ToolExecutor {
                 )
             )
         }
-        
+
         // Check authorization status
         // SECURITY: .notDetermined is treated as .denied (secure by default)
         // Use conversation-scoped authorization via context.sessionID
@@ -210,7 +210,7 @@ actor ToolExecutor {
         // Execute with orchestration-level timeout (STEP 2)
         // Hard deadline: 300s for all tools, can be overridden per-tool later
         let timeoutSeconds = 300
-        
+
         do {
             let result = try await withTimeout(seconds: timeoutSeconds) {
                 try await tool.execute(arguments: arguments, context: context)
@@ -248,7 +248,7 @@ actor ToolExecutor {
 
         } catch let error as ToolError {
             metrics.markEnd()
-            
+
             // Handle timeout specifically
             if case .timeout(let duration) = error {
                 metrics.errorClass = .timeout
@@ -260,7 +260,7 @@ actor ToolExecutor {
                     result: .failure(timeoutMessage, metrics: metrics, errorClass: .timeout)
                 )
             }
-            
+
             metrics.errorClass = error.errorClass
             logger.error("❌ \(call.name) failed: \(error.localizedDescription)")
             return ToolCallResult(
@@ -410,8 +410,7 @@ actor ToolExecutor {
 
             if let allowed = property.enumValues,
                 case .string(let s) = value,
-                !allowed.contains(s)
-            {
+                !allowed.contains(s) {
                 errors.append(
                     "Property '\(key)' must be one of [\(allowed.joined(separator: ", "))]."
                 )

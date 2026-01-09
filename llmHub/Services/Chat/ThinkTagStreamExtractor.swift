@@ -67,4 +67,3 @@ struct ThinkTagStreamExtractor: Sendable {
         return (buffer, "")
     }
 }
-

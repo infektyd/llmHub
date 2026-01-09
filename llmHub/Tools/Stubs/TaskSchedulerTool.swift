@@ -43,7 +43,7 @@ struct TaskSchedulerTool: Tool {
                 "repeat": ToolProperty(
                     type: .boolean,
                     description: "Whether task should repeat (default: false)"
-                ),
+                )
             ],
             required: ["action"]
         )

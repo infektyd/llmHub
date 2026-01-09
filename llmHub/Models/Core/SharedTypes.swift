@@ -67,17 +67,17 @@ enum ThinkingPreference: String, Codable, CaseIterable, Sendable {
 struct LLMRequestOptions: Sendable {
     var thinkingPreference: ThinkingPreference = .auto
     /// Optional provider-specific thinking budget hint.
-    var thinkingBudgetTokens: Int? = nil
+    var thinkingBudgetTokens: Int?
     /// Optional provider-specific temperature override.
     ///
     /// When set, providers that support sampling temperature should pass this through
     /// to their request payloads.
-    var temperatureOverride: Double? = nil
+    var temperatureOverride: Double?
     /// Optional provider-specific thinking level hint (for Gemini 3 models).
     ///
     /// Expected values are model-dependent; see Gemini "Thinking levels" docs.
     /// This is intentionally a free-form string to avoid over-restricting evolving model capabilities.
-    var thinkingLevelHint: String? = nil
+    var thinkingLevelHint: String?
 
     static let `default` = LLMRequestOptions()
 }

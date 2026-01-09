@@ -52,7 +52,6 @@ actor ToolRegistry {
         tools.values.sorted { $0.name < $1.name }
     }
 
-
     /// Export schemas for LLM API injection.
     func exportSchemas(for environment: ToolEnvironment) -> [[String: Any]] {
         availableTools(in: environment).compactMap { tool in
@@ -70,8 +69,8 @@ actor ToolRegistry {
                 "function": [
                     "name": tool.name,
                     "description": tool.description,
-                    "parameters": tool.parameters.toDictionary(),
-                ],
+                    "parameters": tool.parameters.toDictionary()
+                ]
             ]
         }
     }
@@ -105,7 +104,7 @@ extension ToolProperty {
     nonisolated func toDictionary() -> [String: Any] {
         var dict: [String: Any] = [
             "type": type.rawValue,
-            "description": description,
+            "description": description
         ]
         if let enums = enumValues {
             dict["enum"] = enums

@@ -19,13 +19,13 @@ struct ModelsDevModel: Codable, Identifiable, Sendable {
     let reasoning: Bool?
     let attachment: Bool?
     let modalities: Modalities?
-    
+
     struct Cost: Codable, Sendable {
         let input: Double?       // per 1M tokens
         let output: Double?      // per 1M tokens
         let cacheRead: Double?   // per 1M tokens
         let cacheWrite: Double?  // per 1M tokens
-        
+
         enum CodingKeys: String, CodingKey {
             case input
             case output
@@ -33,17 +33,17 @@ struct ModelsDevModel: Codable, Identifiable, Sendable {
             case cacheWrite = "cache_write"
         }
     }
-    
+
     struct Limit: Codable, Sendable {
         let context: Int?
         let output: Int?
     }
-    
+
     struct Modalities: Codable, Sendable {
         let input: [String]?
         let output: [String]?
     }
-    
+
     enum CodingKeys: String, CodingKey {
         case id
         case name
@@ -78,13 +78,13 @@ struct ModelsDevProvider: Codable, Sendable {
     let id: String
     let name: String?
     let models: [String: ModelsDevModel]
-    
+
     // Additional fields that may be present but we don't need
     let env: [String]?
     let npm: String?
     let api: String?
     let doc: String?
-    
+
     enum CodingKeys: String, CodingKey {
         case id
         case name

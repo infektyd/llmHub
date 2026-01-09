@@ -30,7 +30,7 @@ struct XAIProvider: LLMProvider {
             guard let key = await keychain.apiKey(for: .xai) else { return [:] }
             return [
                 "Authorization": "Bearer \(key)",
-                "Content-Type": "application/json",
+                "Content-Type": "application/json"
             ]
         }
     }
@@ -144,16 +144,14 @@ struct XAIProvider: LLMProvider {
                     var streamRequest = baseRequest
                     if let bodyData = baseRequest.httpBody,
                         var json = try? JSONSerialization.jsonObject(with: bodyData)
-                            as? [String: Any]
-                    {
+                            as? [String: Any] {
                         json["stream"] = true
                         streamRequest.httpBody = try JSONSerialization.data(withJSONObject: json)
                     }
 
                     // 2. Execute
                     if let bodyData = streamRequest.httpBody,
-                        let bodyStr = String(data: bodyData, encoding: .utf8)
-                    {
+                        let bodyStr = String(data: bodyData, encoding: .utf8) {
                         LLMTrace.requestDetails(
                             provider: "xAI", url: streamRequest.url?.absoluteString ?? "unknown",
                             bodyPreview: bodyStr)
@@ -187,7 +185,7 @@ struct XAIProvider: LLMProvider {
                     var toolAssembler = PartialToolCallAssembler()
                     var finalizedToolCalls: [ToolCall] = []
                     var emittedReferences: Set<String> = []
-                    var lastFinishReason: String? = nil
+                    var lastFinishReason: String?
 
                     for try await line in result.lines {
                         let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)

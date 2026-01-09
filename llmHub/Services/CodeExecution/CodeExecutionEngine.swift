@@ -17,7 +17,7 @@ actor CodeExecutionEngine {
     private let backend: any ExecutionBackend
     private let sandboxManager: SandboxManager
     private var interpreterCache: [SupportedLanguage: InterpreterInfo] = [:]
-    
+
     /// Initialize with a specific backend.
     /// - Parameters:
     ///   - backend: The backend to use.
@@ -29,7 +29,7 @@ actor CodeExecutionEngine {
         self.backend = backend
         self.sandboxManager = sandboxManager
     }
-    
+
     /// Initialize with the default backend for the current platform.
     /// This initializer must be called from MainActor context.
     /// - Parameter sandboxManager: The sandbox manager.
@@ -38,18 +38,18 @@ actor CodeExecutionEngine {
         self.backend = ExecutionBackendFactory.createDefault()
         self.sandboxManager = sandboxManager
     }
-    
+
     // MARK: - Backend Status
-    
+
     /// Check if the execution backend is available.
     var isBackendAvailable: Bool {
         get async {
             await backend.isAvailable
         }
     }
-    
+
     // MARK: - Interpreter Discovery
-    
+
     /// Find the interpreter for a language.
     /// - Parameter language: The language to find.
     /// - Returns: `InterpreterInfo` containing availability and path.
@@ -58,27 +58,27 @@ actor CodeExecutionEngine {
         if let cached = interpreterCache[language] {
             return cached
         }
-        
+
         let info = await backend.checkInterpreter(for: language)
         interpreterCache[language] = info
         return info
     }
-    
+
     /// Check availability of all interpreters.
     /// - Returns: A list of `InterpreterInfo` for all supported languages.
     func checkAllInterpreters() async -> [InterpreterInfo] {
         let results = await backend.checkAllInterpreters()
-        
+
         // Update cache
         for info in results {
             interpreterCache[info.language] = info
         }
-        
+
         return results
     }
-    
+
     // MARK: - Code Execution
-    
+
     /// Execute code with the given request.
     /// - Parameters:
     ///   - request: The execution request.
@@ -91,20 +91,20 @@ actor CodeExecutionEngine {
         let languageName = request.language.rawValue
         let codeLength = request.code.count
         logger.info("Executing \(languageName) code (\(codeLength) chars)")
-        
+
         // Check backend availability
         guard await backend.isAvailable else {
             throw CodeExecutionError.processLaunchFailed(
                 "Code execution backend is not available. Please ensure the helper service is running."
             )
         }
-        
+
         // Find interpreter first to give early feedback
         let interpreter = await findInterpreter(for: request.language)
         guard interpreter.isAvailable else {
             throw CodeExecutionError.interpreterNotFound(request.language)
         }
-        
+
         // Determine working directory
         var workingDirectory: URL?
         let isSandboxMode = securityMode.rawValue == CodeSecurityMode.sandbox.rawValue
@@ -112,7 +112,7 @@ actor CodeExecutionEngine {
             // Create a sandbox directory for output files
             workingDirectory = try await sandboxManager.createSandbox(for: request.id)
         }
-        
+
         do {
             // Execute via backend
             let result = try await backend.execute(
@@ -121,9 +121,9 @@ actor CodeExecutionEngine {
                 timeout: request.timeoutSeconds,
                 workingDirectory: workingDirectory
             )
-            
+
             logger.info("Execution completed: exit=\(result.exitCode), time=\(result.executionTimeMs)ms")
-            
+
             // Cleanup sandbox after delay
             if isSandboxMode {
                 Task {
@@ -131,9 +131,9 @@ actor CodeExecutionEngine {
                     await sandboxManager.cleanupSandbox(for: request.id)
                 }
             }
-            
+
             return result
-            
+
         } catch {
             // Cleanup sandbox on error
             if isSandboxMode {
@@ -142,9 +142,9 @@ actor CodeExecutionEngine {
             throw error
         }
     }
-    
+
     // MARK: - Quick Execution
-    
+
     /// Quick execution for trusted code snippets.
     /// - Parameters:
     ///   - code: The code to execute.
@@ -158,7 +158,7 @@ actor CodeExecutionEngine {
             timeoutSeconds: 10,
             workingDirectory: nil
         )
-        
+
         let result = try await execute(request: request, securityMode: .unrestricted)
         return result.stdout.isEmpty ? result.stderr : result.stdout + (result.stderr.isEmpty ? "" : "\n" + result.stderr)
     }

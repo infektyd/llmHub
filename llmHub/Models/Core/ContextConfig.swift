@@ -34,7 +34,7 @@ struct ContextConfig: Codable, Sendable {
     let preserveRecentMessages: Int
     /// Provider-specific token limit overrides (keyed by provider ID).
     let providerOverrides: [String: Int]
-    
+
     /// Default configuration with sensible defaults.
     static let `default` = ContextConfig(
         enabled: true,
@@ -116,7 +116,7 @@ struct ContextConfig: Codable, Sendable {
             try container.decodeIfPresent([String: Int].self, forKey: .providerOverrides)
             ?? defaults.providerOverrides
     }
-    
+
     /// Returns the maximum token limit for a specific provider.
     /// - Parameter providerID: The provider identifier.
     /// - Returns: The token limit, either from overrides or the default.
@@ -128,7 +128,7 @@ struct ContextConfig: Codable, Sendable {
 /// UserDefaults keys for persisting context configuration.
 extension UserDefaults {
     private static let contextConfigKey = "com.llmhub.contextConfig"
-    
+
     /// Saves the context configuration.
     /// - Parameter config: The configuration to save.
     func saveContextConfig(_ config: ContextConfig) {
@@ -136,7 +136,7 @@ extension UserDefaults {
             set(encoded, forKey: Self.contextConfigKey)
         }
     }
-    
+
     /// Loads the context configuration.
     /// - Returns: The saved configuration, or the default if none exists.
     func loadContextConfig() -> ContextConfig {

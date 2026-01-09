@@ -7,12 +7,12 @@ public class MistralManager {
     private let apiKey: String
     /// The URLSession used for network requests.
     private let session: URLSession
-    
+
     /// The primary base URL for Mistral API.
     private let primaryURL = URL(string: "https://api.mistral.ai/v1")!
     /// The base URL for Codestral API.
     private let codestralURL = URL(string: "https://codestral.mistral.ai/v1")!
-    
+
     /// Initializes a new `MistralManager`.
     /// - Parameters:
     ///   - apiKey: The API key.
@@ -21,9 +21,9 @@ public class MistralManager {
         self.apiKey = apiKey
         self.session = session
     }
-    
+
     // MARK: - Chat Completions
-    
+
     /// Sends a chat completion request to Mistral.
     /// - Parameters:
     ///   - messages: The conversation history.
@@ -58,12 +58,12 @@ public class MistralManager {
             responseFormat: responseFormat,
             promptMode: promptMode
         )
-        
+
         let url = primaryURL.appendingPathComponent("chat/completions")
         let data = try await performRequest(url: url, payload: requestPayload)
         return try JSONDecoder().decode(MistralChatResponse.self, from: data)
     }
-    
+
     /// Streams chat completion chunks from Mistral.
     /// - Parameters:
     ///   - messages: The conversation history.
@@ -90,31 +90,31 @@ public class MistralManager {
             tools: tools,
             toolChoice: toolChoice
         )
-        
+
         let url = primaryURL.appendingPathComponent("chat/completions")
-        
+
         return AsyncThrowingStream { continuation in
             // Capture session locally to prevent retain cycle
             let localSession = self.session
-            
+
             let task = Task {
                 do {
                     var request = try makeRequest(url: url, payload: requestPayload)
                     request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
-                    
+
                     let (bytes, response) = try await localSession.bytes(for: request)
                     guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
                         var errorText = ""
                         for try await line in bytes.lines { errorText += line }
                         throw MistralError.apiError(message: errorText)
                     }
-                    
+
                     for try await line in bytes.lines {
                         let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
                         if trimmed.hasPrefix("data: ") {
                             let json = String(trimmed.dropFirst(6))
                             if json == "[DONE]" { break }
-                            
+
                             if let data = json.data(using: .utf8),
                                let chunk = try? JSONDecoder().decode(MistralStreamChunk.self, from: data) {
                                 continuation.yield(chunk)
@@ -126,15 +126,15 @@ public class MistralManager {
                     continuation.finish(throwing: error)
                 }
             }
-            
+
             continuation.onTermination = { @Sendable _ in
                 task.cancel()
             }
         }
     }
-    
+
     // MARK: - Models List
-    
+
     /// Lists available models from Mistral.
     /// - Returns: A `MistralModelList` containing model details.
     public func listModels() async throws -> MistralModelList {
@@ -142,17 +142,17 @@ public class MistralManager {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        
+
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw MistralError.networkError
         }
-        
+
         return try JSONDecoder().decode(MistralModelList.self, from: data)
     }
-    
+
     // MARK: - Helper Request Builder
-    
+
     /// Creates a chat request.
     /// - Parameters:
     ///   - messages: Conversation history.
@@ -180,9 +180,9 @@ public class MistralManager {
         let url = primaryURL.appendingPathComponent("chat/completions")
         return try makeRequest(url: url, payload: payload)
     }
-    
+
     // MARK: - FIM (Fill-in-the-Middle)
-    
+
     /// Performs a Fill-In-the-Middle completion (Codestral).
     /// - Parameters:
     ///   - model: Model ID (default: "codestral-latest").
@@ -206,9 +206,9 @@ public class MistralManager {
         let data = try await performRequest(url: url, payload: payload)
         return try JSONDecoder().decode(MistralFIMResponse.self, from: data)
     }
-    
+
     // MARK: - OCR
-    
+
     /// Performs Optical Character Recognition on a document.
     /// - Parameters:
     ///   - document: The document to process.
@@ -229,9 +229,9 @@ public class MistralManager {
         let data = try await performRequest(url: url, payload: payload)
         return try JSONDecoder().decode(MistralOCRResponse.self, from: data)
     }
-    
+
     // MARK: - Audio Transcription
-    
+
     /// Transcribes an audio file.
     /// - Parameters:
     ///   - file: The audio file data.
@@ -247,44 +247,44 @@ public class MistralManager {
     ) async throws -> MistralTranscriptionResponse {
         let url = primaryURL.appendingPathComponent("audio/transcriptions")
         let boundary = UUID().uuidString
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        
+
         var body = Data()
-        
+
         func appendField(_ name: String, _ value: String) {
             body.append("--\(boundary)\r\n".data(using: .utf8)!)
             body.append("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".data(using: .utf8)!)
             body.append("\(value)\r\n".data(using: .utf8)!)
         }
-        
+
         appendField("model", model)
         if let lang = language { appendField("language", lang) }
-        
+
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(fileName)\"\r\n".data(using: .utf8)!)
         body.append("Content-Type: application/octet-stream\r\n\r\n".data(using: .utf8)!)
         body.append(file)
         body.append("\r\n".data(using: .utf8)!)
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
-        
+
         request.httpBody = body
-        
+
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw MistralError.networkError }
-        
+
         if !(200...299).contains(http.statusCode) {
             throw MistralError.serverError(statusCode: http.statusCode)
         }
-        
+
         return try JSONDecoder().decode(MistralTranscriptionResponse.self, from: data)
     }
-    
+
     // MARK: - Private Helpers
-    
+
     /// Helper to create a generic JSON request.
     private func makeRequest<T: Encodable>(url: URL, payload: T) throws -> URLRequest {
         var request = URLRequest(url: url)
@@ -294,16 +294,16 @@ public class MistralManager {
         request.httpBody = try JSONEncoder().encode(payload)
         return request
     }
-    
+
     /// Helper to perform a request and return data, handling errors.
     private func performRequest<T: Encodable>(url: URL, payload: T) async throws -> Data {
         let request = try makeRequest(url: url, payload: payload)
         let (data, response) = try await session.data(for: request)
-        
+
         guard let http = response as? HTTPURLResponse else {
             throw MistralError.networkError
         }
-        
+
         if !(200...299).contains(http.statusCode) {
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let message = json["message"] as? String {
@@ -311,7 +311,7 @@ public class MistralManager {
             }
             throw MistralError.serverError(statusCode: http.statusCode)
         }
-        
+
         return data
     }
 }
@@ -368,7 +368,7 @@ public struct MistralChatRequest: Encodable {
     var responseFormat: MistralResponseFormat?
     /// Prompt mode (e.g., "reasoning").
     var promptMode: String? // "reasoning"
-    
+
     enum CodingKeys: String, CodingKey {
         case model, messages, temperature, stream, tools
         case maxTokens = "max_tokens"
@@ -385,7 +385,7 @@ public struct MistralMessage: Encodable {
     public let role: String
     /// The content of the message.
     public let content: MistralContent
-    
+
     /// Initializes a new message.
     public init(role: String, content: MistralContent) {
         self.role = role
@@ -399,7 +399,7 @@ public enum MistralContent: Encodable {
     case text(String)
     /// Multipart content (text + images).
     case parts([MistralContentPart])
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
@@ -417,17 +417,17 @@ public struct MistralContentPart: Encodable {
     public let text: String?
     /// The image URL information.
     public let imageUrl: MistralImageURL?
-    
+
     enum CodingKeys: String, CodingKey {
         case type, text
         case imageUrl = "image_url"
     }
-    
+
     /// Creates a text part.
     public static func text(_ s: String) -> MistralContentPart {
         MistralContentPart(type: "text", text: s, imageUrl: nil)
     }
-    
+
     /// Creates an image part from base64 data.
     public static func image(base64: String) -> MistralContentPart {
         MistralContentPart(type: "image_url", text: nil, imageUrl: MistralImageURL(url: "data:image/jpeg;base64,\(base64)"))
@@ -466,7 +466,7 @@ public enum MistralToolChoice: Encodable {
     case none
     /// Force tool use.
     case required
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
@@ -491,20 +491,20 @@ public struct MistralChatResponse: Decodable {
     public let choices: [Choice]
     /// Token usage statistics.
     public let usage: Usage?
-    
+
     /// A single choice in the response.
     public struct Choice: Decodable {
         /// The generated message.
         public let message: Message
         /// The reason for finishing.
         public let finishReason: String?
-        
+
         enum CodingKeys: String, CodingKey {
             case message
             case finishReason = "finish_reason"
         }
     }
-    
+
     /// The message in a choice.
     public struct Message: Decodable {
         /// The role of the sender.
@@ -513,13 +513,13 @@ public struct MistralChatResponse: Decodable {
         public let content: String?
         /// Tool calls made by the model.
         public let toolCalls: [ToolCall]?
-        
+
         enum CodingKeys: String, CodingKey {
             case role, content
             case toolCalls = "tool_calls"
         }
     }
-    
+
     /// A call to a tool.
     public struct ToolCall: Decodable {
         /// The tool call ID.
@@ -529,7 +529,7 @@ public struct MistralChatResponse: Decodable {
         /// The function call details.
         public let function: FunctionCall
     }
-    
+
     /// The function call details.
     public struct FunctionCall: Decodable {
         /// The function name.
@@ -537,7 +537,7 @@ public struct MistralChatResponse: Decodable {
         /// The arguments string.
         public let arguments: String
     }
-    
+
     /// Token usage statistics.
     public struct Usage: Decodable {
         /// Prompt tokens used.
@@ -546,7 +546,7 @@ public struct MistralChatResponse: Decodable {
         public let completionTokens: Int
         /// Total tokens used.
         public let totalTokens: Int
-        
+
         enum CodingKeys: String, CodingKey {
             case promptTokens = "prompt_tokens"
             case completionTokens = "completion_tokens"
@@ -565,20 +565,20 @@ public struct MistralStreamChunk: Decodable {
     public let choices: [Choice]
     /// Usage statistics (optional, usually in last chunk).
     public let usage: MistralChatResponse.Usage?
-    
+
     /// A choice in the stream chunk.
     public struct Choice: Decodable {
         /// The delta update for the message.
         public let delta: Delta
         /// The finish reason (if finished).
         public let finishReason: String?
-        
+
         enum CodingKeys: String, CodingKey {
             case delta
             case finishReason = "finish_reason"
         }
     }
-    
+
     /// The delta update.
     public struct Delta: Decodable {
         /// The role update.
@@ -587,18 +587,18 @@ public struct MistralStreamChunk: Decodable {
         public let content: String?
         /// The tool calls update.
         public let toolCalls: [ToolCall]?
-        
+
         enum CodingKeys: String, CodingKey {
             case role, content
             case toolCalls = "tool_calls"
         }
-        
+
         public struct ToolCall: Decodable {
             public let index: Int
             public let id: String?
             public let function: FunctionCall?
         }
-        
+
         public struct FunctionCall: Decodable {
             public let name: String?
             public let arguments: String?
@@ -626,7 +626,7 @@ public struct MistralFIMResponse: Decodable {
     public let id: String
     /// The generated choices.
     public let choices: [Choice]
-    
+
     /// A choice in the response.
     public struct Choice: Decodable {
         /// The generated message.
@@ -649,7 +649,7 @@ public struct MistralOCRRequest: Encodable {
     let document: MistralOCRDocument
     /// Whether to include image base64.
     let includeImageBase64: Bool?
-    
+
     enum CodingKeys: String, CodingKey {
         case model, document
         case includeImageBase64 = "include_image_base64"
@@ -664,23 +664,23 @@ public struct MistralOCRDocument: Encodable {
     let documentUrl: String?
     /// The image URL.
     let imageUrl: MistralImageURL?
-    
+
     enum CodingKeys: String, CodingKey {
         case type
         case documentUrl = "document_url"
         case imageUrl = "image_url"
     }
-    
+
     /// Creates a document from a URL.
     public static func url(_ url: String) -> MistralOCRDocument {
         MistralOCRDocument(type: "document_url", documentUrl: url, imageUrl: nil)
     }
-    
+
     /// Creates a document from an image URL.
     public static func imageUrl(_ url: String) -> MistralOCRDocument {
         MistralOCRDocument(type: "image_url", documentUrl: nil, imageUrl: MistralImageURL(url: url))
     }
-    
+
     /// Creates a document from base64 image data.
     public static func imageBase64(_ base64: String) -> MistralOCRDocument {
         MistralOCRDocument(type: "image_url", documentUrl: nil, imageUrl: MistralImageURL(url: "data:image/jpeg;base64,\(base64)"))
@@ -691,7 +691,7 @@ public struct MistralOCRDocument: Encodable {
 public struct MistralOCRResponse: Decodable {
     /// The processed pages.
     public let pages: [Page]
-    
+
     /// A page in the document.
     public struct Page: Decodable {
         /// The page index.
@@ -701,14 +701,14 @@ public struct MistralOCRResponse: Decodable {
         /// Extracted images.
         public let images: [Image]?
     }
-    
+
     /// An extracted image.
     public struct Image: Decodable {
         /// The image ID.
         public let id: String
         /// The base64 data of the image.
         public let imageBase64: String?
-        
+
         enum CodingKeys: String, CodingKey {
             case id
             case imageBase64 = "image_base64"

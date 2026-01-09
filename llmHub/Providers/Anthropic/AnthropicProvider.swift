@@ -175,8 +175,7 @@ struct AnthropicProvider: LLMProvider {
                     var streamRequest = request
                     if let bodyData = request.httpBody,
                         var json = try? JSONSerialization.jsonObject(with: bodyData)
-                            as? [String: Any]
-                    {
+                            as? [String: Any] {
                         json["stream"] = true
                         streamRequest.httpBody = try JSONSerialization.data(withJSONObject: json)
                     }
@@ -184,8 +183,7 @@ struct AnthropicProvider: LLMProvider {
 
                     // Debug: Log request
                     if let bodyData = streamRequest.httpBody,
-                        let bodyStr = String(data: bodyData, encoding: .utf8)
-                    {
+                        let bodyStr = String(data: bodyData, encoding: .utf8) {
                         LLMTrace.requestDetails(
                             provider: "Anthropic",
                             url: streamRequest.url?.absoluteString ?? "unknown",
@@ -219,7 +217,7 @@ struct AnthropicProvider: LLMProvider {
                     let decoder = JSONDecoder()
                     var aggregated = ""
                     var toolCalls: [ToolCall] = []
-                    var currentToolUse: (id: String, name: String, input: String)? = nil
+                    var currentToolUse: (id: String, name: String, input: String)?
 
                     // Parse SSE line-by-line (Anthropic format: "event: ...\ndata: {...}\n\n")
                     for try await line in bytes.lines {
@@ -238,8 +236,7 @@ struct AnthropicProvider: LLMProvider {
                             case "content_block_start":
                                 // Check if this is a tool_use block
                                 if let contentBlock = event.content_block,
-                                    contentBlock.type == "tool_use"
-                                {
+                                    contentBlock.type == "tool_use" {
                                     currentToolUse = (
                                         id: contentBlock.id ?? "",
                                         name: contentBlock.name ?? "",

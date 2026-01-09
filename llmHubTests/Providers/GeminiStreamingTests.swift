@@ -30,4 +30,3 @@ final class GeminiStreamingTests: XCTestCase {
         XCTAssertEqual(decoded.candidates?.first?.finishReason, "MALFORMED_FUNCTION_CALL")
     }
 }
-
