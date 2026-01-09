@@ -12,10 +12,11 @@ import OSLog
 nonisolated struct WorkspaceTool: Tool {
     let name = "workspace"
     let description = """
-        Inspect the project workspace. Supports two operations:
-        - list_files: Recursively list files with .gitignore support
-        - grep: Search for text patterns in files
-        Use this to understand project structure and find specific code.
+        List and search files in the artifact library. These are files the user \
+        has explicitly shared for analysis. Supports two operations:
+        - list_files: List all shared files with .gitignore-style filtering
+        - grep: Search for text patterns in shared files
+        Use this to see what files are available and find specific content.
         """
 
     nonisolated var parameters: ToolParametersSchema {
@@ -51,7 +52,9 @@ nonisolated struct WorkspaceTool: Tool {
     let weight: ToolWeight = .fast
     let isCacheable = false
 
-    nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
+    nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws
+        -> ToolResult
+    {
         guard let operation = arguments.string("operation") else {
             throw ToolError.invalidArguments("operation is required")
         }
@@ -60,7 +63,10 @@ nonisolated struct WorkspaceTool: Tool {
             .standardizedFileURL
 
         if !targetURL.path.hasPrefix(context.workspacePath.path) {
-            throw ToolError.sandboxViolation("Path must be within workspace")
+            throw ToolError.sandboxViolation(
+                "Path '\(relativePath)' is outside the artifact library. "
+                    + "I can only access files you've uploaded via drag-and-drop or the 📎 button."
+            )
         }
 
         switch operation {
@@ -82,10 +88,11 @@ nonisolated struct WorkspaceTool: Tool {
         let includeHidden = arguments.bool("include_hidden") ?? false
         var extFilter: Set<String>?
         if let exts = arguments.array("file_extensions") {
-            extFilter = Set(exts.compactMap { value in
-                guard let raw = value.stringValue?.lowercased() else { return nil }
-                return raw.hasPrefix(".") ? String(raw.dropFirst()) : raw
-            })
+            extFilter = Set(
+                exts.compactMap { value in
+                    guard let raw = value.stringValue?.lowercased() else { return nil }
+                    return raw.hasPrefix(".") ? String(raw.dropFirst()) : raw
+                })
         }
 
         let gitignorePatterns = loadGitignorePatterns(in: context.workspacePath)

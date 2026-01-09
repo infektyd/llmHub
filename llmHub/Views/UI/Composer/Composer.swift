@@ -22,15 +22,18 @@ struct ComposerBarView: View {
     let isStreaming: Bool
     let stagingArtifacts: [Artifact]
     let stagedAttachments: [Attachment]
+    let recentlyImportedArtifacts: [SandboxedArtifact]
     let onSend: () -> Void
     let onStop: () -> Void
     let onRemoveArtifact: (UUID) -> Void
     let onRemoveAttachment: (UUID) -> Void
     let onAddAttachment: () -> Void
+    let onFilesDropped: ([URL]) -> Void
 
     @FocusState private var isInputFocused: Bool
     @State private var selection = AttributedTextSelection()
     @State private var isNormalizingMarkdown = false
+    @State private var isDropTargeted = false
 
     @Environment(\.uiCompactMode) private var uiCompactMode
     @Environment(\.uiScale) private var uiScale
@@ -62,7 +65,13 @@ struct ComposerBarView: View {
         }
         .overlay {
             RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .stroke(AppColors.textPrimary.opacity(0.1), lineWidth: 1)
+                .stroke(
+                    isDropTargeted
+                        ? AppColors.accent.opacity(0.5) : AppColors.textPrimary.opacity(0.1),
+                    lineWidth: isDropTargeted ? 2 : 1)
+        }
+        .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
+            handleDrop(providers)
         }
     }
 
@@ -87,7 +96,8 @@ struct ComposerBarView: View {
         .padding(.vertical, uiCompactMode ? 8 : 10)
         .background {
             RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(AppColors.backgroundSecondary)
+                .fill(
+                    isDropTargeted ? AppColors.accent.opacity(0.1) : AppColors.backgroundSecondary)
         }
         .overlay {
             RoundedRectangle(cornerRadius: 6, style: .continuous)
@@ -266,6 +276,32 @@ struct ComposerBarView: View {
             selection = AttributedTextSelection(range: parsed.endIndex..<parsed.endIndex)
         }
     }
+
+    /// Handles files dropped onto the composer, importing them to the artifact sandbox.
+    private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
+        var droppedURLs: [URL] = []
+        let group = DispatchGroup()
+
+        for provider in providers {
+            if provider.canLoadObject(ofClass: URL.self) {
+                group.enter()
+                _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                    if let url = url {
+                        droppedURLs.append(url)
+                    }
+                    group.leave()
+                }
+            }
+        }
+
+        group.notify(queue: .main) {
+            if !droppedURLs.isEmpty {
+                self.onFilesDropped(droppedURLs)
+            }
+        }
+
+        return true
+    }
 }
 
 extension View {
@@ -306,6 +342,7 @@ struct ComposerBar: View {
             isStreaming: chatVM.isGenerating,
             stagingArtifacts: chatVM.stagingArtifacts,
             stagedAttachments: chatVM.stagedAttachments,
+            recentlyImportedArtifacts: chatVM.recentlyImportedArtifacts,
             onSend: sendMessage,
             onStop: {
                 Task { await chatVM.stopGeneration() }
@@ -318,6 +355,13 @@ struct ComposerBar: View {
             },
             onAddAttachment: {
                 isFilePickerPresented = true
+            },
+            onFilesDropped: { urls in
+                Task {
+                    for url in urls {
+                        await chatVM.importFileToSandbox(url: url)
+                    }
+                }
             }
         )
         .fileImporter(
@@ -365,9 +409,15 @@ struct ComposerBar: View {
                     }
                 #endif
 
-                // Create and add the attachment
+                // Create and add the attachment for the current message
                 let attachment = createAttachment(from: url)
                 chatVM.addAttachment(attachment)
+
+                // Also import to artifact sandbox for persistent LLM access
+                // This ensures the file is available across sessions and models
+                Task {
+                    await chatVM.importFileToSandbox(url: url)
+                }
             }
         case .failure(let error):
             print("File selection error: \(error.localizedDescription)")
@@ -424,11 +474,13 @@ struct ComposerBar: View {
             isStreaming: false,
             stagingArtifacts: [],
             stagedAttachments: [],
+            recentlyImportedArtifacts: [],
             onSend: {},
             onStop: {},
             onRemoveArtifact: { _ in },
             onRemoveAttachment: { _ in },
-            onAddAttachment: {}
+            onAddAttachment: {},
+            onFilesDropped: { _ in }
         )
         .padding()
         .frame(width: 900)
@@ -448,11 +500,13 @@ struct ComposerBar: View {
             isStreaming: false,
             stagingArtifacts: [],
             stagedAttachments: [],
+            recentlyImportedArtifacts: [],
             onSend: {},
             onStop: {},
             onRemoveArtifact: { _ in },
             onRemoveAttachment: { _ in },
-            onAddAttachment: {}
+            onAddAttachment: {},
+            onFilesDropped: { _ in }
         )
         .padding()
         .frame(width: 900)
@@ -472,11 +526,13 @@ struct ComposerBar: View {
             isStreaming: true,
             stagingArtifacts: [],
             stagedAttachments: [],
+            recentlyImportedArtifacts: [],
             onSend: {},
             onStop: {},
             onRemoveArtifact: { _ in },
             onRemoveAttachment: { _ in },
-            onAddAttachment: {}
+            onAddAttachment: {},
+            onFilesDropped: { _ in }
         )
         .padding()
         .frame(width: 900)
@@ -496,11 +552,13 @@ struct ComposerBar: View {
             isStreaming: false,
             stagingArtifacts: [],
             stagedAttachments: [],
+            recentlyImportedArtifacts: [],
             onSend: {},
             onStop: {},
             onRemoveArtifact: { _ in },
             onRemoveAttachment: { _ in },
-            onAddAttachment: {}
+            onAddAttachment: {},
+            onFilesDropped: { _ in }
         )
         .padding()
         .frame(width: 900)

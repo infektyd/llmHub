@@ -222,7 +222,8 @@ class ChatViewModel {
 
     /// Workspace root used for tool/file operations.
     var workspaceRootDisplayPath: String {
-        let url = toolEnvironment.sandboxRoot
+        let url =
+            toolEnvironment.sandboxRoot
             ?? WorkspaceResolver.resolve(platform: toolEnvironment.platform)
         return url.standardizedFileURL.path
     }
@@ -369,7 +370,8 @@ class ChatViewModel {
         let additional = AgentSettings.clampMaxIterations(stepLimitAdditionalSteps)
         logger.info("Continuing run with additional steps: \(additional)")
         Task { @MainActor in
-            await resumeAfterStepLimit(modelContext: modelContext, maxIterationsOverride: additional)
+            await resumeAfterStepLimit(
+                modelContext: modelContext, maxIterationsOverride: additional)
         }
         showAgentStepLimitAlert = false
         showAgentStepLimitConfigSheet = false
@@ -385,7 +387,8 @@ class ChatViewModel {
             let additional = max(1, newDefault - used)
             logger.info("Applying new default immediately by resuming with +\(additional) steps")
             Task { @MainActor in
-                await resumeAfterStepLimit(modelContext: modelContext, maxIterationsOverride: additional)
+                await resumeAfterStepLimit(
+                    modelContext: modelContext, maxIterationsOverride: additional)
             }
         }
 
@@ -393,7 +396,8 @@ class ChatViewModel {
         showAgentStepLimitConfigSheet = false
     }
 
-    private func resumeAfterStepLimit(modelContext: ModelContext, maxIterationsOverride: Int) async {
+    private func resumeAfterStepLimit(modelContext: ModelContext, maxIterationsOverride: Int) async
+    {
         guard let sessionID = lastRunSessionID else {
             logger.error("Cannot resume: missing lastRunSessionID")
             return
@@ -441,7 +445,8 @@ class ChatViewModel {
                 try Task.checkCancellation()
                 switch event {
                 case .token(let text):
-                    if let updated = await streamAccumulator.append(token: streamToken, delta: text) {
+                    if let updated = await streamAccumulator.append(token: streamToken, delta: text)
+                    {
                         uiContinuation.yield(updated)
                     }
 
@@ -454,7 +459,9 @@ class ChatViewModel {
                     truncatedSessionID = nil
                     executingToolNames.removeAll()
                     setLastVisibleMessage(to: message.id)
-                    self.handleStreamCompletion(sessionID: sessionID, modelID: domainSession.model, modelContext: modelContext)
+                    self.handleStreamCompletion(
+                        sessionID: sessionID, modelID: domainSession.model,
+                        modelContext: modelContext)
 
                 case .truncated(let message):
                     _ = await streamAccumulator.complete(token: streamToken, final: message.content)
@@ -465,7 +472,9 @@ class ChatViewModel {
                     truncatedSessionID = sessionID
                     executingToolNames.removeAll()
                     setLastVisibleMessage(to: message.id)
-                    self.handleStreamCompletion(sessionID: sessionID, modelID: domainSession.model, modelContext: modelContext)
+                    self.handleStreamCompletion(
+                        sessionID: sessionID, modelID: domainSession.model,
+                        modelContext: modelContext)
 
                 case .error(let error):
                     await streamAccumulator.fail(token: streamToken, error: error)
@@ -475,7 +484,8 @@ class ChatViewModel {
                     isTruncated = false
                     truncatedSessionID = nil
                     executingToolNames.removeAll()
-                    self.handleStreamError(sessionID: sessionID, error: error, modelContext: modelContext)
+                    self.handleStreamError(
+                        sessionID: sessionID, error: error, modelContext: modelContext)
 
                 case .usage, .thinking, .toolUse, .toolExecuting, .reference, .contextCompacted:
                     // Existing UI hooks are already wired on the primary send path; this continuation
@@ -526,6 +536,78 @@ class ChatViewModel {
 
     func clearStagedArtifacts() {
         stagingArtifacts.removeAll()
+    }
+
+    // MARK: - Sandbox Import
+
+    /// State for recently imported sandbox artifacts
+    var recentlyImportedArtifacts: [SandboxedArtifact] = []
+
+    /// Whether the artifact library panel is visible
+    var showArtifactLibrary: Bool = false
+
+    /// Import a file from an external location into the artifact sandbox.
+    /// This COPIES the file to the sandbox - LLMs can only access the copy.
+    ///
+    /// - Parameter url: The URL of the file to import.
+    /// - Returns: The imported artifact, or nil if import failed.
+    @discardableResult
+    func importFileToSandbox(url: URL) async -> SandboxedArtifact? {
+        do {
+            let artifact = try await ArtifactSandboxService.shared.importFile(from: url)
+            recentlyImportedArtifacts.append(artifact)
+            logger.info("Imported file to sandbox: \(artifact.filename)")
+            return artifact
+        } catch {
+            logger.error("Failed to import file to sandbox: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    /// Import raw data as a file in the artifact sandbox.
+    ///
+    /// - Parameters:
+    ///   - data: The data to save.
+    ///   - filename: The desired filename.
+    /// - Returns: The created artifact, or nil if import failed.
+    @discardableResult
+    func importDataToSandbox(data: Data, filename: String) async -> SandboxedArtifact? {
+        do {
+            let artifact = try await ArtifactSandboxService.shared.importData(
+                data, filename: filename)
+            recentlyImportedArtifacts.append(artifact)
+            logger.info("Imported data to sandbox: \(artifact.filename)")
+            return artifact
+        } catch {
+            logger.error("Failed to import data to sandbox: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    /// Import an entire folder into the artifact sandbox.
+    ///
+    /// - Parameter url: The folder URL to import.
+    /// - Returns: Array of imported artifacts.
+    func importFolderToSandbox(url: URL) async -> [SandboxedArtifact] {
+        do {
+            let artifacts = try await ArtifactSandboxService.shared.importFolder(from: url)
+            recentlyImportedArtifacts.append(contentsOf: artifacts)
+            logger.info("Imported folder to sandbox: \(artifacts.count) files")
+            return artifacts
+        } catch {
+            logger.error("Failed to import folder to sandbox: \(error.localizedDescription)")
+            return []
+        }
+    }
+
+    /// Clear the recently imported artifacts list.
+    func clearRecentlyImportedArtifacts() {
+        recentlyImportedArtifacts.removeAll()
+    }
+
+    /// Get the sandbox path for display in UI.
+    var artifactLibraryPath: String {
+        ArtifactSandboxService.shared.sandboxURL.path
     }
 
     /// Refresh tool toggles and authorized tool list, ensuring registry is loaded.
@@ -609,7 +691,8 @@ class ChatViewModel {
     /// Called when user switches sessions or session becomes inactive.
     /// Distillation is intentionally NOT triggered here (archive-only policy).
     func onSessionDeactivated(session: ChatSessionEntity, modelContext: ModelContext) {
-        logger.debug("Skipping distillation on session deactivated (archive-only policy, id=\(session.id))")
+        logger.debug(
+            "Skipping distillation on session deactivated (archive-only policy, id=\(session.id))")
     }
 
     // MARK: - Session Management
@@ -1257,12 +1340,15 @@ class ChatViewModel {
             defer { Task { await debouncer.end(sessionID: sessionID) } }
 
             // Snapshot value types for background classification.
-            let messages = session.messages.sorted { $0.createdAt < $1.createdAt }.map { $0.asDomain() }
+            let messages = session.messages.sorted { $0.createdAt < $1.createdAt }.map {
+                $0.asDomain()
+            }
 
             let service = ConversationClassificationService()
 
             let task = Task.detached(priority: .utility) {
-                return (try? await service.classify(messages: messages)) ?? ConversationMetadata.fallback(from: messages)
+                return (try? await service.classify(messages: messages))
+                    ?? ConversationMetadata.fallback(from: messages)
             }
 
             let metadata = await task.value
@@ -1281,7 +1367,8 @@ class ChatViewModel {
 
             do {
                 try modelContext.save()
-                self.logger.info("Classification completed for session \(session.id): \(metadata.title)")
+                self.logger.info(
+                    "Classification completed for session \(session.id): \(metadata.title)")
             } catch {
                 self.logger.error("Failed saving classification: \(error.localizedDescription)")
             }
