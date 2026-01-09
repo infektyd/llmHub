@@ -805,8 +805,7 @@ class ChatViewModel {
             if !Self.loggedMissingModels.contains(key) {
                 let available = modelRegistry.availableProviders().joined(separator: ", ")
                 logger.warning(
-                    "Could not find provider for ID: \(savedProviderID) "
-                        + "(canonical: \(canonicalSavedProviderID)). Available: \(available)"
+                    "Could not find provider for ID: \(savedProviderID) (canonical: \(canonicalSavedProviderID)). Available: \(available)"
                 )
                 Self.loggedMissingModels.insert(key)
             }

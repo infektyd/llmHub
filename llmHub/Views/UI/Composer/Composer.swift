@@ -279,7 +279,7 @@ struct ComposerBarView: View {
 
     /// Handles files dropped onto the composer, importing them to the artifact sandbox.
     private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
-        var droppedURLs: [URL] = []
+        let droppedURLs = OSAllocatedUnfairLock<[URL]>(initialState: [])
         let group = DispatchGroup()
 
         for provider in providers {
@@ -287,7 +287,9 @@ struct ComposerBarView: View {
                 group.enter()
                 _ = provider.loadObject(ofClass: URL.self) { url, _ in
                     if let url = url {
-                        droppedURLs.append(url)
+                        droppedURLs.withLock { urls in
+                            urls.append(url)
+                        }
                     }
                     group.leave()
                 }
@@ -295,8 +297,9 @@ struct ComposerBarView: View {
         }
 
         group.notify(queue: .main) {
-            if !droppedURLs.isEmpty {
-                self.onFilesDropped(droppedURLs)
+            let urls = droppedURLs.withLock { $0 }
+            if !urls.isEmpty {
+                self.onFilesDropped(urls)
             }
         }
 

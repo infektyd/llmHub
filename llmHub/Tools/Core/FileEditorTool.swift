@@ -94,7 +94,7 @@ nonisolated final class FileEditorTool: Tool {
             else {
                 throw ToolError.invalidArguments("old_string and new_string required")
             }
-            guard fm.fileExists(atPath: fileURL.path) else {
+            guard fileManager.fileExists(atPath: fileURL.path) else {
                 throw ToolError.executionFailed("File not found")
             }
             let original = try String(contentsOf: fileURL, encoding: .utf8)
@@ -116,7 +116,7 @@ nonisolated final class FileEditorTool: Tool {
             guard let content = arguments.string("content"), !content.isEmpty else {
                 return ToolResult.success("No content provided; nothing appended.")
             }
-            guard fm.fileExists(atPath: fileURL.path) else {
+            guard fileManager.fileExists(atPath: fileURL.path) else {
                 throw ToolError.executionFailed("File not found")
             }
             let original = try String(contentsOf: fileURL, encoding: .utf8)
@@ -131,7 +131,7 @@ nonisolated final class FileEditorTool: Tool {
             )
 
         case "delete":
-            try fm.removeItem(at: fileURL)
+            try fileManager.removeItem(at: fileURL)
             return ToolResult.success(
                 "File deleted",
                 metadata: [
@@ -146,7 +146,7 @@ nonisolated final class FileEditorTool: Tool {
                 throw ToolError.invalidArguments("destination required")
             }
             let destURL = context.workspacePath.appendingPathComponent(dest).standardizedFileURL
-            try fm.moveItem(at: fileURL, to: destURL)
+            try fileManager.moveItem(at: fileURL, to: destURL)
             return ToolResult.success(
                 "Moved to \(dest)",
                 metadata: [
@@ -163,7 +163,7 @@ nonisolated final class FileEditorTool: Tool {
                 throw ToolError.invalidArguments("destination required")
             }
             let destURL = context.workspacePath.appendingPathComponent(dest).standardizedFileURL
-            try fm.copyItem(at: fileURL, to: destURL)
+            try fileManager.copyItem(at: fileURL, to: destURL)
             return ToolResult.success(
                 "Copied to \(dest)",
                 metadata: [
