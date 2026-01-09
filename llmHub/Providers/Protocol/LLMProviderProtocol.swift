@@ -138,6 +138,9 @@ enum ProviderEvent: Sendable {
     case error(LLMProviderError)
     /// Context was compacted to fit within token limits.
     case contextCompacted(droppedMessages: Int, tokensSaved: Int)
+
+    /// The agent stopped without a normal completion (e.g. iteration cap hit).
+    case agentStopped(reason: AgentStopReason)
 }
 
 /// Errors specific to LLM providers.

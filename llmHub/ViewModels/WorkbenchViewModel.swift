@@ -24,6 +24,9 @@ class WorkbenchViewModel {
     }
     /// Set of conversation IDs selected for multi-select operations (Cmd+click).
     var selectedConversationIDs: Set<UUID> = []
+
+    /// Anchor ID used for Shift-click range selection.
+    var selectionAnchorConversationID: UUID?
     /// The visibility state of the navigation split view columns.
     var columnVisibility: NavigationSplitViewVisibility = .all
     /// Controls the visibility of the tool inspector pane.

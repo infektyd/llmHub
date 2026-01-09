@@ -13,6 +13,83 @@ import Foundation
 
 struct llmHubTests {
 
+    private struct NoopTool: Tool {
+        let name: String = "noop"
+        let description: String = "No-op tool used for tests"
+
+        var parameters: ToolParametersSchema {
+            ToolParametersSchema(properties: [:], required: [])
+        }
+
+        let permissionLevel: ToolPermissionLevel = .sensitive
+        let requiredCapabilities: [ToolCapability] = []
+        let weight: ToolWeight = .fast
+        let isCacheable: Bool = false
+
+        func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
+            ToolResult.success("ok")
+        }
+    }
+
+    private final class LoopingToolUseProvider: LLMProvider {
+        let id: String
+        let name: String
+        let endpoint: URL = URL(string: "https://example.invalid")!
+
+        let supportsStreaming: Bool = true
+        let supportsToolCalling: Bool = true
+        let availableModels: [LLMModel] = [LLMModel(id: "fake", name: "fake", maxOutputTokens: 1024)]
+
+        init(id: String = "mock", name: String = "Mock") {
+            self.id = id
+            self.name = name
+        }
+
+        var defaultHeaders: [String: String] { get async { [:] } }
+        var pricing: PricingMetadata { PricingMetadata(inputPer1KUSD: 0, outputPer1KUSD: 0, currency: "USD") }
+        var isConfigured: Bool { get async { true } }
+
+        func fetchModels() async throws -> [LLMModel] { availableModels }
+
+        func buildRequest(
+            messages: [ChatMessage],
+            model: String,
+            tools: [ToolDefinition]?,
+            options: LLMRequestOptions
+        ) async throws -> URLRequest {
+            URLRequest(url: endpoint)
+        }
+
+        func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {
+            AsyncThrowingStream { continuation in
+                let toolCallID = UUID().uuidString
+                continuation.yield(.toolUse(id: toolCallID, name: "noop", input: "{}"))
+
+                let assistant = ChatMessage(
+                    id: UUID(),
+                    generationID: nil,
+                    role: .assistant,
+                    content: "",
+                    thoughtProcess: nil,
+                    parts: [],
+                    attachments: [],
+                    createdAt: Date(),
+                    codeBlocks: [],
+                    tokenUsage: nil,
+                    costBreakdown: nil,
+                    provenance: .chat,
+                    toolCallID: nil,
+                    toolCalls: nil,
+                    toolResultMeta: nil
+                )
+                continuation.yield(.completion(message: assistant))
+                continuation.finish()
+            }
+        }
+
+        func parseTokenUsage(from response: Data) throws -> TokenUsage? { nil }
+    }
+
     private final class CapturingProvider: LLMProvider {
         let id: String
         let name: String
@@ -95,6 +172,140 @@ struct llmHubTests {
         func snapshot() -> (called: Bool, observedModel: String?) {
             (called, observedModel)
         }
+    }
+
+    @Test @MainActor
+    func agentIterationLimitEmitsStopReason() async throws {
+        let schema = Schema([
+            ChatSessionEntity.self,
+            ChatMessageEntity.self,
+            ChatFolderEntity.self,
+            ChatTagEntity.self,
+        ])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let modelContext = ModelContext(container)
+
+        let provider = LoopingToolUseProvider()
+        let registry = ProviderRegistry(providerBuilders: [{ provider }])
+        let toolRegistry = await ToolRegistry(tools: [NoopTool()])
+        let toolExecutor = ToolExecutor(registry: toolRegistry, environment: .current)
+        let chatService = ChatService(
+            modelContext: modelContext,
+            providerRegistry: registry,
+            toolRegistry: toolRegistry,
+            toolExecutor: toolExecutor,
+            toolAuthorizationService: nil
+        )
+
+        let session = try chatService.createSession(providerID: provider.id, model: "fake")
+
+        let stream = try await chatService.streamCompletion(
+            for: session,
+            userMessage: "",
+            generationID: UUID(),
+            maxIterationsOverride: 1
+        )
+
+        var stopReason: AgentStopReason?
+        for try await event in stream {
+            if case .agentStopped(let reason) = event {
+                stopReason = reason
+            }
+        }
+
+        #expect(stopReason == .iterationLimitReached(limit: 1, used: 1))
+    }
+
+    @Test @MainActor
+    func agentIterationLimitContinueAllowsAdditionalToolSteps() async throws {
+        let schema = Schema([
+            ChatSessionEntity.self,
+            ChatMessageEntity.self,
+            ChatFolderEntity.self,
+            ChatTagEntity.self,
+        ])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let modelContext = ModelContext(container)
+
+        let provider = LoopingToolUseProvider()
+        let registry = ProviderRegistry(providerBuilders: [{ provider }])
+        let toolRegistry = await ToolRegistry(tools: [NoopTool()])
+        let toolExecutor = ToolExecutor(registry: toolRegistry, environment: .current)
+        let chatService = ChatService(
+            modelContext: modelContext,
+            providerRegistry: registry,
+            toolRegistry: toolRegistry,
+            toolExecutor: toolExecutor,
+            toolAuthorizationService: nil
+        )
+
+        let session = try chatService.createSession(providerID: provider.id, model: "fake")
+
+        let stream1 = try await chatService.streamCompletion(
+            for: session,
+            userMessage: "",
+            generationID: UUID(),
+            maxIterationsOverride: 1
+        )
+        for try await _ in stream1 { }
+
+        let stream2 = try await chatService.streamCompletion(
+            for: session,
+            userMessage: "",
+            generationID: UUID(),
+            maxIterationsOverride: 2
+        )
+        for try await _ in stream2 { }
+
+        let reloaded = try chatService.loadSession(id: session.id)
+        let toolMessages = reloaded.messages.filter { $0.role == .tool }
+        #expect(toolMessages.count >= 3)
+    }
+
+    @Test
+    @MainActor
+    func contextMenuClickedInsideSelectionTargetsSelection() {
+        let a = UUID()
+        let b = UUID()
+        let selection: Set<UUID> = [a, b]
+
+        let targets = ConversationContextMenuTargetResolver.targetIDs(
+            clickedID: a,
+            selectedIDs: selection
+        )
+
+        #expect(targets == selection)
+    }
+
+    @Test
+    @MainActor
+    func contextMenuClickedOutsideSelectionTargetsOnlyClicked() {
+        let a = UUID()
+        let b = UUID()
+        let clicked = UUID()
+        let selection: Set<UUID> = [a, b]
+
+        let targets = ConversationContextMenuTargetResolver.targetIDs(
+            clickedID: clicked,
+            selectedIDs: selection
+        )
+
+        #expect(targets == [clicked])
+    }
+
+    @Test
+    @MainActor
+    func contextMenuNoSelectionTargetsClicked() {
+        let clicked = UUID()
+
+        let targets = ConversationContextMenuTargetResolver.targetIDs(
+            clickedID: clicked,
+            selectedIDs: []
+        )
+
+        #expect(targets == [clicked])
     }
 
     @Test @MainActor

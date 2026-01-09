@@ -82,7 +82,16 @@ nonisolated struct FilePatchTool: Tool {
             throw ToolError.invalidArguments("Unknown mode: \(mode)")
         }
 
-        return ToolResult.success(output)
+        return ToolResult.success(
+            output,
+            metadata: [
+                "operation": "file_patch",
+                "mode": mode,
+                "path": filePath,
+                "resolvedPath": fileURL.path,
+                "dryRun": dryRun ? "true" : "false",
+            ]
+        )
     }
 
     // MARK: - Line Replace

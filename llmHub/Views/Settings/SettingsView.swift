@@ -510,6 +510,8 @@ struct StatusBanner: View {
 
 struct ToolsSection: View {
     @ObservedObject var viewModel: SettingsViewModel
+    
+    @Environment(\.uiScale) private var uiScale
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {

@@ -14,13 +14,19 @@ import OSLog
 
 // MARK: - Service
 
-/// A central authority to manage permissions for sensitive tools (e.g., "drive_access", "calendar_write").
-/// Handles persistence and thread-safe status checks.
+/// A central authority to manage permissions for sensitive tools.
+/// SECURITY: Implements conversation-scoped authorization with secure-by-default policy.
+/// Default permission is .denied (not .notDetermined) to prevent unauthorized access.
 @MainActor
 class ToolAuthorizationService: ObservableObject {
     private let logger = Logger(subsystem: "com.llmhub", category: "ToolAuthorizationService")
 
+    // Global permissions (legacy, for backward compatibility)
     @Published private(set) var permissions: [String: PermissionStatus] = [:]
+    
+    // Conversation-scoped permissions: [conversationID: [toolID: status]]
+    @Published private(set) var conversationPermissions: [UUID: [String: PermissionStatus]] = [:]
+    
     @Published private(set) var pendingAuthRequests: [String] = []
 
     private let persistenceURL: URL?
@@ -47,8 +53,26 @@ class ToolAuthorizationService: ObservableObject {
     // MARK: - Public API
 
     /// Checks the current permission status for a given tool ID.
+    /// SECURITY: Defaults to .denied (not .notDetermined) for secure-by-default behavior.
     func checkAccess(for toolID: String) -> PermissionStatus {
-        permissions[toolID] ?? .notDetermined
+        permissions[toolID] ?? .denied
+    }
+    
+    /// Checks permission for a tool in a specific conversation context.
+    /// SECURITY: Conversation-scoped permissions take precedence over global permissions.
+    /// Returns .denied if no permission is explicitly granted.
+    func checkAccess(for toolID: String, conversationID: UUID) -> PermissionStatus {
+        // Check conversation-specific permission first
+        if let convPerms = conversationPermissions[conversationID],
+           let status = convPerms[toolID] {
+            logger.debug("🔐 [\(conversationID.uuidString.prefix(8))] Tool \(toolID): \(status)")
+            return status
+        }
+        
+        // Fall back to global permission, but default to .denied
+        let status = permissions[toolID] ?? .denied
+        logger.debug("🔐 [Global] Tool \(toolID): \(status)")
+        return status
     }
 
     /// Requests access for a tool (synchronous).
@@ -120,6 +144,41 @@ class ToolAuthorizationService: ObservableObject {
         updatePermission(for: toolID, status: .notDetermined)
         logger.info("Access reset for \(toolID)")
     }
+    
+    // MARK: - Conversation-Scoped Authorization
+    
+    /// Grants access to a tool for a specific conversation.
+    func grantAccessForConversation(toolID: String, conversationID: UUID) {
+        if conversationPermissions[conversationID] == nil {
+            conversationPermissions[conversationID] = [:]
+        }
+        conversationPermissions[conversationID]?[toolID] = .authorized
+        logger.info("🔓 [\(conversationID.uuidString.prefix(8))] Access granted for \(toolID)")
+        saveConversationPermissions()
+    }
+    
+    /// Denies access to a tool for a specific conversation.
+    func denyAccessForConversation(toolID: String, conversationID: UUID) {
+        if conversationPermissions[conversationID] == nil {
+            conversationPermissions[conversationID] = [:]
+        }
+        conversationPermissions[conversationID]?[toolID] = .denied
+        logger.info("🔒 [\(conversationID.uuidString.prefix(8))] Access denied for \(toolID)")
+        saveConversationPermissions()
+    }
+    
+    /// Clears all permissions for a conversation (useful on conversation end).
+    func clearConversationPermissions(conversationID: UUID) {
+        conversationPermissions.removeValue(forKey: conversationID)
+        logger.info("🧹 [\(conversationID.uuidString.prefix(8))] Cleared all permissions")
+        saveConversationPermissions()
+    }
+    
+    /// Gets all tools with authorized status for a conversation.
+    func authorizedTools(for conversationID: UUID) -> [String] {
+        guard let convPerms = conversationPermissions[conversationID] else { return [] }
+        return convPerms.filter { $0.value == .authorized }.map { $0.key }
+    }
 
     /// UI callback to resolve pending auth.
     nonisolated func resolvePending(toolID: String, status: PermissionStatus) {
@@ -179,4 +238,48 @@ class ToolAuthorizationService: ObservableObject {
             logger.error("Failed to save permissions: \(error.localizedDescription)")
         }
     }
+    
+    private func saveConversationPermissions() {
+        guard let persistenceURL = persistenceURL else { return }
+        let convURL = persistenceURL.deletingLastPathComponent()
+            .appendingPathComponent("conversation_permissions.json")
+        
+        do {
+            // Convert UUID keys to strings for JSON encoding
+            let stringKeyed = Dictionary(uniqueKeysWithValues: 
+                conversationPermissions.map { ($0.key.uuidString, $0.value) }
+            )
+            let data = try JSONEncoder().encode(stringKeyed)
+            try data.write(to: convURL, options: .atomic)
+            logger.debug("Conversation permissions saved: \(conversationPermissions.count) conversations")
+        } catch {
+            logger.error("Failed to save conversation permissions: \(error.localizedDescription)")
+        }
+    }
+    
+    private func loadConversationPermissions() {
+        guard let persistenceURL = persistenceURL else { return }
+        let convURL = persistenceURL.deletingLastPathComponent()
+            .appendingPathComponent("conversation_permissions.json")
+        
+        guard let data = try? Data(contentsOf: convURL),
+              let stringKeyed = try? JSONDecoder().decode([String: [String: PermissionStatus]].self, from: data)
+        else {
+            logger.debug("No persisted conversation permissions found")
+            return
+        }
+        
+        // Convert string keys back to UUIDs
+        conversationPermissions = Dictionary(uniqueKeysWithValues: 
+            stringKeyed.compactMap { key, value in
+                guard let uuid = UUID(uuidString: key) else { return nil }
+                return (uuid, value)
+            }
+        )
+        logger.debug("Loaded conversation permissions: \(conversationPermissions.count) conversations")
+    }
 }
+
+// MARK: - PermissionStatus Extension
+
+extension PermissionStatus: Codable {}

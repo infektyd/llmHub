@@ -138,21 +138,40 @@ actor ToolExecutor {
         }
 
         // Enforce user authorization if configured.
-        if let auth = context.authorization {
-            let status = await auth.checkAccess(for: tool.name)
-            if status != .authorized {
-                metrics.markEnd()
-                metrics.errorClass = .authorizationDenied
-                return ToolCallResult(
-                    id: call.id,
-                    toolName: call.name,
-                    result: .failure(
-                        "Unauthorized tool: \(call.name)",
-                        metrics: metrics,
-                        errorClass: .authorizationDenied
-                    )
+        // SECURITY: Authorization context is REQUIRED. If missing, fail immediately.
+        guard let auth = context.authorization else {
+            metrics.markEnd()
+            metrics.errorClass = .authorizationDenied
+            logger.error("🔴 SECURITY: No authorization context provided for tool '\(call.name)' in call ID \(call.id)")
+            return ToolCallResult(
+                id: call.id,
+                toolName: call.name,
+                result: .failure(
+                    "System configuration error: Authorization context missing",
+                    metrics: metrics,
+                    errorClass: .authorizationDenied
                 )
-            }
+            )
+        }
+        
+        // Check authorization status
+        // SECURITY: .notDetermined is treated as .denied (secure by default)
+        // Use conversation-scoped authorization via context.sessionID
+        let status = await auth.checkAccess(for: tool.name, conversationID: context.sessionID)
+        if status != .authorized {
+            metrics.markEnd()
+            metrics.errorClass = .authorizationDenied
+            let statusName = status == .denied ? "denied" : "not determined"
+            logger.warning("🔒 Tool '\(call.name)' blocked for call ID \(call.id): status=\(statusName)")
+            return ToolCallResult(
+                id: call.id,
+                toolName: call.name,
+                result: .failure(
+                    "Unauthorized: Tool '\(call.name)' requires user permission",
+                    metrics: metrics,
+                    errorClass: .authorizationDenied
+                )
+            )
         }
 
         let effectiveWeight = tool.weight
@@ -220,7 +239,11 @@ actor ToolExecutor {
                 await context.session.cache(finalResult, key: generateCacheKey(call))
             }
 
-            logger.info("✅ \(call.name) completed in \(metrics.durationMs)ms")
+            if let fileSummary = summarizeFileAccess(metadata: finalResult.metadata) {
+                logger.info("✅ \(call.name) completed in \(metrics.durationMs)ms (\(fileSummary))")
+            } else {
+                logger.info("✅ \(call.name) completed in \(metrics.durationMs)ms")
+            }
             return ToolCallResult(id: call.id, toolName: call.name, result: finalResult)
 
         } catch let error as ToolError {
@@ -257,6 +280,17 @@ actor ToolExecutor {
                 result: .failure(error.localizedDescription, metrics: metrics, errorClass: .unknown)
             )
         }
+    }
+
+    private nonisolated func summarizeFileAccess(metadata: [String: String]) -> String? {
+        // Keep logs compact and user-auditable.
+        if let resolved = metadata["resolvedPath"] {
+            return "path=\(resolved)"
+        }
+        if let path = metadata["path"] {
+            return "path=\(path)"
+        }
+        return nil
     }
 
     private func generateCacheKey(_ call: ToolCall) -> String {

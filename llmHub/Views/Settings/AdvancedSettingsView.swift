@@ -14,6 +14,8 @@ struct AdvancedSettingsView: View {
     @Environment(\.uiCompactMode) private var uiCompactMode
     @Environment(\.uiScale) private var uiScale
 
+    @AppStorage(AgentSettings.maxIterationsKey) private var agentMaxIterations: Int = AgentSettings.defaultMaxIterations
+
     var body: some View {
         VStack(alignment: .leading, spacing: uiCompactMode ? 16 : 20) {
             SettingsSectionHeader(
@@ -122,6 +124,38 @@ struct AdvancedSettingsView: View {
                         step: 1000
                     )
                     .tint(AppColors.accent)
+                }
+                .padding(uiCompactMode ? 12 : 16)
+
+                Divider()
+                    .padding(.horizontal, uiCompactMode ? 12 : 16)
+
+                // Agent max iterations stepper
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Agent Max Iterations")
+                            .font(.system(size: 14 * uiScale, weight: .medium))
+                            .foregroundStyle(AppColors.textPrimary)
+                        Spacer()
+                        Text("\(agentMaxIterations)")
+                            .font(.system(size: 12 * uiScale, weight: .medium, design: .monospaced))
+                            .foregroundStyle(AppColors.textSecondary)
+                    }
+
+                    Text("Maximum number of tool-step loops per run (guardrails: 1–200)")
+                        .font(.system(size: 11 * uiScale))
+                        .foregroundStyle(AppColors.textTertiary)
+
+                    Stepper(
+                        value: Binding(
+                            get: { AgentSettings.clampMaxIterations(agentMaxIterations) },
+                            set: { agentMaxIterations = AgentSettings.clampMaxIterations($0) }
+                        ),
+                        in: AgentSettings.minMaxIterations...AgentSettings.maxMaxIterations
+                    ) {
+                        Text("")
+                    }
+                    .labelsHidden()
                 }
                 .padding(uiCompactMode ? 12 : 16)
             }

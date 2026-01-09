@@ -196,6 +196,21 @@ final class ConversationLifecycleService {
         }
     }
 
+    /// Archives sessions by IDs.
+    func archiveAll(sessionIDs: [UUID], modelContext: ModelContext) {
+        guard !sessionIDs.isEmpty else { return }
+        do {
+            let ids = Set(sessionIDs)
+            let descriptor = FetchDescriptor<ChatSessionEntity>(
+                predicate: #Predicate { ids.contains($0.id) }
+            )
+            let sessions = try modelContext.fetch(descriptor)
+            archiveAll(sessions, modelContext: modelContext)
+        } catch {
+            logger.error("Failed to archive sessions by ids: \(error.localizedDescription)")
+        }
+    }
+
     /// Unflags a session (keeps it, removes from cleanup queue).
     func keep(session: ChatSessionEntity, modelContext: ModelContext) {
         session.flaggedForCleanupAt = nil

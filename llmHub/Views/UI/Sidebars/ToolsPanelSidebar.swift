@@ -16,6 +16,15 @@ struct ToolsPanelSidebar: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            // Workspace root transparency (tool/file operations are relative to this).
+            Text("Workspace: \(viewModel.workspaceRootDisplayPath)")
+                .font(.system(size: 11 * uiScale, design: .monospaced))
+                .foregroundStyle(AppColors.textTertiary)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+
             // Search/Filter
             HStack {
                 Image(systemName: "magnifyingglass")

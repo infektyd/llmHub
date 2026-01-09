@@ -59,6 +59,7 @@ struct ModernSidebarLeft: View {
     let onNewConversation: () -> Void
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(WorkbenchViewModel.self) private var workbench
 
     @AppStorage("sidebar.modern.mode") private var storedMode: String = SidebarMode.chat.rawValue
     @AppStorage("sidebar.modern.section.pinned.expanded") private var pinnedExpanded: Bool = true
@@ -73,9 +74,6 @@ struct ModernSidebarLeft: View {
 
     @State private var expandedProjectIDs: Set<UUID> = []
     @State private var didLoadExpandedProjects = false
-
-    @State private var selectedConversationIDs: Set<UUID> = []
-    @State private var selectionAnchorConversationID: UUID?
 
     @FocusState private var searchFocused: Bool
 
@@ -125,20 +123,20 @@ struct ModernSidebarLeft: View {
             }
 
             if let id = selectedConversationID {
-                selectedConversationIDs = [id]
-                selectionAnchorConversationID = id
+                workbench.selectedConversationIDs = [id]
+                workbench.selectionAnchorConversationID = id
             }
         }
         .onChange(of: selectedConversationID) { _, newValue in
             guard let id = newValue else {
-                selectedConversationIDs.removeAll()
-                selectionAnchorConversationID = nil
+                workbench.selectedConversationIDs.removeAll()
+                workbench.selectionAnchorConversationID = nil
                 return
             }
-            if !selectedConversationIDs.contains(id) {
-                selectedConversationIDs = [id]
+            if !workbench.selectedConversationIDs.contains(id) {
+                workbench.selectedConversationIDs = [id]
             }
-            selectionAnchorConversationID = id
+            workbench.selectionAnchorConversationID = id
         }
         .onChange(of: state.searchText) { _, newValue in
             debounceTask?.cancel()
@@ -575,10 +573,10 @@ struct ModernSidebarLeft: View {
                         .font(
                             .system(
                                 size: 12 * uiScale,
-                                weight: selectedConversationIDs.contains(session.id) ? .semibold : .regular)
+                                weight: workbench.selectedConversationIDs.contains(session.id) ? .semibold : .regular)
                         )
                         .foregroundStyle(
-                            selectedConversationIDs.contains(session.id)
+                            workbench.selectedConversationIDs.contains(session.id)
                                 ? AppColors.textPrimary : AppColors.textSecondary
                         )
                         .lineLimit(1)
@@ -594,7 +592,7 @@ struct ModernSidebarLeft: View {
             .padding(.vertical, uiCompactMode ? 8 : 9)
             .background {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(selectedConversationIDs.contains(session.id) ? AppColors.accent.opacity(0.12) : Color.clear)
+                    .fill(workbench.selectedConversationIDs.contains(session.id) ? AppColors.accent.opacity(0.12) : Color.clear)
             }
         }
         .buttonStyle(.plain)
@@ -608,49 +606,49 @@ struct ModernSidebarLeft: View {
         let modifiers = NSEvent.modifierFlags
         if modifiers.contains(.shift) {
             let ordering = visibleConversationIDsInOrder()
-            let anchor = selectionAnchorConversationID
-                ?? selectedConversationIDs.first
+            let anchor = workbench.selectionAnchorConversationID
+                ?? workbench.selectedConversationIDs.first
                 ?? selectedConversationID
                 ?? sessionID
 
-            selectionAnchorConversationID = anchor
+            workbench.selectionAnchorConversationID = anchor
 
             if let startIndex = ordering.firstIndex(of: anchor),
                 let endIndex = ordering.firstIndex(of: sessionID) {
                 let range = startIndex <= endIndex
                     ? ordering[startIndex...endIndex]
                     : ordering[endIndex...startIndex]
-                selectedConversationIDs = Set(range)
+                workbench.selectedConversationIDs = Set(range)
             } else {
-                selectedConversationIDs = [sessionID]
-                selectionAnchorConversationID = sessionID
+                workbench.selectedConversationIDs = [sessionID]
+                workbench.selectionAnchorConversationID = sessionID
             }
 
-            if selectedConversationIDs.isEmpty, let active = selectedConversationID {
-                selectedConversationIDs = [active]
+            if workbench.selectedConversationIDs.isEmpty, let active = selectedConversationID {
+                workbench.selectedConversationIDs = [active]
             }
             return
         }
 
         if modifiers.contains(.command) {
-            selectionAnchorConversationID = sessionID
+            workbench.selectionAnchorConversationID = sessionID
 
-            if selectedConversationIDs.contains(sessionID) {
-                selectedConversationIDs.remove(sessionID)
+            if workbench.selectedConversationIDs.contains(sessionID) {
+                workbench.selectedConversationIDs.remove(sessionID)
             } else {
-                selectedConversationIDs.insert(sessionID)
+                workbench.selectedConversationIDs.insert(sessionID)
             }
 
-            if selectedConversationIDs.isEmpty, let active = selectedConversationID {
-                selectedConversationIDs = [active]
+            if workbench.selectedConversationIDs.isEmpty, let active = selectedConversationID {
+                workbench.selectedConversationIDs = [active]
             }
             return
         }
 #endif
 
-        selectedConversationIDs = [sessionID]
+        workbench.selectedConversationIDs = [sessionID]
         selectedConversationID = sessionID
-        selectionAnchorConversationID = sessionID
+        workbench.selectionAnchorConversationID = sessionID
     }
 
     private func visibleConversationIDsInOrder() -> [UUID] {
@@ -748,7 +746,7 @@ struct ModernSidebarLeft: View {
     private func archiveFromContextMenu(clickedSessionID: UUID) {
         let targetIDs = ConversationContextMenuTargetResolver.targetIDs(
             clickedID: clickedSessionID,
-            selectedIDs: selectedConversationIDs
+            selectedIDs: workbench.selectedConversationIDs
         )
 
         // Fast path: single session.
@@ -759,24 +757,23 @@ struct ModernSidebarLeft: View {
             return
         }
 
-        let sessions = fetchSessions(ids: Array(targetIDs))
-        lifecycleService.archiveAll(sessions, modelContext: modelContext)
+        lifecycleService.archiveAll(sessionIDs: Array(targetIDs), modelContext: modelContext)
     }
 
     private func deleteFromContextMenu(clickedSessionID: UUID) {
         let targetIDs = ConversationContextMenuTargetResolver.targetIDs(
             clickedID: clickedSessionID,
-            selectedIDs: selectedConversationIDs
+            selectedIDs: workbench.selectedConversationIDs
         )
 
         lifecycleService.deleteAll(sessionIDs: Array(targetIDs), modelContext: modelContext)
 
         // Keep selection stable and avoid thrashing the active conversation.
-        selectedConversationIDs.subtract(targetIDs)
+        workbench.selectedConversationIDs.subtract(targetIDs)
         if let active = selectedConversationID, targetIDs.contains(active) {
             selectedConversationID = nil
         }
-        selectionAnchorConversationID = nil
+        workbench.selectionAnchorConversationID = nil
     }
 
     private func fetchSession(id: UUID) -> ChatSessionEntity? {

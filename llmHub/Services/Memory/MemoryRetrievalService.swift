@@ -270,14 +270,17 @@ final class MemoryRetrievalService: Sendable {
             let confidenceStr = String(format: "%.2f", snapshot.confidence)
             xml +=
                 "  <memory confidence=\"\(confidenceStr)\" scope=\"\(snapshot.scopeRaw)\" isComplete=\"\(snapshot.isComplete ? "true" : "false")\">\n"
-            xml += "    <summary>\(escapeXMLStatic(snapshot.summary))</summary>\n"
+            // SECURITY: Sanitize summary to prevent tool manifest injection
+            xml += "    <summary>\(sanitizeForInjection(escapeXMLStatic(snapshot.summary)))</summary>\n"
 
             // Add facts if present
             if !snapshot.facts.isEmpty {
                 xml += "    <user_facts>\n"
                 for fact in snapshot.facts {
-                    xml +=
-                        "      <fact category=\"\(escapeXMLStatic(fact.category))\">\(escapeXMLStatic(fact.statement))</fact>\n"
+                    // SECURITY: Sanitize fact content
+                    let sanitizedCategory = sanitizeForInjection(escapeXMLStatic(fact.category))
+                    let sanitizedStatement = sanitizeForInjection(escapeXMLStatic(fact.statement))
+                    xml += "      <fact category=\"\(sanitizedCategory)\">\(sanitizedStatement)</fact>\n"
                 }
                 xml += "    </user_facts>\n"
             }
@@ -286,8 +289,10 @@ final class MemoryRetrievalService: Sendable {
             if !snapshot.preferences.isEmpty {
                 xml += "    <preferences>\n"
                 for pref in snapshot.preferences {
-                    xml +=
-                        "      <preference topic=\"\(escapeXMLStatic(pref.topic))\">\(escapeXMLStatic(pref.value))</preference>\n"
+                    // SECURITY: Sanitize preference content
+                    let sanitizedTopic = sanitizeForInjection(escapeXMLStatic(pref.topic))
+                    let sanitizedValue = sanitizeForInjection(escapeXMLStatic(pref.value))
+                    xml += "      <preference topic=\"\(sanitizedTopic)\">\(sanitizedValue)</preference>\n"
                 }
                 xml += "    </preferences>\n"
             }
@@ -296,8 +301,12 @@ final class MemoryRetrievalService: Sendable {
             if !snapshot.decisions.isEmpty {
                 xml += "    <decisions>\n"
                 for decision in snapshot.decisions {
-                    xml += "      <decision>\(escapeXMLStatic(decision.decision))</decision>\n"
+                    // SECURITY: Sanitize decision content
+                    let sanitizedDecision = sanitizeForInjection(escapeXMLStatic(decision.decision))
+                    xml += "      <decision>\(sanitizedDecision)</decision>\n"
                 }
+                xml += "    </decisions>\n"
+            }
                 xml += "    </decisions>\n"
             }
 
@@ -426,5 +435,26 @@ final class MemoryRetrievalService: Sendable {
             .replacingOccurrences(of: ">", with: "&gt;")
             .replacingOccurrences(of: "\"", with: "&quot;")
             .replacingOccurrences(of: "'", with: "&apos;")
+    }
+    
+    /// Sanitizes content before injection into system prompt to prevent tool manifest attacks.
+    /// SECURITY: Removes tool manifest markers, tool-like structures, and truncates long code blocks.
+    private static func sanitizeForInjection(_ string: String) -> String {
+        var sanitized = string
+        
+        // Remove tool manifest markers
+        sanitized = sanitized.replacingOccurrences(of: "<llmhub_tool_manifest>", with: "[tool manifest removed]")
+        sanitized = sanitized.replacingOccurrences(of: "</llmhub_tool_manifest>", with: "")
+        
+        // Remove potential function calling syntax
+        sanitized = sanitized.replacingOccurrences(of: "\"type\": \"function\"", with: "type: function")
+        sanitized = sanitized.replacingOccurrences(of: "\"function\":", with: "function:")
+        
+        // Truncate excessively long content (potential code injection)
+        if sanitized.count > 2000 {
+            sanitized = String(sanitized.prefix(2000)) + "... [truncated for safety]"
+        }
+        
+        return sanitized
     }
 }

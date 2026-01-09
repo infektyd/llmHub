@@ -58,6 +58,26 @@ class ChatViewModel {
     /// Indicates whether the view model is currently streaming/generating a response.
     var isGenerating: Bool = false
 
+    // MARK: - Agent Iteration Limit UI
+
+    /// Last agent stop reason (if the agent stopped without normal completion).
+    var lastAgentStopReason: AgentStopReason?
+    /// When true, UI should present the step-limit alert.
+    var showAgentStepLimitAlert: Bool = false
+    /// When true, UI should present the step-limit configuration sheet.
+    var showAgentStepLimitConfigSheet: Bool = false
+    /// Which action the config sheet is currently editing.
+    var stepLimitConfigMode: StepLimitConfigMode = .continueRun
+    /// Input value for "additional steps" when continuing a run.
+    var stepLimitAdditionalSteps: Int = 10
+    /// Input value for persisted default max iterations.
+    var stepLimitDefaultMaxIterations: Int = AgentSettings.maxIterations()
+
+    enum StepLimitConfigMode: String, Sendable {
+        case continueRun
+        case changeDefault
+    }
+
     /// AFM diagnostics information
     var afmDiagnostics: AFMDiagnostics = AFMDiagnostics()
 
@@ -174,6 +194,9 @@ class ChatViewModel {
     private var generationTask: Task<Void, Never>?
     /// Stable identity for the active generation, used to merge streaming overlay with persisted messages.
     private var activeGenerationID: UUID?
+
+    /// Captures the last run's session ID so we can resume a stopped agent loop.
+    private var lastRunSessionID: UUID?
     /// Streaming accumulator for incoming tokens.
     private let streamAccumulator = StreamAccumulator()
     /// Identifier for the current streaming message.
@@ -196,6 +219,13 @@ class ChatViewModel {
     private var toolRegistry: ToolRegistry?
     private var toolExecutor: ToolExecutor?
     private var toolEnvironment: ToolEnvironment = .current
+
+    /// Workspace root used for tool/file operations.
+    var workspaceRootDisplayPath: String {
+        let url = toolEnvironment.sandboxRoot
+            ?? WorkspaceResolver.resolve(platform: toolEnvironment.platform)
+        return url.standardizedFileURL.path
+    }
 
     /// Tracks model keys we've already warned about to avoid log spam.
     /// Key format: "providerID:modelID"
@@ -310,6 +340,178 @@ class ChatViewModel {
 
         self.chatService = service
         return service
+    }
+
+    // MARK: - Iteration Limit Actions
+
+    func agentStepLimitStopTapped() {
+        logger.info("User chose Stop after step limit")
+        showAgentStepLimitAlert = false
+        showAgentStepLimitConfigSheet = false
+        lastAgentStopReason = nil
+    }
+
+    func agentStepLimitContinueTapped() {
+        logger.info("User chose Continue after step limit")
+        stepLimitConfigMode = .continueRun
+        stepLimitAdditionalSteps = 10
+        showAgentStepLimitConfigSheet = true
+    }
+
+    func agentStepLimitChangeDefaultTapped() {
+        logger.info("User chose Change Default after step limit")
+        stepLimitConfigMode = .changeDefault
+        stepLimitDefaultMaxIterations = AgentSettings.maxIterations()
+        showAgentStepLimitConfigSheet = true
+    }
+
+    func applyAgentStepLimitContinue(modelContext: ModelContext) {
+        let additional = AgentSettings.clampMaxIterations(stepLimitAdditionalSteps)
+        logger.info("Continuing run with additional steps: \(additional)")
+        Task { @MainActor in
+            await resumeAfterStepLimit(modelContext: modelContext, maxIterationsOverride: additional)
+        }
+        showAgentStepLimitAlert = false
+        showAgentStepLimitConfigSheet = false
+    }
+
+    func applyAgentStepLimitDefaultChange(modelContext: ModelContext) {
+        let newDefault = AgentSettings.clampMaxIterations(stepLimitDefaultMaxIterations)
+        AgentSettings.setMaxIterations(newDefault)
+        logger.info("Set default Agent Max Iterations to \(newDefault)")
+
+        // Apply immediately for the current stopped run by granting the delta.
+        if case .iterationLimitReached(limit: _, used: let used)? = lastAgentStopReason {
+            let additional = max(1, newDefault - used)
+            logger.info("Applying new default immediately by resuming with +\(additional) steps")
+            Task { @MainActor in
+                await resumeAfterStepLimit(modelContext: modelContext, maxIterationsOverride: additional)
+            }
+        }
+
+        showAgentStepLimitAlert = false
+        showAgentStepLimitConfigSheet = false
+    }
+
+    private func resumeAfterStepLimit(modelContext: ModelContext, maxIterationsOverride: Int) async {
+        guard let sessionID = lastRunSessionID else {
+            logger.error("Cannot resume: missing lastRunSessionID")
+            return
+        }
+        guard let generationID = activeGenerationID else {
+            logger.error("Cannot resume: missing activeGenerationID")
+            return
+        }
+
+        // Restart the agent loop from persisted state (safe fallback semantics).
+        // Note: ChatService reloads the session each iteration and tool results are persisted as .tool messages.
+        do {
+            isGenerating = true
+            let streamToken = UUID().uuidString
+            let streamingID = UUID()
+            let streamingStart = Date()
+
+            let (uiStream, uiContinuation) = AsyncStream<String>.makeStream()
+            let updateTask = Task { @MainActor in
+                for await text in uiStream {
+                    self.scheduleStreamingUpdate(text, messageID: streamingID)
+                }
+                self.flushStreamingUpdate(messageID: streamingID)
+            }
+
+            try Task.checkCancellation()
+            await streamAccumulator.reset()
+            await streamAccumulator.begin(token: streamToken)
+
+            streamingMessageID = streamingID
+            streamingStartedAt = streamingStart
+            streamingText = nil
+
+            let service = await ensureChatService(modelContext: modelContext)
+            let domainSession = try await MainActor.run { try service.loadSession(id: sessionID) }
+
+            let stream = try await service.streamCompletion(
+                for: domainSession,
+                userMessage: "",
+                generationID: generationID,
+                maxIterationsOverride: maxIterationsOverride
+            )
+
+            for try await event in stream {
+                try Task.checkCancellation()
+                switch event {
+                case .token(let text):
+                    if let updated = await streamAccumulator.append(token: streamToken, delta: text) {
+                        uiContinuation.yield(updated)
+                    }
+
+                case .completion(let message):
+                    _ = await streamAccumulator.complete(token: streamToken, final: message.content)
+                    uiContinuation.finish()
+                    _ = await updateTask.result
+                    resetStreamingState()
+                    isTruncated = false
+                    truncatedSessionID = nil
+                    executingToolNames.removeAll()
+                    setLastVisibleMessage(to: message.id)
+                    self.handleStreamCompletion(sessionID: sessionID, modelID: domainSession.model, modelContext: modelContext)
+
+                case .truncated(let message):
+                    _ = await streamAccumulator.complete(token: streamToken, final: message.content)
+                    uiContinuation.finish()
+                    _ = await updateTask.result
+                    resetStreamingState()
+                    isTruncated = true
+                    truncatedSessionID = sessionID
+                    executingToolNames.removeAll()
+                    setLastVisibleMessage(to: message.id)
+                    self.handleStreamCompletion(sessionID: sessionID, modelID: domainSession.model, modelContext: modelContext)
+
+                case .error(let error):
+                    await streamAccumulator.fail(token: streamToken, error: error)
+                    uiContinuation.finish()
+                    _ = await updateTask.result
+                    resetStreamingState()
+                    isTruncated = false
+                    truncatedSessionID = nil
+                    executingToolNames.removeAll()
+                    self.handleStreamError(sessionID: sessionID, error: error, modelContext: modelContext)
+
+                case .usage, .thinking, .toolUse, .toolExecuting, .reference, .contextCompacted:
+                    // Existing UI hooks are already wired on the primary send path; this continuation
+                    // path intentionally stays minimal.
+                    break
+
+                case .agentStopped(let reason):
+                    uiContinuation.finish()
+                    _ = await updateTask.result
+                    resetStreamingState()
+                    executingToolNames.removeAll()
+                    isGenerating = false
+                    lastAgentStopReason = reason
+                    showAgentStepLimitAlert = true
+                }
+            }
+
+            await streamAccumulator.reset()
+            isGenerating = false
+            resetStreamingState()
+            generationTask = nil
+
+        } catch {
+            if error is CancellationError {
+                isGenerating = false
+                resetStreamingState()
+                executingToolNames.removeAll()
+                generationTask = nil
+                return
+            }
+            isGenerating = false
+            resetStreamingState()
+            executingToolNames.removeAll()
+            generationTask = nil
+            logger.error("Failed to resume after step limit: \(error.localizedDescription)")
+        }
     }
 
     // MARK: - Artifact Staging
@@ -683,6 +885,9 @@ class ChatViewModel {
                     generationID: generationID
                 )
 
+                // Keep enough state to allow an in-place "Continue" after step-limit stop.
+                self.lastRunSessionID = sessionID
+
                 for try await event in stream {
                     try Task.checkCancellation()
                     switch event {
@@ -779,6 +984,20 @@ class ChatViewModel {
                             try? await Task.sleep(nanoseconds: 5_000_000_000)
                             self?.showContextCompactionNotification = false
                         }
+
+                    case .agentStopped(let reason):
+                        uiContinuation.finish()
+                        _ = await updateTask.result
+
+                        resetStreamingState()
+                        isTruncated = false
+                        truncatedSessionID = nil
+                        executingToolNames.removeAll()
+                        isGenerating = false
+
+                        logger.warning("Agent stopped: \(String(describing: reason))")
+                        lastAgentStopReason = reason
+                        showAgentStepLimitAlert = true
                     }
                 }
 
