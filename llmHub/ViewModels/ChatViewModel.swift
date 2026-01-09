@@ -286,7 +286,7 @@ class ChatViewModel {
             { MistralProvider(keychain: keychain, config: config.mistral) },
             { GoogleAIProvider(keychain: keychain, config: config.googleAI) },
             { XAIProvider(keychain: keychain, config: config.xai) },
-            { OpenRouterProvider(keychain: keychain, config: config.openRouter) },
+            { OpenRouterProvider(keychain: keychain, config: config.openRouter) }
         ])
 
         let baseEnvironment = ToolEnvironment.current
@@ -319,7 +319,7 @@ class ChatViewModel {
             WebSearchTool(),
             FileEditorTool(),
             FilePatchTool(),
-            WorkspaceTool(),
+            WorkspaceTool()
         ]
 
         let toolRegistry = await ToolRegistry(tools: tools)
@@ -396,8 +396,7 @@ class ChatViewModel {
         showAgentStepLimitConfigSheet = false
     }
 
-    private func resumeAfterStepLimit(modelContext: ModelContext, maxIterationsOverride: Int) async
-    {
+    private func resumeAfterStepLimit(modelContext: ModelContext, maxIterationsOverride: Int) async {
         guard let sessionID = lastRunSessionID else {
             logger.error("Cannot resume: missing lastRunSessionID")
             return
@@ -445,8 +444,7 @@ class ChatViewModel {
                 try Task.checkCancellation()
                 switch event {
                 case .token(let text):
-                    if let updated = await streamAccumulator.append(token: streamToken, delta: text)
-                    {
+                    if let updated = await streamAccumulator.append(token: streamToken, delta: text) {
                         uiContinuation.yield(updated)
                     }
 
@@ -807,7 +805,8 @@ class ChatViewModel {
             if !Self.loggedMissingModels.contains(key) {
                 let available = modelRegistry.availableProviders().joined(separator: ", ")
                 logger.warning(
-                    "Could not find provider for ID: \(savedProviderID) (canonical: \(canonicalSavedProviderID)). Available: \(available)"
+                    "Could not find provider for ID: \(savedProviderID) "
+                        + "(canonical: \(canonicalSavedProviderID)). Available: \(available)"
                 )
                 Self.loggedMissingModels.insert(key)
             }
@@ -1060,7 +1059,9 @@ class ChatViewModel {
                             "⚡️ Context compacted: \(droppedMessages) messages dropped, \(tokensSaved) tokens saved"
                         )
                         self.contextCompactionMessage =
-                            "⚡️ Context optimized: \(droppedMessages) message\(droppedMessages == 1 ? "" : "s") compacted, \(tokensSaved) tokens saved"
+                            "⚡️ Context optimized: \(droppedMessages) "
+                                + "message\(droppedMessages == 1 ? "" : "s") compacted, "
+                                + "\(tokensSaved) tokens saved"
                         self.showContextCompactionNotification = true
 
                         Task { @MainActor [weak self] in
@@ -1227,35 +1228,27 @@ class ChatViewModel {
     private func selectEmoji(for content: String) -> String {
         if content.contains("code") || content.contains("swift") || content.contains("python")
             || content.contains("programming") || content.contains("javascript")
-            || content.contains("typescript")
-        {
+            || content.contains("typescript") {
             return "💻"
         } else if content.contains("math") || content.contains("calculate")
-            || content.contains("number") || content.contains("equation")
-        {
+            || content.contains("number") || content.contains("equation") {
             return "🧮"
         } else if content.contains("help") || content.contains("how") || content.contains("what")
-            || content.contains("why")
-        {
+            || content.contains("why") {
             return "❓"
         } else if content.contains("write") || content.contains("essay") || content.contains("blog")
-            || content.contains("article")
-        {
+            || content.contains("article") {
             return "✍️"
-        } else if content.contains("search") || content.contains("find") || content.contains("look")
-        {
+        } else if content.contains("search") || content.contains("find") || content.contains("look") {
             return "🔍"
         } else if content.contains("image") || content.contains("photo")
-            || content.contains("picture")
-        {
+            || content.contains("picture") {
             return "🖼️"
         } else if content.contains("data") || content.contains("analyze")
-            || content.contains("analysis")
-        {
+            || content.contains("analysis") {
             return "📊"
         } else if content.contains("bug") || content.contains("error") || content.contains("fix")
-            || content.contains("debug")
-        {
+            || content.contains("debug") {
             return "🔧"
         } else {
             return "💬"
@@ -1328,8 +1321,7 @@ class ChatViewModel {
     }
 
     /// Schedules AFM classification for a conversation session.
-    private func scheduleClassification(for session: ChatSessionEntity, modelContext: ModelContext)
-    {
+    private func scheduleClassification(for session: ChatSessionEntity, modelContext: ModelContext) {
         Task { @MainActor [weak self] in
             guard let self else { return }
             guard session.afmClassifiedAt == nil else { return }

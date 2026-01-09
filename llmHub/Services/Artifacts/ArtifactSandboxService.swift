@@ -343,8 +343,7 @@ actor ArtifactSandboxService {
 
         // Remove all files except manifest
         if let contents = try? fm.contentsOfDirectory(
-            at: sandboxURL, includingPropertiesForKeys: nil)
-        {
+            at: sandboxURL, includingPropertiesForKeys: nil) {
             for url in contents where url.lastPathComponent != ".artifact_manifest.json" {
                 try? fm.removeItem(at: url)
             }

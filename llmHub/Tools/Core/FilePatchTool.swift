@@ -42,7 +42,7 @@ nonisolated struct FilePatchTool: Tool {
                     type: .string, description: "Unified diff content for unified_diff mode"),
                 "dry_run": ToolProperty(
                     type: .boolean, description: "Preview changes without applying (default: false)"
-                ),
+                )
             ],
             required: ["file_path", "mode"]
         )
@@ -89,15 +89,14 @@ nonisolated struct FilePatchTool: Tool {
                 "mode": mode,
                 "path": filePath,
                 "resolvedPath": fileURL.path,
-                "dryRun": dryRun ? "true" : "false",
+                "dryRun": dryRun ? "true" : "false"
             ]
         )
     }
 
     // MARK: - Line Replace
     private func lineReplace(fileURL: URL, arguments: ToolArguments, dryRun: Bool) async throws
-        -> String
-    {
+        -> String {
         guard let startLine = arguments.int("start_line") else {
             throw ToolError.invalidArguments("start_line is required for line_replace mode")
         }
@@ -134,8 +133,7 @@ nonisolated struct FilePatchTool: Tool {
 
     // MARK: - Unified Diff
     private func applyUnifiedDiff(fileURL: URL, arguments: ToolArguments, dryRun: Bool) async throws
-        -> String
-    {
+        -> String {
         guard let diff = arguments.string("diff") else {
             throw ToolError.invalidArguments("diff is required for unified_diff mode")
         }

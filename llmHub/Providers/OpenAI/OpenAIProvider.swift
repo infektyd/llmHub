@@ -29,7 +29,7 @@ struct OpenAIProvider: LLMProvider {
             guard let key = await keychain.apiKey(for: .openai) else { return [:] }
             return [
                 "Authorization": "Bearer \(key)",
-                "Content-Type": "application/json",
+                "Content-Type": "application/json"
             ]
         }
     }
@@ -222,8 +222,7 @@ struct OpenAIProvider: LLMProvider {
                         var streamRequest = request
                         if let bodyData = request.httpBody,
                             var json = try? JSONSerialization.jsonObject(with: bodyData)
-                                as? [String: Any]
-                        {
+                                as? [String: Any] {
                             json["stream"] = true
                             streamRequest.httpBody = try JSONSerialization.data(
                                 withJSONObject: json)
@@ -231,8 +230,7 @@ struct OpenAIProvider: LLMProvider {
                         streamRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
 
                         if let bodyData = streamRequest.httpBody,
-                            let bodyStr = String(data: bodyData, encoding: .utf8)
-                        {
+                            let bodyStr = String(data: bodyData, encoding: .utf8) {
                             LLMTrace.requestDetails(
                                 provider: "OpenAI (Responses)",
                                 url: streamRequest.url?.absoluteString ?? "unknown",
@@ -338,15 +336,12 @@ struct OpenAIProvider: LLMProvider {
                         }
 
                         func resolveToolCallID(from dict: [String: Any], fallbackIndex: Int?)
-                            -> String
-                        {
+                            -> String {
                             if let id = firstString(
-                                dict, keys: ["id", "tool_call_id", "call_id", "item_id"])
-                            {
+                                dict, keys: ["id", "tool_call_id", "call_id", "item_id"]) {
                                 return id
                             }
-                            if let index = fallbackIndex, let mapped = contentBlockIDByIndex[index]
-                            {
+                            if let index = fallbackIndex, let mapped = contentBlockIDByIndex[index] {
                                 return mapped
                             }
                             if let index = fallbackIndex {
@@ -373,8 +368,7 @@ struct OpenAIProvider: LLMProvider {
                                     let index = dict["index"] as? Int
                                     if blockType == "text" {
                                         if let text = firstString(
-                                            block, keys: ["text", "content", "value"])
-                                        {
+                                            block, keys: ["text", "content", "value"]) {
                                             if !text.isEmpty {
                                                 fullText += text
                                                 continuation.yield(.token(text: text))
@@ -419,8 +413,7 @@ struct OpenAIProvider: LLMProvider {
 
                                 case "message_delta":
                                     if let dict,
-                                        let usageDict = dict["usage"] as? [String: Any]
-                                    {
+                                        let usageDict = dict["usage"] as? [String: Any] {
                                         let inputTokens =
                                             firstInt(
                                                 usageDict, keys: ["input_tokens", "prompt_tokens"])
@@ -445,8 +438,7 @@ struct OpenAIProvider: LLMProvider {
 
                                 case "error":
                                     if let dict,
-                                        let errorDict = dict["error"] as? [String: Any]
-                                    {
+                                        let errorDict = dict["error"] as? [String: Any] {
                                         let message =
                                             firstString(
                                                 errorDict, keys: ["message", "error", "type"])
@@ -569,8 +561,7 @@ struct OpenAIProvider: LLMProvider {
                     var streamRequest = request
                     if let bodyData = request.httpBody,
                         var json = try? JSONSerialization.jsonObject(with: bodyData)
-                            as? [String: Any]
-                    {
+                            as? [String: Any] {
                         json["stream"] = true
                         json["stream_options"] = ["include_usage": true]
                         streamRequest.httpBody = try JSONSerialization.data(withJSONObject: json)
@@ -578,8 +569,7 @@ struct OpenAIProvider: LLMProvider {
                     streamRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
 
                     if let bodyData = streamRequest.httpBody,
-                        let bodyStr = String(data: bodyData, encoding: .utf8)
-                    {
+                        let bodyStr = String(data: bodyData, encoding: .utf8) {
                         LLMTrace.requestDetails(
                             provider: "OpenAI", url: streamRequest.url?.absoluteString ?? "unknown",
                             bodyPreview: bodyStr)
@@ -610,7 +600,7 @@ struct OpenAIProvider: LLMProvider {
                     var fullText = ""
                     var toolAssembler = PartialToolCallAssembler()
                     var finalizedToolCalls: [ToolCall] = []
-                    var lastFinishReason: String? = nil
+                    var lastFinishReason: String?
 
                     for try await line in result.lines {
                         let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)

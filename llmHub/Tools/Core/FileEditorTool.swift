@@ -36,7 +36,7 @@ nonisolated final class FileEditorTool: Tool {
                     type: .string, description: "Replacement text (for edit operation)"),
                 "destination": ToolProperty(
                     type: .string, description: "Destination path (for rename/move/copy operations)"
-                ),
+                )
             ],
             required: ["operation", "path"]
         )
@@ -50,8 +50,7 @@ nonisolated final class FileEditorTool: Tool {
     init() {}
 
     nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws
-        -> ToolResult
-    {
+        -> ToolResult {
         guard let operationStr = arguments.string("operation") else {
             throw ToolError.invalidArguments("operation is required")
         }
@@ -72,7 +71,7 @@ nonisolated final class FileEditorTool: Tool {
             throw ToolError.invalidArguments("Unknown operation")
         }
 
-        let fm = FileManager.default
+        let fileManager = FileManager.default
 
         switch operationStr {
         case "create":
@@ -85,7 +84,7 @@ nonisolated final class FileEditorTool: Tool {
                 metadata: [
                     "operation": operationStr,
                     "path": path,
-                    "resolvedPath": fileURL.path,
+                    "resolvedPath": fileURL.path
                 ]
             )
 
@@ -109,7 +108,7 @@ nonisolated final class FileEditorTool: Tool {
                 metadata: [
                     "operation": operationStr,
                     "path": path,
-                    "resolvedPath": fileURL.path,
+                    "resolvedPath": fileURL.path
                 ]
             )
 
@@ -127,7 +126,7 @@ nonisolated final class FileEditorTool: Tool {
                 metadata: [
                     "operation": operationStr,
                     "path": path,
-                    "resolvedPath": fileURL.path,
+                    "resolvedPath": fileURL.path
                 ]
             )
 
@@ -138,7 +137,7 @@ nonisolated final class FileEditorTool: Tool {
                 metadata: [
                     "operation": operationStr,
                     "path": path,
-                    "resolvedPath": fileURL.path,
+                    "resolvedPath": fileURL.path
                 ]
             )
 
@@ -155,7 +154,7 @@ nonisolated final class FileEditorTool: Tool {
                     "path": path,
                     "resolvedPath": fileURL.path,
                     "destination": dest,
-                    "resolvedDestination": destURL.path,
+                    "resolvedDestination": destURL.path
                 ]
             )
 
@@ -172,7 +171,7 @@ nonisolated final class FileEditorTool: Tool {
                     "path": path,
                     "resolvedPath": fileURL.path,
                     "destination": dest,
-                    "resolvedDestination": destURL.path,
+                    "resolvedDestination": destURL.path
                 ]
             )
 

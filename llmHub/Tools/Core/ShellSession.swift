@@ -289,8 +289,7 @@ import OSLog
         func pwd() -> String { currentWorkingDirectory.path }
 
         func execute(command: String, timeout: TimeInterval = 30, stdin: Data? = nil) async throws
-            -> ShellOutput
-        {
+            -> ShellOutput {
             throw ToolError.platformNotSupported("Shell access")
         }
     }

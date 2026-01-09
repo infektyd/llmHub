@@ -13,12 +13,12 @@ import OSLog
 /// Handler that implements the XPC protocol for code execution.
 /// Runs in the helper XPC process.
 final class CodeExecutionHandler: NSObject, CodeExecutionXPCProtocol {
-    
+
     private let logger = Logger(subsystem: "Syntra.llmHub.CodeExecutionHelper", category: "Handler")
     private let executor = CodeExecutor()
-    
+
     // MARK: - CodeExecutionXPCProtocol
-    
+
     /// Executes code in the specified language.
     /// - Parameters:
     ///   - code: The source code to execute.
@@ -34,7 +34,7 @@ final class CodeExecutionHandler: NSObject, CodeExecutionXPCProtocol {
         reply: @escaping (Data?, Error?) -> Void
     ) {
         logger.info("Executing \(language) code (\(code.count) chars)")
-        
+
         Task {
             do {
                 let result = try await executor.execute(
@@ -43,20 +43,20 @@ final class CodeExecutionHandler: NSObject, CodeExecutionXPCProtocol {
                     timeout: timeout,
                     workingDirectory: workingDirectory
                 )
-                
+
                 let encoder = JSONEncoder()
                 let data = try encoder.encode(result)
-                
+
                 logger.info("Execution completed: exit=\(result.exitCode), time=\(result.executionTimeMs)ms")
                 reply(data, nil)
-                
+
             } catch {
                 logger.error("Execution failed: \(error.localizedDescription)")
                 reply(nil, error)
             }
         }
     }
-    
+
     /// Checks for the availability of an interpreter.
     /// - Parameters:
     ///   - language: The language identifier.
@@ -66,10 +66,10 @@ final class CodeExecutionHandler: NSObject, CodeExecutionXPCProtocol {
         reply: @escaping (String?, String?, Error?) -> Void
     ) {
         logger.debug("Checking interpreter for \(language)")
-        
+
         Task {
             let (path, version) = await executor.findInterpreter(for: language)
-            
+
             if let path = path {
                 logger.debug("Found \(language) at \(path)")
                 reply(path, version, nil)
@@ -79,7 +79,7 @@ final class CodeExecutionHandler: NSObject, CodeExecutionXPCProtocol {
             }
         }
     }
-    
+
     /// Retrieves the version of the helper service.
     /// - Parameter reply: The completion handler with the version string.
     func getVersion(reply: @escaping (String) -> Void) {
@@ -87,7 +87,7 @@ final class CodeExecutionHandler: NSObject, CodeExecutionXPCProtocol {
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
         reply("\(version) (\(build))")
     }
-    
+
     /// Pings the service to check connectivity.
     /// - Parameter reply: The completion handler with success status.
     func ping(reply: @escaping (Bool) -> Void) {

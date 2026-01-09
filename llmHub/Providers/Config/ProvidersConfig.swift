@@ -72,7 +72,7 @@ func makeDefaultConfig() -> ProvidersConfig {
         LLMModel(id: "gpt-4", name: "GPT-4", maxOutputTokens: 8192, contextWindow: 8192),
         LLMModel(
             id: "gpt-3.5-turbo", name: "GPT-3.5 Turbo", maxOutputTokens: 16384, contextWindow: 16384
-        ),
+        )
     ]
 
     // MARK: - Anthropic (Claude) Models
@@ -95,7 +95,7 @@ func makeDefaultConfig() -> ProvidersConfig {
             contextWindow: 200000),
         LLMModel(
             id: "claude-3-haiku-20240307", name: "Claude 3 Haiku", maxOutputTokens: 8192,
-            contextWindow: 200000),
+            contextWindow: 200000)
     ]
 
     // MARK: - Google AI (Gemini) Models
@@ -118,7 +118,7 @@ func makeDefaultConfig() -> ProvidersConfig {
             contextWindow: 1_000_000),
         LLMModel(
             id: "gemini-1.5-pro", name: "Gemini 1.5 Pro", maxOutputTokens: 8192,
-            contextWindow: 1_000_000),
+            contextWindow: 1_000_000)
     ]
 
     // MARK: - Mistral Models
@@ -140,7 +140,7 @@ func makeDefaultConfig() -> ProvidersConfig {
             id: "mistral-small-latest", name: "Mistral Small", maxOutputTokens: 8192,
             contextWindow: 32000),
         LLMModel(
-            id: "codestral-latest", name: "Codestral", maxOutputTokens: 8192, contextWindow: 256000),
+            id: "codestral-latest", name: "Codestral", maxOutputTokens: 8192, contextWindow: 256000)
     ]
 
     // MARK: - xAI (Grok) Models
@@ -165,7 +165,7 @@ func makeDefaultConfig() -> ProvidersConfig {
             contextWindow: 32000),
         LLMModel(
             id: "grok-2-image-1212", name: "Grok 2 Image", maxOutputTokens: 16384,
-            contextWindow: 32000),
+            contextWindow: 32000)
     ]
 
     // MARK: - OpenRouter Models (Fallback - fetches dynamically)
@@ -174,7 +174,7 @@ func makeDefaultConfig() -> ProvidersConfig {
             id: "openai/gpt-4o", name: "OR: GPT-4o", maxOutputTokens: 16384, contextWindow: 128000),
         LLMModel(
             id: "anthropic/claude-3.5-sonnet", name: "OR: Claude 3.5 Sonnet", maxOutputTokens: 8192,
-            contextWindow: 200000),
+            contextWindow: 200000)
     ]
 
     return config

@@ -39,7 +39,7 @@ final class ToolSchemaValidationTests: XCTestCase {
     func testPersistedOpenAIResolvesToCanonicalProvider() async throws {
         let registry = ProviderRegistry(providerBuilders: [
             { StubProvider(id: "openai", name: "OpenAI") },
-            { StubProvider(id: "google", name: "Google AI (Gemini)") },
+            { StubProvider(id: "google", name: "Google AI (Gemini)") }
         ])
 
         let provider = try registry.provider(for: "OpenAI")

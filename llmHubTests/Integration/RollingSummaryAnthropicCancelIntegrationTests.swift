@@ -115,7 +115,7 @@ final class RollingSummaryAnthropicCancelIntegrationTests: XCTestCase {
             ChatSessionEntity.self,
             ChatMessageEntity.self,
             ChatFolderEntity.self,
-            ChatTagEntity.self,
+            ChatTagEntity.self
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: schema, configurations: [config])
@@ -245,4 +245,3 @@ final class RollingSummaryAnthropicCancelIntegrationTests: XCTestCase {
         XCTAssertTrue(await probe.didCancel)
     }
 }
-

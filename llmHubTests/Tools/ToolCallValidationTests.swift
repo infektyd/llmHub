@@ -55,4 +55,3 @@ final class ToolCallValidationTests: XCTestCase {
         XCTAssertTrue(result.output.contains(#""reason":"unknown_tool""#))
     }
 }
-

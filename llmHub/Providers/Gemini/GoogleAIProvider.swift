@@ -159,11 +159,10 @@ struct GoogleAIProvider: LLMProvider {
 
                     if msg.role == .tool,
                         let toolCallID = msg.toolCallID,
-                        let toolName = toolNameByCallID[toolCallID]
-                    {
+                        let toolName = toolNameByCallID[toolCallID] {
                         let response: [String: GeminiJSONValue] = [
                             "tool_call_id": .string(toolCallID),
-                            "result": .string(msg.content),
+                            "result": .string(msg.content)
                         ]
                         return Content(
                             role: role,
@@ -212,11 +211,10 @@ struct GoogleAIProvider: LLMProvider {
                     var parts: [Part] = []
                     if msg.role == .tool,
                         let toolCallID = msg.toolCallID,
-                        let toolName = toolNameByCallID[toolCallID]
-                    {
+                        let toolName = toolNameByCallID[toolCallID] {
                         let response: [String: GeminiJSONValue] = [
                             "tool_call_id": .string(toolCallID),
-                            "result": .string(msg.content),
+                            "result": .string(msg.content)
                         ]
                         parts.append(
                             .functionResponse(FunctionResponse(name: toolName, response: response)))
@@ -333,7 +331,7 @@ struct GoogleAIProvider: LLMProvider {
                     var accumulatedToolCalls: [ToolCall] = []
                     var stopDueToMalformedFunctionCall = false
                     var chunkCount = 0
-                    var lastFinishReason: String? = nil
+                    var lastFinishReason: String?
                     var lastPartCounts: [Int] = []
                     var didReceiveDone = false
 
@@ -389,15 +387,14 @@ struct GoogleAIProvider: LLMProvider {
                             // Handle Function Calls even when text is nil/empty.
                             if !stopDueToMalformedFunctionCall,
                                 let candidates = chunk.candidates,
-                                let first = candidates.first
-                            {
+                                let first = candidates.first {
                                 for part in first.content.parts {
-                                    if case .functionCall(let fc) = part {
+                                    if case .functionCall(let functionCall) = part {
                                         let encoder = JSONEncoder()
                                         encoder.outputFormatting = [
-                                            .sortedKeys, .withoutEscapingSlashes,
+                                            .sortedKeys, .withoutEscapingSlashes
                                         ]
-                                        let argsObject = fc.args ?? [:]
+                                        let argsObject = functionCall.args ?? [:]
                                         let argsData =
                                             (try? encoder.encode(argsObject)) ?? Data("{}".utf8)
                                         if let argsStr = String(data: argsData, encoding: .utf8) {

@@ -9,10 +9,10 @@ import Foundation
 protocol UITool: Tool {
     /// Callback for user approval (optional)
     var approvalHandler: ((String, Any) async -> Bool)? { get set }
-    
+
     /// Callback for execution start (optional)
     var onExecutionStart: ((Any) -> Void)? { get set }
-    
+
     /// Callback for execution completion (optional)
     var onExecutionComplete: ((Any) -> Void)? { get set }
 }

@@ -29,7 +29,7 @@ struct OpenRouterProvider: LLMProvider {
             guard let key = await keychain.apiKey(for: .openrouter) else { return [:] }
             return [
                 "Authorization": "Bearer \(key)",
-                "Content-Type": "application/json",
+                "Content-Type": "application/json"
             ]
         }
     }
@@ -139,16 +139,14 @@ struct OpenRouterProvider: LLMProvider {
                     // Ensure stream=true in body
                     if let bodyData = request.httpBody,
                         var json = try? JSONSerialization.jsonObject(with: bodyData)
-                            as? [String: Any]
-                    {
+                            as? [String: Any] {
                         json["stream"] = true
                         streamRequest.httpBody = try JSONSerialization.data(withJSONObject: json)
                     }
                     streamRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
 
                     if let bodyData = streamRequest.httpBody,
-                        let bodyStr = String(data: bodyData, encoding: .utf8)
-                    {
+                        let bodyStr = String(data: bodyData, encoding: .utf8) {
                         LLMTrace.requestDetails(
                             provider: "OpenRouter",
                             url: streamRequest.url?.absoluteString ?? "unknown",
@@ -217,7 +215,7 @@ struct OpenRouterProvider: LLMProvider {
                     var fullText = ""
                     var toolAssembler = PartialToolCallAssembler()
                     var finalizedToolCalls: [ToolCall] = []
-                    var lastFinishReason: String? = nil
+                    var lastFinishReason: String?
 
                     switch streamFormat {
                     case .geminiStyle:
@@ -257,7 +255,7 @@ struct OpenRouterProvider: LLMProvider {
                         // Anthropic-style SSE events proxied through OpenRouter.
                         let decoder = JSONDecoder()
                         var toolCalls: [ToolCall] = []
-                        var currentToolUse: (id: String, name: String, input: String)? = nil
+                        var currentToolUse: (id: String, name: String, input: String)?
 
                         for try await line in result.lines {
                             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -277,8 +275,7 @@ struct OpenRouterProvider: LLMProvider {
                             switch event.type {
                             case "content_block_start":
                                 if let contentBlock = event.content_block,
-                                    contentBlock.type == "tool_use"
-                                {
+                                    contentBlock.type == "tool_use" {
                                     currentToolUse = (
                                         id: contentBlock.id ?? "",
                                         name: contentBlock.name ?? "",
@@ -294,8 +291,7 @@ struct OpenRouterProvider: LLMProvider {
                                 if let thinking = event.delta?.thinking, !thinking.isEmpty {
                                     continuation.yield(.thinking(thinking))
                                 }
-                                if let partialJson = event.delta?.partial_json, !partialJson.isEmpty
-                                {
+                                if let partialJson = event.delta?.partial_json, !partialJson.isEmpty {
                                     if var tu = currentToolUse {
                                         tu.input += partialJson
                                         currentToolUse = tu
@@ -336,7 +332,7 @@ struct OpenRouterProvider: LLMProvider {
                         // OpenAI-style SSE chunks (OpenRouter default), with fallback to Anthropic event decoding.
                         let decoder = JSONDecoder()
                         var toolCalls: [ToolCall] = []
-                        var currentToolUse: (id: String, name: String, input: String)? = nil
+                        var currentToolUse: (id: String, name: String, input: String)?
 
                         for try await line in result.lines {
                             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -346,8 +342,7 @@ struct OpenRouterProvider: LLMProvider {
                             guard let data = jsonStr.data(using: .utf8) else { continue }
 
                             if let chunk = try? decoder.decode(ORStreamChunk.self, from: data),
-                                let choice = chunk.choices.first
-                            {
+                                let choice = chunk.choices.first {
                                 if let content = choice.delta.content, !content.isEmpty {
                                     fullText += content
                                     continuation.yield(.token(text: content))
@@ -392,13 +387,11 @@ struct OpenRouterProvider: LLMProvider {
 
                             // Fallback: try to decode Anthropic events if OpenRouter emits them.
                             if let event = try? decoder.decode(
-                                AnthropicStreamEvent.self, from: data)
-                            {
+                                AnthropicStreamEvent.self, from: data) {
                                 switch event.type {
                                 case "content_block_start":
                                     if let contentBlock = event.content_block,
-                                        contentBlock.type == "tool_use"
-                                    {
+                                        contentBlock.type == "tool_use" {
                                         currentToolUse = (
                                             id: contentBlock.id ?? "",
                                             name: contentBlock.name ?? "",
@@ -415,8 +408,7 @@ struct OpenRouterProvider: LLMProvider {
                                         continuation.yield(.thinking(thinking))
                                     }
                                     if let partialJson = event.delta?.partial_json,
-                                        !partialJson.isEmpty
-                                    {
+                                        !partialJson.isEmpty {
                                         if var tu = currentToolUse {
                                             tu.input += partialJson
                                             currentToolUse = tu

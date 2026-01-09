@@ -45,7 +45,7 @@ struct BrowserAutomationTool: Tool {
                 "timeout": ToolProperty(
                     type: .integer,
                     description: "Timeout in seconds (default: 30)"
-                ),
+                )
             ],
             required: ["action"]
         )

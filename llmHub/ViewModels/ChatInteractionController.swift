@@ -54,8 +54,7 @@ class ChatInteractionController: ObservableObject {
         #if os(macOS)
             if let text = text, !text.isEmpty,
                 let role = role,
-                autoCopyEnabled
-            {
+                autoCopyEnabled {
                 processAutoCopy(text: text, role: role)
             }
         #endif

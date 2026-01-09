@@ -47,4 +47,3 @@ final class GeminiResponseAssemblyTests: XCTestCase {
         XCTAssertEqual(decoded.assembledText(candidateIndex: 1), "IGNORE")
     }
 }
-

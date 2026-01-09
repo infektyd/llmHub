@@ -38,7 +38,7 @@ struct UILLMProvider: Identifiable, Hashable {
                     contextWindow: 200000),
                 UILLMModel(
                     id: UUID(), modelID: "claude-3-5-haiku-20241022", name: "Claude 3.5 Haiku",
-                    contextWindow: 200000),
+                    contextWindow: 200000)
             ],
             isActive: true
         ),
@@ -52,7 +52,7 @@ struct UILLMProvider: Identifiable, Hashable {
                 UILLMModel(id: UUID(), modelID: "gpt-4", name: "GPT-4", contextWindow: 8192),
                 UILLMModel(
                     id: UUID(), modelID: "gpt-3.5-turbo", name: "GPT-3.5 Turbo",
-                    contextWindow: 16385),
+                    contextWindow: 16385)
             ],
             isActive: false
         ),
@@ -65,10 +65,10 @@ struct UILLMProvider: Identifiable, Hashable {
                     id: UUID(), modelID: "gemini-1.5-pro", name: "Gemini Pro", contextWindow: 32000),
                 UILLMModel(
                     id: UUID(), modelID: "gemini-1.0-ultra", name: "Gemini Ultra",
-                    contextWindow: 32000),
+                    contextWindow: 32000)
             ],
             isActive: false
-        ),
+        )
     ]
 }
 
@@ -139,8 +139,7 @@ extension UILLMModel {
 
         // Budget models (small models, haiku, mini, nano)
         if nameLower.contains("haiku") || nameLower.contains("mini") || nameLower.contains("nano")
-            || nameLower.contains("3.5")
-        {
+            || nameLower.contains("3.5") {
             return .budget
         }
 
@@ -187,7 +186,7 @@ struct UIToolDefinition: Identifiable {
             ),
             ("Web Search", "magnifyingglass.circle.fill", "Search the web", [.webAccess]),
             ("File Reader", "doc.text.fill", "Read file contents", [.fileRead]),
-            ("File Editor", "pencil.circle.fill", "Edit files on disk", [.fileWrite]),
+            ("File Editor", "pencil.circle.fill", "Edit files on disk", [.fileWrite])
         ]
 
         return baseTools.compactMap { name, icon, description, capabilities in

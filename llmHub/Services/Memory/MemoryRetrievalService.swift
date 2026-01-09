@@ -197,8 +197,7 @@ final class MemoryRetrievalService: Sendable {
             // Add facts if present
             if let factsData = memory.userFactsData,
                 let facts = try? JSONDecoder().decode([FallbackFact].self, from: factsData),
-                !facts.isEmpty
-            {
+                !facts.isEmpty {
                 xml += "    <user_facts>\n"
                 for fact in facts {
                     xml +=
@@ -210,8 +209,7 @@ final class MemoryRetrievalService: Sendable {
             // Add preferences if present
             if let prefsData = memory.preferencesData,
                 let prefs = try? JSONDecoder().decode([FallbackPreference].self, from: prefsData),
-                !prefs.isEmpty
-            {
+                !prefs.isEmpty {
                 xml += "    <preferences>\n"
                 for pref in prefs {
                     xml +=
@@ -224,8 +222,7 @@ final class MemoryRetrievalService: Sendable {
             if let decisionsData = memory.decisionsData,
                 let decisions = try? JSONDecoder().decode(
                     [FallbackDecision].self, from: decisionsData),
-                !decisions.isEmpty
-            {
+                !decisions.isEmpty {
                 xml += "    <decisions>\n"
                 for decision in decisions {
                     xml += "      <decision>\(escapeXML(decision.decision))</decision>\n"
@@ -237,8 +234,7 @@ final class MemoryRetrievalService: Sendable {
             if let artifactsData = memory.artifactsData,
                 let artifacts = try? JSONDecoder().decode(
                     [FallbackArtifact].self, from: artifactsData),
-                !artifacts.isEmpty
-            {
+                !artifacts.isEmpty {
                 xml += "    <artifacts>\n"
                 for artifact in artifacts {
                     let type = escapeXML(artifact.type)

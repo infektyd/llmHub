@@ -175,7 +175,7 @@
                 let proxy = try remoteProxy()
 
                 return await withCheckedContinuation { continuation in
-                    proxy.checkInterpreter(language.rawValue) { path, version, error in
+                    proxy.checkInterpreter(language.rawValue) { path, version, _ in
                         if let path = path, !path.isEmpty {
                             continuation.resume(
                                 returning: InterpreterInfo(

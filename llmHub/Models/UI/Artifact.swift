@@ -18,7 +18,7 @@ struct Artifact: Identifiable, Equatable, Sendable {
     var content: String
     var kind: ArtifactKind
     var language: String? // e.g. "swift", "python"
-    
+
     init(
         id: UUID = UUID(),
         title: String,

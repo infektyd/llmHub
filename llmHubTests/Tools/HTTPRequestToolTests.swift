@@ -89,7 +89,7 @@ class HTTPRequestToolTests: XCTestCase {
 
     func testExecute_ATSBlock_Simulated() async throws {
         // Simulate ATS error
-        MockURLProtocol.requestHandler = { request in
+        MockURLProtocol.requestHandler = { _ in
             throw URLError(.appTransportSecurityRequiresSecureConnection)
         }
 

@@ -105,7 +105,7 @@ final class ModelFetchService {
                 maxOutputTokens: 4_096,
                 contextWindow: 200_000,
                 supportsToolUse: true
-            ),
+            )
         ]
     }
 
@@ -176,7 +176,7 @@ final class ModelFetchService {
                 maxOutputTokens: 8_192,
                 contextWindow: 32_000,
                 supportsToolUse: true
-            ),
+            )
         ]
     }
 
@@ -438,8 +438,8 @@ final class ModelFetchService {
         decoder.keyDecodingStrategy = .convertFromSnakeCase
 
         var allModels: [FetchedAnthropicModel] = []
-        var afterID: String? = nil
-        var lastCursor: String? = nil
+        var afterID: String?
+        var lastCursor: String?
 
         let limit = 100
         let maxPages = 20

@@ -68,7 +68,7 @@ struct ConversationDistillationGeminiFallbackTests {
             ChatMessage(
                 id: UUID(), role: .user, content: "Please remember I like Swift", thoughtProcess: nil,
                 parts: [.text("Please remember I like Swift")], createdAt: Date(), codeBlocks: []
-            ),
+            )
         ]
 
         await service.distill(

@@ -20,20 +20,21 @@ extension ChatViewModel {
         streamingStartedAt: Date = Canvas2PreviewFixtures.baseDate,
         executingToolNames: Set<String> = []
     ) -> ChatViewModel {
-        let vm = ChatViewModel()
+        let viewModel = ChatViewModel()
 
         // Drive UI state directly (no provider/tool initialization).
-        vm._applyPreviewStreamingState(
+        viewModel._applyPreviewStreamingState(
             isGenerating: isGenerating,
             streamingText: streamingText,
             generationID: generationID ?? Canvas2PreviewFixtures.IDs.streamingGeneration,
-            streamingMessageID: (streamingText == nil) ? nil : (streamingMessageID ?? Canvas2PreviewFixtures.IDs.streamingMessage),
+            streamingMessageID: (streamingText == nil)
+                ? nil
+                : (streamingMessageID ?? Canvas2PreviewFixtures.IDs.streamingMessage),
             streamingStartedAt: (streamingText == nil) ? nil : streamingStartedAt,
             executingToolNames: executingToolNames
         )
 
-        return vm
+        return viewModel
     }
 }
 #endif
-

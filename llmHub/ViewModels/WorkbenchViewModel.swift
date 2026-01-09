@@ -19,7 +19,10 @@ class WorkbenchViewModel {
     /// The currently selected conversation identifier.
     var selectedConversationID: UUID? {
         didSet {
-            print("🟢 VIEWMODEL: selectedConversationID changed: \(String(describing: oldValue)) → \(String(describing: selectedConversationID))")
+            print(
+                "🟢 VIEWMODEL: selectedConversationID changed: \(String(describing: oldValue)) → "
+                    + "\(String(describing: selectedConversationID))"
+            )
         }
     }
     /// Set of conversation IDs selected for multi-select operations (Cmd+click).
@@ -257,17 +260,17 @@ class WorkbenchViewModel {
         let messages = session.messages.map { $0.asDomain() }
         let modelID = session.model
         let contextWindow = selectedModel?.contextWindow ?? 128_000
-        
+
         Task {
             // 1. Estimate Tokens (CPU intensive if long history)
             let totalTokens = TokenEstimator.estimate(messages: messages)
-            
+
             // 2. Calculate Cost (Async/Task for pricing calculation if needed)
             let totalCost = calculateTotalCost(for: messages, modelID: modelID)
-            
+
             // 3. Calculate Percentage
             let percentage = min(Double(totalTokens) / Double(contextWindow) * 100.0, 100.0)
-            
+
             await MainActor.run {
                 self.currentSessionTokens = totalTokens
                 self.currentSessionCost = totalCost
@@ -280,7 +283,7 @@ class WorkbenchViewModel {
         var total: Decimal = 0.0
         let calculator = CostCalculator()
         let pricing = getPricing(for: modelID)
-        
+
         for message in messages {
             if let stored = message.costBreakdown?.totalCost, stored > 0 {
                 total += stored
@@ -294,7 +297,7 @@ class WorkbenchViewModel {
                 } else {
                     usage = TokenUsage(inputTokens: tokens, outputTokens: 0, cachedTokens: 0)
                 }
-                
+
                 let estimated = calculator.cost(for: usage, pricing: pricing)
                 total += estimated.totalCost
             }

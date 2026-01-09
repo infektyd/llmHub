@@ -25,7 +25,7 @@ enum FileOperation: String, CaseIterable, Codable, Sendable {
     case move
     /// Copy a file.
     case copy
-    
+
     /// The display name of the operation.
     var displayName: String {
         switch self {
@@ -38,7 +38,7 @@ enum FileOperation: String, CaseIterable, Codable, Sendable {
         case .copy: return "Copy"
         }
     }
-    
+
     /// The system image name for the operation's icon.
     var systemImage: String {
         switch self {
@@ -51,7 +51,7 @@ enum FileOperation: String, CaseIterable, Codable, Sendable {
         case .copy: return "doc.on.doc"
         }
     }
-    
+
     /// Indicates if the operation requires content input.
     var requiresContent: Bool {
         switch self {
@@ -59,7 +59,7 @@ enum FileOperation: String, CaseIterable, Codable, Sendable {
         case .edit, .delete, .rename, .move, .copy: return false
         }
     }
-    
+
     /// Indicates if the operation requires a destination path.
     var requiresDestination: Bool {
         switch self {
@@ -77,7 +77,7 @@ enum FileSecurityMode: String, CaseIterable, Codable, Sendable {
     case approval
     /// Execute immediately without confirmation.
     case unrestricted
-    
+
     /// The display name of the security mode.
     var displayName: String {
         switch self {
@@ -85,7 +85,7 @@ enum FileSecurityMode: String, CaseIterable, Codable, Sendable {
         case .unrestricted: return "Unrestricted"
         }
     }
-    
+
     /// A description of the security mode.
     var description: String {
         switch self {
@@ -95,7 +95,7 @@ enum FileSecurityMode: String, CaseIterable, Codable, Sendable {
             return "Executes file operations immediately without confirmation (power user mode)"
         }
     }
-    
+
     /// The system image name for the security mode icon.
     var systemImage: String {
         switch self {
@@ -125,7 +125,7 @@ struct FileOperationRequest: Sendable {
     let destination: String?
     /// The timestamp of the request.
     let timestamp: Date
-    
+
     /// Initializes a new `FileOperationRequest`.
     /// - Parameters:
     ///   - id: The unique identifier (default: UUID()).
@@ -153,7 +153,7 @@ struct FileOperationRequest: Sendable {
         self.destination = destination
         self.timestamp = Date()
     }
-    
+
     /// Resolves the file path to an absolute URL.
     var resolvedURL: URL {
         let expandedPath = (path as NSString).expandingTildeInPath
@@ -164,7 +164,7 @@ struct FileOperationRequest: Sendable {
                 .appendingPathComponent(path)
         }
     }
-    
+
     /// Resolves the destination path to an absolute URL, if applicable.
     var resolvedDestinationURL: URL? {
         guard let dest = destination else { return nil }
@@ -196,7 +196,7 @@ struct FileOperationResult: Codable, Sendable {
     let bytesWritten: Int?
     /// The timestamp of the result.
     let timestamp: Date
-    
+
     /// Formats the result for inclusion in LLM context.
     var llmSummary: String {
         if success {
@@ -223,7 +223,7 @@ struct FileOperationPreview: Sendable {
     let proposedContent: String?
     /// A list of diff lines showing the changes.
     let diffLines: [DiffLine]
-    
+
     /// Generates a text representation of the diff for display.
     var textDiff: String {
         guard originalContent != nil, proposedContent != nil else {
@@ -232,7 +232,7 @@ struct FileOperationPreview: Sendable {
             }
             return "File will be deleted"
         }
-        
+
         var diff = ""
         for line in diffLines {
             switch line.type {
@@ -259,7 +259,7 @@ struct DiffLine: Sendable {
         /// The line was added.
         case added
     }
-    
+
     /// The type of the line change.
     let type: LineType
     /// The content of the line.
@@ -288,7 +288,7 @@ enum FileOperationError: LocalizedError, Sendable {
     case operationDenied
     /// The path is invalid.
     case invalidPath(String)
-    
+
     /// A localized description of the error.
     var errorDescription: String? {
         switch self {

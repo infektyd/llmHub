@@ -13,10 +13,10 @@ import Foundation
 /// Protocol for code execution backends.
 /// Abstracts the actual execution mechanism (XPC, remote API, etc.).
 protocol ExecutionBackend: Sendable {
-    
+
     /// Check if the backend is available and ready.
     var isAvailable: Bool { get async }
-    
+
     /// Execute code and return the result.
     /// - Parameters:
     ///   - code: Source code to execute.
@@ -30,12 +30,12 @@ protocol ExecutionBackend: Sendable {
         timeout: Int,
         workingDirectory: URL?
     ) async throws -> CodeExecutionResult
-    
+
     /// Check if an interpreter is available for the language.
     /// - Parameter language: The language to check.
     /// - Returns: `InterpreterInfo` indicating availability and path.
     func checkInterpreter(for language: SupportedLanguage) async -> InterpreterInfo
-    
+
     /// Get all available interpreters.
     /// - Returns: Array of `InterpreterInfo` for all languages.
     func checkAllInterpreters() async -> [InterpreterInfo]
@@ -45,7 +45,7 @@ protocol ExecutionBackend: Sendable {
 
 /// Factory for creating the appropriate execution backend for the current platform.
 enum ExecutionBackendFactory: Sendable {
-    
+
     /// Create the default backend for the current platform.
     /// - Returns: An instance conforming to `ExecutionBackend`.
     @MainActor
@@ -65,12 +65,12 @@ enum ExecutionBackendFactory: Sendable {
 /// Placeholder backend for platforms without local execution.
 /// Will be replaced with RemoteExecutionBackend in the future.
 struct UnavailableExecutionBackend: ExecutionBackend {
-    
+
     /// Always returns false as this backend represents unavailability.
     var isAvailable: Bool {
         get async { false }
     }
-    
+
     /// Throws an error indicating execution is not available.
     func execute(
         code: String,
@@ -83,12 +83,12 @@ struct UnavailableExecutionBackend: ExecutionBackend {
             "A remote execution API will be added in a future update."
         )
     }
-    
+
     /// Returns unavailable interpreter info.
     func checkInterpreter(for language: SupportedLanguage) async -> InterpreterInfo {
         InterpreterInfo.unavailable(language)
     }
-    
+
     /// Returns unavailable info for all interpreters.
     func checkAllInterpreters() async -> [InterpreterInfo] {
         SupportedLanguage.allCases.map { InterpreterInfo.unavailable($0) }

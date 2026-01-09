@@ -205,6 +205,6 @@ enum AppColors {
     static let selectableAccents: [Color] = [
         accent,
         accentSecondary,
-        smoke,
+        smoke
     ]
 }

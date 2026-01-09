@@ -27,4 +27,3 @@ protocol ConversationDistillationScheduling: AnyObject {
     func cancelDistillation(sessionID: UUID)
     func cancelDistillation(sessionIDs: [UUID])
 }
-

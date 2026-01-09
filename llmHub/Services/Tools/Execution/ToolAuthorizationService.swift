@@ -64,8 +64,7 @@ class ToolAuthorizationService: ObservableObject {
     func checkAccess(for toolID: String, conversationID: UUID) -> PermissionStatus {
         // Check conversation-specific permission first
         if let convPerms = conversationPermissions[conversationID],
-            let status = convPerms[toolID]
-        {
+            let status = convPerms[toolID] {
             logger.debug(
                 "🔐 [\(conversationID.uuidString.prefix(8))] Tool \(toolID): \(status.rawValue)")
             return status

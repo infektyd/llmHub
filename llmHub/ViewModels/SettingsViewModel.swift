@@ -88,7 +88,7 @@ final class SettingsViewModel: ObservableObject {
                 icon: "arrow.triangle.branch",
                 description: "Unified access to multiple providers",
                 docsURL: URL(string: "https://openrouter.ai/keys")
-            ),
+            )
         ]
     }
 
@@ -134,7 +134,7 @@ final class SettingsViewModel: ObservableObject {
                     Task {
                         do {
                             // Fetch models for the specific provider
-                            let _ = try await modelRegistry.fetchModelsForProvider(
+                            _ = try await modelRegistry.fetchModelsForProvider(
                                 provider, forceRefresh: true)
                         } catch {
                             // Log error but don't disrupt the UI - models can be fetched later
@@ -243,7 +243,7 @@ final class SettingsViewModel: ObservableObject {
             HTTPRequestTool(),
             FileReaderTool(),
             ShellTool(),
-            WebSearchTool(),
+            WebSearchTool()
         ]
 
         let registry = await ToolRegistry(tools: tools)
@@ -257,7 +257,7 @@ final class SettingsViewModel: ObservableObject {
             "http_request": "network",
             "read_file": "doc.text.magnifyingglass",
             "shell": "terminal",
-            "web_search": "globe",
+            "web_search": "globe"
         ]
 
         var toggles: [UIToolToggleItem] = []

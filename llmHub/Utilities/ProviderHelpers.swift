@@ -19,7 +19,7 @@ func stableUUID(for string: String) -> UUID {
         hasher.combine(bytes: UnsafeRawBufferPointer(start: bytes.baseAddress, count: bytes.count))
         return hasher.finalize()
     }
-    
+
     // Convert hash to UUID bytes (pad/truncate to 16 bytes)
     var uuidBytes: [UInt8] = Array(repeating: 0, count: 16)
     withUnsafeBytes(of: hash.bigEndian) { hashBytes in
@@ -28,7 +28,7 @@ func stableUUID(for string: String) -> UUID {
             uuidBytes[i] = hashBytes[i]
         }
     }
-    
+
     return UUID(uuid: (
         uuidBytes[0], uuidBytes[1], uuidBytes[2], uuidBytes[3],
         uuidBytes[4], uuidBytes[5], uuidBytes[6], uuidBytes[7],
@@ -66,23 +66,3 @@ func providerIcon(for providerID: String) -> String {
     default: return "cpu"
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

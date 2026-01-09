@@ -190,8 +190,7 @@ final class MemoryManagementService {
 
                 // Flag if: old + rarely accessed
                 if daysSinceAccess > Self.unusedDaysThreshold
-                    && memory.accessCount < Self.minAccessCountForRetention
-                {
+                    && memory.accessCount < Self.minAccessCountForRetention {
                     memory.isFlaggedForCleanup = true
                     flaggedCount += 1
                     logger.debug(

@@ -99,7 +99,7 @@ public class OpenAIManager {
         return AsyncThrowingStream { continuation in
             // Capture session weakly to prevent retain cycle
             let localSession = self.session
-            
+
             let task = Task {
                 do {
                     var request = try makeRequest(url: url, payload: payload)
@@ -122,8 +122,7 @@ public class OpenAIManager {
 
                             if let data = json.data(using: .utf8),
                                 let chunk = try? JSONDecoder().decode(
-                                    OpenAIStreamChunk.self, from: data)
-                            {
+                                    OpenAIStreamChunk.self, from: data) {
                                 continuation.yield(chunk)
                             }
                         }
@@ -133,7 +132,7 @@ public class OpenAIManager {
                     continuation.finish(throwing: error)
                 }
             }
-            
+
             continuation.onTermination = { @Sendable _ in
                 task.cancel()
             }
@@ -408,8 +407,7 @@ public class OpenAIManager {
         if !(200...299).contains(http.statusCode) {
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                 let errorObj = json["error"] as? [String: Any],
-                let message = errorObj["message"] as? String
-            {
+                let message = errorObj["message"] as? String {
                 throw OpenAIError.apiError(message: message)
             }
             throw OpenAIError.serverError(statusCode: http.statusCode)
@@ -575,19 +573,19 @@ public struct OpenAIChatRequest: Encodable {
     /// The conversation messages.
     let messages: [OpenAIChatMessage]
     /// Sampling temperature.
-    var temperature: Double? = nil
+    var temperature: Double?
     /// Maximum tokens to generate.
-    var maxTokens: Int? = nil
+    var maxTokens: Int?
     /// Whether to stream the response.
-    var stream: Bool? = nil
+    var stream: Bool?
     /// Available tools.
-    var tools: [OpenAITool]? = nil
+    var tools: [OpenAITool]?
     /// Tool choice configuration.
-    var toolChoice: OpenAIToolChoice? = nil
+    var toolChoice: OpenAIToolChoice?
     /// Response format configuration.
-    var responseFormat: OpenAIResponseFormat? = nil
+    var responseFormat: OpenAIResponseFormat?
     /// Reasoning effort for o-series models.
-    var reasoningEffort: String? = nil
+    var reasoningEffort: String?
 
     enum CodingKeys: String, CodingKey {
         case model, messages, temperature, stream, tools
@@ -677,8 +675,7 @@ public struct OpenAIContentPart: Encodable {
 
     /// Creates an image part from base64 data with specific mime type.
     public static func image(base64: String, mimeType: String, detail: String? = "auto")
-        -> OpenAIContentPart
-    {
+        -> OpenAIContentPart {
         OpenAIContentPart(
             type: "image_url", text: nil,
             imageUrl: OpenAIImageURL(url: "data:\(mimeType);base64,\(base64)", detail: detail))

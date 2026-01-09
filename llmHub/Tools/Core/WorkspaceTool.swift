@@ -41,7 +41,7 @@ nonisolated struct WorkspaceTool: Tool {
                     type: .array,
                     description: "Filter by file extensions (e.g., ['swift', 'py'])",
                     items: ToolProperty(type: .string, description: "File extension")
-                ),
+                )
             ],
             required: ["operation"]
         )
@@ -53,8 +53,7 @@ nonisolated struct WorkspaceTool: Tool {
     let isCacheable = false
 
     nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws
-        -> ToolResult
-    {
+        -> ToolResult {
         guard let operation = arguments.string("operation") else {
             throw ToolError.invalidArguments("operation is required")
         }
@@ -82,8 +81,7 @@ nonisolated struct WorkspaceTool: Tool {
     }
 
     private func listFiles(at url: URL, arguments: ToolArguments, context: ToolContext) async throws
-        -> String
-    {
+        -> String {
         let maxDepth = arguments.int("max_depth") ?? 5
         let includeHidden = arguments.bool("include_hidden") ?? false
         var extFilter: Set<String>?
@@ -101,8 +99,8 @@ nonisolated struct WorkspaceTool: Tool {
         var dirCount = 0
         let maxResults = 500
 
-        let fm = FileManager.default
-        let enumerator = fm.enumerator(
+        let fileManager = FileManager.default
+        let enumerator = fileManager.enumerator(
             at: url, includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey],
             options: includeHidden ? [] : [.skipsHiddenFiles])
 
@@ -122,8 +120,7 @@ nonisolated struct WorkspaceTool: Tool {
 
             let isDir =
                 (try? itemURL.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
-            if !isDir, let filter = extFilter, !filter.contains(itemURL.pathExtension.lowercased())
-            {
+            if !isDir, let filter = extFilter, !filter.contains(itemURL.pathExtension.lowercased()) {
                 continue
             }
 
@@ -147,8 +144,7 @@ nonisolated struct WorkspaceTool: Tool {
     }
 
     private func grepSearch(at url: URL, arguments: ToolArguments, context: ToolContext)
-        async throws -> String
-    {
+        async throws -> String {
         guard let pattern = arguments.string("pattern"), !pattern.isEmpty else {
             throw ToolError.invalidArguments("pattern is required")
         }
@@ -165,7 +161,7 @@ nonisolated struct WorkspaceTool: Tool {
             process.launchPath = "/usr/bin/grep"
             process.arguments = [
                 "-rn", "--include=*.swift", "--include=*.py", "--include=*.js", "--include=*.json",
-                "--include=*.md", pattern,
+                "--include=*.md", pattern
             ]
             process.currentDirectoryURL = url
             let pipe = Pipe()

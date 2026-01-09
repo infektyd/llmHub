@@ -48,7 +48,7 @@ nonisolated struct HTTPRequestTool: Tool {
                     type: .string,
                     description: "Preferred response format (default: json then text)",
                     enumValues: ["text", "json", "bytes"]
-                ),
+                )
             ],
             required: ["url"]
         )
@@ -69,8 +69,7 @@ nonisolated struct HTTPRequestTool: Tool {
     }
 
     nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws
-        -> ToolResult
-    {
+        -> ToolResult {
         let startTime = Date()
 
         // STEP 0: Log execution context for debugging
@@ -96,9 +95,8 @@ nonisolated struct HTTPRequestTool: Tool {
                     resolvedHeaders["Authorization"] = "Bearer \(token)"
                 } else if type == "basic",
                     let user = authDict["username"]?.stringValue,
-                    let pass = authDict["password"]?.stringValue
-                {
-                    let creds = "\(user):\(pass)".data(using: .utf8)?.base64EncodedString() ?? ""
+                    let pass = authDict["password"]?.stringValue {
+                    let creds = Data("\(user):\(pass)".utf8).base64EncodedString()
                     resolvedHeaders["Authorization"] = "Basic \(creds)"
                 }
             }
@@ -112,7 +110,7 @@ nonisolated struct HTTPRequestTool: Tool {
 
         // Redact sensitive headers by KEY (Authorization, Cookie, etc)
         let sensitiveKeys: Set<String> = [
-            "authorization", "proxy-authorization", "cookie", "set-cookie", "x-api-key",
+            "authorization", "proxy-authorization", "cookie", "set-cookie", "x-api-key"
         ]
         _ = resolvedHeaders.mapValues { value in
             // We can return "[REDACTED]" but mapValues gives us just the value.
@@ -121,10 +119,8 @@ nonisolated struct HTTPRequestTool: Tool {
         }
 
         var safeHeadersForLog = resolvedHeaders
-        for (key, _) in resolvedHeaders {
-            if sensitiveKeys.contains(key.lowercased()) {
-                safeHeadersForLog[key] = "[REDACTED]"
-            }
+        for (key, _) in resolvedHeaders where sensitiveKeys.contains(key.lowercased()) {
+            safeHeadersForLog[key] = "[REDACTED]"
         }
 
         context.logger.info(
@@ -213,7 +209,7 @@ nonisolated struct HTTPRequestTool: Tool {
                         "bytesReceived": "\(data.count)",
                         "elapsedMs": "\(elapsedMs)",
                         "cancellationRequested": "\(cancellationWasRequested.withLock { $0 })",
-                        "process": "\(bundleID)",
+                        "process": "\(bundleID)"
                     ],
                     truncated: truncated
                 )
@@ -254,8 +250,7 @@ nonisolated struct HTTPRequestTool: Tool {
                 lastError = error
 
                 if error is CancellationError,
-                    cancellationWasRequested.withLock({ $0 })
-                {
+                    cancellationWasRequested.withLock({ $0 }) {
                     throw ToolError.executionFailed(
                         "Request cancelled by user", retryable: false)
                 }
@@ -339,8 +334,7 @@ private nonisolated func formatBody(data: Data, format: String, contentType: Str
         if let jsonObj = try? JSONSerialization.jsonObject(with: data),
             let pretty = try? JSONSerialization.data(
                 withJSONObject: jsonObj, options: [.prettyPrinted, .sortedKeys]),
-            let text = String(data: pretty, encoding: .utf8)
-        {
+            let text = String(data: pretty, encoding: .utf8) {
             let truncated = pretty.count > 64_000
             return (truncated ? String(text.prefix(64_000)) : text, truncated)
         }

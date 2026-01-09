@@ -56,4 +56,3 @@ final class StreamingUtilityTests: XCTestCase {
         XCTAssertEqual(calls.first?.input, #"{"text":"hi"}"#)
     }
 }
-

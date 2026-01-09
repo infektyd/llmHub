@@ -9,13 +9,13 @@ public class OpenRouterManager {
     private let session: URLSession
     /// The base URL for the OpenRouter API.
     private let baseURL = URL(string: "https://openrouter.ai/api/v1")!
-    
+
     // Optional app headers for OpenRouter
     /// The app URL for HTTP-Referer header (optional).
     private let appURL: String?
     /// The app name for X-Title header (optional).
     private let appName: String?
-    
+
     /// Initializes a new `OpenRouterManager`.
     /// - Parameters:
     ///   - apiKey: The API key.
@@ -33,9 +33,9 @@ public class OpenRouterManager {
         self.appName = appName
         self.session = session
     }
-    
+
     // MARK: - Chat Completions
-    
+
     /// Sends a chat completion request to OpenRouter.
     /// - Parameters:
     ///   - messages: Conversation history.
@@ -68,7 +68,7 @@ public class OpenRouterManager {
         let data = try await performRequest(url: url, payload: payload)
         return try JSONDecoder().decode(ORChatResponse.self, from: data)
     }
-    
+
     /// Streams chat completion chunks from OpenRouter.
     /// - Parameters:
     ///   - messages: Conversation history.
@@ -96,26 +96,26 @@ public class OpenRouterManager {
             route: route
         )
         let url = baseURL.appendingPathComponent("chat/completions")
-        
+
         return AsyncThrowingStream { continuation in
             Task {
                 do {
                     var request = try makeRequest(url: url, payload: payload)
                     request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
-                    
+
                     let (bytes, response) = try await session.bytes(for: request)
                     guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
                         var errorText = ""
                         for try await line in bytes.lines { errorText += line }
                         throw OpenRouterError.apiError(message: errorText)
                     }
-                    
+
                     for try await line in bytes.lines {
                         let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
                         if trimmed.hasPrefix("data: ") {
                             let json = String(trimmed.dropFirst(6))
                             if json == "[DONE]" { break }
-                            
+
                             if let data = json.data(using: .utf8),
                                let chunk = try? JSONDecoder().decode(ORStreamChunk.self, from: data) {
                                 continuation.yield(chunk)
@@ -129,9 +129,9 @@ public class OpenRouterManager {
             }
         }
     }
-    
+
     // MARK: - Models
-    
+
     /// Lists available models on OpenRouter.
     /// - Returns: An array of `ORModelInfo`.
     public func listModels() async throws -> [ORModelInfo] {
@@ -139,19 +139,19 @@ public class OpenRouterManager {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        
+
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw OpenRouterError.networkError
         }
-        
+
         // OpenRouter returns wrapped data object: { "data": [...] }
         struct Wrapper: Decodable { let data: [ORModelInfo] }
         return try JSONDecoder().decode(Wrapper.self, from: data).data
     }
-    
+
     // MARK: - Helpers
-    
+
     /// Creates a chat request object.
     /// - Parameters:
     ///   - messages: Conversation history.
@@ -177,30 +177,30 @@ public class OpenRouterManager {
         let url = baseURL.appendingPathComponent("chat/completions")
         return try makeRequest(url: url, payload: payload)
     }
-    
+
     /// Helper to create a generic JSON request.
     private func makeRequest<T: Encodable>(url: URL, payload: T) throws -> URLRequest {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
+
         if let referer = appURL { request.setValue(referer, forHTTPHeaderField: "HTTP-Referer") }
         if let title = appName { request.setValue(title, forHTTPHeaderField: "X-Title") }
-        
+
         request.httpBody = try JSONEncoder().encode(payload)
         return request
     }
-    
+
     /// Helper to perform a request and return data, handling errors.
     private func performRequest<T: Encodable>(url: URL, payload: T) async throws -> Data {
         let request = try makeRequest(url: url, payload: payload)
         let (data, response) = try await session.data(for: request)
-        
+
         guard let http = response as? HTTPURLResponse else {
             throw OpenRouterError.networkError
         }
-        
+
         if !(200...299).contains(http.statusCode) {
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let errorObj = json["error"] as? [String: Any],
@@ -209,7 +209,7 @@ public class OpenRouterManager {
             }
             throw OpenRouterError.serverError(statusCode: http.statusCode)
         }
-        
+
         return data
     }
 }
@@ -235,22 +235,22 @@ public struct ORChatRequest: Encodable {
     /// The conversation messages.
     let messages: [ORMessage]
     /// Sampling temperature.
-    var temperature: Double? = nil
+    var temperature: Double?
     /// Maximum tokens to generate.
-    var maxTokens: Int? = nil
+    var maxTokens: Int?
     /// Streaming flag.
-    var stream: Bool? = nil
+    var stream: Bool?
     /// Available tools (OpenAI-compatible).
-    var tools: [ORTool]? = nil
+    var tools: [ORTool]?
     /// Tool choice configuration (OpenAI-compatible).
-    var toolChoice: ORToolChoice? = nil
+    var toolChoice: ORToolChoice?
     /// Enable parallel tool calls where supported.
-    var parallelToolCalls: Bool? = nil
+    var parallelToolCalls: Bool?
     /// List of transforms.
-    var transforms: [String]? = nil
+    var transforms: [String]?
     /// Route preference.
-    var route: String? = nil
-    
+    var route: String?
+
     enum CodingKeys: String, CodingKey {
         case model, messages, temperature, stream, tools, transforms, route
         case maxTokens = "max_tokens"
@@ -293,7 +293,7 @@ public struct ORMessage: Encodable {
     public let role: String
     /// The content of the message.
     public let content: ORContent
-    
+
     /// Initializes a new message.
     public init(role: String, content: ORContent) {
         self.role = role
@@ -307,7 +307,7 @@ public enum ORContent: Encodable {
     case text(String)
     /// Multipart content.
     case parts([ORContentPart])
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
@@ -325,22 +325,22 @@ public struct ORContentPart: Encodable {
     public let text: String?
     /// The image URL information.
     public let imageUrl: ORImageURL?
-    
+
     enum CodingKeys: String, CodingKey {
         case type, text
         case imageUrl = "image_url"
     }
-    
+
     /// Creates a text part.
     public static func text(_ s: String) -> ORContentPart {
         ORContentPart(type: "text", text: s, imageUrl: nil)
     }
-    
+
     /// Creates an image part from a URL.
     public static func image(url: String) -> ORContentPart {
         ORContentPart(type: "image_url", text: nil, imageUrl: ORImageURL(url: url))
     }
-    
+
     /// Creates an image part from base64 data.
     public static func image(base64: String, mimeType: String = "image/jpeg") -> ORContentPart {
         ORContentPart(type: "image_url", text: nil, imageUrl: ORImageURL(url: "data:\(mimeType);base64,\(base64)"))
@@ -363,20 +363,20 @@ public struct ORChatResponse: Decodable {
     public let choices: [Choice]
     /// Token usage statistics.
     public let usage: Usage?
-    
+
     /// A choice in the response.
     public struct Choice: Decodable {
         /// The generated message.
         public let message: Message
         /// The finish reason.
         public let finishReason: String?
-        
+
         enum CodingKeys: String, CodingKey {
             case message
             case finishReason = "finish_reason"
         }
     }
-    
+
     /// The message in a choice.
     public struct Message: Decodable {
         /// The role of the sender.
@@ -384,7 +384,7 @@ public struct ORChatResponse: Decodable {
         /// The content of the message.
         public let content: String?
     }
-    
+
     /// Token usage statistics.
     public struct Usage: Decodable {
         /// Prompt tokens used.
@@ -393,7 +393,7 @@ public struct ORChatResponse: Decodable {
         public let completionTokens: Int
         /// Total tokens used.
         public let totalTokens: Int
-        
+
         enum CodingKeys: String, CodingKey {
             case promptTokens = "prompt_tokens"
             case completionTokens = "completion_tokens"
@@ -412,20 +412,20 @@ public struct ORStreamChunk: Decodable {
     public let choices: [Choice]
     /// Usage statistics (optional).
     public let usage: ORChatResponse.Usage? // Sometimes available in stream
-    
+
     /// A choice in the stream chunk.
     public struct Choice: Decodable {
         /// The delta update.
         public let delta: Delta
         /// The finish reason.
         public let finishReason: String?
-        
+
         enum CodingKeys: String, CodingKey {
             case delta
             case finishReason = "finish_reason"
         }
     }
-    
+
     /// The delta update.
     public struct Delta: Decodable {
         /// The role update.
@@ -434,18 +434,18 @@ public struct ORStreamChunk: Decodable {
         public let content: String?
         /// The tool calls update.
         public let toolCalls: [ToolCall]?
-        
+
         enum CodingKeys: String, CodingKey {
             case role, content
             case toolCalls = "tool_calls"
         }
-        
+
         public struct ToolCall: Decodable {
             public let index: Int
             public let id: String?
             public let function: FunctionCall?
         }
-        
+
         public struct FunctionCall: Decodable {
             public let name: String?
             public let arguments: String?
@@ -463,7 +463,7 @@ public struct ORModelInfo: Decodable {
     public let name: String
     /// Pricing information.
     public let pricing: Pricing?
-    
+
     /// Pricing details.
     public struct Pricing: Decodable {
         /// Cost per prompt token.
@@ -471,7 +471,7 @@ public struct ORModelInfo: Decodable {
         /// Cost per completion token.
         public let completion: String
     }
-    
+
     /// Context length of the model.
     public let context_length: Int
 }

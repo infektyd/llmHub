@@ -72,16 +72,6 @@ struct ToolDescriptor: Sendable, Equatable {
     let description: String
     let parameters: [ToolParameter]
     let availability: ToolAvailability
-
-    nonisolated init(
-        name: String, description: String, parameters: [ToolParameter],
-        availability: ToolAvailability
-    ) {
-        self.name = name
-        self.description = description
-        self.parameters = parameters
-        self.availability = availability
-    }
 }
 
 /// Describes the current execution environment for tools.
@@ -218,8 +208,7 @@ struct ToolEnvironment: Sendable {
 #if os(macOS)
     extension ToolEnvironment {
         fileprivate nonisolated static func detectCodeExecutionBackend(timeout: TimeInterval = 1.0)
-            -> Bool
-        {
+            -> Bool {
             // On macOS assume availability; the code interpreter tool will perform runtime checks.
             return true
         }
@@ -227,8 +216,7 @@ struct ToolEnvironment: Sendable {
 #else
     extension ToolEnvironment {
         fileprivate nonisolated static func detectCodeExecutionBackend(timeout: TimeInterval = 1.0)
-            -> Bool
-        {
+            -> Bool {
             false
         }
     }

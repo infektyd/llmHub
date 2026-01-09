@@ -57,8 +57,7 @@ struct WorkspaceResolver: Sendable {
     ///   - platform: The current platform.
     /// - Returns: true if the workspace is valid and accessible.
     nonisolated static func isValidWorkspace(_ url: URL, on platform: ToolEnvironment.Platform)
-        -> Bool
-    {
+        -> Bool {
         let fm = FileManager.default
 
         // Must be a directory

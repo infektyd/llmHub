@@ -247,8 +247,6 @@ struct MCPInitializeParams: Encodable, Sendable {
 
 /// Capabilities of the MCP client.
 struct MCPClientCapabilities: Encodable, Sendable {
-    // Empty for now - add capabilities as needed
-    nonisolated init() {}
 
     nonisolated func encode(to encoder: Encoder) throws {
         var _ = encoder.container(keyedBy: CodingKeys.self)

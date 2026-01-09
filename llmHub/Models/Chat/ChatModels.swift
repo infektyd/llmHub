@@ -183,7 +183,7 @@ nonisolated struct ChatMessage: Identifiable, Equatable, Sendable {
     /// Stable identity for joining a streaming overlay message with its persisted assistant message.
     /// Rationale: streaming uses a local message UUID, while persisted assistant messages may use a
     /// different UUID from the provider/tool loop. `generationID` is the stable join key.
-    var generationID: UUID? = nil
+    var generationID: UUID?
     /// The role of the message sender (e.g., user, assistant).
     let role: MessageRole
     /// The text content of the message.
@@ -209,11 +209,11 @@ nonisolated struct ChatMessage: Identifiable, Equatable, Sendable {
 
     // Tool calling support
     /// The ID of the tool call this message is a response to (only for tool role).
-    var toolCallID: String? = nil
+    var toolCallID: String?
     /// The list of tool calls requested by the assistant (only for assistant role).
-    var toolCalls: [ToolCall]? = nil
+    var toolCalls: [ToolCall]?
     /// Structured metadata for tool result messages (only for tool role).
-    var toolResultMeta: ToolResultMeta? = nil
+    var toolResultMeta: ToolResultMeta?
 
     static func == (lhs: ChatMessage, rhs: ChatMessage) -> Bool {
         lhs.id == rhs.id && lhs.generationID == rhs.generationID && lhs.role == rhs.role
@@ -309,7 +309,7 @@ struct ToolCall: Codable, Sendable, Equatable {
     /// The JSON string representation of the arguments for the tool.
     let input: String
     /// Gemini-only: thought signature that must be round-tripped for function calling (Gemini 3).
-    var geminiThoughtSignature: String? = nil
+    var geminiThoughtSignature: String?
 }
 
 /// Structured metadata for tool result messages, enabling rich UI rendering.

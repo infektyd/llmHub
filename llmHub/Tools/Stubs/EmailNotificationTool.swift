@@ -47,7 +47,7 @@ struct EmailNotificationTool: Tool {
                 "bcc": ToolProperty(
                     type: .string,
                     description: "Optional BCC email addresses (comma-separated)"
-                ),
+                )
             ],
             required: ["to", "subject", "body"]
         )
