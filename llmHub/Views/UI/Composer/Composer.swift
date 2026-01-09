@@ -8,6 +8,7 @@
 import Foundation
 import SwiftData
 import SwiftUI
+import Synchronization
 import UniformTypeIdentifiers
 
 // swiftlint:disable file_length
@@ -59,12 +60,12 @@ struct ComposerBarView: View {
         }
         .padding(uiCompactMode ? 10 : 12)
         .background {
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
+            RoundedRectangle(cornerRadius: 3, style: .continuous)
                 .fill(AppColors.surface)
                 .shadow(color: Color.black.opacity(0.1), radius: 16, x: 0, y: -4)
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
+            RoundedRectangle(cornerRadius: 3, style: .continuous)
                 .stroke(
                     isDropTargeted
                         ? AppColors.accent.opacity(0.5) : AppColors.textPrimary.opacity(0.1),
@@ -279,30 +280,28 @@ struct ComposerBarView: View {
 
     /// Handles files dropped onto the composer, importing them to the artifact sandbox.
     private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
-        let droppedURLs = OSAllocatedUnfairLock<[URL]>(initialState: [])
-        let group = DispatchGroup()
-
-        for provider in providers {
-            if provider.canLoadObject(ofClass: URL.self) {
-                group.enter()
-                _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                    if let url = url {
-                        droppedURLs.withLock { urls in
-                            urls.append(url)
+        Task { @MainActor in
+            var urls: [URL] = []
+            
+            // Process providers sequentially on main actor to avoid data races
+            for provider in providers {
+                if provider.canLoadObject(ofClass: URL.self) {
+                    let url = await withCheckedContinuation { continuation in
+                        _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                            continuation.resume(returning: url)
                         }
                     }
-                    group.leave()
+                    if let url = url {
+                        urls.append(url)
+                    }
                 }
             }
-        }
-
-        group.notify(queue: .main) {
-            let urls = droppedURLs.withLock { $0 }
+            
             if !urls.isEmpty {
                 self.onFilesDropped(urls)
             }
         }
-
+        
         return true
     }
 }
