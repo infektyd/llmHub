@@ -400,10 +400,10 @@ struct GoogleAIProvider: LLMProvider {
                                         if let argsStr = String(data: argsData, encoding: .utf8) {
                                             let callId = "call_\(UUID().uuidString.prefix(8))"
                                             let toolCall = ToolCall(
-                                                id: callId, name: fc.name, input: argsStr)
+                                                id: callId, name: functionCall.name, input: argsStr)
                                             accumulatedToolCalls.append(toolCall)
                                             continuation.yield(
-                                                .toolUse(id: callId, name: fc.name, input: argsStr))
+                                                .toolUse(id: callId, name: functionCall.name, input: argsStr))
                                         }
                                     }
                                 }
