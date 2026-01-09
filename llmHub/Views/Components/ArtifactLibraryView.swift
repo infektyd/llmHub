@@ -114,7 +114,7 @@ struct ArtifactLibraryView: View {
             } label: {
                 Image(systemName: "plus.circle.fill")
                     .font(.title2)
-                    .foregroundStyle(.accent)
+                    .foregroundStyle(.tint)
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)

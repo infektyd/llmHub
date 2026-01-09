@@ -167,9 +167,9 @@ struct CanvasRootView: View {
 
                 // Push-style right sidebar (inspector)
                 if rightSidebarVisible {
-                    FloatingSidebarRight(
+                    ModernSidebarRight(
                         isVisible: $rightSidebarVisible,
-                        state: inspectorState
+                        inspectorState: inspectorState
                     )
                     .frame(width: sidebarWidth)
                     .padding(.trailing, outerPadding)
