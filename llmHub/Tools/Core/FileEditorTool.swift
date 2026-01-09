@@ -49,7 +49,9 @@ nonisolated final class FileEditorTool: Tool {
 
     init() {}
 
-    nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
+    nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws
+        -> ToolResult
+    {
         guard let operationStr = arguments.string("operation") else {
             throw ToolError.invalidArguments("operation is required")
         }
@@ -59,7 +61,10 @@ nonisolated final class FileEditorTool: Tool {
 
         let fileURL = context.workspacePath.appendingPathComponent(path).standardizedFileURL
         if !fileURL.path.hasPrefix(context.workspacePath.path) {
-            throw ToolError.sandboxViolation("File must be within workspace")
+            throw ToolError.sandboxViolation(
+                "File '\(path)' is outside the artifact library. "
+                    + "I can only modify files you've uploaded. Drag files into chat to share them."
+            )
         }
 
         let operations: [String] = ["create", "edit", "append", "delete", "rename", "move", "copy"]
@@ -73,7 +78,8 @@ nonisolated final class FileEditorTool: Tool {
         case "create":
             let content = arguments.string("content") ?? ""
             try content.write(to: fileURL, atomically: true, encoding: .utf8)
-            let message = content.isEmpty ? "Empty file created at \(path)" : "File created at \(path)"
+            let message =
+                content.isEmpty ? "Empty file created at \(path)" : "File created at \(path)"
             return ToolResult.success(
                 message,
                 metadata: [

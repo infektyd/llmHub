@@ -565,16 +565,20 @@ final class ChatService {
                         if let auth = service.toolAuthorizationService {
                             // Conversation-scoped authorization check
                             for tool in availableTools {
-                                let status = auth.checkAccess(for: tool.name, conversationID: currentSession.conversationID)
+                                let status = auth.checkAccess(
+                                    for: tool.name, conversationID: currentSession.id)
                                 if status == .authorized {
                                     enabledTools.append(tool)
                                 } else {
-                                    logger.debug("🔒 Tool '\(tool.name)' blocked (status: \(status)) for conversation \(currentSession.conversationID.uuidString.prefix(8))")
+                                    logger.debug(
+                                        "🔒 Tool '\(tool.name)' blocked (status: \(status.rawValue)) for conversation \(currentSession.id.uuidString.prefix(8))"
+                                    )
                                 }
                             }
                         } else {
                             // No authorization service = no tools enabled (secure by default)
-                            logger.warning("⚠️ No authorization service configured, all tools disabled")
+                            logger.warning(
+                                "⚠️ No authorization service configured, all tools disabled")
                         }
 
                         let exportedToolDefs = enabledTools.compactMap { ToolDefinition(from: $0) }
@@ -927,7 +931,8 @@ final class ChatService {
                         )
                         continuation.yield(
                             .agentStopped(
-                                reason: .iterationLimitReached(limit: maxIterations, used: iterationCount)
+                                reason: .iterationLimitReached(
+                                    limit: maxIterations, used: iterationCount)
                             )
                         )
                     }
@@ -1027,7 +1032,8 @@ final class ChatService {
                 return summary
             case .error(let err):
                 throw err
-            case .toolUse, .toolExecuting, .usage, .reference, .thinking, .contextCompacted, .agentStopped:
+            case .toolUse, .toolExecuting, .usage, .reference, .thinking, .contextCompacted,
+                .agentStopped:
                 continue
             }
         }

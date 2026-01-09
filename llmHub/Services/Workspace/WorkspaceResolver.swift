@@ -56,7 +56,9 @@ struct WorkspaceResolver: Sendable {
     ///   - url: The URL to validate.
     ///   - platform: The current platform.
     /// - Returns: true if the workspace is valid and accessible.
-    nonisolated static func isValidWorkspace(_ url: URL, on platform: ToolEnvironment.Platform) -> Bool {
+    nonisolated static func isValidWorkspace(_ url: URL, on platform: ToolEnvironment.Platform)
+        -> Bool
+    {
         let fm = FileManager.default
 
         // Must be a directory
@@ -84,38 +86,40 @@ struct WorkspaceResolver: Sendable {
 
     private nonisolated static func resolveMacOSWorkspace() -> URL {
         #if os(macOS)
-            // SECURITY: Do NOT default to entire home directory
-            // Use a restricted workspace folder instead
+            // SECURITY: Always use the curated artifact sandbox.
+            // LLMs can ONLY access files that users explicitly upload.
+            // This prevents unauthorized access to the file system.
+            //
+            // The previous implementation allowed user-configured workspace roots,
+            // which could expose sensitive files (e.g., entire home directory).
+            // Now, file access is restricted to the ArtifactLibrary directory.
+
             let fm = FileManager.default
-            
-            // First check for user-configured workspace in UserDefaults
-            if let workspacePathString = UserDefaults.standard.string(forKey: "llmhub.workspaceRoot"),
-               !workspacePathString.isEmpty,
-               let workspaceURL = URL(string: workspacePathString) ?? URL(fileURLWithPath: workspacePathString) {
-                var isDirectory: ObjCBool = false
-                if fm.fileExists(atPath: workspaceURL.path, isDirectory: &isDirectory),
-                   isDirectory.boolValue {
-                    return workspaceURL.standardizedFileURL
-                }
-            }
-            
-            // Use app-specific workspace directory in Library/Containers
-            // This prevents access to user's entire home directory
-            guard let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
-                // Fallback to temporary directory if app support is unavailable
+
+            guard
+                let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)
+                    .first
+            else {
                 return fm.temporaryDirectory
             }
-            
-            let workspaceDir = appSupport
-                .deletingLastPathComponent()  // Go up from Application Support
-                .appendingPathComponent("Syntra.llmHub/Data/Workspace", isDirectory: true)
-            
-            // Create the workspace directory if it doesn't exist
-            if !fm.fileExists(atPath: workspaceDir.path) {
-                try? fm.createDirectory(at: workspaceDir, withIntermediateDirectories: true, attributes: nil)
+
+            // Use the ArtifactLibrary as the exclusive workspace
+            // All file tool operations are confined to this directory
+            let artifactLibraryDir =
+                appSupport
+                .deletingLastPathComponent()
+                .appendingPathComponent("Syntra.llmHub/Data/ArtifactLibrary", isDirectory: true)
+
+            // Create the directory if it doesn't exist
+            if !fm.fileExists(atPath: artifactLibraryDir.path) {
+                try? fm.createDirectory(
+                    at: artifactLibraryDir,
+                    withIntermediateDirectories: true,
+                    attributes: [.posixPermissions: 0o700]  // Owner-only access
+                )
             }
-            
-            return workspaceDir.standardizedFileURL
+
+            return artifactLibraryDir.standardizedFileURL
         #else
             // Fallback for non-macOS platforms
             return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first

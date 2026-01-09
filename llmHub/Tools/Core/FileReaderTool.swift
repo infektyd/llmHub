@@ -14,11 +14,11 @@ import UniformTypeIdentifiers
 nonisolated struct FileReaderTool: Tool {
     let name = "read_file"
     let description = """
-        Read and analyze the contents of files. \
-        Supports text files (txt, md, json, xml, csv), \
-        PDF documents, and can describe images. \
-        Use this tool when you need to examine file contents or analyze documents. \
-        Path must be within the workspace (prefer relative paths).
+        Read and analyze files from the artifact library. \
+        These are files the user has explicitly shared via drag-and-drop or upload. \
+        Supports text files (txt, md, json, xml, csv), PDF documents, and images. \
+        Use this tool when you need to examine file contents the user has provided. \
+        If a file isn't in the library, ask the user to share it.
         """
 
     nonisolated var parameters: ToolParametersSchema {
@@ -103,7 +103,9 @@ nonisolated struct FileReaderTool: Tool {
         let workspaceRoot = context.workspacePath.standardizedFileURL
         if !resolvedURL.path.hasPrefix(workspaceRoot.path) {
             throw ToolError.sandboxViolation(
-                "Access denied: File must be within the workspace sandbox (use a workspace-relative path)."
+                "File '\(path)' is not in the artifact library. "
+                    + "To share this file with me, drag it into the chat window or use the 📎 button to upload it. "
+                    + "I can only access files you explicitly share."
             )
         }
 

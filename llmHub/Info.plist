@@ -12,11 +12,6 @@
 		<true/>
 	</dict>
 	<key>UIBackgroundModes</key>
-	<array>
-		<string>processing</string>
-		<string>fetch</string>
-		<string>audio</string>
-		<string>external-accessory</string>
-	</array>
+	<array/>
 </dict>
 </plist>
