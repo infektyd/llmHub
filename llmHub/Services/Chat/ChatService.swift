@@ -131,8 +131,9 @@ final class ChatService {
     /// Logger instance.
     private let logger = Logger(subsystem: "com.llmhub", category: "ChatService")
 
-    /// Maximum number of tool execution loops to prevent infinite recursion.
-    private let maxToolIterations = 10
+    /// Default maximum number of tool execution loops to prevent infinite recursion.
+    /// Note: this is overridden per-run by the persisted user setting in `AgentSettings`.
+    private let defaultMaxToolIterations = AgentSettings.defaultMaxIterations
 
     private struct TokenBatcher {
         private(set) var buffer: String = ""
@@ -407,7 +408,8 @@ final class ChatService {
         attachments: [Attachment] = [],
         references: [ChatReference] = [],
         images: [Data] = [],
-        generationID: UUID
+        generationID: UUID,
+        maxIterationsOverride: Int? = nil
     ) async throws -> AsyncThrowingStream<ProviderEvent, Error> {
 
         // User messages are persisted by the caller (ChatViewModel) to avoid
@@ -423,7 +425,9 @@ final class ChatService {
         let sessionID = session.id
         let registry = self.toolRegistry
         let executor = self.toolExecutor
-        let maxIterations = self.maxToolIterations
+        let maxIterations = AgentSettings.clampMaxIterations(
+            maxIterationsOverride ?? AgentSettings.maxIterations()
+        )
         let logger = self.logger
         let service = self
         // Capture environment for ToolContext
@@ -436,6 +440,7 @@ final class ChatService {
                 do {
                     var iterationCount = 0
                     var continueLoop = true
+                    var lastToolNameAttempted: String? = nil
 
                     while continueLoop && iterationCount < maxIterations {
                         try Task.checkCancellation()
@@ -554,16 +559,22 @@ final class ChatService {
                         // Build tool definitions for provider, filtered by user authorization.
                         let availableTools = await registry.availableTools(in: env)
 
+                        // SECURITY: Always check authorization, even if auth service is nil.
+                        // Secure-by-default: tools are disabled unless explicitly authorized.
                         var enabledTools: [any Tool] = []
                         if let auth = service.toolAuthorizationService {
+                            // Conversation-scoped authorization check
                             for tool in availableTools {
-                                let status = auth.checkAccess(for: tool.name)
+                                let status = auth.checkAccess(for: tool.name, conversationID: currentSession.conversationID)
                                 if status == .authorized {
                                     enabledTools.append(tool)
+                                } else {
+                                    logger.debug("🔒 Tool '\(tool.name)' blocked (status: \(status)) for conversation \(currentSession.conversationID.uuidString.prefix(8))")
                                 }
                             }
                         } else {
-                            enabledTools = availableTools
+                            // No authorization service = no tools enabled (secure by default)
+                            logger.warning("⚠️ No authorization service configured, all tools disabled")
                         }
 
                         let exportedToolDefs = enabledTools.compactMap { ToolDefinition(from: $0) }
@@ -675,6 +686,7 @@ final class ChatService {
 
                             case .toolUse(let id, let name, let input):
                                 logger.debug("ChatService: Tool call detected: \(name)")
+                                lastToolNameAttempted = name
                                 if let flushed = tokenBatcher.flush() {
                                     continuation.yield(.token(text: flushed))
                                 }
@@ -807,6 +819,10 @@ final class ChatService {
 
                             case .contextCompacted:
                                 break
+
+                            case .agentStopped:
+                                // Providers never emit this; only ChatService emits agentStopped.
+                                break
                             }
                         }
 
@@ -861,6 +877,7 @@ final class ChatService {
 
                             for await callResult in executionStream {
                                 let toolName = callResult.toolName
+                                lastToolNameAttempted = toolName
                                 let toolResultOutput = callResult.output
                                 let toolCallID = callResult.id  // Correlation ID
 
@@ -904,7 +921,15 @@ final class ChatService {
                     }
 
                     if iterationCount >= maxIterations {
-                        logger.warning("Agent loop reached maximum iterations (\(maxIterations))")
+                        let lastTool = lastToolNameAttempted ?? "none"
+                        logger.warning(
+                            "Agent loop reached maximum iterations (limit=\(maxIterations), used=\(iterationCount), lastTool=\(lastTool))"
+                        )
+                        continuation.yield(
+                            .agentStopped(
+                                reason: .iterationLimitReached(limit: maxIterations, used: iterationCount)
+                            )
+                        )
                     }
 
                     continuation.finish()
@@ -1002,7 +1027,7 @@ final class ChatService {
                 return summary
             case .error(let err):
                 throw err
-            case .toolUse, .toolExecuting, .usage, .reference, .thinking, .contextCompacted:
+            case .toolUse, .toolExecuting, .usage, .reference, .thinking, .contextCompacted, .agentStopped:
                 continue
             }
         }

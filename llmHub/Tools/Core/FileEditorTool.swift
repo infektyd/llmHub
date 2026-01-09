@@ -74,7 +74,14 @@ nonisolated final class FileEditorTool: Tool {
             let content = arguments.string("content") ?? ""
             try content.write(to: fileURL, atomically: true, encoding: .utf8)
             let message = content.isEmpty ? "Empty file created at \(path)" : "File created at \(path)"
-            return ToolResult.success(message)
+            return ToolResult.success(
+                message,
+                metadata: [
+                    "operation": operationStr,
+                    "path": path,
+                    "resolvedPath": fileURL.path,
+                ]
+            )
 
         case "edit":
             guard let oldStr = arguments.string("old_string"),
@@ -91,7 +98,14 @@ nonisolated final class FileEditorTool: Tool {
             }
             let newContent = original.replacingOccurrences(of: oldStr, with: newStr)
             try newContent.write(to: fileURL, atomically: true, encoding: .utf8)
-            return ToolResult.success("File edited")
+            return ToolResult.success(
+                "File edited",
+                metadata: [
+                    "operation": operationStr,
+                    "path": path,
+                    "resolvedPath": fileURL.path,
+                ]
+            )
 
         case "append":
             guard let content = arguments.string("content"), !content.isEmpty else {
@@ -102,11 +116,25 @@ nonisolated final class FileEditorTool: Tool {
             }
             let original = try String(contentsOf: fileURL, encoding: .utf8)
             try (original + content).write(to: fileURL, atomically: true, encoding: .utf8)
-            return ToolResult.success("Content appended")
+            return ToolResult.success(
+                "Content appended",
+                metadata: [
+                    "operation": operationStr,
+                    "path": path,
+                    "resolvedPath": fileURL.path,
+                ]
+            )
 
         case "delete":
             try fm.removeItem(at: fileURL)
-            return ToolResult.success("File deleted")
+            return ToolResult.success(
+                "File deleted",
+                metadata: [
+                    "operation": operationStr,
+                    "path": path,
+                    "resolvedPath": fileURL.path,
+                ]
+            )
 
         case "rename", "move":
             guard let dest = arguments.string("destination") else {
@@ -114,7 +142,16 @@ nonisolated final class FileEditorTool: Tool {
             }
             let destURL = context.workspacePath.appendingPathComponent(dest).standardizedFileURL
             try fm.moveItem(at: fileURL, to: destURL)
-            return ToolResult.success("Moved to \(dest)")
+            return ToolResult.success(
+                "Moved to \(dest)",
+                metadata: [
+                    "operation": operationStr,
+                    "path": path,
+                    "resolvedPath": fileURL.path,
+                    "destination": dest,
+                    "resolvedDestination": destURL.path,
+                ]
+            )
 
         case "copy":
             guard let dest = arguments.string("destination") else {
@@ -122,7 +159,16 @@ nonisolated final class FileEditorTool: Tool {
             }
             let destURL = context.workspacePath.appendingPathComponent(dest).standardizedFileURL
             try fm.copyItem(at: fileURL, to: destURL)
-            return ToolResult.success("Copied to \(dest)")
+            return ToolResult.success(
+                "Copied to \(dest)",
+                metadata: [
+                    "operation": operationStr,
+                    "path": path,
+                    "resolvedPath": fileURL.path,
+                    "destination": dest,
+                    "resolvedDestination": destURL.path,
+                ]
+            )
 
         default:
             throw ToolError.invalidArguments("Operation not implemented")

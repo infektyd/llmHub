@@ -46,6 +46,34 @@ struct CanvasRootView: View {
         _rightSidebarVisible = State(initialValue: rightSidebarVisible)
     }
 
+    private var agentStepLimitAlertMessage: Text {
+        switch chatVM.lastAgentStopReason {
+        case .iterationLimitReached(let limit, _):
+            Text("This run hit the limit of \(limit) tool steps. What would you like to do?")
+        case nil:
+            Text("This run hit the tool-step limit. What would you like to do?")
+        }
+    }
+
+    @ViewBuilder
+    private func agentStepLimitConfigSheet() -> some View {
+        AgentStepLimitConfigSheet(
+            mode: chatVM.stepLimitConfigMode,
+            additionalSteps: $chatVM.stepLimitAdditionalSteps,
+            defaultMaxIterations: $chatVM.stepLimitDefaultMaxIterations,
+            stopReason: chatVM.lastAgentStopReason,
+            onCancel: {
+                chatVM.showAgentStepLimitConfigSheet = false
+            },
+            onApplyContinue: {
+                chatVM.applyAgentStepLimitContinue(modelContext: modelContext)
+            },
+            onApplyDefault: {
+                chatVM.applyAgentStepLimitDefaultChange(modelContext: modelContext)
+            }
+        )
+    }
+
     var body: some View {
         let outerPadding: CGFloat = uiCompactMode ? 12 : 16
         ZStack {
@@ -119,6 +147,7 @@ struct CanvasRootView: View {
                     selectedConversationID: $viewModel.selectedConversationID,
                     onNewConversation: createAndSelectConversation
                 )
+                .environment(viewModel)
                 .frame(width: 320)
                 .padding(.leading, outerPadding)
                 .padding(.top, outerPadding)
@@ -177,6 +206,25 @@ struct CanvasRootView: View {
                 .zIndex(1000)
             }
 #endif
+        }
+        .alert(
+            "Agent reached its step limit",
+            isPresented: $chatVM.showAgentStepLimitAlert
+        ) {
+            Button("Continue…") {
+                chatVM.agentStepLimitContinueTapped()
+            }
+            Button("Change default…") {
+                chatVM.agentStepLimitChangeDefaultTapped()
+            }
+            Button("Stop", role: .cancel) {
+                chatVM.agentStepLimitStopTapped()
+            }
+        } message: {
+            agentStepLimitAlertMessage
+        }
+        .sheet(isPresented: $chatVM.showAgentStepLimitConfigSheet) {
+            agentStepLimitConfigSheet()
         }
         .onPreferenceChange(ComposerHeightPreferenceKey.self) { height in
             guard abs(composerHeight - height) > 0.5 else { return }

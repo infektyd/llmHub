@@ -84,9 +84,38 @@ struct WorkspaceResolver: Sendable {
 
     private nonisolated static func resolveMacOSWorkspace() -> URL {
         #if os(macOS)
-            // Prefer home directory on macOS (no sandboxing by default)
-            let home = FileManager.default.homeDirectoryForCurrentUser
-            return home.standardizedFileURL
+            // SECURITY: Do NOT default to entire home directory
+            // Use a restricted workspace folder instead
+            let fm = FileManager.default
+            
+            // First check for user-configured workspace in UserDefaults
+            if let workspacePathString = UserDefaults.standard.string(forKey: "llmhub.workspaceRoot"),
+               !workspacePathString.isEmpty,
+               let workspaceURL = URL(string: workspacePathString) ?? URL(fileURLWithPath: workspacePathString) {
+                var isDirectory: ObjCBool = false
+                if fm.fileExists(atPath: workspaceURL.path, isDirectory: &isDirectory),
+                   isDirectory.boolValue {
+                    return workspaceURL.standardizedFileURL
+                }
+            }
+            
+            // Use app-specific workspace directory in Library/Containers
+            // This prevents access to user's entire home directory
+            guard let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+                // Fallback to temporary directory if app support is unavailable
+                return fm.temporaryDirectory
+            }
+            
+            let workspaceDir = appSupport
+                .deletingLastPathComponent()  // Go up from Application Support
+                .appendingPathComponent("Syntra.llmHub/Data/Workspace", isDirectory: true)
+            
+            // Create the workspace directory if it doesn't exist
+            if !fm.fileExists(atPath: workspaceDir.path) {
+                try? fm.createDirectory(at: workspaceDir, withIntermediateDirectories: true, attributes: nil)
+            }
+            
+            return workspaceDir.standardizedFileURL
         #else
             // Fallback for non-macOS platforms
             return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
