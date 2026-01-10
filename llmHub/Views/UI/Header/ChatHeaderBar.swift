@@ -118,7 +118,10 @@ struct ChatHeaderBar: View {
 
     private var currentModelName: String {
         let models = modelRegistry.models(for: selectedProviderID)
-        return models.first(where: { $0.id == selectedModelID })?.displayName ?? selectedModelID
+        if let model = models.first(where: { $0.id == selectedModelID }) {
+            return cleanModelName(model.displayName)
+        }
+        return cleanModelName(selectedModelID)
     }
 
     private func providerIcon(providerID: String) -> some View {

@@ -86,21 +86,27 @@ actor ArtifactSandboxService {
     /// In-memory cache of the manifest.
     private var manifest: [SandboxedArtifact] = []
 
+    /// Notifications posted when the sandbox manifest changes.
+    nonisolated static let manifestDidChangeNotification = Notification.Name(
+        "ArtifactSandboxService.manifestDidChange"
+    )
+
     // MARK: - Initialization
 
     init() {
         // Determine sandbox location
-        let appSupport =
-            FileManager.default.urls(
-                for: .applicationSupportDirectory,
-                in: .userDomainMask
-            ).first ?? FileManager.default.temporaryDirectory
-
-        // Use a dedicated directory for the artifact library
-        self.sandboxURL =
-            appSupport
-            .deletingLastPathComponent()
-            .appendingPathComponent("Syntra.llmHub/Data/ArtifactLibrary", isDirectory: true)
+        #if os(iOS)
+            let base =
+                FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+                ?? FileManager.default.temporaryDirectory
+            self.sandboxURL = base.appendingPathComponent("llmHub/Artifacts", isDirectory: true)
+        #else
+            let base =
+                FileManager.default
+                .urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+                ?? FileManager.default.temporaryDirectory
+            self.sandboxURL = base.appendingPathComponent("llmHub/Artifacts", isDirectory: true)
+        #endif
 
         self.manifestURL = sandboxURL.appendingPathComponent(".artifact_manifest.json")
 
@@ -116,6 +122,12 @@ actor ArtifactSandboxService {
             logger.error(
                 "Failed to create artifact sandbox directory: \(error.localizedDescription)")
         }
+
+        ArtifactImportDiagnostics.logSandboxState(
+            sandboxURL: sandboxURL,
+            manifestCount: 0,
+            totalSize: 0
+        )
 
         // Load manifest
         Task {
@@ -133,6 +145,40 @@ actor ArtifactSandboxService {
     /// - Throws: If the file cannot be read or copied.
     func importFile(from sourceURL: URL) async throws -> SandboxedArtifact {
         let fm = FileManager.default
+
+        ArtifactImportDiagnostics.logImportStart(
+            sourceURL: sourceURL,
+            entrypoint: "ArtifactSandboxService.importFile"
+        )
+
+        // CRITICAL: Re-create directory if it doesn't exist (defensive)
+        // The directory may have been deleted between app launches
+        if !fm.fileExists(atPath: sandboxURL.path) {
+            try fm.createDirectory(
+                at: sandboxURL,
+                withIntermediateDirectories: true,
+                attributes: [.posixPermissions: 0o700]
+            )
+            ArtifactImportDiagnostics.log("🔧 Recreated sandbox directory: \(sandboxURL.path)")
+        }
+
+        // Start security-scoped access BEFORE any file operations
+        let didStartSecurityScopedAccess = sourceURL.startAccessingSecurityScopedResource()
+        ArtifactImportDiagnostics.logSecurityScoped(
+            started: didStartSecurityScopedAccess,
+            entrypoint: "ArtifactSandboxService.importFile"
+        )
+
+        // CRITICAL: If we can't start security-scoped access, fail fast with clear error
+        guard didStartSecurityScopedAccess else {
+            let error = ArtifactSandboxError.permissionDenied(sourceURL)
+            ArtifactImportDiagnostics.logCopyResult(success: false, error: error)
+            throw error
+        }
+
+        defer {
+            sourceURL.stopAccessingSecurityScopedResource()
+        }
 
         // Verify source exists and is a file
         var isDirectory: ObjCBool = false
@@ -156,12 +202,39 @@ actor ArtifactSandboxService {
 
         // Destination in sandbox
         let destinationURL = sandboxURL.appendingPathComponent(uniqueFilename)
+        ArtifactImportDiagnostics.logCopyAttempt(
+            sourceURL: sourceURL,
+            destinationURL: destinationURL
+        )
 
-        // Copy file to sandbox
+        // Copy file to sandbox with retry logic
         if fm.fileExists(atPath: destinationURL.path) {
             try fm.removeItem(at: destinationURL)
         }
-        try fm.copyItem(at: sourceURL, to: destinationURL)
+
+        var lastError: Error?
+        for attempt in 1...3 {
+            do {
+                try fm.copyItem(at: sourceURL, to: destinationURL)
+                ArtifactImportDiagnostics.logCopyResult(success: true)
+                break  // Success!
+            } catch {
+                lastError = error
+                ArtifactImportDiagnostics.log(
+                    "⚠️ Copy attempt \(attempt)/3 failed: \(error.localizedDescription)"
+                )
+                if attempt < 3 {
+                    // Brief delay before retry (macOS sometimes needs time)
+                    try await Task.sleep(nanoseconds: 100_000_000)  // 100ms
+                }
+            }
+        }
+
+        // If all attempts failed, throw the last error
+        if !fm.fileExists(atPath: destinationURL.path) {
+            ArtifactImportDiagnostics.logCopyResult(success: false, error: lastError)
+            throw lastError ?? ArtifactSandboxError.importFailed("Copy failed after 3 attempts")
+        }
 
         // Set restrictive permissions
         try fm.setAttributes([.posixPermissions: 0o600], ofItemAtPath: destinationURL.path)
@@ -181,7 +254,10 @@ actor ArtifactSandboxService {
         manifest.append(artifact)
         try await saveManifest()
 
-        logger.info("Imported artifact: \(originalFilename) (\(sizeBytes) bytes)")
+        // Notify observers
+        notifyManifestChanged()
+
+        logger.info("✅ Imported artifact: \(originalFilename) (\(sizeBytes) bytes)")
 
         return artifact
     }
@@ -193,6 +269,11 @@ actor ArtifactSandboxService {
     ///   - filename: The desired filename.
     /// - Returns: The created artifact metadata.
     func importData(_ data: Data, filename: String) async throws -> SandboxedArtifact {
+        ArtifactImportDiagnostics.log(
+            "import_start entrypoint=ArtifactSandboxService.importData filename=\(filename)")
+
+        try FileManager.default.createDirectory(at: sandboxURL, withIntermediateDirectories: true)
+
         let datePrefix = ISO8601DateFormatter().string(from: Date()).prefix(10)
         let uniqueFilename = "\(datePrefix)_\(filename)"
         let destinationURL = sandboxURL.appendingPathComponent(uniqueFilename)
@@ -218,6 +299,9 @@ actor ArtifactSandboxService {
         manifest.append(artifact)
         try await saveManifest()
 
+        // Notify observers
+        notifyManifestChanged()
+
         logger.info("Imported data as artifact: \(filename) (\(data.count) bytes)")
 
         return artifact
@@ -229,12 +313,20 @@ actor ArtifactSandboxService {
     /// - Returns: Array of imported artifacts.
     func importFolder(from folderURL: URL) async throws -> [SandboxedArtifact] {
         let fm = FileManager.default
-        var isDirectory: ObjCBool = false
 
-        guard fm.fileExists(atPath: folderURL.path, isDirectory: &isDirectory),
-            isDirectory.boolValue
-        else {
-            throw ArtifactSandboxError.sourceNotFound(folderURL)
+        ArtifactImportDiagnostics.logImportStart(
+            sourceURL: folderURL, entrypoint: "ArtifactSandboxService.importFolder")
+
+        try fm.createDirectory(at: sandboxURL, withIntermediateDirectories: true)
+
+        let didStartSecurityScopedAccess = folderURL.startAccessingSecurityScopedResource()
+        ArtifactImportDiagnostics.logSecurityScoped(
+            started: didStartSecurityScopedAccess, entrypoint: "ArtifactSandboxService.importFolder"
+        )
+        defer {
+            if didStartSecurityScopedAccess {
+                folderURL.stopAccessingSecurityScopedResource()
+            }
         }
 
         var importedArtifacts: [SandboxedArtifact] = []
@@ -301,6 +393,7 @@ actor ArtifactSandboxService {
         }
 
         try await saveManifest()
+        notifyManifestChanged()
         logger.info("Imported folder with \(importedArtifacts.count) files")
 
         return importedArtifacts
@@ -334,6 +427,9 @@ actor ArtifactSandboxService {
         manifest.remove(at: index)
         try await saveManifest()
 
+        // Notify observers
+        notifyManifestChanged()
+
         logger.info("Deleted artifact: \(artifact.filename)")
     }
 
@@ -343,7 +439,8 @@ actor ArtifactSandboxService {
 
         // Remove all files except manifest
         if let contents = try? fm.contentsOfDirectory(
-            at: sandboxURL, includingPropertiesForKeys: nil) {
+            at: sandboxURL, includingPropertiesForKeys: nil)
+        {
             for url in contents where url.lastPathComponent != ".artifact_manifest.json" {
                 try? fm.removeItem(at: url)
             }
@@ -351,6 +448,9 @@ actor ArtifactSandboxService {
 
         manifest.removeAll()
         try await saveManifest()
+
+        // Notify observers
+        notifyManifestChanged()
 
         logger.info("Cleared all artifacts from sandbox")
     }
@@ -365,11 +465,23 @@ actor ArtifactSandboxService {
         manifest.count
     }
 
+    // MARK: - Notifications
+
+    private func notifyManifestChanged() {
+        ArtifactImportDiagnostics.logManifestChanged(count: count, totalSize: totalSize)
+        NotificationCenter.default.post(
+            name: Self.manifestDidChangeNotification,
+            object: nil,
+            userInfo: ["count": count, "totalSize": totalSize]
+        )
+    }
+
     // MARK: - Manifest Persistence
 
     private func loadManifest() {
         guard FileManager.default.fileExists(atPath: manifestURL.path) else {
             manifest = []
+            notifyManifestChanged()
             return
         }
 
@@ -381,6 +493,8 @@ actor ArtifactSandboxService {
             logger.error("Failed to load artifact manifest: \(error.localizedDescription)")
             manifest = []
         }
+
+        notifyManifestChanged()
     }
 
     private func saveManifest() async throws {
@@ -413,6 +527,7 @@ enum ArtifactSandboxError: LocalizedError {
     case sourceNotFound(URL)
     case artifactNotFound(UUID)
     case importFailed(String)
+    case permissionDenied(URL)
 
     var errorDescription: String? {
         switch self {
@@ -422,6 +537,9 @@ enum ArtifactSandboxError: LocalizedError {
             return "Artifact not found: \(id.uuidString)"
         case .importFailed(let reason):
             return "Import failed: \(reason)"
+        case .permissionDenied(let url):
+            return
+                "Permission denied: Cannot access \(url.lastPathComponent). Try dragging the file into the sidebar again."
         }
     }
 }

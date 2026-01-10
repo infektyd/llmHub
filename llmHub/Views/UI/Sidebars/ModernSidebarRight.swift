@@ -663,16 +663,29 @@ struct ModernSidebarRight: View {
     }
 
     private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
+        ArtifactImportDiagnostics.log("ui_drop providers=\(providers.count)")
         for provider in providers {
             if provider.canLoadObject(ofClass: URL.self) {
                 _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                    if let url = url {
-                        Task {
-                            _ = try? await ArtifactSandboxService.shared.importFile(from: url)
-                            await loadSandboxedArtifacts()
+                    Task { @MainActor in
+                        if let url = url {
+                            ArtifactImportDiagnostics.logURL("ui_drop_url", url: url)
+                            Task {
+                                do {
+                                    _ = try await ArtifactSandboxService.shared.importFile(from: url)
+                                } catch {
+                                    ArtifactImportDiagnostics.logError(
+                                        "ui_drop_import_failed error=\(error.localizedDescription)")
+                                }
+                                await loadSandboxedArtifacts()
+                            }
+                        } else {
+                            ArtifactImportDiagnostics.logError("ui_drop_no_url")
                         }
                     }
                 }
+            } else {
+                ArtifactImportDiagnostics.log("ui_drop_provider_cantLoadURL")
             }
         }
         return true

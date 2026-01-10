@@ -49,16 +49,6 @@ struct ArtifactCardView: View {
                 Spacer()
 
                 Button {
-                    openArtifactDetail?(payload)
-                } label: {
-                    Image(systemName: "arrow.up.right.square")
-                        .font(.system(size: 12 * uiScale, weight: .semibold))
-                        .foregroundStyle(AppColors.textSecondary)
-                }
-                .buttonStyle(.plain)
-                .help("Open")
-
-                Button {
                     withAnimation {
                         expandedState.wrappedValue.toggle()
                     }
@@ -89,11 +79,11 @@ struct ArtifactCardView: View {
                     .foregroundStyle(AppColors.textSecondary)
             }
         }
-        .padding(uiCompactMode ? 12 : 16)
         .contentShape(Rectangle())
         .onTapGesture {
             openArtifactDetail?(payload)
         }
+        .padding(uiCompactMode ? 12 : 16)
         .background {
             RoundedRectangle(cornerRadius: 06, style: .continuous)
                 .fill(AppColors.surface)
