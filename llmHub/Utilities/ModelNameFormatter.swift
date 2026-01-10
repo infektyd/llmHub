@@ -11,102 +11,107 @@ func cleanModelName(_ raw: String) -> String {
     let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty else { return raw }
 
-    var working = trimmed
+    // Work in lowercase, then apply casing rules at the end.
+    var name = trimmed.lowercased()
 
-    // 1) Strip explicit date suffixes
-    // - "-20250514" / "-2024-11-20" (also accept underscores/spaces as separators)
-    working = working.replacingOccurrences(of: #"[-_ ]\d{8}$"#, with: "", options: .regularExpression)
-    working = working.replacingOccurrences(of: #"[-_ ]\d{4}[-_]\d{2}[-_]\d{2}$"#, with: "", options: .regularExpression)
+    // 1. Strip date suffixes: -YYYYMMDD or -YYYY-MM-DD (also accept underscores)
+    name = name.replacingOccurrences(of: #"-\d{4}-\d{2}-\d{2}$"#, with: "", options: .regularExpression)
+    name = name.replacingOccurrences(of: #"_\d{4}_\d{2}_\d{2}$"#, with: "", options: .regularExpression)
+    name = name.replacingOccurrences(of: #"-\d{8}$"#, with: "", options: .regularExpression)
+    name = name.replacingOccurrences(of: #"_\d{8}$"#, with: "", options: .regularExpression)
 
-    // 2) Normalize separators: treat whitespace/underscores as hyphens.
-    working = working.replacingOccurrences(of: #"[\s_]+"#, with: "-", options: .regularExpression)
+    // 2. Normalize separators to hyphens
+    name = name.replacingOccurrences(of: #"[\s_]+"#, with: "-", options: .regularExpression)
 
-    // 3) Strip noise words (case-insensitive) wherever they appear.
-    let stripWords: Set<String> = ["fast", "reasoning", "preview", "latest", "experimental", "turbo"]
-
-    // 4) Tokenize by hyphen, then normalize versions like "4-1" -> "4.1" via token stitching.
-    var tokens = working
-        .split(separator: "-", omittingEmptySubsequences: true)
-        .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
-        .filter { !$0.isEmpty }
-
-    guard !tokens.isEmpty else { return raw }
-
-    // Drop noise tokens.
-    tokens = tokens.filter { !stripWords.contains($0.lowercased()) }
-    guard !tokens.isEmpty else { return raw }
-
-    // Join adjacent purely-numeric tokens into dotted versions: "4" "1" -> "4.1".
-    // Do not alter tokens containing letters (e.g., "4o").
-    var normalizedTokens: [String] = []
-    var index = 0
-    while index < tokens.count {
-        let current = tokens[index]
-        let next = (index + 1 < tokens.count) ? tokens[index + 1] : nil
-
-        let currentIsDigitsOnly = !current.isEmpty && current.allSatisfy { $0.isNumber }
-        let nextIsDigitsOnly = next.map { !$0.isEmpty && $0.allSatisfy { $0.isNumber } } ?? false
-
-        if currentIsDigitsOnly, nextIsDigitsOnly {
-            normalizedTokens.append("\(current).\(next!)")
-            index += 2
-        } else {
-            // Also normalize embedded digit-digit patterns inside a token (rare): "4-1" already split,
-            // but handle accidental "4-1" remnants or spaced "4 1" that became "4-1" earlier.
-            normalizedTokens.append(current)
-            index += 1
-        }
-    }
-
-    tokens = normalizedTokens
-
-    // 5) Capitalize and format.
-    let keepTitleCase: Set<String> = [
-        "pro", "flash", "sonnet", "opus", "haiku", "mini", "large", "medium", "small"
+    // 3. Strip noise suffix tokens (order matters: compound phrases first)
+    // We strip as tokens to avoid accidental substring mangling.
+    let noiseTokens: Set<String> = [
+        "fast-reasoning",
+        "fast",
+        "reasoning",
+        "preview",
+        "latest",
+        "experimental",
+        "turbo"
     ]
 
-    func titleToken(_ token: String) -> String {
-        guard !token.isEmpty else { return token }
+    // 4. Tokenize by hyphen
+    var tokens = name
+        .split(separator: "-", omittingEmptySubsequences: true)
+        .map { String($0) }
 
+    guard !tokens.isEmpty else { return raw }
+
+    // Drop compound noise tokens like "fast-reasoning" if present in the raw string.
+    // (This handles ids like grok-4.1-fast-reasoning cleanly.)
+    if name.contains("-fast-reasoning") {
+        tokens.removeAll { $0 == "fast" || $0 == "reasoning" }
+    }
+
+    // Drop remaining noise tokens.
+    tokens.removeAll { noiseTokens.contains($0) }
+    guard !tokens.isEmpty else { return raw }
+
+    // 5. Normalize version patterns across tokens:
+    // - Join adjacent digit-only tokens into dotted versions: ["4","1"] -> "4.1"
+    // - Keep tokens containing letters intact (e.g. "4o").
+    var normalized: [String] = []
+    var i = 0
+    while i < tokens.count {
+        let current = tokens[i]
+        let next = (i + 1 < tokens.count) ? tokens[i + 1] : nil
+
+        let currentDigitsOnly = !current.isEmpty && current.allSatisfy { $0.isNumber }
+        let nextDigitsOnly = next.map { !$0.isEmpty && $0.allSatisfy { $0.isNumber } } ?? false
+
+        if currentDigitsOnly, nextDigitsOnly {
+            normalized.append("\(current).\(next!)")
+            i += 2
+            continue
+        }
+
+        // Normalize digit-digit inside a token: "4-1" would be split already, but handle oddities.
+        let embedded = current.replacingOccurrences(
+            of: #"(\d)-(\d)"#,
+            with: "$1.$2",
+            options: .regularExpression
+        )
+        normalized.append(embedded)
+        i += 1
+    }
+
+    tokens = normalized
+
+    // 6. Format tokens (title-case + special handling)
+    func prettyToken(_ token: String) -> String {
         let lower = token.lowercased()
-
         switch lower {
         case "gpt": return "GPT"
         case "grok": return "Grok"
         case "claude": return "Claude"
         case "gemini": return "Gemini"
         case "mistral": return "Mistral"
+        case "llama": return "LLaMA"
         default:
-            if keepTitleCase.contains(lower) {
-                return lower.prefix(1).uppercased() + lower.dropFirst()
+            // Preserve version-like tokens such as 4o, 2.0, 3.5
+            if lower.range(of: #"^\d+(?:\.\d+)*[a-z]?$"#, options: .regularExpression) != nil {
+                return lower
             }
-
-            // Preserve numeric/version tokens like "4o" or "2.0".
-            let isLikelyVersion = token.range(of: #"^\d+(?:\.\d+)*[a-z]?$"#, options: .regularExpression) != nil
-            if isLikelyVersion { return lower }
-
-            // Preserve existing all-caps acronyms.
-            if token.uppercased() == token { return token }
-
             return lower.prefix(1).uppercased() + lower.dropFirst()
         }
     }
 
-    let brand = tokens[0].lowercased()
-
-    // GPT: format as "GPT-4o" plus optional descriptors.
-    if brand == "gpt" {
+    // Special format for GPT to keep GPT-4o style.
+    if tokens.first?.lowercased() == "gpt" {
         if tokens.count >= 2 {
-            var output: [String] = ["GPT-\(titleToken(tokens[1]))"]
+            var out: [String] = ["GPT-\(prettyToken(tokens[1]))"]
             if tokens.count > 2 {
-                output.append(contentsOf: tokens.dropFirst(2).map(titleToken))
+                out.append(contentsOf: tokens.dropFirst(2).map(prettyToken))
             }
-            return output.joined(separator: " ").trimmingCharacters(in: .whitespaces)
+            return out.joined(separator: " ")
         }
         return "GPT"
     }
 
-    // Claude: allow "claude-3-5-sonnet" -> "Claude 3.5 Sonnet" and "claude-sonnet-4" -> "Claude Sonnet 4".
-    // The generic token pipeline already normalized numeric pairs, so just title-case.
-    return tokens.map(titleToken).joined(separator: " ").trimmingCharacters(in: .whitespaces)
+    return tokens.map(prettyToken).joined(separator: " ").trimmingCharacters(in: .whitespaces)
 }

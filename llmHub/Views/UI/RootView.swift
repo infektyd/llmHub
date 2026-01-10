@@ -29,9 +29,8 @@ struct CanvasRootView: View {
     @State private var leftSidebarVisible: Bool
     @State private var rightSidebarVisible: Bool
     @State private var showSettings: Bool = false
-    @State private var composerHeight: CGFloat = 100  // Measured dynamically
-
     @State private var selectedArtifactForDetail: ArtifactPayload?
+    @State private var composerHeight: CGFloat = 100  // Measured dynamically
 
     @Environment(\.uiCompactMode) private var uiCompactMode
     @Environment(\.uiScale) private var uiScale
@@ -78,111 +77,52 @@ struct CanvasRootView: View {
 
     var body: some View {
         let outerPadding: CGFloat = uiCompactMode ? 12 : 16
-        let sidebarWidth: CGFloat = 320
+        #if os(macOS)
+            let sidebarWidth: CGFloat = 320
+        #endif
 
         ZStack {
             // Canvas background (flat matte)
             AppColors.backgroundPrimary
                 .ignoresSafeArea()
 
-            // Main content: HStack with left sidebar + center + right sidebar
-            HStack(spacing: 0) {
-                // Push-style left sidebar
-                if leftSidebarVisible {
-                    ModernSidebarLeft(
-                        isVisible: $leftSidebarVisible,
-                        rightSidebarVisible: $rightSidebarVisible,
-                        sessions: sessions,
-                        folders: folders,
-                        selectedConversationID: $viewModel.selectedConversationID,
-                        onNewConversation: createAndSelectConversation
-                    )
-                    .environment(viewModel)
-                    .frame(width: sidebarWidth)
-                    .padding(.leading, outerPadding)
-                    .padding(.top, outerPadding)
-                    .padding(.bottom, outerPadding)
-                    .transition(.move(edge: .leading).combined(with: .opacity))
-                }
-
-                // Center: Transcript canvas + Composer
-                VStack(spacing: 0) {
-                    if let session = selectedSession {
-                        ChatHeaderBar(
-                            title: Binding(
-                                get: { session.displayTitle },
-                                set: {
-                                    session.title = $0
-                                    session.afmTitle = nil
-                                    try? modelContext.save()
-                                }
-                            ),
-                            selectedProviderID: Binding(
-                                get: { session.providerID },
-                                set: {
-                                    session.providerID = $0
-                                    hydrateSelection(from: session)
-                                    try? modelContext.save()
-                                }
-                            ),
-                            selectedModelID: Binding(
-                                get: { session.model },
-                                set: {
-                                    session.model = $0
-                                    hydrateSelection(from: session)
-                                    try? modelContext.save()
-                                }
-                            ),
-                            leftSidebarVisible: $leftSidebarVisible
+            #if os(macOS)
+                // macOS: Push-style sidebars in HStack
+                HStack(spacing: 0) {
+                    // Push-style left sidebar
+                    if leftSidebarVisible {
+                        ModernSidebarLeft(
+                            isVisible: $leftSidebarVisible,
+                            rightSidebarVisible: $rightSidebarVisible,
+                            sessions: sessions,
+                            folders: folders,
+                            selectedConversationID: $viewModel.selectedConversationID,
+                            onNewConversation: createAndSelectConversation
                         )
-                        .environmentObject(modelRegistry)
-
-                        TranscriptCanvasSessionView(session: session)
-                            .environment(viewModel)
-                            .environment(\.composerHeight, composerHeight)
-                            .environmentObject(modelRegistry)
-                    } else {
-                        emptyState
+                        .environment(viewModel)
+                        .frame(width: sidebarWidth)
+                        .padding(.leading, outerPadding)
+                        .padding(.top, outerPadding)
+                        .padding(.bottom, outerPadding)
+                        .transition(.move(edge: .leading).combined(with: .opacity))
                     }
 
-                    // Composer at bottom of center content (inside HStack)
-                    ComposerBar(
-                        leftSidebarVisible: $leftSidebarVisible,
-                        rightSidebarVisible: $rightSidebarVisible,
-                        showSettings: $showSettings,
-                        selectedSession: selectedSession,
-                        modelRegistry: modelRegistry,
-                        viewModel: viewModel
-                    )
-                    .padding(.horizontal, outerPadding)
-                    .padding(.bottom, outerPadding)
-                    .background(
-                        GeometryReader { geo in
-                            Color.clear
-                                .preference(
-                                    key: ComposerHeightPreferenceKey.self,
-                                    value: geo.size.height
-                                )
-                        }
-                    )
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    centerContent(outerPadding: outerPadding)
 
-                // Push-style right sidebar (inspector)
-                if rightSidebarVisible {
-                    ModernSidebarRight(
-                        isVisible: $rightSidebarVisible,
-                        inspectorState: inspectorState
-                    )
-                    .frame(width: sidebarWidth)
-                    .padding(.trailing, outerPadding)
-                    .padding(.top, outerPadding)
-                    .padding(.bottom, outerPadding)
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
+                    // Push-style right sidebar (inspector)
+                    if rightSidebarVisible {
+                        ModernSidebarRight(
+                            isVisible: $rightSidebarVisible,
+                            inspectorState: inspectorState
+                        )
+                        .frame(width: sidebarWidth)
+                        .padding(.trailing, outerPadding)
+                        .padding(.top, outerPadding)
+                        .padding(.bottom, outerPadding)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                    }
                 }
-            }
 
-            #if os(macOS)
                 if showSettings {
                     SettingsOverlay(
                         isPresented: $showSettings,
@@ -190,7 +130,38 @@ struct CanvasRootView: View {
                     )
                     .zIndex(1000)
                 }
+            #else
+                // iOS: Center content only, sidebars presented as sheets
+                centerContent(outerPadding: outerPadding)
             #endif
+        }
+        .sheet(item: $selectedArtifactForDetail) { artifact in
+            #if os(macOS)
+                ArtifactDetailView(artifact: artifact) { comment in
+                    handleArtifactComment(artifact: artifact, comment: comment)
+                    selectedArtifactForDetail = nil
+                }
+                .frame(minWidth: 700, minHeight: 500)
+            #else
+                NavigationStack {
+                    ArtifactDetailView(artifact: artifact) { comment in
+                        handleArtifactComment(artifact: artifact, comment: comment)
+                        selectedArtifactForDetail = nil
+                    }
+                    .navigationTitle(artifact.title)
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Close") {
+                                selectedArtifactForDetail = nil
+                            }
+                        }
+                    }
+                }
+            #endif
+        }
+        .environment(\.openArtifactDetail) { artifact in
+            selectedArtifactForDetail = artifact
         }
         .alert(
             "Agent reached its step limit",
@@ -208,31 +179,8 @@ struct CanvasRootView: View {
         } message: {
             agentStepLimitAlertMessage
         }
-        .environment(\.openArtifactDetail) { payload in
-            selectedArtifactForDetail = payload
-        }
         .sheet(isPresented: $chatVM.showAgentStepLimitConfigSheet) {
             agentStepLimitConfigSheet()
-        }
-        .sheet(item: $selectedArtifactForDetail) { artifact in
-            ArtifactDetailView(
-                artifact: artifact,
-                onComment: { comment in
-                    guard let session = selectedSession else { return }
-                    let message = "Regarding the artifact '\(artifact.title)': \(comment)"
-                    chatVM.sendMessage(
-                        messageText: message,
-                        session: session,
-                        modelContext: modelContext
-                    )
-                }
-            )
-            #if !os(macOS)
-                .presentationDetents([.large])
-            #endif
-            #if os(macOS)
-                .frame(minWidth: 800, minHeight: 600)
-            #endif
         }
         .onPreferenceChange(ComposerHeightPreferenceKey.self) { height in
             guard abs(composerHeight - height) > 0.5 else { return }
@@ -264,6 +212,55 @@ struct CanvasRootView: View {
                     }
                     .environmentObject(modelRegistry)
                 }
+            }
+            // iOS: Left sidebar as bottom sheet
+            .sheet(isPresented: $leftSidebarVisible) {
+                NavigationStack {
+                    ModernSidebarLeft(
+                        isVisible: $leftSidebarVisible,
+                        rightSidebarVisible: $rightSidebarVisible,
+                        sessions: sessions,
+                        folders: folders,
+                        selectedConversationID: $viewModel.selectedConversationID,
+                        onNewConversation: createAndSelectConversation
+                    )
+                    .environment(viewModel)
+                    .navigationTitle("Conversations")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button {
+                                leftSidebarVisible = false
+                            } label: {
+                                Image(systemName: "xmark")
+                            }
+                        }
+                    }
+                }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            }
+            // iOS: Right sidebar (inspector) as bottom sheet
+            .sheet(isPresented: $rightSidebarVisible) {
+                NavigationStack {
+                    ModernSidebarRight(
+                        isVisible: $rightSidebarVisible,
+                        inspectorState: inspectorState
+                    )
+                    .navigationTitle("Inspector")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button {
+                                rightSidebarVisible = false
+                            } label: {
+                                Image(systemName: "xmark")
+                            }
+                        }
+                    }
+                }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
             }
         #endif
         .onAppear {
@@ -310,6 +307,72 @@ struct CanvasRootView: View {
              .buttonStyle(.plain)
              .foregroundStyle(.gray)
              */
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // MARK: - Center Content (shared between macOS HStack and iOS sheet layouts)
+
+    @ViewBuilder
+    private func centerContent(outerPadding: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            if let session = selectedSession {
+                ChatHeaderBar(
+                    title: Binding(
+                        get: { session.displayTitle },
+                        set: {
+                            session.title = $0
+                            session.afmTitle = nil
+                            try? modelContext.save()
+                        }
+                    ),
+                    selectedProviderID: Binding(
+                        get: { session.providerID },
+                        set: {
+                            session.providerID = $0
+                            hydrateSelection(from: session)
+                            try? modelContext.save()
+                        }
+                    ),
+                    selectedModelID: Binding(
+                        get: { session.model },
+                        set: {
+                            session.model = $0
+                            hydrateSelection(from: session)
+                            try? modelContext.save()
+                        }
+                    ),
+                    leftSidebarVisible: $leftSidebarVisible
+                )
+                .environmentObject(modelRegistry)
+
+                TranscriptCanvasSessionView(session: session)
+                    .environment(viewModel)
+                    .environment(\.composerHeight, composerHeight)
+            } else {
+                emptyState
+            }
+
+            // Composer at bottom of center content
+            ComposerBar(
+                leftSidebarVisible: $leftSidebarVisible,
+                rightSidebarVisible: $rightSidebarVisible,
+                showSettings: $showSettings,
+                selectedSession: selectedSession,
+                modelRegistry: modelRegistry,
+                viewModel: viewModel
+            )
+            .padding(.horizontal, outerPadding)
+            .padding(.bottom, outerPadding)
+            .background(
+                GeometryReader { geo in
+                    Color.clear
+                        .preference(
+                            key: ComposerHeightPreferenceKey.self,
+                            value: geo.size.height
+                        )
+                }
+            )
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -497,6 +560,17 @@ struct CanvasRootView: View {
             tokenStats: tokenStats,
             logs: logs,
             contextSummary: contextSummary
+        )
+    }
+
+    private func handleArtifactComment(artifact: ArtifactPayload, comment: String) {
+        guard let session = selectedSession else { return }
+        let message = "Regarding \"\(artifact.title)\":\n\n\(comment)"
+
+        chatVM.sendMessage(
+            messageText: message,
+            session: session,
+            modelContext: modelContext
         )
     }
 }
