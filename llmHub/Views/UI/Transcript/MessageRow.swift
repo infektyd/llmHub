@@ -27,13 +27,29 @@ struct TranscriptRow: View {
 
             // Content body
             if !viewModel.content.isEmpty {
-                TextualMessageView(
-                    content: viewModel.content,
-                    isStreaming: viewModel.isStreaming,
-                    role: viewModel.role,
-                    generationID: viewModel.generationID
-                )
-                .frame(maxWidth: 700, alignment: frameAlignment)
+                if isUser {
+                    TextualMessageView(
+                        content: viewModel.content,
+                        isStreaming: viewModel.isStreaming,
+                        role: viewModel.role,
+                        generationID: viewModel.generationID
+                    )
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background {
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(AppColors.userBubble)
+                    }
+                    .frame(maxWidth: 520, alignment: .trailing)
+                } else {
+                    TextualMessageView(
+                        content: viewModel.content,
+                        isStreaming: viewModel.isStreaming,
+                        role: viewModel.role,
+                        generationID: viewModel.generationID
+                    )
+                    .frame(maxWidth: 700, alignment: frameAlignment)
+                }
             }
 
             // Artifacts
@@ -64,6 +80,10 @@ struct TranscriptRow: View {
     private var roleLabel: some View {
         HStack(spacing: 6) {
             if isUser {
+                Text(settingsManager.settings.userEmote)
+                    .font(.system(size: 12 * uiScale, weight: .semibold))
+                    .foregroundStyle(AppColors.textSecondary)
+
                 Text(viewModel.headerLabel)
                     .font(
                         .system(

@@ -94,6 +94,7 @@ struct TranscriptCanvasSessionView: View {
     let session: ChatSessionEntity
 
     @Environment(ChatViewModel.self) private var chatVM
+    @EnvironmentObject private var modelRegistry: ModelRegistry
 
     private var messages: [ChatMessageEntity] {
         session.messages.sorted { $0.createdAt < $1.createdAt }
@@ -199,7 +200,14 @@ struct TranscriptCanvasSessionView: View {
         mergedArtifacts.append(contentsOf: persistedArtifacts)
 
         let isUser = message.role == .user
-        let label = isUser ? "You" : providerLabel()
+        let label: String
+        if isUser {
+            label = "You"
+        } else {
+            let emoji = (session.afmEmoji ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let resolvedEmoji = emoji.isEmpty ? "🤖" : emoji
+            label = "\(resolvedEmoji) \(providerLabel())"
+        }
 
         return TranscriptRowViewModel(
             id: rowID,
@@ -238,7 +246,13 @@ struct TranscriptCanvasSessionView: View {
     }
 
     private func providerLabel() -> String {
-        if !session.model.isEmpty { return session.model }
+        let models = modelRegistry.models(for: session.providerID)
+        if let displayName = models.first(where: { $0.id == session.model })?.displayName,
+            !displayName.isEmpty {
+            return cleanModelName(displayName)
+        }
+
+        if !session.model.isEmpty { return cleanModelName(session.model) }
         return "Assistant"
     }
 

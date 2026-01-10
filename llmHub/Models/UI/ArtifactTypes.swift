@@ -139,3 +139,19 @@ struct ArtifactMetadata: Identifiable, Equatable, Sendable {
         self.fileURL = fileURL
     }
 }
+
+// MARK: - Artifact Comments
+
+struct ArtifactComment: Identifiable, Codable, Sendable {
+    let id: UUID
+    let text: String
+    let lineNumber: Int?
+    let createdAt: Date
+
+    init(id: UUID = UUID(), text: String, lineNumber: Int? = nil, createdAt: Date = Date()) {
+        self.id = id
+        self.text = text
+        self.lineNumber = lineNumber
+        self.createdAt = createdAt
+    }
+}

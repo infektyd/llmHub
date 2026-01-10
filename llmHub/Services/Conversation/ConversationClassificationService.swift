@@ -212,7 +212,7 @@ nonisolated final class ConversationClassificationService: Sendable {
 
                 Respond with JSON containing:
                 - title: concise title (max 50 chars)
-                - emoji: single emoji representing the topic
+                - emoji: single emoji representing the topic (choose ONE from this set: 🤖 💬 🤔 💭 🧠 💡 ✨ 🎯 🔍 📊 📈 🧪 🧩 🧰 🔧 ⚙️ 🛠️ 💻 🧑‍💻 🧾 📝 ✍️ 🎨 🎵 📚 🗂️ 🧭 🧱 🛰️ 🌐 🔒 🛡️ 🧯 🚀 🧵 🧷 🔗 ⏱️ ✅ ⚠️ ❌ 🐛 🐍 🦊 🐱 🐙 🌟)
                 - category: one of [coding, research, creative, planning, support, general]
                 - topics: array of 1-5 key topics
                 - intent: one of [quickQuestion, debugging, exploration, creation, reference]

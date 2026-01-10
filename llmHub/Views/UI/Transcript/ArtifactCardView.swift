@@ -17,6 +17,7 @@ struct ArtifactCardView: View {
 
     @Environment(\.uiCompactMode) private var uiCompactMode
     @Environment(\.uiScale) private var uiScale
+    @Environment(\.openArtifactDetail) private var openArtifactDetail
 
     /// Standard initializer with optional startExpanded (defaults to true for backward compatibility)
     init(payload: ArtifactPayload, startExpanded: Bool = true) {
@@ -46,6 +47,16 @@ struct ArtifactCardView: View {
                     .foregroundStyle(AppColors.textPrimary)
 
                 Spacer()
+
+                Button {
+                    openArtifactDetail?(payload)
+                } label: {
+                    Image(systemName: "arrow.up.right.square")
+                        .font(.system(size: 12 * uiScale, weight: .semibold))
+                        .foregroundStyle(AppColors.textSecondary)
+                }
+                .buttonStyle(.plain)
+                .help("Open")
 
                 Button {
                     withAnimation {
@@ -79,6 +90,10 @@ struct ArtifactCardView: View {
             }
         }
         .padding(uiCompactMode ? 12 : 16)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            openArtifactDetail?(payload)
+        }
         .background {
             RoundedRectangle(cornerRadius: 06, style: .continuous)
                 .fill(AppColors.surface)

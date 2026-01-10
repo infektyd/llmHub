@@ -29,6 +29,9 @@ enum AppColors {
         /// Shadow color used for elevated surfaces.
         static let shadowSmoke = Color.black.opacity(0.28)
 
+        /// Subtle user-message bubble background.
+        static let userBubble = Color.white.opacity(0.06)
+
         /// A neutral, slightly warm gray used as an option in UI pickers.
         static let smoke = Color(red: 0.55, green: 0.56, blue: 0.58)
     }
@@ -50,6 +53,9 @@ enum AppColors {
 
         /// Shadow color used for elevated surfaces.
         static let shadowSmoke = Color.black.opacity(0.10)
+
+        /// Subtle user-message bubble background.
+        static let userBubble = Color.black.opacity(0.04)
 
         /// A neutral, slightly warm gray used as an option in UI pickers.
         static let smoke = Color(red: 0.62, green: 0.63, blue: 0.65)
@@ -106,6 +112,7 @@ enum AppColors {
                 accentSecondary: accentSecondary,
                 success: success,
                 shadowSmoke: shadowSmoke,
+                userBubble: userBubble,
                 smoke: smoke
             )
         case .some(let resolvedScheme):
@@ -122,6 +129,7 @@ enum AppColors {
                     accentSecondary: Dark.accentSecondary,
                     success: Dark.success,
                     shadowSmoke: Dark.shadowSmoke,
+                    userBubble: Dark.userBubble,
                     smoke: Dark.smoke
                 )
             case .light:
@@ -136,6 +144,7 @@ enum AppColors {
                     accentSecondary: Light.accentSecondary,
                     success: Light.success,
                     shadowSmoke: Light.shadowSmoke,
+                    userBubble: Light.userBubble,
                     smoke: Light.smoke
                 )
             @unknown default:
@@ -150,6 +159,7 @@ enum AppColors {
                     accentSecondary: accentSecondary,
                     success: success,
                     shadowSmoke: shadowSmoke,
+                    userBubble: userBubble,
                     smoke: smoke
                 )
             }
@@ -168,6 +178,7 @@ enum AppColors {
         public let accentSecondary: Color
         public let success: Color
         public let shadowSmoke: Color
+        public let userBubble: Color
         public let smoke: Color
     }
 
@@ -192,6 +203,9 @@ enum AppColors {
 
     /// Shadow color used for elevated surfaces.
     static let shadowSmoke: Color = adaptiveColor(dark: Dark.shadowSmoke, light: Light.shadowSmoke)
+
+    /// Subtle user-message bubble background.
+    static let userBubble: Color = adaptiveColor(dark: Dark.userBubble, light: Light.userBubble)
 
     /// A neutral gray option you can reference from UI pickers.
     static let smoke: Color = adaptiveColor(dark: Dark.smoke, light: Light.smoke)
