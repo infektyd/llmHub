@@ -624,6 +624,11 @@ struct AppearanceSection: View {
     @Environment(\.uiScale) private var uiScale
     @Environment(\.uiCompactMode) private var uiCompactMode
 
+    private let emoteOptions: [String] = [
+        "👤", "🧑‍💻", "🧑", "👨", "👩", "🧔", "👨‍💼", "👩‍💼",
+        "🦊", "🐱", "🤖", "👾", "🎮", "⚡️", "🔥", "💎", "🌟"
+    ]
+
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             SettingsSectionHeader(
@@ -726,6 +731,61 @@ struct AppearanceSection: View {
                     }
                 }
                 .toggleStyle(.switch)
+                .padding(uiCompactMode ? 14 : 16)
+
+                Divider()
+                    .padding(.horizontal, uiCompactMode ? 14 : 16)
+
+                // User avatar/emote
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("Your Avatar")
+                            .font(.system(size: 14 * uiScale, weight: .medium))
+                            .foregroundStyle(AppColors.textPrimary)
+
+                        Spacer()
+
+                        Text(settingsManager.settings.userEmote)
+                            .font(.system(size: 14 * uiScale))
+                            .foregroundStyle(AppColors.textSecondary)
+                    }
+
+                    Text("Shows next to your messages in the transcript")
+                        .font(.system(size: 11 * uiScale))
+                        .foregroundStyle(AppColors.textTertiary)
+
+                    let columns = [GridItem(.adaptive(minimum: uiCompactMode ? 32 : 36), spacing: 8)]
+                    LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
+                        ForEach(emoteOptions, id: \.self) { emote in
+                            Button {
+                                settingsManager.settings.userEmote = emote
+                            } label: {
+                                Text(emote)
+                                    .font(.system(size: 16 * uiScale))
+                                    .frame(width: uiCompactMode ? 32 : 36, height: uiCompactMode ? 28 : 32)
+                                    .background {
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .fill(
+                                                settingsManager.settings.userEmote == emote
+                                                    ? AppColors.accent.opacity(0.16)
+                                                    : AppColors.backgroundSecondary
+                                            )
+                                    }
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .stroke(
+                                                settingsManager.settings.userEmote == emote
+                                                    ? AppColors.accent.opacity(0.45)
+                                                    : AppColors.textPrimary.opacity(0.06),
+                                                lineWidth: 1
+                                            )
+                                    }
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Set avatar to \(emote)")
+                        }
+                    }
+                }
                 .padding(uiCompactMode ? 14 : 16)
             }
         }

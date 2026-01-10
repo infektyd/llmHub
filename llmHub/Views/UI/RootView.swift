@@ -31,6 +31,8 @@ struct CanvasRootView: View {
     @State private var showSettings: Bool = false
     @State private var composerHeight: CGFloat = 100  // Measured dynamically
 
+    @State private var selectedArtifactForDetail: ArtifactPayload?
+
     @Environment(\.uiCompactMode) private var uiCompactMode
     @Environment(\.uiScale) private var uiScale
 
@@ -138,6 +140,7 @@ struct CanvasRootView: View {
                         TranscriptCanvasSessionView(session: session)
                             .environment(viewModel)
                             .environment(\.composerHeight, composerHeight)
+                            .environmentObject(modelRegistry)
                     } else {
                         emptyState
                     }
@@ -205,8 +208,31 @@ struct CanvasRootView: View {
         } message: {
             agentStepLimitAlertMessage
         }
+        .environment(\.openArtifactDetail) { payload in
+            selectedArtifactForDetail = payload
+        }
         .sheet(isPresented: $chatVM.showAgentStepLimitConfigSheet) {
             agentStepLimitConfigSheet()
+        }
+        .sheet(item: $selectedArtifactForDetail) { artifact in
+            ArtifactDetailView(
+                artifact: artifact,
+                onComment: { comment in
+                    guard let session = selectedSession else { return }
+                    let message = "Regarding the artifact '\(artifact.title)': \(comment)"
+                    chatVM.sendMessage(
+                        messageText: message,
+                        session: session,
+                        modelContext: modelContext
+                    )
+                }
+            )
+            #if !os(macOS)
+                .presentationDetents([.large])
+            #endif
+            #if os(macOS)
+                .frame(minWidth: 800, minHeight: 600)
+            #endif
         }
         .onPreferenceChange(ComposerHeightPreferenceKey.self) { height in
             guard abs(composerHeight - height) > 0.5 else { return }

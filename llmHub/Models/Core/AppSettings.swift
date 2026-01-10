@@ -63,6 +63,9 @@ public struct AppSettings: Codable, Sendable {
     /// Font size scale factor (0.8 - 1.5, default 1.0)
     public var fontSize: CGFloat = 1.0
 
+    /// Emoji/avatar shown next to the user's messages in the transcript.
+    public var userEmote: String = "🧑‍💻"
+
     // MARK: - Tools & Behavior
 
     /// Per-tool permissions (tool ID → enabled state)
@@ -117,6 +120,11 @@ public struct AppSettings: Codable, Sendable {
     public mutating func validate() {
         // Clamp font size
         fontSize = max(0.8, min(1.5, fontSize))
+
+        // Ensure user emote is never empty
+        if userEmote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            userEmote = "🧑‍💻"
+        }
 
         // Clamp streaming throttle
         streamingThrottle = max(5, min(20, streamingThrottle))
