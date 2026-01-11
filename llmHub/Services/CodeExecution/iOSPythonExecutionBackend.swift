@@ -8,7 +8,7 @@
 import Foundation
 import OSLog
 
-#if os(iOS)
+#if os(iOS) && canImport(Python)
 import Python
 
 /// iOS backend that executes Python code in-process via the Python C API.
@@ -229,6 +229,76 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         return String(cString: versionCString)
     }
 
+    /// Build security preamble based on CodeSecurityMode.
+    /// This is passed via workingDirectory presence/absence as a signal.
+    private func buildSecurityPreamble(workingDirectory: URL?) -> String {
+        guard let workDir = workingDirectory else {
+            return """
+            import builtins
+            import os
+
+            # UNRESTRICTED MODE: Full iOS sandbox access
+            try:
+                if hasattr(builtins, "_llmhub_original_open"):
+                    builtins.open = builtins._llmhub_original_open
+            except Exception:
+                pass
+
+            try:
+                if hasattr(os, "_llmhub_original_remove"):
+                    os.remove = os._llmhub_original_remove
+            except Exception:
+                pass
+            """
+        }
+
+        let allowedPath = workDir.path
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+
+        return """
+        import builtins
+        import os
+        from pathlib import Path
+
+        # SANDBOX MODE: Restrict file operations
+        _llmhub_allowed_path = "\(allowedPath)"
+        _llmhub_allowed_root = Path(_llmhub_allowed_path).resolve()
+
+        if not hasattr(builtins, "_llmhub_original_open"):
+            builtins._llmhub_original_open = builtins.open
+
+        if not hasattr(os, "_llmhub_original_remove"):
+            os._llmhub_original_remove = os.remove
+
+        def _llmhub_is_allowed(_path) -> bool:
+            resolved = Path(os.fspath(_path)).expanduser().resolve()
+            if resolved == _llmhub_allowed_root:
+                return True
+            try:
+                resolved.relative_to(_llmhub_allowed_root)
+                return True
+            except Exception:
+                return False
+
+        def _llmhub_safe_open(file, mode='r', *args, **kwargs):
+            if not _llmhub_is_allowed(file):
+                raise PermissionError(f"Access denied: {file} is outside sandbox")
+            return builtins._llmhub_original_open(file, mode, *args, **kwargs)
+
+        def _llmhub_safe_remove(path, *args, **kwargs):
+            if not _llmhub_is_allowed(path):
+                raise PermissionError(f"Cannot delete: {path}")
+            return os._llmhub_original_remove(path, *args, **kwargs)
+
+        builtins.open = _llmhub_safe_open
+        os.remove = _llmhub_safe_remove
+
+        # Note: Network access still allowed (needed for API calls, web requests)
+        # Note: Approval mode handled by CodeInterpreterTool.approvalHandler
+        """
+    }
+
     // MARK: - Execution
 
     private func executePythonCode(
@@ -288,6 +358,14 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
             throw CodeExecutionError.processLaunchFailed("Failed to redirect stdout/stderr.")
         }
 
+        let securityPreamble = buildSecurityPreamble(workingDirectory: workingDirectory)
+        let combinedCode: String
+        if securityPreamble.isEmpty {
+            combinedCode = code
+        } else {
+            combinedCode = securityPreamble + "\n" + code
+        }
+
         let didInsertWorkingDirectory = workingDirectory.map { addSysPathIfNeeded($0.path) } ?? false
         defer {
             if didInsertWorkingDirectory, let workingDirectory {
@@ -317,7 +395,7 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
             Py_XDECREF(globals)
         }
 
-        let result = code.withCString { cString in
+        let result = combinedCode.withCString { cString in
             PyRun_StringFlags(cString, Int32(Py_file_input), globals, globals, nil)
         }
 
