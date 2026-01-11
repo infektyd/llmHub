@@ -179,6 +179,7 @@ struct CanvasRootView: View {
         } message: {
             agentStepLimitAlertMessage
         }
+        .environment(chatVM)  // Explicit environment injection for alert stability
         .sheet(isPresented: $chatVM.showAgentStepLimitConfigSheet) {
             agentStepLimitConfigSheet()
         }
