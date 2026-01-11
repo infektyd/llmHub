@@ -1,0 +1,4 @@
+module CPythonBridge {
+  header "CPythonBridge.h"
+  export *
+}

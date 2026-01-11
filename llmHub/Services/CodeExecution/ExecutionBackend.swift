@@ -52,9 +52,9 @@ enum ExecutionBackendFactory: Sendable {
     static func createDefault() -> any ExecutionBackend {
         #if os(macOS)
         return XPCExecutionBackend()
+        #elseif os(iOS)
+        return IOSLocalExecutionBackend()
         #else
-        // iOS/iPadOS would use RemoteExecutionBackend
-        // For now, return a stub that explains the limitation
         return UnavailableExecutionBackend()
         #endif
     }
