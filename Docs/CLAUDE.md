@@ -31,7 +31,7 @@ llmHub is a native macOS AI Workbench for LLMs with a modular architecture:
 - Implementations: OpenAI, Anthropic, Gemini, Mistral, xAI, OpenRouter
 - Handle API communication, streaming via `AsyncThrowingStream<ProviderEvent, Error>`
 
-**Hand (Tools)** - Deterministic tools in `llmHub/llmHub/Tools/`
+**Hand (Tools)** - Deterministic tools in `llmHub/Tools/`
 
 - Conform to `Tool` protocol with platform-aware availability
 - **Core Tools**: Calculator, CodeInterpreterTool (Swift/Python/JS via XPC), FileEditorTool, FileReaderTool, WebSearchTool
@@ -39,7 +39,7 @@ llmHub is a native macOS AI Workbench for LLMs with a modular architecture:
 - **17+ tools total** with unified registration via `ToolRegistry`
 - **Legacy**: Original tools use `LegacyTool` protocol (renamed from `Tool` during architecture unification)
 
-**Loop (Orchestrator)** - `ChatService` in `llmHub/Services/ChatService.swift`
+**Loop (Orchestrator)** - `ChatService` in `llmHub/Services/Chat/ChatService.swift`
 
 - Coordinates recursive Brain/Hand interaction
 - Flow: User Input → Provider → Tool Calls → Tool Execution → Provider → Response
@@ -79,15 +79,15 @@ llmHub is a native macOS AI Workbench for LLMs with a modular architecture:
 | ------------------ | ------------------------------------------------------------------ |
 | Entry point        | `llmHub/App/llmHubApp.swift`                                       |
 | Chat orchestration | `llmHub/Services/ChatService.swift`                                |
-| Provider protocol  | `llmHub/Providers/LLMProviderProtocol.swift`                       |
-| Provider registry  | `llmHub/Services/Providers/ProviderRegistry.swift`                 |
+| Provider protocol  | `llmHub/Providers/Shared/LLMProviderProtocol.swift`                |
+| Provider registry  | `llmHub/Services/Support/ProviderRegistry.swift`                   |
 | Model caching      | `llmHub/Services/ModelFetch/ModelRegistry.swift`                   |
-| Tool registry      | `llmHub/Services/ToolRegistry.swift`                               |
+| Tool registry      | `llmHub/Services/Tools/Core/ToolRegistry.swift`                    |
 | Context management | `llmHub/Services/ContextManagement/ContextManagementService.swift` |
 | Token estimation   | `llmHub/Services/ContextManagement/TokenEstimator.swift`           |
 | Context compaction | `llmHub/Services/ContextManagement/ContextCompactor.swift`         |
-| Domain models      | `llmHub/Models/ChatModels.swift`                                   |
-| Shared types       | `llmHub/Models/SharedTypes.swift`                                  |
+| Domain models      | `llmHub/Models/Chat/ChatModels.swift`                              |
+| Shared types       | `llmHub/Models/Core/SharedTypes.swift`                             |
 | API key storage    | `llmHub/Utilities/Infrastructure/KeychainStore.swift`              |
 | XPC service        | `llmHubHelper/main.swift`                                          |
 | **Documentation**  | `Docs/README.md`                                                   |

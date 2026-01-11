@@ -4,7 +4,7 @@
 
 ## Steps
 
-1. **Instrument http_request with structured logging** in [`HTTPRequestTool.swift`](llmHub/llmHub/Tools/Core/HTTPRequestTool.swift): Add request details (URL, method, headers-redacted, timeout), response fields (status, headers, bytes, preview), and error fields (domain, code, description, underlyingError) to both success/failure paths; verify [`llmHub.entitlements`](llmHub/llmHub.entitlements) has `com.apple.security.network.client`; test with https://example.com
+1. **Instrument http_request with structured logging** in [`HTTPRequestTool.swift`](llmHub/Tools/HTTPRequestTool.swift): Add request details (URL, method, headers-redacted, timeout), response fields (status, headers, bytes, preview), and error fields (domain, code, description, underlyingError) to both success/failure paths; verify [`llmHub.entitlements`](llmHub/llmHub.entitlements) has `com.apple.security.network.client`; test with https://example.com
 
 2. **Add orchestration-level timeout in ChatService** ([`ChatService.swift`](llmHub/Services/ChatService.swift) tool execution loop ~line 600): Create `withTimeout(seconds:)` helper that races tool task vs timeout; on timeout cancel Task and return `ToolResult.failure` with `errorClass:.timeout`; ensure loop continues after timeout
 
@@ -19,7 +19,7 @@
 ## Further Considerations
 
 ### 1. Shell tool timeout interaction
-Shell already has per-tool timeout logic (line 110-126 in [`ShellTool.swift`](llmHub/llmHub/Tools/Core/ShellTool.swift)). **Decision:** Orchestration timeout = hard deadline (kills task), tool-level timeout = soft advisory (tool-specific cleanup). Orchestration timeout should be >= tool timeout to allow graceful exit.
+Shell already has per-tool timeout logic (line 110-126 in [`ShellTool.swift`](llmHub/Tools/ShellTool.swift)). **Decision:** Orchestration timeout = hard deadline (kills task), tool-level timeout = soft advisory (tool-specific cleanup). Orchestration timeout should be >= tool timeout to allow graceful exit.
 
 ### 2. Token display location
 Current UI shows session-level in [`TokenUsageCapsule.swift`](llmHub/Views/Components/TokenUsageCapsule.swift). **Consider:** Per-message inline badge for turn-level accuracy vs cumulative session cost. Defer to post-audit decision based on provider data availability.

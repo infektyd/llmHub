@@ -45,15 +45,19 @@
 | `llmHub/`           | **Main App Source**             | **READ/WRITE** |
 | ├── `App/`          | App entry point (@main)         | Monitor        |
 | ├── `Views/`        | SwiftUI Views (Glass, Canvas)   | **Active Dev** |
+| │   └── `Components/` | Reusable UI (Artifacts/System/Chat) | **Active Dev** |
 | ├── `ViewModels/`   | UI Logic & State                | **Active Dev** |
 | │   ├── `Core/`     | ChatViewModel & interactions    | **Active Dev** |
 | │   ├── `Features/` | Sidebar, Workbench, Settings    | **Active Dev** |
 | │   ├── `Managers/` | Favorites, preferences          | Maintain       |
 | │   └── `Models/`   | UI data structures              | **Active Dev** |
 | ├── `Services/`     | Business logic (Chat, Tools)    | Maintain       |
+| │   └── `Support/`  | Cross-cutting services (settings, registries, tracing) | Maintain |
 | ├── `Providers/`    | LLM API Wrappers                | Maintain       |
+| │   └── `Shared/`   | Provider-agnostic protocol/config | Maintain     |
 | ├── `Tools/`        | Tool implementations            | Maintain       |
 | ├── `Models/`       | Domain models (Chat, Code, etc) | Caution        |
+| │   └── `Shared/`   | Small shared model types        | Caution        |
 | `llmHubHelper/`   | **XPC Service (macOS)** | Sandbox Logic  |
 | `Docs/`           | **Documentation**       | **READ**       |
 | `scritps/`        | Maintenance scripts     | Execute        |
@@ -83,7 +87,7 @@
 ## 🧠 "Brain/Hand/Loop" Architecture Refresher
 
 - **The Brain**: The LLM Provider (`Services/ModelFetch/ModelRegistry.swift` manages them).
-- **The Hand**: The Tool System (`llmHub/llmHub/Tools/`). Tools are strictly typed and sandboxed.
+- **The Hand**: The Tool System (`llmHub/Tools/`). Tools are strictly typed and sandboxed.
 - **The Loop**: `ChatService.swift`. Handles the recursive `Model -> Tool -> Result -> Model` cycle.
 
 ---
@@ -96,7 +100,7 @@
 4.  `FileReaderTool`
 5.  `WebSearchTool`
 6.  `ShellTool` (macOS)
-7.  ...and others in `llmHub/llmHub/Tools/`.
+7.  ...and others in `llmHub/Tools/`.
 
 ---
 
