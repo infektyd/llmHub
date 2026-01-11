@@ -176,12 +176,12 @@
 
 | ViewModel | Manages State For | Path |
 |-----------|------------------|------|
-| `ChatViewModel` | Chat messages, streaming, tool toggles | `llmHub/ViewModels/` |
-| `WorkbenchViewModel` | Window layout, tool inspector, selected session | `llmHub/ViewModels/` |
-| `SidebarViewModel` | Sidebar grouping, search, selection | `llmHub/ViewModels/` |
-| `SettingsViewModel` | Settings tabs, API key management | `llmHub/ViewModels/` |
-| `ModelFavoritesManager` | Favorite models persistence | `llmHub/ViewModels/` |
-| `ChatInteractionController` | Input handling, sending messages | `llmHub/ViewModels/` |
+| `ChatViewModel` | Chat messages, streaming, tool toggles | `llmHub/ViewModels/Core/` |
+| `WorkbenchViewModel` | Window layout, tool inspector, selected session | `llmHub/ViewModels/Features/` |
+| `SidebarViewModel` | Sidebar grouping, search, selection | `llmHub/ViewModels/Features/` |
+| `SettingsViewModel` | Settings tabs, API key management | `llmHub/ViewModels/Features/` |
+| `ModelFavoritesManager` | Favorite models persistence | `llmHub/ViewModels/Managers/` |
+| `ChatInteractionController` | Input handling, sending messages | `llmHub/ViewModels/Core/` |
 
 ---
 

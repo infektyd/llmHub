@@ -26,10 +26,10 @@ This document provides a technical overview of the UI architecture and tool exec
 
 ### 2.2 ViewModel Layer
 
-| Component                | File Path                                    | Responsibility                                                                                                                                                                  |
-| ------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`ChatViewModel`**      | `llmHub/ViewModels/ChatViewModel.swift`      | Manages transient UI state (`stagedAttachments`, `toolToggles`). Hydrates tool lists from `ToolRegistry` and `ToolAuthorizationService`. Proxies send actions to `ChatService`. |
-| **`WorkbenchViewModel`** | `llmHub/ViewModels/WorkbenchViewModel.swift` | Global app state. Manages `activeToolExecution` which drives the `NeonToolInspector`.                                                                                           |
+| Component                | File Path                                                 | Responsibility                                                                                                                                                                  |
+| ------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`ChatViewModel`**      | `llmHub/ViewModels/Core/ChatViewModel.swift`              | Manages transient UI state (`stagedAttachments`, `toolToggles`). Hydrates tool lists from `ToolRegistry` and `ToolAuthorizationService`. Proxies send actions to `ChatService`. |
+| **`WorkbenchViewModel`** | `llmHub/ViewModels/Features/WorkbenchViewModel.swift`     | Global app state. Manages `activeToolExecution` which drives the `NeonToolInspector`.                                                                                           |
 
 ### 2.3 Service Layer
 

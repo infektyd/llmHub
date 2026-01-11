@@ -212,23 +212,32 @@ viewModel.hydrateState(from: session)
 
 ```
 llmHub/
-├── App/                    # Entry points
-├── Models/                 # Domain models & SwiftData entities
-├── Providers/              # LLM API integrations
-├── Services/               # Business logic
+├── App/                    # @main entry point (llmHubApp.swift)
+├── Views/                  # SwiftUI views (Liquid Glass design, Canvas work)
+│   ├── ContentView.swift   # Entry view
+│   ├── Components/         # Reusable UI components
+│   ├── Settings/           # Settings UI
+│   └── UI/                 # Main app UI (RootView, Transcript, Composer, etc.)
+├── ViewModels/             # UI logic, state, and UI data structures
+│   ├── Core/               # ChatViewModel, ChatInteractionController
+│   ├── Features/           # SidebarViewModel, WorkbenchViewModel, SettingsViewModel
+│   ├── Managers/           # ModelFavoritesManager
+│   └── Models/             # UI data structures (Artifact, UIModels, etc.)
+├── Models/                 # Domain models (Chat, Code, Core, Memory, Tool)
+├── Providers/              # LLM API wrappers (OpenAI, Anthropic, etc.)
+├── Services/               # Business logic (ChatService, ToolRegistry, etc.)
+│   ├── Chat/               # Chat orchestration
 │   ├── ContextManagement/  # Token estimation & compaction
-│   └── ModelFetch/         # Model registry & fetching
-├── Support/                # Provider adapters & utilities
-├── Theme/                  # Theme definitions
-├── Tools/                  # Tool implementations
-├── Utilities/              # Helper extensions
-├── ViewModels/             # State management
-└── Views/                  # SwiftUI interfaces
-    ├── Chat/               # Chat UI components
-    ├── Components/         # Reusable UI components
-    ├── Settings/           # Settings screens
-    ├── Sidebar/            # Navigation sidebar
-    └── Workbench/          # Workbench window
+│   ├── ModelFetch/         # Model registry & fetching
+│   └── Tools/              # Tool execution services
+├── Tools/                  # Tool implementations (flattened: no Core/Integrations)
+│   └── Stubs/              # Placeholder/future tools
+└── Utilities/              # Shared helpers (organized by purpose)
+    ├── Extensions/         # Swift/SwiftUI extensions
+    ├── Infrastructure/     # KeychainStore, AppLogger, SettingsManager
+    ├── UI/                 # AppColors, UIAppearance, WindowAccessor
+    ├── Formatting/         # Formatters and name helpers
+    └── Helpers/            # Provider helpers, resolvers
 ```
 
 ---

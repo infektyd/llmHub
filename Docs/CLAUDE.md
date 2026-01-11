@@ -88,7 +88,7 @@ llmHub is a native macOS AI Workbench for LLMs with a modular architecture:
 | Context compaction | `llmHub/Services/ContextManagement/ContextCompactor.swift`         |
 | Domain models      | `llmHub/Models/ChatModels.swift`                                   |
 | Shared types       | `llmHub/Models/SharedTypes.swift`                                  |
-| API key storage    | `llmHub/Support/KeychainStore.swift`                               |
+| API key storage    | `llmHub/Utilities/Infrastructure/KeychainStore.swift`              |
 | XPC service        | `llmHubHelper/main.swift`                                          |
 | **Documentation**  | `Docs/README.md`                                                   |
 

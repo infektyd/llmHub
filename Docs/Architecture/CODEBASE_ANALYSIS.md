@@ -198,14 +198,14 @@ Medium-term:
 
 | Category       | Files                                                                                                                                                                                                                      |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Models**     | `ChatModels.swift`, `CodeExecutionModels.swift`, `FileOperationModels.swift`, `UIModels.swift`                                                                                                                             |
-| **Providers**  | `LLMProviderProtocol.swift`, `OpenAIManager.swift`, `AnthropicManager.swift`, `GeminiManager.swift`, `MistralManager.swift`, `XAIManager.swift`, `OpenRouterManager.swift`, `*Provider.swift` (6 files)                    |
-| **Services**   | `ChatService.swift`, `ToolRegistry.swift`, `ProviderRegistry.swift`, `CodeExecutionEngine.swift`, `MCPClient.swift`, `MCPTypes.swift`, `SandboxManager.swift`                                                              |
-| **Tools**      | `CodeInterpreterTool.swift`, `FileEditorTool.swift`, `FileReaderTool.swift`, `WebSearchTool.swift`, `MCPToolBridge.swift`                                                                                                  |
-| **XPC**        | `CodeExecutionXPCProtocol.swift`, `XPCExecutionBackend.swift`, `ExecutionBackend.swift`                                                                                                                                    |
-| **Views**      | `NeonWorkbenchWindow.swift`, `NeonChatView.swift`, `NeonChatInput.swift`, `NeonToolbar.swift`, `NeonMessageBubble.swift`, `NeonSidebar.swift`, `NeonToolInspector.swift`, `NeonWelcomeView.swift`, `NeonModelPicker.swift` |
-| **ViewModels** | `ChatViewModel.swift`, `WorkbenchViewModel.swift`                                                                                                                                                                          |
-| **Support**    | `ProvidersConfig.swift`, `KeychainStore.swift`, `ReferenceFormatter.swift`, `NeonTheme.swift`                                                                                                                              |
+| **Models**     | Domain: `Chat/ChatModels.swift`, `Code/CodeExecutionModels.swift`, `Core/SharedTypes.swift`, `Memory/MemoryModels.swift`, `Tool/ToolDefinition.swift`<br>UI: `ViewModels/Models/Artifact.swift`, `ViewModels/Models/UIModels.swift`, `ViewModels/Models/FileOperationModels.swift` |
+| **Providers**  | `Protocol/LLMProviderProtocol.swift`, `OpenAI/OpenAIManager.swift`, `Anthropic/AnthropicManager.swift`, `Gemini/GeminiManager.swift`, `Mistral/MistralManager.swift`, `XAI/XAIManager.swift`, `OpenRouter/OpenRouterManager.swift`, `*Provider.swift` (6 files) |
+| **Services**   | `Chat/ChatService.swift`, `Tools/ToolRegistry.swift`, `Providers/ProviderRegistry.swift`, `CodeExecution/CodeExecutionEngine.swift`, `MCP/MCPClient.swift`, `MCP/MCPTypes.swift`, `CodeExecution/SandboxManager.swift`    |
+| **Tools**      | `CodeInterpreterTool.swift`, `FileEditorTool.swift`, `FileReaderTool.swift`, `WebSearchTool.swift`, `MCPToolBridge.swift`, `ShellTool.swift`, `HTTPRequestTool.swift`, `WorkspaceTool.swift` (flattened structure)         |
+| **XPC**        | `CodeExecution/CodeExecutionXPCProtocol.swift`, `CodeExecution/XPCExecutionBackend.swift`, `CodeExecution/ExecutionBackend.swift`                                                                                          |
+| **Views**      | `ContentView.swift`, `UI/RootView.swift`, `UI/TranscriptView.swift`, `UI/Composer/Composer.swift`, `UI/Header/ChatHeaderBar.swift`, `UI/Sidebars/ModernSidebarLeft.swift`, `Components/`, `Settings/`                      |
+| **ViewModels** | `Core/ChatViewModel.swift`, `Core/ChatInteractionController.swift`, `Features/WorkbenchViewModel.swift`, `Features/SidebarViewModel.swift`, `Features/SettingsViewModel.swift`, `Managers/ModelFavoritesManager.swift`     |
+| **Utilities**  | `Infrastructure/KeychainStore.swift`, `Infrastructure/SettingsManager.swift`, `Formatting/ReferenceFormatter.swift`, `UI/AppColors.swift`, `Extensions/Color+Hex.swift`                                                     |
 
 ---
 

@@ -8,7 +8,7 @@
 
 2. **Add orchestration-level timeout in ChatService** ([`ChatService.swift`](llmHub/Services/ChatService.swift) tool execution loop ~line 600): Create `withTimeout(seconds:)` helper that races tool task vs timeout; on timeout cancel Task and return `ToolResult.failure` with `errorClass:.timeout`; ensure loop continues after timeout
 
-3. **Add UI timer in ChatViewModel** ([`ChatViewModel.swift`](llmHub/ViewModels/ChatViewModel.swift)): Add `@Published var toolExecutionElapsedSeconds: [String: Int]` (keyed by toolCallID); update every 1s while `executingToolNames` contains tool; add Cancel button that cancels the running tool Task; display elapsed time and timeout message in [`ToolResultCard.swift`](llmHub/Views/Chat/ToolResultCard.swift)
+3. **Add UI timer in ChatViewModel** ([`ChatViewModel.swift`](llmHub/ViewModels/Core/ChatViewModel.swift)): Add `@Published var toolExecutionElapsedSeconds: [String: Int]` (keyed by toolCallID); update every 1s while `executingToolNames` contains tool; add Cancel button that cancels the running tool Task; display elapsed time and timeout message in [`ToolResultCard.swift`](llmHub/Views/Chat/ToolResultCard.swift)
 
 4. **Audit token counting semantics** across [`TokenEstimator.swift`](llmHub/Services/ContextManagement/TokenEstimator.swift), [`TokenUsageCapsule.swift`](llmHub/Views/Components/TokenUsageCapsule.swift), OpenAI/Anthropic providers: Label local estimates as "Local estimate (for context)"; label provider-reported as "Provider usage (reported)"; ensure OpenAI provider parses `usage` object correctly in Responses API streaming chunks; never show unlabeled counts
 
