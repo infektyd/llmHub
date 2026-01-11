@@ -51,6 +51,14 @@ SourcePackagesLocal/
 # Uncomment if you want to ignore it:
 # Package.resolved
 
+# --- Source Directory Build Artifacts ---
+# Xcode generates these inside llmHub/ during builds
+llmHub/.clang-module-cache/
+llmHub/.swiftpm-cache/
+llmHub/.swiftpm-config/
+llmHub/.tmp/
+llmHub/.xcode_home/
+
 # --- IDEs / Editors ---
 .vscode/
 .idea/
