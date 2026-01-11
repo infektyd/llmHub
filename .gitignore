@@ -57,6 +57,7 @@ SourcePackagesLocal/
 .cursor/
 .claude/
 .gemini/
+.xcode_home/
 *.swp
 *.swo
 
@@ -75,6 +76,9 @@ fastlane/report.xml
 fastlane/test_output
 
 # --- Project Specific / Custom ---
+# Root-level archive (temporary files, old logs, etc.)
+.archive/
+
 # Archives and Docs
 *.doccarchive/
 llmHub.doccarchive/
