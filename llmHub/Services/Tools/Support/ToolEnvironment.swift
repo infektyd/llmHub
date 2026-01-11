@@ -98,10 +98,19 @@ struct ToolEnvironment: Sendable {
             let isSimulator = ProcessInfo.processInfo.environment["SIMULATOR_DEVICE_NAME"] != nil
             let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
                 .first
+
+            // iOS local code execution is available when we can link the embedded runtime.
+            // We use a compile-time flag so this stays false until the framework is added.
+            #if canImport(JavaScriptCore)
+                let hasCodeExecutionBackend = true
+            #else
+                let hasCodeExecutionBackend = false
+            #endif
+
             return ToolEnvironment(
                 platform: platform,
                 isSimulator: isSimulator,
-                hasCodeExecutionBackend: false,
+                hasCodeExecutionBackend: hasCodeExecutionBackend,
                 sandboxRoot: documents
             )
         #else
@@ -128,7 +137,11 @@ struct ToolEnvironment: Sendable {
         case .shellExecution:
             return platform == .macOS
         case .codeExecution:
-            return platform == .macOS && hasCodeExecutionBackend
+            #if os(iOS)
+                return hasCodeExecutionBackend
+            #else
+                return platform == .macOS && hasCodeExecutionBackend
+            #endif
         case .browserControl:
             return platform == .macOS
         case .systemEvents:
@@ -155,7 +168,7 @@ struct ToolEnvironment: Sendable {
             return (.permissionDenied, "Shell access is disabled.")
         case .codeExecution:
             if platform == .iOS {
-                return (.unsupportedOnPlatform, "Code execution is only available on macOS.")
+                return (.missingBackend, "Code execution backend is not available on this device.")
             }
             return (.missingBackend, "Code execution backend is not running.")
         case .browserControl:
