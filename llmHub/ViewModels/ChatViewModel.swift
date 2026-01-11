@@ -319,7 +319,9 @@ class ChatViewModel {
             WebSearchTool(),
             FileEditorTool(),
             FilePatchTool(),
-            WorkspaceTool()
+            WorkspaceTool(),
+            CodeInterpreterTool(environment: toolEnvironment),
+            DataVisualizationTool()
         ]
 
         let toolRegistry = await ToolRegistry(tools: tools)
@@ -997,6 +999,11 @@ class ChatViewModel {
                             "Completion received, final length: \(message.content.count)")
                         setLastVisibleMessage(to: message.id)
 
+                        // Ensure environment stability before triggering UI state changes
+                        // This gives SwiftUI time to propagate environment updates before
+                        // any alert/sheet presentations fire in response to state changes
+                        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
+
                         self.handleStreamCompletion(
                             sessionID: sessionID, modelID: modelID, modelContext: modelContext)
 
@@ -1080,6 +1087,10 @@ class ChatViewModel {
 
                         logger.warning("Agent stopped: \(String(describing: reason))")
                         lastAgentStopReason = reason
+                        
+                        // Ensure SwiftData + environment updates complete before showing alert
+                        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
+                        
                         showAgentStepLimitAlert = true
                     }
                 }
