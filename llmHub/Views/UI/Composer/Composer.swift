@@ -34,6 +34,7 @@ struct ComposerBarView: View {
     @FocusState private var isInputFocused: Bool
     @State private var selection = AttributedTextSelection()
     @State private var isNormalizingMarkdown = false
+    @State private var markdownDebounceTask: Task<Void, Never>?
     @State private var isDropTargeted = false
 
     @Environment(\.uiCompactMode) private var uiCompactMode
@@ -70,6 +71,9 @@ struct ComposerBarView: View {
                     isDropTargeted
                         ? AppColors.accent.opacity(0.5) : AppColors.textPrimary.opacity(0.1),
                     lineWidth: isDropTargeted ? 2 : 1)
+        }
+        .onDisappear {
+            markdownDebounceTask?.cancel()
         }
         .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
             handleDrop(providers)
@@ -249,9 +253,11 @@ struct ComposerBarView: View {
     ///
     /// Note: This function mutates `inputText` which can trigger "AnyTextLayoutCollection updated
     /// multiple times per frame" warning when called synchronously from onChange(of: plainText).
-    /// The mutation is deferred via Task.detached to break the layout feedback loop.
+    /// The mutation is debounced to avoid layout feedback loops.
     private func normalizeMarkdownIfAppropriate(sourceText: String) {
         guard !isNormalizingMarkdown else { return }
+
+        markdownDebounceTask?.cancel()
         guard
             sourceText.contains("*")
                 || sourceText.contains("`")
@@ -269,9 +275,10 @@ struct ComposerBarView: View {
         let parsedPlainText = String(parsed.characters)
         guard parsedPlainText != sourceText else { return }
 
-        isNormalizingMarkdown = true
-        // Defer mutation to next run loop iteration to avoid layout re-entry
-        Task { @MainActor in
+        markdownDebounceTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 50_000_000)
+            guard !Task.isCancelled else { return }
+            isNormalizingMarkdown = true
             defer { isNormalizingMarkdown = false }
             inputText = parsed
             selection = AttributedTextSelection(range: parsed.endIndex..<parsed.endIndex)

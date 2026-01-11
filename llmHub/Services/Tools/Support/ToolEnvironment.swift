@@ -99,13 +99,11 @@ struct ToolEnvironment: Sendable {
             let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
                 .first
 
-            // iOS local code execution is available when we can link the embedded runtime.
-            // We use a compile-time flag so this stays false until the framework is added.
-            #if canImport(JavaScriptCore)
-                let hasCodeExecutionBackend = true
-            #else
-                let hasCodeExecutionBackend = false
-            #endif
+            // iOS local code execution is available when the embedded Python framework is present.
+            // Set LLMHUB_ENABLE_LOCAL_CODE_EXECUTION=0 to force-disable this on a device.
+            let override = ProcessInfo.processInfo.environment["LLMHUB_ENABLE_LOCAL_CODE_EXECUTION"]
+            let pythonFrameworkAvailable = frameworkLinked("Python")
+            let hasCodeExecutionBackend = override == "0" ? false : pythonFrameworkAvailable
 
             return ToolEnvironment(
                 platform: platform,
@@ -230,7 +228,21 @@ struct ToolEnvironment: Sendable {
     extension ToolEnvironment {
         fileprivate nonisolated static func detectCodeExecutionBackend(timeout: TimeInterval = 1.0)
             -> Bool {
-            false
+            frameworkLinked("Python")
+        }
+    }
+#endif
+
+#if !os(macOS)
+    extension ToolEnvironment {
+        fileprivate nonisolated static func frameworkLinked(_ name: String) -> Bool {
+            let fileManager = FileManager.default
+            let candidates: [URL] = [
+                Bundle.main.privateFrameworksURL?.appendingPathComponent("\(name).framework"),
+                Bundle.main.bundleURL.appendingPathComponent("Frameworks/\(name).framework")
+            ].compactMap { $0 }
+
+            return candidates.contains { fileManager.fileExists(atPath: $0.path) }
         }
     }
 #endif

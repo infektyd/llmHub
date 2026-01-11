@@ -6,10 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Build via command line
-xcodebuild -scheme llmHub -configuration Debug build
+xcodebuild -scheme llmHub -configuration Debug build | xcpretty
 
 # Run tests
-xcodebuild -scheme llmHub test
+xcodebuild -scheme llmHub test | xcpretty
 
 # Open in Xcode (alternative)
 open llmHub.xcodeproj

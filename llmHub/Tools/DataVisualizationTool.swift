@@ -60,7 +60,7 @@ nonisolated struct DataVisualizationTool: Tool {
     }
 
     nonisolated var permissionLevel: ToolPermissionLevel { .standard }
-    nonisolated var requiredCapabilities: [ToolCapability] { [.codeExecution] }  // Using code execution backend
+    nonisolated var requiredCapabilities: [ToolCapability] { [] }
     nonisolated var weight: ToolWeight { .heavy }
     nonisolated var isCacheable: Bool { true }
 
@@ -70,9 +70,6 @@ nonisolated struct DataVisualizationTool: Tool {
         guard let chartType = arguments.string("chart_type") else {
             throw ToolError.invalidArguments("chart_type is required")
         }
-        guard let dataDict = arguments.object("data")?.mapValues({ $0.toAny() }) else {
-            throw ToolError.invalidArguments("data must be an object")
-        }
 
         let title = arguments.string("title") ?? "Chart"
         let xLabel = arguments.string("x_label") ?? "x"
@@ -80,10 +77,11 @@ nonisolated struct DataVisualizationTool: Tool {
         let theme = arguments.string("theme") ?? "light"
         let export = arguments.string("export_format") ?? "markdown"
 
-        let series = await MainActor.run { extractSeries(dataDict) }
+        let series = await MainActor.run { extractNumericSeries(from: arguments) }
         guard !series.isEmpty else {
             throw ToolError.invalidArguments(
-                "No numeric data found. Provide arrays under 'series' or 'y' keys.")
+                "No numeric data found. Provide data using any of these keys: " +
+                "'data', 'y', 'values', 'series', or 'dataset'.")
         }
 
         let summary = await MainActor.run { summarize(series: series) }
@@ -147,24 +145,84 @@ private struct ChartPayload: Codable, Sendable {
     }
 }
 
-private func extractSeries(_ data: [String: Any]) -> [[Double]] {
-    var series: [[Double]] = []
-
-    if let s = data["series"] as? [Any] {
-        for item in s {
-            if let arr = item as? [Double] {
-                series.append(arr)
-            } else if let arr = item as? [Any] {
-                series.append(arr.compactMap { ($0 as? NSNumber)?.doubleValue })
-            }
+private func extractNumericSeries(from arguments: ToolArguments) -> [[Double]] {
+    if let dataValue = arguments["data"] {
+        let series = extractSeries(from: dataValue)
+        if !series.isEmpty {
+            return series
         }
     }
 
-    if series.isEmpty, let y = data["y"] as? [Any] {
-        series.append(y.compactMap { ($0 as? NSNumber)?.doubleValue })
-    }
+    return extractSeries(from: .object(arguments.jsonValuesByKey))
+}
 
-    return series
+private func extractSeries(from value: JSONValue) -> [[Double]] {
+    switch value {
+    case .array(let array):
+        if let numbers = extractNumberArray(from: array), !numbers.isEmpty {
+            return [numbers]
+        }
+        var series: [[Double]] = []
+        for element in array {
+            if case .array(let nested) = element,
+               let numbers = extractNumberArray(from: nested),
+               !numbers.isEmpty {
+                series.append(numbers)
+            }
+        }
+        return series
+    case .object(let dictionary):
+        if let seriesValue = dictionary["series"] {
+            let series = extractSeries(from: seriesValue)
+            if !series.isEmpty {
+                return series
+            }
+        }
+
+        for key in ["y", "values", "data"] {
+            if let value = dictionary[key] {
+                let series = extractSeries(from: value)
+                if !series.isEmpty {
+                    return series
+                }
+            }
+        }
+
+        if let dataset = dictionary["dataset"] {
+            let series = extractSeries(from: dataset)
+            if !series.isEmpty {
+                return series
+            }
+        }
+
+        var series: [[Double]] = []
+        for value in dictionary.values {
+            if case .array(let array) = value,
+               let numbers = extractNumberArray(from: array),
+               !numbers.isEmpty {
+                series.append(numbers)
+            }
+        }
+        return series
+    default:
+        return []
+    }
+}
+
+private func extractNumberArray(from values: [JSONValue]) -> [Double]? {
+    let numbers = values.compactMap { extractNumber(from: $0) }
+    return numbers.isEmpty ? nil : numbers
+}
+
+private func extractNumber(from value: JSONValue) -> Double? {
+    switch value {
+    case .number(let number):
+        return number
+    case .string(let string):
+        return Double(string.trimmingCharacters(in: .whitespacesAndNewlines))
+    default:
+        return nil
+    }
 }
 
 private func summarize(series: [[Double]]) -> [String: Double] {
