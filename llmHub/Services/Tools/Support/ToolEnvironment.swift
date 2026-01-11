@@ -100,10 +100,7 @@ struct ToolEnvironment: Sendable {
                 .first
 
             // iOS local code execution is available when the embedded Python framework is present.
-            // Set LLMHUB_ENABLE_LOCAL_CODE_EXECUTION=0 to force-disable this on a device.
-            let override = ProcessInfo.processInfo.environment["LLMHUB_ENABLE_LOCAL_CODE_EXECUTION"]
-            let pythonFrameworkAvailable = frameworkLinked("Python")
-            let hasCodeExecutionBackend = override == "0" ? false : pythonFrameworkAvailable
+            let hasCodeExecutionBackend = detectPythonFramework()
 
             return ToolEnvironment(
                 platform: platform,
@@ -228,9 +225,33 @@ struct ToolEnvironment: Sendable {
     extension ToolEnvironment {
         fileprivate nonisolated static func detectCodeExecutionBackend(timeout: TimeInterval = 1.0)
             -> Bool {
-            frameworkLinked("Python")
+            #if os(iOS)
+            return detectPythonFramework()
+            #else
+            return frameworkLinked("Python")
+            #endif
         }
     }
+#endif
+
+#if os(iOS)
+extension ToolEnvironment {
+    /// Detect if Python.xcframework is available in the app bundle.
+    fileprivate nonisolated static func detectPythonFramework() -> Bool {
+        guard let frameworksPath = Bundle.main.privateFrameworksPath else {
+            return false
+        }
+
+        let pythonFrameworkPath = (frameworksPath as NSString)
+            .appendingPathComponent("Python.framework")
+
+        let fileManager = FileManager.default
+        var isDirectory: ObjCBool = false
+
+        let exists = fileManager.fileExists(atPath: pythonFrameworkPath, isDirectory: &isDirectory)
+        return exists && isDirectory.boolValue
+    }
+}
 #endif
 
 #if !os(macOS)

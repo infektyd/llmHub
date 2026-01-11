@@ -19,8 +19,14 @@ actor SandboxManager {
 
     /// Initializes a new `SandboxManager`.
     init() {
+        #if os(iOS)
+        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+        self.baseDirectory = (documents ?? FileManager.default.temporaryDirectory)
+            .appendingPathComponent("llmHub-sandbox", isDirectory: true)
+        #else
         self.baseDirectory = FileManager.default.temporaryDirectory
             .appendingPathComponent("llmHub-sandbox", isDirectory: true)
+        #endif
 
         // Ensure base directory exists
         try? FileManager.default.createDirectory(
