@@ -58,6 +58,7 @@ llmHub/.swiftpm-cache/
 llmHub/.swiftpm-config/
 llmHub/.tmp/
 llmHub/.xcode_home/
+llmHub/Legacy_UI/
 
 # --- IDEs / Editors ---
 .vscode/
