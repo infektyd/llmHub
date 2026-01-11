@@ -14,7 +14,7 @@
 
 ## 1. ToolMetrics Struct Definition
 
-**Location**: `/Users/hansaxelsson/llmHub/llmHub/Services/ToolTypes.swift` (Lines 115-135)
+**Location**: `llmHub/Services/Tools/Core/ToolTypes.swift` (ToolMetrics definition)
 
 ```swift
 struct ToolMetrics: Sendable {
@@ -172,7 +172,7 @@ logger.info("Execution completed: exit=\(result.exitCode), time=\(result.executi
 
 ## 7. AppLogger.swift Analysis
 
-**Location**: `/Users/hansaxelsson/llmHub/llmHub/Utilities/AppLogger.swift` (15 lines)
+**Location**: `llmHub/Utilities/Infrastructure/AppLogger.swift`
 
 ```swift
 import OSLog

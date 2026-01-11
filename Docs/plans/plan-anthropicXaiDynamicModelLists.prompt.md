@@ -105,7 +105,7 @@ For `.anthropic` and `.xai` in `ModelRegistry.fetchModelsForProvider`:
 
 ### Migration/hydration rules to add (without breaking existing users)
 1. Provider ID canonicalization:
-  - Ensure persisted provider IDs map through `ProviderID.canonicalID(from:)` (already exists in [llmHub/Services/Providers/ProviderRegistry.swift](llmHub/Services/Providers/ProviderRegistry.swift)).
+  - Ensure persisted provider IDs map through `ProviderID.canonicalID(from:)` (already exists in [llmHub/Services/Support/ProviderRegistry.swift](llmHub/Services/Support/ProviderRegistry.swift)).
    - If any persisted sessions store legacy provider names (e.g., “Claude”, “Grok”), always canonicalize before lookup.
 2. Selected model missing:
    - When hydrating a selected model ID for a provider, if it’s not found in `modelsByProvider[providerID]`:

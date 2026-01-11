@@ -10,7 +10,7 @@ Successfully implemented a unified tool system for llmHub with 13 tools (5 exist
 ## What Was Implemented
 
 ### Phase 1: Enhanced Core Types ✅
-**File:** `llmHub/Services/ToolEnvironment.swift`
+**File:** `llmHub/Services/Tools/Support/ToolEnvironment.swift`
 
 **Added:**
 - 5 new `ToolCapability` cases:
@@ -36,7 +36,7 @@ Successfully implemented a unified tool system for llmHub with 13 tools (5 exist
 - Added `ToolParameter` and `ToolDescriptor` structs for LLM serialization
 
 ### Phase 2: Created 8 New Stub Tools ✅
-**Location:** `llmHub/llmHub/Tools/`
+**Location:** `llmHub/Tools/`
 
 All stub tools have:
 - Proper `inputSchema` for LLM function calling
@@ -77,24 +77,22 @@ All stub tools have:
    - Capabilities: `webAccess`, `networkIO`
    - Status: Stub - requires browser backend (Selenium/Playwright)
 
-### Phase 3: Enhanced ToolSelector ✅
-**File:** `llmHub/Services/Tools/ToolSelector.swift`
+### Phase 3: Enhanced tool schema export ✅
+**Files:**
+- `llmHub/Services/Tools/Core/ToolRegistry.swift`
+- `llmHub/Services/Tools/Support/ToolEnvironment.swift`
 
 **Added:**
-- `allDescriptors: [ToolDescriptor]` property
-  - Converts all tools to ToolDescriptor format
-  - Includes availability information
-  - Parses inputSchema to extract parameters
+- Tool descriptor + availability plumbing
+   - `ToolDescriptor` captures tool metadata plus availability
+   - `ToolEnvironment` computes platform/permission-based availability
 
-- `generateToolManifest() -> String` method
-  - Produces LLM-ready markdown documentation
-  - Separates "Supported Tools" and "Unavailable Tools"
-  - Lists parameters with types and descriptions
-  - Explains why each unavailable tool can't be used
-  - Suggests alternatives for unavailable functionality
+- Schema export for LLM function calling
+   - `ToolRegistry.exportSchemas(for:)` produces JSON-schema-like tool definitions
+   - Includes availability information so UI/agents can filter appropriately
 
 ### Phase 4: Updated ToolRegistry ✅
-**File:** `llmHub/Services/ToolRegistry.swift`
+**File:** `llmHub/Services/Tools/Core/ToolRegistry.swift`
 
 **Changes:**
 - Registered all 13 tools in `defaultRegistry()` method
@@ -247,21 +245,21 @@ To activate stub tools:
 ## Files Modified
 
 ### Modified (4 files):
-1. `llmHub/Services/ToolEnvironment.swift` - Enhanced capabilities and availability
-2. `llmHub/Services/Tools/ToolSelector.swift` - Added manifest generation
-3. `llmHub/Services/ToolRegistry.swift` - Registered all 13 tools
-4. `llmHub/llmHub/Tools/Core/CodeInterpreterTool.swift` - Updated for new availability format
-5. `llmHub/llmHub/Tools/Core/FileEditorTool.swift` - Updated for new availability format
+1. `llmHub/Services/Tools/Support/ToolEnvironment.swift` - Enhanced capabilities and availability
+2. `llmHub/Services/Tools/Execution/ToolExecutor.swift` - Tool execution plumbing
+3. `llmHub/Services/Tools/Core/ToolRegistry.swift` - Registered/exported tools
+4. `llmHub/Tools/CodeInterpreterTool.swift` - Updated for new availability format
+5. `llmHub/Tools/FileEditorTool.swift` - Updated for new availability format
 
 ### Created (8 new files):
-1. `llmHub/llmHub/Tools/Core/ShellTool.swift`
-2. `llmHub/llmHub/Tools/Core/HTTPRequestTool.swift`
-3. `llmHub/llmHub/Tools/Core/DataVisualizationTool.swift`
-4. `llmHub/llmHub/Tools/Stubs/DatabaseQueryTool.swift`
-5. `llmHub/llmHub/Tools/Stubs/ImageGenerationTool.swift`
-6. `llmHub/llmHub/Tools/Stubs/EmailNotificationTool.swift`
-7. `llmHub/llmHub/Tools/Stubs/TaskSchedulerTool.swift`
-8. `llmHub/llmHub/Tools/Stubs/BrowserAutomationTool.swift`
+1. `llmHub/Tools/ShellTool.swift`
+2. `llmHub/Tools/HTTPRequestTool.swift`
+3. `llmHub/Tools/DataVisualizationTool.swift`
+4. `llmHub/Tools/Stubs/DatabaseQueryTool.swift`
+5. `llmHub/Tools/Stubs/ImageGenerationTool.swift`
+6. `llmHub/Tools/Stubs/EmailNotificationTool.swift`
+7. `llmHub/Tools/Stubs/TaskSchedulerTool.swift`
+8. `llmHub/Tools/Stubs/BrowserAutomationTool.swift`
 
 ## Verification Results
 

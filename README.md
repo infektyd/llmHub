@@ -41,7 +41,7 @@
 llmHub follows the **Valon/Modi/Core** principles:
 
 - **Brain**: Pluggable LLM backends (`llmHub/Providers/`).
-- **Hand**: Deterministic tools (`llmHub/llmHub/Tools/`).
+- **Hand**: Deterministic tools (`llmHub/Tools/`).
 - **Loop**: The `ChatService` orchestration layer.
 
 ## 📦 Installation & Setup
@@ -133,10 +133,10 @@ This project uses **Swift 6.2** with strict concurrency, **SwiftData** for persi
 - `llmHub/Models`: Data models for chat, tools, and execution (SwiftData entities)
 - `llmHub/Providers`: LLM API implementations (OpenAI, Anthropic, Gemini, Mistral, xAI, OpenRouter)
 - `llmHub/Services`: Core business logic (ChatService, ToolRegistry, ContextManagement, MCP)
-- `llmHub/llmHub/Tools`: Tool implementations (see subfolders: `Core/`, `Integrations/`, `Stubs/`)
+- `llmHub/Tools`: Tool implementations (core tools + integrations + stubs)
 - `llmHub/ViewModels`: UI state management using `@Observable`
 - `llmHub/Views`: SwiftUI views with Liquid Glass styling
-- `llmHub/ContextManagement`: Token estimation and context compaction
+- `llmHub/Services/ContextManagement`: Token estimation and context compaction
 - `llmHubHelper`: The sandboxed XPC service for code execution (macOS only)
 
 ### Documentation
