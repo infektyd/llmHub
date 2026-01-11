@@ -5,6 +5,7 @@
 //  Created by AI Assistant on 11/27/25.
 //
 
+import Foundation
 import SwiftData
 import SwiftUI
 
@@ -24,6 +25,10 @@ struct llmHubApp: App {
     @State private var settingsManager = SettingsManager()
 
     // MARK: - Body
+
+    init() {
+        Self.ensureDataDirectoriesExist()
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -86,6 +91,29 @@ struct llmHubApp: App {
     }
 
     // MARK: - Private Methods
+
+    private static func ensureDataDirectoriesExist() {
+        let fileManager = FileManager.default
+        guard
+            let appSupportURL = fileManager.urls(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask
+            ).first
+        else {
+            print("Could not locate Application Support directory.")
+            return
+        }
+
+        do {
+            try fileManager.createDirectory(
+                at: appSupportURL,
+                withIntermediateDirectories: true,
+                attributes: nil
+            )
+        } catch {
+            print("Could not create Application Support directory: \(error)")
+        }
+    }
 
     /// Opens the Settings window.
     private func openSettings() {

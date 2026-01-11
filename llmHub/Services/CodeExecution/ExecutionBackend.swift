@@ -53,7 +53,7 @@ enum ExecutionBackendFactory: Sendable {
         #if os(macOS)
         return XPCExecutionBackend()
         #elseif os(iOS)
-        return UnavailableExecutionBackend()
+        return iOSPythonExecutionBackend()
         #else
         return UnavailableExecutionBackend()
         #endif
