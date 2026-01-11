@@ -84,6 +84,9 @@ Docs/Archives/*
 Legacy_UI/
 Docs/Legacy_UI/
 
+# Ignore a large vendored framework that is not intended to be committed
+# (Conservative: only ignore this specific framework so other Frameworks remain commit-able)
+Frameworks/Python.xcframework/
 
 *.zip
 !Dependencies/*.zip
