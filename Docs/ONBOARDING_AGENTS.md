@@ -40,16 +40,20 @@
 
 **Root**: `/Users/hansaxelsson/llmHub`
 
-| Directory         | Purpose                 | Agent Action   |
-| :---------------- | :---------------------- | :------------- |
-| `llmHub/`         | **Main App Source**     | **READ/WRITE** |
-| ├── `App/`        | App entry, lifecycle    | Monitor        |
-| ├── `Views/`      | SwiftUI Views (Glass)   | **Active Dev** |
-| ├── `ViewModels/` | State (`@Observable`)   | **Active Dev** |
-| ├── `Services/`   | Logic (Chat, Tools)     | Maintain       |
-| ├── `Providers/`  | LLM API Wrappers        | Maintain       |
-| ├── `Tools/`      | Tool implementations    | Maintain       |
-| ├── `Models/`     | SwiftData entities      | Caution        |
+| Directory           | Purpose                         | Agent Action   |
+| :------------------ | :------------------------------ | :------------- |
+| `llmHub/`           | **Main App Source**             | **READ/WRITE** |
+| ├── `App/`          | App entry point (@main)         | Monitor        |
+| ├── `Views/`        | SwiftUI Views (Glass, Canvas)   | **Active Dev** |
+| ├── `ViewModels/`   | UI Logic & State                | **Active Dev** |
+| │   ├── `Core/`     | ChatViewModel & interactions    | **Active Dev** |
+| │   ├── `Features/` | Sidebar, Workbench, Settings    | **Active Dev** |
+| │   ├── `Managers/` | Favorites, preferences          | Maintain       |
+| │   └── `Models/`   | UI data structures              | **Active Dev** |
+| ├── `Services/`     | Business logic (Chat, Tools)    | Maintain       |
+| ├── `Providers/`    | LLM API Wrappers                | Maintain       |
+| ├── `Tools/`        | Tool implementations            | Maintain       |
+| ├── `Models/`       | Domain models (Chat, Code, etc) | Caution        |
 | `llmHubHelper/`   | **XPC Service (macOS)** | Sandbox Logic  |
 | `Docs/`           | **Documentation**       | **READ**       |
 | `scritps/`        | Maintenance scripts     | Execute        |
