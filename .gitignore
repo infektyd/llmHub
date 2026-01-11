@@ -79,6 +79,11 @@ fastlane/test_output
 # Root-level archive (temporary files, old logs, etc.)
 .archive/
 
+# Workspace directory (development artifacts, console dumps)
+workspace/*
+!workspace/.gitkeep
+!workspace/README.md
+
 # Archives and Docs
 *.doccarchive/
 llmHub.doccarchive/
