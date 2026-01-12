@@ -79,24 +79,59 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
     }
 
     nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws -> ToolResult {
+        // ============================================================================
+        // 🔍 DIAGNOSTIC BLOCK 1: Tool Entry Point
+        // ============================================================================
+        print("\n🔍 [CodeInterpreter] ========== EXECUTION STARTED ==========")
+        print("🔍 [CodeInterpreter] Timestamp: \(Date())")
+        
+        #if os(iOS)
+        print("🔍 [CodeInterpreter] Platform: iOS (compiled)")
+        #elseif os(macOS)
+        print("🔍 [CodeInterpreter] Platform: macOS (compiled)")
+        #else
+        print("🔍 [CodeInterpreter] Platform: Unknown")
+        #endif
+        
+        print("🔍 [CodeInterpreter] Environment checks:")
+        print("  ├─ environment.platform: \(environment.platform)")
+        print("  ├─ environment.hasCodeExecutionBackend: \(environment.hasCodeExecutionBackend)")
+        print("  ├─ environment.supports(.codeExecution): \(environment.supports(.codeExecution))")
+        print("  └─ securityMode: \(securityMode)")
+        
+        // Original capability check
         guard environment.supports(.codeExecution) else {
+            print("❌ [CodeInterpreter] FAILED at capability check")
             logger.debug("Code interpreter unavailable on this platform")
             throw ToolError.unavailable(reason: "Code execution unavailable on this platform")
         }
-
+        print("✅ [CodeInterpreter] Passed capability check")
+        
+        // Original argument extraction
         guard let code = arguments.string("code") else {
+            print("❌ [CodeInterpreter] FAILED: Missing 'code' argument")
             throw ToolError.invalidArguments("code is required")
         }
-
+        print("✅ [CodeInterpreter] Extracted code: \(code.count) chars")
+        
         guard let languageStr = arguments.string("language"),
             let language = SupportedLanguage(rawValue: languageStr)
         else {
+            print("❌ [CodeInterpreter] FAILED: Invalid language argument")
             throw ToolError.invalidArguments(
                 "language must be one of \(SupportedLanguage.allCases.map { $0.rawValue }.joined(separator: ", "))"
             )
         }
-
+        print("✅ [CodeInterpreter] Extracted language: \(language.rawValue)")
+        
+        print("🔍 [CodeInterpreter] Calling executeCode()...")
+        // ============================================================================
+        
         let output = try await executeCode(code: code, language: language)
+        
+        print("✅ [CodeInterpreter] executeCode() returned successfully")
+        print("🔍 [CodeInterpreter] ========== EXECUTION COMPLETED ==========\n")
+        
         return await MainActor.run {
             ToolResult.success(output)
         }
@@ -108,18 +143,29 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
     ///   - language: The programming language.
     /// - Returns: A summary string of the execution result.
     func executeCode(code: String, language: SupportedLanguage) async throws -> String {
+        print("\n🔍 [executeCode] ========== METHOD ENTRY ==========")
+        print("🔍 [executeCode] Language: \(language.rawValue)")
+        print("🔍 [executeCode] Code length: \(code.count) chars")
+        print("🔍 [executeCode] Security mode: \(securityMode)")
+        print("🔍 [executeCode] Timeout: \(timeoutSeconds)s")
+        
         logger.info("Executing \(language.rawValue) code (\(code.count) chars)")
 
         // Check for approval if required
         if securityMode == .approval {
+            print("🔍 [executeCode] Approval mode - checking handler...")
             guard let handler = approvalHandler else {
+                print("❌ [executeCode] FAILED: No approval handler set")
                 throw CodeExecutionError.approvalDenied
             }
 
+            print("🔍 [executeCode] Requesting user approval...")
             let approved = await handler(code, language)
             if !approved {
+                print("❌ [executeCode] FAILED: User denied approval")
                 throw CodeExecutionError.approvalDenied
             }
+            print("✅ [executeCode] User approved execution")
         }
 
         let request = CodeExecutionRequest(
@@ -127,27 +173,37 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
             code: code,
             timeoutSeconds: timeoutSeconds
         )
+        print("✅ [executeCode] Created CodeExecutionRequest: \(request.id)")
 
         // Notify start
+        print("🔍 [executeCode] Calling onExecutionStart callback...")
         onExecutionStart?(request)
 
         do {
+            print("🔍 [executeCode] Calling engine.execute()...")
             let result = try await engine.execute(
                 request: request,
                 securityMode: securityMode
             )
+            print("✅ [executeCode] engine.execute() returned")
+            print("🔍 [executeCode] Result: exitCode=\(result.exitCode), time=\(result.executionTimeMs)ms")
 
             // Notify completion
             onExecutionComplete?(result)
 
             logger.info(
                 "Execution completed: exit=\(result.exitCode), time=\(result.executionTimeMs)ms")
-
+            
+            print("🔍 [executeCode] ========== METHOD EXIT (SUCCESS) ==========\n")
             return result.llmSummary
 
         } catch let error as CodeExecutionError {
+            print("❌ [executeCode] Caught CodeExecutionError: \(error.localizedDescription)")
             logger.error("Execution failed: \(error.localizedDescription)")
             throw ToolError.executionFailed(error.localizedDescription, retryable: false)
+        } catch {
+            print("❌ [executeCode] Caught unexpected error: \(error)")
+            throw error
         }
     }
 

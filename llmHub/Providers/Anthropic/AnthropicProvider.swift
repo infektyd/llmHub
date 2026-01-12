@@ -85,22 +85,36 @@ struct AnthropicProvider: LLMProvider {
         }()
 
         // Map non-system messages
-        let anthropicMessages: [AnthropicMessage] = messages.compactMap { msg in
+        var anthropicMessages: [AnthropicMessage] = []
+        var messageIndex = 0
+        while messageIndex < messages.count {
+            let msg = messages[messageIndex]
+
             // Skip system messages (handled separately in Anthropic API)
-            if msg.role == .system { return nil }
+            if msg.role == .system {
+                messageIndex += 1
+                continue
+            }
 
             // Handle tool result messages
             if msg.role == .tool {
-                return AnthropicMessage(
-                    role: "user",
-                    content: [
+                var toolBlocks: [AnthropicContentBlock] = []
+                var toolIndex = messageIndex
+                while toolIndex < messages.count, messages[toolIndex].role == .tool {
+                    let toolMsg = messages[toolIndex]
+                    toolBlocks.append(
                         .toolResult(
                             AnthropicToolResult(
-                                tool_use_id: msg.toolCallID ?? "",
-                                content: msg.content
+                                tool_use_id: toolMsg.toolCallID ?? "",
+                                content: toolMsg.content
                             ))
-                    ]
-                )
+                    )
+                    toolIndex += 1
+                }
+
+                anthropicMessages.append(AnthropicMessage(role: "user", content: toolBlocks))
+                messageIndex = toolIndex
+                continue
             }
 
             var blocks: [AnthropicContentBlock] = []
@@ -119,7 +133,9 @@ struct AnthropicProvider: LLMProvider {
                     blocks.append(
                         .toolUse(AnthropicToolUse(id: tc.id, name: tc.name, input: inputDict)))
                 }
-                return AnthropicMessage(role: "assistant", content: blocks)
+                anthropicMessages.append(AnthropicMessage(role: "assistant", content: blocks))
+                messageIndex += 1
+                continue
             }
 
             if !msg.content.isEmpty {
@@ -145,7 +161,10 @@ struct AnthropicProvider: LLMProvider {
                 blocks.append(.text(AnthropicTextBlock(text: msg.content)))
             }
 
-            return AnthropicMessage(role: msg.role == .user ? "user" : "assistant", content: blocks)
+            anthropicMessages.append(
+                AnthropicMessage(role: msg.role == .user ? "user" : "assistant", content: blocks)
+            )
+            messageIndex += 1
         }
 
         // Convert tool definitions to Anthropic format
@@ -155,10 +174,16 @@ struct AnthropicProvider: LLMProvider {
                 inputSchema: toolDef.inputSchema)
         }
 
+        // Validate and sanitize tool pairing to prevent orphaned tool_results
+        let sanitizedMessages = sanitizeToolResults(
+            messages: sanitizeToolUseOrdering(messages: anthropicMessages)
+        )
+        validateToolPairing(messages: sanitizedMessages)
+
         let maxTokens = min(availableModels.first?.maxOutputTokens ?? 4096, 64_000)
 
         return try manager.makeChatRequest(
-            messages: anthropicMessages,
+            messages: sanitizedMessages,
             model: model,
             maxTokens: maxTokens,
             stream: false,
@@ -331,5 +356,175 @@ struct AnthropicProvider: LLMProvider {
             )
         }
         return nil
+    }
+
+    // MARK: - Tool Result Validation & Sanitization
+
+    /// Validates that all tool_result blocks have corresponding tool_use blocks.
+    /// Logs diagnostic information to help identify orphaned tool_results.
+    private func validateToolPairing(messages: [AnthropicMessage]) {
+        print("\n🔍 [ToolValidation] ========== VALIDATING CONVERSATION ==========")
+
+        var toolUseRegistry: [String: Int] = [:]  // ID → message index
+        var orphanedResults: [(id: String, messageIndex: Int)] = []
+
+        for (index, message) in messages.enumerated() {
+            print("\n🔍 [Message \(index)] Role: \(message.role)")
+
+            for (contentIndex, content) in message.content.enumerated() {
+                switch content {
+                case .toolUse(let toolUse):
+                    toolUseRegistry[toolUse.id] = index
+                    print("  [\(contentIndex)] ✅ Registered tool_use: \(toolUse.id)")
+
+                case .toolResult(let toolResult):
+                    if toolUseRegistry[toolResult.tool_use_id] != nil {
+                        print("  [\(contentIndex)] ✅ Valid tool_result for: \(toolResult.tool_use_id)")
+                    } else {
+                        print("  [\(contentIndex)] ❌ ORPHANED tool_result for: \(toolResult.tool_use_id)")
+                        orphanedResults.append((id: toolResult.tool_use_id, messageIndex: index))
+                    }
+
+                case .text(let textBlock):
+                    print("  [\(contentIndex)] Type: text (\(textBlock.text.prefix(50))...)")
+
+                case .image:
+                    print("  [\(contentIndex)] Type: image")
+                }
+            }
+        }
+
+        if orphanedResults.isEmpty {
+            print("\n✅ [ToolValidation] All tool_result blocks have matching tool_use blocks")
+        } else {
+            print("\n❌ [ToolValidation] FOUND \(orphanedResults.count) ORPHANED TOOL RESULTS:")
+            for orphan in orphanedResults {
+                print("  - tool_use_id: \(orphan.id) in message[\(orphan.messageIndex)]")
+            }
+            print("⚠️ [ToolValidation] This will cause HTTP 400 from Anthropic!")
+        }
+
+        print("🔍 [ToolValidation] =============================================\n")
+    }
+
+    /// Removes orphaned tool_result blocks from conversation history.
+    /// A tool_result is orphaned if its tool_use_id doesn't match any tool_use block in the conversation.
+    private func sanitizeToolResults(messages: [AnthropicMessage]) -> [AnthropicMessage] {
+        var toolUseIds = Set<String>()
+        var sanitizedMessages: [AnthropicMessage] = []
+
+        // First pass: collect all tool_use IDs
+        for message in messages {
+            if message.role == "assistant" {
+                for content in message.content {
+                    if case .toolUse(let toolUse) = content {
+                        toolUseIds.insert(toolUse.id)
+                    }
+                }
+            }
+        }
+
+        // Second pass: filter out orphaned tool_results
+        for message in messages {
+            var cleanedMessage = message
+
+            if message.role == "user" {
+                let filteredContents = message.content.filter { content in
+                    guard case .toolResult(let toolResult) = content else {
+                        return true  // Keep non-tool_result content
+                    }
+
+                    let isValid = toolUseIds.contains(toolResult.tool_use_id)
+                    if !isValid {
+                        print("⚠️ [Sanitize] Removing orphaned tool_result: \(toolResult.tool_use_id)")
+                    }
+                    return isValid
+                }
+
+                cleanedMessage = AnthropicMessage(role: message.role, content: filteredContents)
+
+                // Skip message entirely if it's now empty
+                if filteredContents.isEmpty {
+                    print("⚠️ [Sanitize] Skipping empty message after filtering")
+                    continue
+                }
+            }
+
+            sanitizedMessages.append(cleanedMessage)
+        }
+
+        return sanitizedMessages
+    }
+
+    private func sanitizeToolUseOrdering(messages: [AnthropicMessage]) -> [AnthropicMessage] {
+        var sanitized: [AnthropicMessage] = []
+        var index = 0
+
+        while index < messages.count {
+            let message = messages[index]
+
+            guard message.role == "assistant" else {
+                sanitized.append(message)
+                index += 1
+                continue
+            }
+
+            let toolUseIds: [String] = message.content.compactMap { block in
+                guard case .toolUse(let toolUse) = block else { return nil }
+                return toolUse.id
+            }
+
+            guard !toolUseIds.isEmpty else {
+                sanitized.append(message)
+                index += 1
+                continue
+            }
+
+            let nextMessage: AnthropicMessage? = (index + 1) < messages.count ? messages[index + 1] : nil
+            let nextToolResultIds: Set<String> = {
+                guard let nextMessage, nextMessage.role == "user" else { return [] }
+                return Set(
+                    nextMessage.content.compactMap { block in
+                        guard case .toolResult(let toolResult) = block else { return nil }
+                        return toolResult.tool_use_id
+                    }
+                )
+            }()
+
+            if Set(toolUseIds).isSubset(of: nextToolResultIds) {
+                sanitized.append(message)
+                if let nextMessage {
+                    sanitized.append(nextMessage)
+                    index += 2
+                } else {
+                    index += 1
+                }
+                continue
+            }
+
+            let cleanedAssistantBlocks = message.content.filter { block in
+                guard case .toolUse = block else { return true }
+                return false
+            }
+
+            if !cleanedAssistantBlocks.isEmpty {
+                sanitized.append(AnthropicMessage(role: message.role, content: cleanedAssistantBlocks))
+            }
+
+            if let nextMessage, nextMessage.role == "user" {
+                let cleanedUserBlocks = nextMessage.content.filter { block in
+                    guard case .toolResult = block else { return true }
+                    return false
+                }
+                if !cleanedUserBlocks.isEmpty {
+                    sanitized.append(AnthropicMessage(role: nextMessage.role, content: cleanedUserBlocks))
+                }
+                index += 2
+            } else {
+                index += 1
+            }
+        }
+
+        return sanitized
     }
 }

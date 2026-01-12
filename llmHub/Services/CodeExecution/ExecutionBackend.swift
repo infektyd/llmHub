@@ -51,10 +51,13 @@ enum ExecutionBackendFactory: Sendable {
     @MainActor
     static func createDefault() -> any ExecutionBackend {
         #if os(macOS)
+        print("🔍 [ExecutionBackendFactory] Default backend: XPCExecutionBackend")
         return XPCExecutionBackend()
         #elseif os(iOS)
+        print("🔍 [ExecutionBackendFactory] Default backend: iOSPythonExecutionBackend")
         return iOSPythonExecutionBackend()
         #else
+        print("🔍 [ExecutionBackendFactory] Default backend: UnavailableExecutionBackend")
         return UnavailableExecutionBackend()
         #endif
     }

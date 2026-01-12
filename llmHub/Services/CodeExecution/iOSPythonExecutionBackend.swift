@@ -23,16 +23,43 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
 
     var isAvailable: Bool {
         get async {
-            await withCheckedContinuation { continuation in
+            print("\n🔍 [iOSBackend] ========== isAvailable CHECK ==========")
+            
+            let result = await withCheckedContinuation { continuation in
                 executionQueue.async { [weak self] in
+                    print("🔍 [iOSBackend] On executionQueue thread")
+                    
                     guard let self else {
+                        print("❌ [iOSBackend] self is nil")
                         continuation.resume(returning: false)
                         return
                     }
+                    
+                    // Check if Python.framework is available
+                    if self.isPythonInitialized {
+                        print("✅ [iOSBackend] Python already initialized")
+                        continuation.resume(returning: true)
+                        return
+                    }
+                    
+                    print("🔍 [iOSBackend] Python not initialized, attempting init...")
+                    
+                    // Try to initialize Python
                     self.ensurePythonInitialized()
-                    continuation.resume(returning: self.isPythonInitialized)
+                    
+                    if self.isPythonInitialized {
+                        print("✅ [iOSBackend] Python initialized successfully")
+                        continuation.resume(returning: true)
+                    } else {
+                        print("❌ [iOSBackend] Python initialization failed")
+                        continuation.resume(returning: false)
+                    }
                 }
             }
+            
+            print("🔍 [iOSBackend] isAvailable result: \(result)")
+            print("🔍 [iOSBackend] ========================================\n")
+            return result
         }
     }
 
@@ -125,22 +152,56 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
 
     private func ensurePythonInitialized() {
         initQueue.sync {
-            guard !isPythonInitialized else { return }
-            guard isPythonFrameworkAvailable() else { return }
+            print("\n🔍 [iOSBackend.init] ========== PYTHON INITIALIZATION ==========")
+            
+            guard !isPythonInitialized else {
+                print("✅ [iOSBackend.init] Already initialized, skipping")
+                print("🔍 [iOSBackend.init] ============================================\n")
+                return
+            }
+            
+            print("🔍 [iOSBackend.init] Checking if Python framework is available...")
+            let frameworkAvailable = isPythonFrameworkAvailable()
+            print("🔍 [iOSBackend.init] isPythonFrameworkAvailable: \(frameworkAvailable)")
+            
+            guard frameworkAvailable else {
+                print("❌ [iOSBackend.init] Python framework NOT available")
+                print("🔍 [iOSBackend.init] ============================================\n")
+                return
+            }
+            print("✅ [iOSBackend.init] Python framework is available")
 
+            print("🔍 [iOSBackend.init] Resolving Python home...")
             let pythonHome = resolvePythonHome()
             if let pythonHome {
+                print("✅ [iOSBackend.init] Python home resolved: \(pythonHome.path)")
+                print("🔍 [iOSBackend.init] Setting Python home...")
                 setPythonHome(pythonHome)
+                print("✅ [iOSBackend.init] Python home set")
+            } else {
+                print("⚠️ [iOSBackend.init] Could not resolve Python home")
             }
 
+            print("🔍 [iOSBackend.init] Calling Py_Initialize()...")
             Py_Initialize()
-            isPythonInitialized = Py_IsInitialized() != 0
+            print("✅ [iOSBackend.init] Py_Initialize() returned")
+            
+            let isInitialized = Py_IsInitialized()
+            print("🔍 [iOSBackend.init] Py_IsInitialized() = \(isInitialized)")
+            
+            isPythonInitialized = isInitialized != 0
 
             if isPythonInitialized {
+                print("✅ [iOSBackend.init] Python runtime initialized successfully")
+                print("🔍 [iOSBackend.init] Configuring Python environment...")
                 configurePythonEnvironment(pythonHome: pythonHome)
+                print("✅ [iOSBackend.init] Python environment configured")
             } else {
+                print("❌ [iOSBackend.init] FAILED: Python not initialized after Py_Initialize()")
                 logger.error("Python runtime failed to initialize")
             }
+            
+            print("🔍 [iOSBackend.init] ============================================\n")
         }
     }
 
