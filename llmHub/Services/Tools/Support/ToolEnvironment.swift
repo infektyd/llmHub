@@ -100,7 +100,11 @@ struct ToolEnvironment: Sendable {
                 .first
 
             // iOS local code execution is available when the embedded Python framework is present.
-            let hasCodeExecutionBackend = detectPythonFramework()
+            #if canImport(Python)
+                let hasCodeExecutionBackend = detectPythonFramework()
+            #else
+                let hasCodeExecutionBackend = false
+            #endif
 
             return ToolEnvironment(
                 platform: platform,

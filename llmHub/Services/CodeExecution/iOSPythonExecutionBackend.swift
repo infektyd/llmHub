@@ -624,7 +624,10 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
 /// Stub to keep macOS tests compiling without iOS Python runtime.
 final class iOSPythonExecutionBackend: ExecutionBackend {
     var isAvailable: Bool {
-        get async { false }
+        get async {
+            print("❌ [iOSPythonExecutionBackend] Python module not available (canImport(Python) == false)")
+            return false
+        }
     }
 
     func execute(
@@ -634,7 +637,7 @@ final class iOSPythonExecutionBackend: ExecutionBackend {
         workingDirectory: URL?
     ) async throws -> CodeExecutionResult {
         throw CodeExecutionError.processLaunchFailed(
-            "Python execution backend is only available on iOS."
+            "Python execution backend is not available in this build (canImport(Python) == false)."
         )
     }
 
