@@ -250,6 +250,7 @@
 				A3C71F242ED9389A0088DF32 /* Resources */,
 				B3000040303030300001 /* Embed XPC Services */,
 				A3D0D0F72F144D3E0081C74D /* Embed Frameworks */,
+				A3D0D0F82F144D3E0081C74D /* Copy Python Stdlib */,
 			);
 			buildRules = (
 			);
@@ -405,6 +406,26 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A3D0D0F82F144D3E0081C74D /* Copy Python Stdlib */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(PROJECT_DIR)/Frameworks/Python.xcframework",
+			);
+			name = "Copy Python Stdlib";
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/PythonHome/lib/python3.14",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\n\n# Only run for iOS builds\nif [ \"$PLATFORM_NAME\" != \"iphoneos\" ] && [ \"$PLATFORM_NAME\" != \"iphonesimulator\" ]; then\n  exit 0\nfi\n\n# Select xcframework slice\nSLICE=\"ios-arm64\"\nif [ \"$PLATFORM_NAME\" = \"iphonesimulator\" ]; then\n  SLICE=\"ios-arm64_x86_64-simulator\"\nfi\n\nPYTHON_XCFRAMEWORK=\"$PROJECT_DIR/Frameworks/Python.xcframework\"\nSRC_STDLIB=\"$PYTHON_XCFRAMEWORK/$SLICE/lib/python3.14\"\n\nDEST_PYTHONHOME=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/PythonHome\"\nDEST_LIB=\"$DEST_PYTHONHOME/lib\"\nDEST_STDLIB=\"$DEST_LIB/python3.14\"\n\necho \"[Copy Python Stdlib] PLATFORM_NAME=$PLATFORM_NAME\"\necho \"[Copy Python Stdlib] SLICE=$SLICE\"\necho \"[Copy Python Stdlib] SRC_STDLIB=$SRC_STDLIB\"\necho \"[Copy Python Stdlib] DEST_STDLIB=$DEST_STDLIB\"\n\nif [ ! -d \"$SRC_STDLIB\" ]; then\n  echo \"[Copy Python Stdlib] ERROR: Source stdlib not found at $SRC_STDLIB\"\n  exit 1\nfi\n\nmkdir -p \"$DEST_LIB\"\nrm -rf \"$DEST_STDLIB\"\n/usr/bin/ditto \"$SRC_STDLIB\" \"$DEST_STDLIB\"\n\necho \"[Copy Python Stdlib] OK\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A3C71F222ED9389A0088DF32 /* Sources */ = {

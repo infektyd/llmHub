@@ -167,6 +167,7 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
     }
 
     nonisolated private func ensurePythonInitializedSync() throws {
+        print("🔍 [iOSBackend.init] Build marker: stdlib-discovery-v2")
         print("\n🔍 [iOSBackend.init] ========== PYTHON INITIALIZATION ==========")
         defer {
             print("🔍 [iOSBackend.init] ============================================\n")
@@ -185,14 +186,69 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
 
         let pythonFramework = (frameworksPath as NSString)
             .appendingPathComponent("Python.framework")
-        let pythonStdlib = (pythonFramework as NSString)
-            .appendingPathComponent("lib/python3.14")
+        let pythonHomeInResources = Bundle.main.resourceURL?.appendingPathComponent("PythonHome").path
+        let pythonHomeCandidates: [String] = [
+            pythonHomeInResources,
+            pythonFramework,
+            frameworksPath,
+            Bundle.main.bundleURL.path,
+            Bundle.main.resourceURL?.path
+        ].compactMap { $0 }
+
+        func pythonVersionNumber(from directoryName: String) -> Double? {
+            guard directoryName.hasPrefix("python") else { return nil }
+            let versionString = String(directoryName.dropFirst("python".count))
+            return Double(versionString)
+        }
+
+        func resolveStdlibPath(pythonHome: String) -> String? {
+            let libPath = (pythonHome as NSString).appendingPathComponent("lib")
+            var isLibDirectory: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: libPath, isDirectory: &isLibDirectory), isLibDirectory.boolValue else {
+                return nil
+            }
+            guard let entries = try? FileManager.default.contentsOfDirectory(atPath: libPath) else {
+                return nil
+            }
+            let candidates = entries
+                .filter { $0.hasPrefix("python3.") }
+                .sorted {
+                    (pythonVersionNumber(from: $0) ?? 0) > (pythonVersionNumber(from: $1) ?? 0)
+                }
+            guard let best = candidates.first else {
+                return nil
+            }
+            return (libPath as NSString).appendingPathComponent(best)
+        }
+
+        let resolved: (pythonHome: String, pythonStdlib: String)? = {
+            for candidate in pythonHomeCandidates {
+                if let stdlib = resolveStdlibPath(pythonHome: candidate) {
+                    return (candidate, stdlib)
+                }
+            }
+            return nil
+        }()
+
+        guard let resolved else {
+            let frameworkContents = (try? FileManager.default.contentsOfDirectory(atPath: pythonFramework)) ?? []
+            let frameworksContents = (try? FileManager.default.contentsOfDirectory(atPath: frameworksPath)) ?? []
+            print("❌ [iOSBackend.init] Could not locate Python stdlib (expected pythonHome/lib/python3.x)")
+            print("❌ [iOSBackend.init] pythonHome candidates: \(pythonHomeCandidates)")
+            print("❌ [iOSBackend.init] Frameworks dir contents: \(frameworksContents)")
+            print("❌ [iOSBackend.init] Python.framework contents: \(frameworkContents)")
+            throw CodeExecutionError.processLaunchFailed("Python standard library not accessible")
+        }
+
+        let pythonHome = resolved.pythonHome
+        let pythonStdlib = resolved.pythonStdlib
         let pythonSitePackages = (pythonStdlib as NSString)
             .appendingPathComponent("site-packages")
         let pythonLibDynload = (pythonStdlib as NSString)
             .appendingPathComponent("lib-dynload")
 
         print("🔍 [iOSBackend.init] Python.framework: \(pythonFramework)")
+        print("🔍 [iOSBackend.init] Python home: \(pythonHome)")
         print("🔍 [iOSBackend.init] Python stdlib: \(pythonStdlib)")
         print("🔍 [iOSBackend.init] Python site-packages: \(pythonSitePackages)")
         print("🔍 [iOSBackend.init] Python lib-dynload: \(pythonLibDynload)")
@@ -207,9 +263,12 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
             throw CodeExecutionError.processLaunchFailed("Python standard library not accessible")
         }
 
+        var hasSitePackages: Bool = false
         isDirectory = false
-        guard FileManager.default.fileExists(atPath: pythonSitePackages, isDirectory: &isDirectory), isDirectory.boolValue else {
-            throw CodeExecutionError.processLaunchFailed("Python standard library not accessible")
+        if FileManager.default.fileExists(atPath: pythonSitePackages, isDirectory: &isDirectory), isDirectory.boolValue {
+            hasSitePackages = true
+        } else {
+            print("⚠️ [iOSBackend.init] site-packages directory not found; continuing without it")
         }
 
         let hasLibDynload: Bool = {
@@ -223,7 +282,7 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         PyConfig_InitPythonConfig(&config)
         defer { PyConfig_Clear(&config) }
 
-        let setHomeStatus: PyStatus = pythonFramework.withCString { cString in
+        let setHomeStatus: PyStatus = pythonHome.withCString { cString in
             var homePointer = config.home
             let status = PyConfig_SetBytesString(&config, &homePointer, cString)
             config.home = homePointer
@@ -232,7 +291,7 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         guard PyStatus_Exception(setHomeStatus) == 0 else {
             throw CodeExecutionError.processLaunchFailed("Failed to set PYTHONHOME")
         }
-        print("✅ [iOSBackend.init] PYTHONHOME set to: \(pythonFramework)")
+        print("✅ [iOSBackend.init] PYTHONHOME set to: \(pythonHome)")
 
         config.module_search_paths_set = 1
 
@@ -257,7 +316,9 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         if hasLibDynload {
             try appendModuleSearchPath(pythonLibDynload)
         }
-        try appendModuleSearchPath(pythonSitePackages)
+        if hasSitePackages {
+            try appendModuleSearchPath(pythonSitePackages)
+        }
 
         print("✅ [iOSBackend.init] Module search paths configured (\(config.module_search_paths.length) paths)")
 
@@ -278,24 +339,22 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
 
         print("✅ [iOSBackend.init] Python runtime fully initialized")
         print("🔍 [iOSBackend.init] Configuring Python environment...")
-        configurePythonEnvironment(pythonHome: URL(fileURLWithPath: pythonFramework))
+        configurePythonEnvironment(pythonStdlibPath: pythonStdlib)
         print("✅ [iOSBackend.init] Python environment configured")
     }
 
-    nonisolated private func configurePythonEnvironment(pythonHome: URL?) {
+    nonisolated private func configurePythonEnvironment(pythonStdlibPath: String) {
         let gstate = PyGILState_Ensure()
         defer { PyGILState_Release(gstate) }
 
         PyRun_SimpleString("import sys; sys.dont_write_bytecode = True")
 
-        if let pythonHome {
-            let stdlibPath = pythonHome.appendingPathComponent("lib/python3.14")
-            let sitePackagesPath = stdlibPath.appendingPathComponent("site-packages")
-            let dynloadPath = stdlibPath.appendingPathComponent("lib-dynload")
-            _ = addSysPathIfNeeded(stdlibPath.path)
-            _ = addSysPathIfNeeded(dynloadPath.path)
-            _ = addSysPathIfNeeded(sitePackagesPath.path)
-        }
+        let stdlibPath = pythonStdlibPath
+        let sitePackagesPath = (pythonStdlibPath as NSString).appendingPathComponent("site-packages")
+        let dynloadPath = (pythonStdlibPath as NSString).appendingPathComponent("lib-dynload")
+        _ = addSysPathIfNeeded(stdlibPath)
+        _ = addSysPathIfNeeded(dynloadPath)
+        _ = addSysPathIfNeeded(sitePackagesPath)
 
         if let resources = Bundle.main.resourceURL {
             let appPackages = resources.appendingPathComponent("app_packages")

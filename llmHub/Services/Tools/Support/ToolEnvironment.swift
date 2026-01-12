@@ -262,10 +262,38 @@ extension ToolEnvironment {
         print("🔍 [ToolEnvironment] fileExists: \(exists)")
         print("🔍 [ToolEnvironment] isDirectory: \(isDirectory.boolValue)")
         
-        let result = exists && isDirectory.boolValue
+        let frameworkLibPath = (pythonFrameworkPath as NSString).appendingPathComponent("lib")
+        var frameworkLibIsDirectory: ObjCBool = false
+        let frameworkLibExists = fileManager.fileExists(atPath: frameworkLibPath, isDirectory: &frameworkLibIsDirectory)
+        let frameworkLibEntries = (try? fileManager.contentsOfDirectory(atPath: frameworkLibPath)) ?? []
+        let frameworkStdlibCandidates = frameworkLibEntries.filter { $0.hasPrefix("python3.") }
+        let hasFrameworkStdlib = frameworkLibExists && frameworkLibIsDirectory.boolValue && !frameworkStdlibCandidates.isEmpty
+
+        let resourcesPythonHome = Bundle.main.resourceURL?.appendingPathComponent("PythonHome")
+        let resourcesLibPath = resourcesPythonHome?.appendingPathComponent("lib").path
+        var resourcesLibIsDirectory: ObjCBool = false
+        let resourcesLibExists = resourcesLibPath.map { fileManager.fileExists(atPath: $0, isDirectory: &resourcesLibIsDirectory) } ?? false
+        let resourcesLibEntries = resourcesLibPath.flatMap { try? fileManager.contentsOfDirectory(atPath: $0) } ?? []
+        let resourcesStdlibCandidates = resourcesLibEntries.filter { $0.hasPrefix("python3.") }
+        let hasResourcesStdlib = resourcesLibExists && resourcesLibIsDirectory.boolValue && !resourcesStdlibCandidates.isEmpty
+
+        let resourcesPythonHomePath = resourcesPythonHome?.path ?? "nil"
+
+        print("🔍 [ToolEnvironment] PythonHome (resources): \(resourcesPythonHomePath)")
+        print("🔍 [ToolEnvironment] framework lib/ exists: \(frameworkLibExists)")
+        print("🔍 [ToolEnvironment] framework lib/ isDirectory: \(frameworkLibIsDirectory.boolValue)")
+        print("🔍 [ToolEnvironment] framework stdlib candidates: \(frameworkStdlibCandidates)")
+        print("🔍 [ToolEnvironment] resources lib/ exists: \(resourcesLibExists)")
+        print("🔍 [ToolEnvironment] resources lib/ isDirectory: \(resourcesLibIsDirectory.boolValue)")
+        print("🔍 [ToolEnvironment] resources stdlib candidates: \(resourcesStdlibCandidates)")
+
+        let hasStdlib = hasFrameworkStdlib || hasResourcesStdlib
+        let result = exists && isDirectory.boolValue && hasStdlib
         
         if result {
-            print("✅ [ToolEnvironment] Python.framework DETECTED")
+            print("✅ [ToolEnvironment] Python.framework + stdlib DETECTED")
+        } else if exists && isDirectory.boolValue {
+            print("❌ [ToolEnvironment] Python.framework detected but stdlib missing")
         } else {
             print("❌ [ToolEnvironment] Python.framework NOT FOUND")
         }
