@@ -44,7 +44,11 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
                     print("🔍 [iOSBackend] Python not initialized, attempting init...")
                     
                     // Try to initialize Python
-                    self.ensurePythonInitialized()
+                    do {
+                        try self.ensurePythonInitialized()
+                    } catch {
+                        print("❌ [iOSBackend] Python initialization error: \(error)")
+                    }
                     
                     if self.isPythonInitialized {
                         print("✅ [iOSBackend] Python initialized successfully")
@@ -80,10 +84,7 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
                 throw CodeExecutionError.executionCancelled
             }
             return try await self.runOnExecutionQueue {
-                self.ensurePythonInitialized()
-                guard self.isPythonInitialized else {
-                    throw CodeExecutionError.processLaunchFailed("Python runtime is not available.")
-                }
+                try self.ensurePythonInitialized()
                 return try self.executePythonCode(code, workingDirectory: workingDirectory)
             }
         }
@@ -118,7 +119,7 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
                     continuation.resume(returning: InterpreterInfo.unavailable(language))
                     return
                 }
-                self.ensurePythonInitialized()
+                _ = try? self.ensurePythonInitialized()
                 guard self.isPythonInitialized else {
                     continuation.resume(returning: InterpreterInfo.unavailable(language))
                     return
@@ -149,101 +150,136 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
 
     // MARK: - Initialization
 
-    nonisolated private func ensurePythonInitialized() {
+    nonisolated private func ensurePythonInitialized() throws {
+        var thrownError: Error?
+
         initQueue.sync {
-            print("\n🔍 [iOSBackend.init] ========== PYTHON INITIALIZATION ==========")
-            
-            guard !isPythonInitialized else {
-                print("✅ [iOSBackend.init] Already initialized, skipping")
-                print("🔍 [iOSBackend.init] ============================================\n")
-                return
+            do {
+                try ensurePythonInitializedSync()
+            } catch {
+                thrownError = error
             }
-            
-            print("🔍 [iOSBackend.init] Checking if Python framework is available...")
-            let frameworkAvailable = isPythonFrameworkAvailable()
-            print("🔍 [iOSBackend.init] isPythonFrameworkAvailable: \(frameworkAvailable)")
-            
-            guard frameworkAvailable else {
-                print("❌ [iOSBackend.init] Python framework NOT available")
-                print("🔍 [iOSBackend.init] ============================================\n")
-                return
-            }
-            print("✅ [iOSBackend.init] Python framework is available")
+        }
 
-            print("🔍 [iOSBackend.init] Resolving Python home...")
-            let pythonHome = resolvePythonHome()
-            if let pythonHome {
-                print("✅ [iOSBackend.init] Python home resolved: \(pythonHome.path)")
-            } else {
-                print("⚠️ [iOSBackend.init] Could not resolve Python home")
-            }
-
-            print("🔍 [iOSBackend.init] Initializing Python with PyConfig...")
-            initializePythonWithConfig(pythonHome: pythonHome)
-            print("✅ [iOSBackend.init] Python initialization complete")
-            
-            let isInitialized = Py_IsInitialized()
-            print("🔍 [iOSBackend.init] Py_IsInitialized() = \(isInitialized)")
-            
-            isPythonInitialized = isInitialized != 0
-
-            if isPythonInitialized {
-                print("✅ [iOSBackend.init] Python runtime initialized successfully")
-                print("🔍 [iOSBackend.init] Configuring Python environment...")
-                configurePythonEnvironment(pythonHome: pythonHome)
-                print("✅ [iOSBackend.init] Python environment configured")
-            } else {
-                print("❌ [iOSBackend.init] FAILED: Python not initialized after Py_Initialize()")
-                logger.error("Python runtime failed to initialize")
-            }
-            
-            print("🔍 [iOSBackend.init] ============================================\n")
+        if let thrownError {
+            throw thrownError
         }
     }
 
-    nonisolated private func initializePythonWithConfig(pythonHome: URL?) {
+    nonisolated private func ensurePythonInitializedSync() throws {
+        print("\n🔍 [iOSBackend.init] ========== PYTHON INITIALIZATION ==========")
+        defer {
+            print("🔍 [iOSBackend.init] ============================================\n")
+        }
+
+        guard !isPythonInitialized else {
+            print("✅ [iOSBackend.init] Already initialized, skipping")
+            return
+        }
+
+        guard let frameworksPath = Bundle.main.privateFrameworksPath else {
+            throw CodeExecutionError.processLaunchFailed("Cannot locate Frameworks directory")
+        }
+
+        print("✅ [iOSBackend.init] Frameworks path: \(frameworksPath)")
+
+        let pythonFramework = (frameworksPath as NSString)
+            .appendingPathComponent("Python.framework")
+        let pythonStdlib = (pythonFramework as NSString)
+            .appendingPathComponent("lib/python3.14")
+        let pythonSitePackages = (pythonStdlib as NSString)
+            .appendingPathComponent("site-packages")
+        let pythonLibDynload = (pythonStdlib as NSString)
+            .appendingPathComponent("lib-dynload")
+
+        print("🔍 [iOSBackend.init] Python.framework: \(pythonFramework)")
+        print("🔍 [iOSBackend.init] Python stdlib: \(pythonStdlib)")
+        print("🔍 [iOSBackend.init] Python site-packages: \(pythonSitePackages)")
+        print("🔍 [iOSBackend.init] Python lib-dynload: \(pythonLibDynload)")
+
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: pythonFramework, isDirectory: &isDirectory), isDirectory.boolValue else {
+            throw CodeExecutionError.processLaunchFailed("Python.framework not found at expected path")
+        }
+
+        isDirectory = false
+        guard FileManager.default.fileExists(atPath: pythonStdlib, isDirectory: &isDirectory), isDirectory.boolValue else {
+            throw CodeExecutionError.processLaunchFailed("Python standard library not accessible")
+        }
+
+        isDirectory = false
+        guard FileManager.default.fileExists(atPath: pythonSitePackages, isDirectory: &isDirectory), isDirectory.boolValue else {
+            throw CodeExecutionError.processLaunchFailed("Python standard library not accessible")
+        }
+
+        let hasLibDynload: Bool = {
+            var dynloadIsDirectory: ObjCBool = false
+            return FileManager.default.fileExists(atPath: pythonLibDynload, isDirectory: &dynloadIsDirectory) && dynloadIsDirectory.boolValue
+        }()
+
+        print("✅ [iOSBackend.init] Framework paths verified")
+
         var config = PyConfig()
         PyConfig_InitPythonConfig(&config)
         defer { PyConfig_Clear(&config) }
-        
-        // Set Python home if available
-        if let pythonHome {
-            let pythonHomePath = pythonHome.path
-            pythonHomePath.withCString { cString in
-                if let wideString = Py_DecodeLocale(cString, nil) {
-                    var homeField = config.home
-                    let status = PyConfig_SetString(&config, &homeField, wideString)
-                    PyMem_RawFree(wideString)
-                    
-                    if PyStatus_Exception(status) != 0 {
-                        print("⚠️ [iOSBackend.init] Failed to set Python home in config")
-                    }
+
+        let setHomeStatus: PyStatus = pythonFramework.withCString { cString in
+            var homePointer = config.home
+            let status = PyConfig_SetBytesString(&config, &homePointer, cString)
+            config.home = homePointer
+            return status
+        }
+        guard PyStatus_Exception(setHomeStatus) == 0 else {
+            throw CodeExecutionError.processLaunchFailed("Failed to set PYTHONHOME")
+        }
+        print("✅ [iOSBackend.init] PYTHONHOME set to: \(pythonFramework)")
+
+        config.module_search_paths_set = 1
+
+        func appendModuleSearchPath(_ path: String) throws {
+            var appendStatus: PyStatus?
+            path.withCString { cString in
+                guard let wideString = Py_DecodeLocale(cString, nil) else {
+                    return
                 }
+                defer { PyMem_RawFree(wideString) }
+                appendStatus = PyWideStringList_Append(&config.module_search_paths, wideString)
+            }
+            guard let appendStatus else {
+                throw CodeExecutionError.processLaunchFailed("Python initialization failed - stdlib paths may be incorrect")
+            }
+            guard PyStatus_Exception(appendStatus) == 0 else {
+                throw CodeExecutionError.processLaunchFailed("Python initialization failed - stdlib paths may be incorrect")
             }
         }
-        
-        // Initialize Python with the configuration
-        let status = Py_InitializeFromConfig(&config)
-        if PyStatus_Exception(status) != 0 {
-            print("❌ [iOSBackend.init] Py_InitializeFromConfig failed")
-            logger.error("Python initialization failed with PyConfig")
-            return
-        }
-        
-        let isInitialized = Py_IsInitialized()
-        print("🔍 [iOSBackend.init] Py_IsInitialized() = \(isInitialized)")
-        
-        isPythonInitialized = isInitialized != 0
 
-        if isPythonInitialized {
-            print("✅ [iOSBackend.init] Python runtime initialized successfully")
-            print("🔍 [iOSBackend.init] Configuring Python environment...")
-            configurePythonEnvironment(pythonHome: pythonHome)
-            print("✅ [iOSBackend.init] Python environment configured")
-        } else {
-            print("❌ [iOSBackend.init] FAILED: Python not initialized after Py_InitializeFromConfig()")
-            logger.error("Python runtime failed to initialize")
+        try appendModuleSearchPath(pythonStdlib)
+        if hasLibDynload {
+            try appendModuleSearchPath(pythonLibDynload)
         }
+        try appendModuleSearchPath(pythonSitePackages)
+
+        print("✅ [iOSBackend.init] Module search paths configured (\(config.module_search_paths.length) paths)")
+
+        let initStatus = Py_InitializeFromConfig(&config)
+        guard PyStatus_Exception(initStatus) == 0 else {
+            throw CodeExecutionError.processLaunchFailed("Py_InitializeFromConfig failed")
+        }
+
+        let isInitialized = Py_IsInitialized()
+        print("✅ [iOSBackend.init] Py_InitializeFromConfig succeeded")
+        print("🔍 [iOSBackend.init] Py_IsInitialized() = \(isInitialized)")
+
+        guard isInitialized != 0 else {
+            throw CodeExecutionError.processLaunchFailed("Python initialization failed - stdlib paths may be incorrect")
+        }
+
+        isPythonInitialized = true
+
+        print("✅ [iOSBackend.init] Python runtime fully initialized")
+        print("🔍 [iOSBackend.init] Configuring Python environment...")
+        configurePythonEnvironment(pythonHome: URL(fileURLWithPath: pythonFramework))
+        print("✅ [iOSBackend.init] Python environment configured")
     }
 
     nonisolated private func configurePythonEnvironment(pythonHome: URL?) {
@@ -255,7 +291,9 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         if let pythonHome {
             let stdlibPath = pythonHome.appendingPathComponent("lib/python3.14")
             let sitePackagesPath = stdlibPath.appendingPathComponent("site-packages")
+            let dynloadPath = stdlibPath.appendingPathComponent("lib-dynload")
             _ = addSysPathIfNeeded(stdlibPath.path)
+            _ = addSysPathIfNeeded(dynloadPath.path)
             _ = addSysPathIfNeeded(sitePackagesPath.path)
         }
 
@@ -267,28 +305,6 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         if let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
             _ = addSysPathIfNeeded(documents.path)
         }
-    }
-
-    nonisolated private func resolvePythonHome() -> URL? {
-        let fileManager = FileManager.default
-        let candidates: [URL] = [
-            Bundle.main.resourceURL?.appendingPathComponent("python"),
-            Bundle.main.resourceURL?.appendingPathComponent("Python"),
-            Bundle.main.resourceURL?.appendingPathComponent("Python.framework/Resources"),
-            Bundle.main.privateFrameworksURL?.appendingPathComponent("Python.framework/Resources"),
-            Bundle.main.bundleURL.appendingPathComponent("Frameworks/Python.framework/Resources"),
-            Bundle.main.bundleURL.appendingPathComponent("Frameworks"),
-            Bundle.main.privateFrameworksURL
-        ].compactMap { $0 }
-
-        for candidate in candidates {
-            let stdlib = candidate.appendingPathComponent("lib/python3.14")
-            if fileManager.fileExists(atPath: stdlib.path) {
-                return candidate
-            }
-        }
-
-        return nil
     }
 
     nonisolated private func pythonFrameworkPath() -> String? {
