@@ -8,8 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		A3C9CD872F0190D7005AC351 /* Textual in Frameworks */ = {isa = PBXBuildFile; productRef = A3C9CD862F0190D7005AC351 /* Textual */; };
-		A3D0D0F52F144D3E0081C74D /* Python.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A3D0D0F42F144D3E0081C74D /* Python.xcframework */; };
-		A3D0D0F62F144D3E0081C74D /* Python.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A3D0D0F42F144D3E0081C74D /* Python.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		A3D0D0F52F144D3E0081C74D /* Python.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A3D0D0F42F144D3E0081C74D /* Python.xcframework */; platformFilters = (ios, ); };
+		A3D0D0F62F144D3E0081C74D /* Python.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A3D0D0F42F144D3E0081C74D /* Python.xcframework */; platformFilters = (ios, ); settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A3F5589C2EFEEBAC00AC1AFE /* ComplexModule in Frameworks */ = {isa = PBXBuildFile; productRef = A3F5589B2EFEEBAC00AC1AFE /* ComplexModule */; };
 		A3F5589E2EFEEBAC00AC1AFE /* Numerics in Frameworks */ = {isa = PBXBuildFile; productRef = A3F5589D2EFEEBAC00AC1AFE /* Numerics */; };
 		A3F558A02EFEEBAC00AC1AFE /* RealModule in Frameworks */ = {isa = PBXBuildFile; productRef = A3F5589F2EFEEBAC00AC1AFE /* RealModule */; };

@@ -12,7 +12,7 @@ import Foundation
 
 /// Protocol defining the XPC interface for code execution
 /// The helper implements this, and the main app calls it via XPC
-@objc public protocol CodeExecutionXPCProtocol {
+@objc(CodeExecutionXPCProtocol) public protocol CodeExecutionXPCProtocol {
 
     /// Execute code in the specified language
     /// - Parameters:

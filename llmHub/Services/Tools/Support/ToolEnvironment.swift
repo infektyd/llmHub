@@ -238,18 +238,36 @@ struct ToolEnvironment: Sendable {
 extension ToolEnvironment {
     /// Detect if Python.xcframework is available in the app bundle.
     fileprivate nonisolated static func detectPythonFramework() -> Bool {
+        print("\n🔍 [ToolEnvironment] ========== PYTHON DETECTION ==========")
+        
         guard let frameworksPath = Bundle.main.privateFrameworksPath else {
+            print("❌ [ToolEnvironment] Bundle.main.privateFrameworksPath is nil")
+            print("🔍 [ToolEnvironment] ========================================\n")
             return false
         }
-
+        print("✅ [ToolEnvironment] Frameworks path: \(frameworksPath)")
+        
         let pythonFrameworkPath = (frameworksPath as NSString)
             .appendingPathComponent("Python.framework")
-
+        print("🔍 [ToolEnvironment] Checking for Python.framework at: \(pythonFrameworkPath)")
+        
         let fileManager = FileManager.default
         var isDirectory: ObjCBool = false
-
+        
         let exists = fileManager.fileExists(atPath: pythonFrameworkPath, isDirectory: &isDirectory)
-        return exists && isDirectory.boolValue
+        print("🔍 [ToolEnvironment] fileExists: \(exists)")
+        print("🔍 [ToolEnvironment] isDirectory: \(isDirectory.boolValue)")
+        
+        let result = exists && isDirectory.boolValue
+        
+        if result {
+            print("✅ [ToolEnvironment] Python.framework DETECTED")
+        } else {
+            print("❌ [ToolEnvironment] Python.framework NOT FOUND")
+        }
+        
+        print("🔍 [ToolEnvironment] ========================================\n")
+        return result
     }
 }
 #endif

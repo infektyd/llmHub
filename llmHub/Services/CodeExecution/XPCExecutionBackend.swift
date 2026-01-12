@@ -48,16 +48,19 @@
                 return existing
             }
 
+            print("🔍 [XPCExecutionBackend] Creating NSXPCConnection(serviceName: \(kCodeExecutionXPCServiceName))")
             let newConnection = NSXPCConnection(serviceName: kCodeExecutionXPCServiceName)
             newConnection.remoteObjectInterface = NSXPCInterface(
                 with: CodeExecutionXPCProtocol.self)
 
             newConnection.invalidationHandler = { [weak self] in
+                print("❌ [XPCExecutionBackend] XPC connection invalidated")
                 self?.logger.warning("XPC connection invalidated")
                 self?.resetConnection(shouldInvalidate: false, reason: "invalidation handler")
             }
 
             newConnection.interruptionHandler = { [weak self] in
+                print("❌ [XPCExecutionBackend] XPC connection interrupted")
                 self?.logger.warning("XPC connection interrupted")
                 self?.resetConnection(shouldInvalidate: true, reason: "interruption handler")
             }
@@ -65,6 +68,7 @@
             newConnection.resume()
             _connection = newConnection
 
+            print("✅ [XPCExecutionBackend] XPC connection resumed")
             logger.info("XPC connection established to \(kCodeExecutionXPCServiceName)")
 
             return newConnection
@@ -74,6 +78,7 @@
         private func remoteProxy() throws -> CodeExecutionXPCProtocol {
             guard
                 let proxy = connection.remoteObjectProxyWithErrorHandler({ [weak self] error in
+                    print("❌ [XPCExecutionBackend] remoteObjectProxy error: \(error.localizedDescription)")
                     self?.logger.error("XPC remote object error: \(error.localizedDescription)")
                     self?.resetConnection(shouldInvalidate: true, reason: "remote object error")
                 }) as? CodeExecutionXPCProtocol
@@ -96,6 +101,7 @@
                         }
                     }
                 } catch {
+                    print("❌ [XPCExecutionBackend] Availability check failed: \(error.localizedDescription)")
                     logger.error("XPC availability check failed: \(error.localizedDescription)")
                     return false
                 }
