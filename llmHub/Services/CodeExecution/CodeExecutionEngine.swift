@@ -117,7 +117,7 @@ actor CodeExecutionEngine {
         let interpreter = await findInterpreter(for: request.language)
         print("🔍 [Engine] Interpreter check:")
         print("  ├─ isAvailable: \(interpreter.isAvailable)")
-        print("  ├─ path: \(interpreter.path ?? 
+        print("  ├─ path: \(interpreter.path ?? "nil")")
         print("  └─ version: \(interpreter.version ?? "nil")")
         
         guard interpreter.isAvailable else {
