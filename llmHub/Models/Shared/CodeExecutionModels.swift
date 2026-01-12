@@ -220,7 +220,7 @@ struct InterpreterInfo: Sendable {
     /// Creates an `InterpreterInfo` instance representing an unavailable interpreter.
     /// - Parameter language: The language that is unavailable.
     /// - Returns: An `InterpreterInfo` instance.
-    static func unavailable(_ language: SupportedLanguage) -> InterpreterInfo {
+    nonisolated static func unavailable(_ language: SupportedLanguage) -> InterpreterInfo {
         InterpreterInfo(language: language, path: "", version: nil, isAvailable: false)
     }
 }

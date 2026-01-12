@@ -16,12 +16,11 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
     private let logger = Logger(subsystem: "com.llmhub", category: "iOSPythonExecutionBackend")
     private let initQueue = DispatchQueue(label: "com.llmhub.python.init")
     private let executionQueue = DispatchQueue(label: "com.llmhub.python.execute")
-    private var isPythonInitialized = false
-    private var pythonHomeWString: UnsafeMutablePointer<wchar_t>?
+    nonisolated(unsafe) private var isPythonInitialized = false
 
     // MARK: - ExecutionBackend
 
-    var isAvailable: Bool {
+    nonisolated var isAvailable: Bool {
         get async {
             print("\n🔍 [iOSBackend] ========== isAvailable CHECK ==========")
             
@@ -63,7 +62,7 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         }
     }
 
-    func execute(
+    nonisolated func execute(
         code: String,
         language: SupportedLanguage,
         timeout: Int,
@@ -104,7 +103,7 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         )
     }
 
-    func checkInterpreter(for language: SupportedLanguage) async -> InterpreterInfo {
+    nonisolated func checkInterpreter(for language: SupportedLanguage) async -> InterpreterInfo {
         guard language == .python else {
             return InterpreterInfo.unavailable(language)
         }
@@ -139,7 +138,7 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         }
     }
 
-    func checkAllInterpreters() async -> [InterpreterInfo] {
+    nonisolated func checkAllInterpreters() async -> [InterpreterInfo] {
         var results: [InterpreterInfo] = []
         for language in SupportedLanguage.allCases {
             let info = await checkInterpreter(for: language)
@@ -150,7 +149,7 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
 
     // MARK: - Initialization
 
-    private func ensurePythonInitialized() {
+    nonisolated private func ensurePythonInitialized() {
         initQueue.sync {
             print("\n🔍 [iOSBackend.init] ========== PYTHON INITIALIZATION ==========")
             
@@ -175,16 +174,13 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
             let pythonHome = resolvePythonHome()
             if let pythonHome {
                 print("✅ [iOSBackend.init] Python home resolved: \(pythonHome.path)")
-                print("🔍 [iOSBackend.init] Setting Python home...")
-                setPythonHome(pythonHome)
-                print("✅ [iOSBackend.init] Python home set")
             } else {
                 print("⚠️ [iOSBackend.init] Could not resolve Python home")
             }
 
-            print("🔍 [iOSBackend.init] Calling Py_Initialize()...")
-            Py_Initialize()
-            print("✅ [iOSBackend.init] Py_Initialize() returned")
+            print("🔍 [iOSBackend.init] Initializing Python with PyConfig...")
+            initializePythonWithConfig(pythonHome: pythonHome)
+            print("✅ [iOSBackend.init] Python initialization complete")
             
             let isInitialized = Py_IsInitialized()
             print("🔍 [iOSBackend.init] Py_IsInitialized() = \(isInitialized)")
@@ -205,18 +201,52 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         }
     }
 
-    private func setPythonHome(_ url: URL) {
-        guard pythonHomeWString == nil else { return }
-        let path = url.path
-        path.withCString { cString in
-            pythonHomeWString = Py_DecodeLocale(cString, nil)
+    nonisolated private func initializePythonWithConfig(pythonHome: URL?) {
+        var config = PyConfig()
+        PyConfig_InitPythonConfig(&config)
+        defer { PyConfig_Clear(&config) }
+        
+        // Set Python home if available
+        if let pythonHome {
+            let pythonHomePath = pythonHome.path
+            pythonHomePath.withCString { cString in
+                if let wideString = Py_DecodeLocale(cString, nil) {
+                    var homeField = config.home
+                    let status = PyConfig_SetString(&config, &homeField, wideString)
+                    PyMem_RawFree(wideString)
+                    
+                    if PyStatus_Exception(status) != 0 {
+                        print("⚠️ [iOSBackend.init] Failed to set Python home in config")
+                    }
+                }
+            }
         }
-        if let pythonHomeWString {
-            Py_SetPythonHome(pythonHomeWString)
+        
+        // Initialize Python with the configuration
+        let status = Py_InitializeFromConfig(&config)
+        if PyStatus_Exception(status) != 0 {
+            print("❌ [iOSBackend.init] Py_InitializeFromConfig failed")
+            logger.error("Python initialization failed with PyConfig")
+            return
+        }
+        
+        let isInitialized = Py_IsInitialized()
+        print("🔍 [iOSBackend.init] Py_IsInitialized() = \(isInitialized)")
+        
+        isPythonInitialized = isInitialized != 0
+
+        if isPythonInitialized {
+            print("✅ [iOSBackend.init] Python runtime initialized successfully")
+            print("🔍 [iOSBackend.init] Configuring Python environment...")
+            configurePythonEnvironment(pythonHome: pythonHome)
+            print("✅ [iOSBackend.init] Python environment configured")
+        } else {
+            print("❌ [iOSBackend.init] FAILED: Python not initialized after Py_InitializeFromConfig()")
+            logger.error("Python runtime failed to initialize")
         }
     }
 
-    private func configurePythonEnvironment(pythonHome: URL?) {
+    nonisolated private func configurePythonEnvironment(pythonHome: URL?) {
         let gstate = PyGILState_Ensure()
         defer { PyGILState_Release(gstate) }
 
@@ -239,7 +269,7 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         }
     }
 
-    private func resolvePythonHome() -> URL? {
+    nonisolated private func resolvePythonHome() -> URL? {
         let fileManager = FileManager.default
         let candidates: [URL] = [
             Bundle.main.resourceURL?.appendingPathComponent("python"),
@@ -261,7 +291,7 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         return nil
     }
 
-    private func pythonFrameworkPath() -> String? {
+    nonisolated private func pythonFrameworkPath() -> String? {
         let fileManager = FileManager.default
         if let frameworksURL = Bundle.main.privateFrameworksURL {
             let path = frameworksURL.appendingPathComponent("Python.framework")
@@ -278,21 +308,24 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         return nil
     }
 
-    private func isPythonFrameworkAvailable() -> Bool {
+    nonisolated private func isPythonFrameworkAvailable() -> Bool {
         pythonFrameworkPath() != nil
     }
 
-    private func readPythonVersion() -> String? {
+    nonisolated private func readPythonVersion() -> String? {
         let gstate = PyGILState_Ensure()
         defer { PyGILState_Release(gstate) }
 
-        let versionCString = Py_GetVersion()
+        guard let versionCString = Py_GetVersion() else {
+            PyErr_Clear()
+            return nil
+        }
         return String(cString: versionCString)
     }
 
     /// Build security preamble based on CodeSecurityMode.
     /// This is passed via workingDirectory presence/absence as a signal.
-    private func buildSecurityPreamble(workingDirectory: URL?) -> String {
+    nonisolated private func buildSecurityPreamble(workingDirectory: URL?) -> String {
         guard let workDir = workingDirectory else {
             return """
             import builtins
@@ -362,7 +395,7 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
 
     // MARK: - Execution
 
-    private func executePythonCode(
+    nonisolated private func executePythonCode(
         _ code: String,
         workingDirectory: URL?
     ) throws -> (stdout: String, stderr: String, exitCode: Int32) {
@@ -437,7 +470,7 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         let previousWorkingDirectory = try setWorkingDirectory(workingDirectory)
         defer {
             if let previousWorkingDirectory {
-                try? setWorkingDirectory(URL(fileURLWithPath: previousWorkingDirectory))
+                _ = try? setWorkingDirectory(URL(fileURLWithPath: previousWorkingDirectory))
             }
         }
 
@@ -474,7 +507,7 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         return (stdout: stdout, stderr: stderr, exitCode: exitCode)
     }
 
-    private func setWorkingDirectory(_ workingDirectory: URL?) throws -> String? {
+    nonisolated private func setWorkingDirectory(_ workingDirectory: URL?) throws -> String? {
         guard let workingDirectory else { return nil }
 
         guard let osModule = PyImport_ImportModule("os") else {
@@ -483,18 +516,17 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         }
         defer { Py_XDECREF(osModule) }
 
-        let currentDirObject = PyObject_CallMethod(osModule, "getcwd", "")
+        let currentDirObject = callNoArgMethod(on: osModule, name: "getcwd")
         let currentDir = pythonString(from: currentDirObject)
         Py_XDECREF(currentDirObject)
 
-        let didChange: Int32 = workingDirectory.path.withCString { cString in
-            let result = PyObject_CallMethod(osModule, "chdir", "s", cString)
-            if let result {
-                Py_XDECREF(result)
-                return 0
+        let didChange: Int32 = {
+            guard let result = callOneStringArgMethod(on: osModule, name: "chdir", arg: workingDirectory.path) else {
+                return 1
             }
-            return 1
-        }
+            Py_XDECREF(result)
+            return 0
+        }()
         if didChange != 0 {
             PyErr_Clear()
             throw CodeExecutionError.processLaunchFailed("Failed to change working directory.")
@@ -503,9 +535,9 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         return currentDir.isEmpty ? nil : currentDir
     }
 
-    private func captureString(from object: UnsafeMutablePointer<PyObject>?) -> String {
+    nonisolated private func captureString(from object: UnsafeMutablePointer<PyObject>?) -> String {
         guard let object else { return "" }
-        guard let value = PyObject_CallMethod(object, "getvalue", "") else {
+        guard let value = callNoArgMethod(on: object, name: "getvalue") else {
             PyErr_Clear()
             return ""
         }
@@ -513,7 +545,7 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         return pythonString(from: value)
     }
 
-    private func pythonString(from object: UnsafeMutablePointer<PyObject>?) -> String {
+    nonisolated private func pythonString(from object: UnsafeMutablePointer<PyObject>?) -> String {
         guard let object, let cString = PyUnicode_AsUTF8(object) else {
             PyErr_Clear()
             return ""
@@ -522,7 +554,7 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
     }
 
     @discardableResult
-    private func addSysPathIfNeeded(_ path: String) -> Bool {
+    nonisolated private func addSysPathIfNeeded(_ path: String) -> Bool {
         guard let sysModule = PyImport_ImportModule("sys") else {
             PyErr_Clear()
             return false
@@ -549,7 +581,7 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         return false
     }
 
-    private func removeSysPath(_ path: String) {
+    nonisolated private func removeSysPath(_ path: String) {
         guard let sysModule = PyImport_ImportModule("sys") else {
             PyErr_Clear()
             return
@@ -578,7 +610,7 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
 
     // MARK: - Helpers
 
-    private func runOnExecutionQueue<T>(_ work: @escaping () throws -> T) async throws -> T {
+    nonisolated private func runOnExecutionQueue<T>(_ work: @escaping @Sendable () throws -> T) async throws -> T {
         try await withCheckedThrowingContinuation { continuation in
             executionQueue.async {
                 do {
@@ -590,7 +622,7 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         }
     }
 
-    private func withTimeout<T: Sendable>(
+    nonisolated private func withTimeout<T: Sendable>(
         seconds: Int,
         operation: @Sendable @escaping () async throws -> T
     ) async throws -> T {
@@ -614,8 +646,54 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         }
     }
 
-    private func clampTimeout(_ timeout: Int) -> Int {
+    nonisolated private func clampTimeout(_ timeout: Int) -> Int {
         min(max(timeout, 5), 30)
+    }
+
+    nonisolated private func callNoArgMethod(
+        on object: UnsafeMutablePointer<PyObject>?,
+        name: String
+    ) -> UnsafeMutablePointer<PyObject>? {
+        guard let object else { return nil }
+        guard let method = PyObject_GetAttrString(object, name) else {
+            PyErr_Clear()
+            return nil
+        }
+        defer { Py_XDECREF(method) }
+        return PyObject_CallObject(method, nil)
+    }
+
+    nonisolated private func callOneStringArgMethod(
+        on object: UnsafeMutablePointer<PyObject>?,
+        name: String,
+        arg: String
+    ) -> UnsafeMutablePointer<PyObject>? {
+        guard let object else { return nil }
+        guard let method = PyObject_GetAttrString(object, name) else {
+            PyErr_Clear()
+            return nil
+        }
+        defer { Py_XDECREF(method) }
+
+        guard let args = PyTuple_New(1) else {
+            PyErr_Clear()
+            return nil
+        }
+        defer { Py_XDECREF(args) }
+
+        guard let pyArg = arg.withCString({ PyUnicode_FromString($0) }) else {
+            PyErr_Clear()
+            return nil
+        }
+
+        // PyTuple_SetItem steals a reference to pyArg on success.
+        if PyTuple_SetItem(args, 0, pyArg) != 0 {
+            Py_XDECREF(pyArg)
+            PyErr_Clear()
+            return nil
+        }
+
+        return PyObject_CallObject(method, args)
     }
 }
 
