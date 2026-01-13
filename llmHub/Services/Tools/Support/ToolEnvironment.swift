@@ -99,12 +99,7 @@ struct ToolEnvironment: Sendable {
             let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
                 .first
 
-            // iOS local code execution is available when the embedded Python framework is present.
-            #if canImport(Python)
-                let hasCodeExecutionBackend = detectPythonFramework()
-            #else
-                let hasCodeExecutionBackend = false
-            #endif
+            let hasCodeExecutionBackend = true
 
             return ToolEnvironment(
                 platform: platform,
@@ -230,7 +225,7 @@ struct ToolEnvironment: Sendable {
         fileprivate nonisolated static func detectCodeExecutionBackend(timeout: TimeInterval = 1.0)
             -> Bool {
             #if os(iOS)
-            return detectPythonFramework()
+            return true
             #else
             return frameworkLinked("Python")
             #endif
