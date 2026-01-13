@@ -24,10 +24,41 @@ struct llmHubApp: App {
     /// Settings manager for app-wide configuration
     @State private var settingsManager = SettingsManager()
 
+    private let modelContainer: ModelContainer
+
     // MARK: - Body
 
     init() {
         Self.ensureDataDirectoriesExist()
+
+        print("SwiftData: initializing ModelContainer (CloudKit disabled)")
+
+        let schema = Schema([
+            ChatSessionEntity.self,
+            ChatMessageEntity.self,
+            ChatFolderEntity.self,
+            ChatTagEntity.self,
+            ProjectEntity.self,
+            ArtifactEntity.self,
+            MemoryEntity.self
+        ])
+
+        do {
+            let configuration = ModelConfiguration(
+                schema: schema,
+                cloudKitDatabase: .none
+            )
+            modelContainer = try ModelContainer(for: schema, configurations: [configuration])
+            print("SwiftData: ModelContainer initialized successfully")
+        } catch {
+            print("Unresolved error loading container", error)
+            let fallbackConfiguration = ModelConfiguration(
+                schema: schema,
+                isStoredInMemoryOnly: true
+            )
+            modelContainer = try! ModelContainer(for: schema, configurations: [fallbackConfiguration])
+            print("SwiftData: using in-memory fallback container")
+        }
     }
 
     var body: some Scene {
@@ -55,15 +86,7 @@ struct llmHubApp: App {
                     await modelRegistry.fetchAllModels()
                 }
         }
-        .modelContainer(for: [
-            ChatSessionEntity.self,
-            ChatMessageEntity.self,
-            ChatFolderEntity.self,
-            ChatTagEntity.self,
-            ProjectEntity.self,
-            ArtifactEntity.self,
-            MemoryEntity.self
-        ])
+        .modelContainer(modelContainer)
         #if os(macOS)
             .commands {
                 // Add Settings menu command
@@ -87,6 +110,7 @@ struct llmHubApp: App {
                     .environment(\.settingsManager, settingsManager)
                     .applyUIAppearance(from: settingsManager.settings)
             }
+            .modelContainer(modelContainer)
         #endif
     }
 
