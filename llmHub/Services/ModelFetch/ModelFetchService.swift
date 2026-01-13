@@ -12,7 +12,6 @@ import OSLog
 ///
 /// Handles both dynamic model fetching (OpenAI, Google, Mistral, OpenRouter)
 /// and curated static lists (Anthropic, xAI) for providers without model endpoints.
-@MainActor
 final class ModelFetchService {
 
     private let keychainStore = KeychainStore()
