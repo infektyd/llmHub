@@ -152,6 +152,21 @@ actor CodeExecutionEngine {
 
             logger.info("Execution completed: exit=\(result.exitCode), time=\(result.executionTimeMs)ms")
 
+            let enrichedResult: CodeExecutionResult = {
+                guard isSandboxMode, let workingDirectory else { return result }
+                return CodeExecutionResult(
+                    id: result.id,
+                    language: result.language,
+                    code: result.code,
+                    stdout: result.stdout,
+                    stderr: result.stderr,
+                    exitCode: result.exitCode,
+                    executionTimeMs: result.executionTimeMs,
+                    timestamp: result.timestamp,
+                    sandboxPath: workingDirectory.path
+                )
+            }()
+
             // Cleanup sandbox after delay
             if isSandboxMode {
                 Task {
@@ -161,7 +176,7 @@ actor CodeExecutionEngine {
             }
             
             print("🔍 [Engine] ========== ENGINE EXECUTE COMPLETED ==========\n")
-            return result
+            return enrichedResult
 
         } catch {
             print("❌ [Engine] Caught error: \(error)")

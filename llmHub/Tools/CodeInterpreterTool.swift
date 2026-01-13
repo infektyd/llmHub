@@ -205,6 +205,14 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
             // Notify completion
             onExecutionComplete?(result)
 
+            let workspaceID = CloudWorkspaceManager.shared.defaultWorkspaceID()
+            Task.detached(priority: .utility) {
+                try? await CloudWorkspaceManager.shared.saveExecutionOutput(
+                    result: result,
+                    toWorkspace: workspaceID
+                )
+            }
+
             logger.info(
                 "Execution completed: exit=\(result.exitCode), time=\(result.executionTimeMs)ms")
             
@@ -257,6 +265,14 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
         )
 
         onExecutionComplete?(result)
+
+        let workspaceID = CloudWorkspaceManager.shared.defaultWorkspaceID()
+        Task.detached(priority: .utility) {
+            try? await CloudWorkspaceManager.shared.saveExecutionOutput(
+                result: result,
+                toWorkspace: workspaceID
+            )
+        }
 
         return result
     }
