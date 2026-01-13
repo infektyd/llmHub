@@ -71,40 +71,23 @@ final class ModelRegistry: ObservableObject {
         logger.info("Starting model fetch for all providers")
         let providers = KeychainStore.ProviderKey.allCases
 
-        // Fetch models for each provider
-        await withTaskGroup(of: (String, Result<[LLMModel], Error>).self) { group in
-            for provider in providers {
-                group.addTask {
-                    do {
-                        let models = try await self.fetchModelsForProvider(
-                            provider, forceRefresh: forceRefresh)
-                        return (provider.rawValue, .success(models))
-                    } catch {
-                        return (provider.rawValue, .failure(error))
-                    }
-                }
-            }
+        let cacheSnapshot = modelCache
+        let backgroundResult = await ModelRegistryBackgroundFetcher.fetchAllModels(
+            providers: providers,
+            forceRefresh: forceRefresh,
+            cacheExpiration: cacheExpiration,
+            cacheSnapshot: cacheSnapshot
+        )
 
-            // Collect results
-            for await (providerID, result) in group {
-                switch result {
-                case .success(let models):
-                    modelsByProvider[providerID] = models
-                    modelCache[providerID] = (models, Date())
-                    logger.info("Successfully fetched \(models.count) models for \(providerID)")
-
-                case .failure(let error):
-                    fetchErrors[providerID] = error
-                    logger.error(
-                        "Failed to fetch models for \(providerID): \(error.localizedDescription)")
-
-                    // Use cached models if available
-                    if let cached = modelCache[providerID] {
-                        modelsByProvider[providerID] = cached.models
-                        logger.info("Using cached models for \(providerID)")
-                    }
-                }
-            }
+        modelsByProvider = backgroundResult.modelsByProvider
+        modelCache.merge(backgroundResult.updatedCache) { _, new in new }
+        fetchErrors = backgroundResult.errors.reduce(into: [:]) { partialResult, pair in
+            let (providerID, message) = pair
+            partialResult[providerID] = NSError(
+                domain: "com.llmhub.app",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: message]
+            )
         }
 
         lastFetchDate = Date()
@@ -445,6 +428,288 @@ final class ModelRegistry: ObservableObject {
             UserDefaults.standard.set(data, forKey: "ModelRegistryCache")
             logger.info("Saved model cache to UserDefaults")
         }
+    }
+}
+
+private enum ModelRegistryBackgroundFetcher {
+    struct BackgroundResult {
+        let modelsByProvider: [String: [LLMModel]]
+        let updatedCache: [String: (models: [LLMModel], fetchedAt: Date)]
+        let errors: [(providerID: String, message: String)]
+    }
+
+    static func fetchAllModels(
+        providers: [KeychainStore.ProviderKey],
+        forceRefresh: Bool,
+        cacheExpiration: TimeInterval,
+        cacheSnapshot: [String: (models: [LLMModel], fetchedAt: Date)]
+    ) async -> BackgroundResult {
+        let logger = Logger(subsystem: "com.llmhub.app", category: "ModelRegistry")
+
+        var modelsByProvider: [String: [LLMModel]] = [:]
+        var updatedCache: [String: (models: [LLMModel], fetchedAt: Date)] = [:]
+        var errors: [(providerID: String, message: String)] = []
+
+        await withTaskGroup(of: (String, [LLMModel], Bool, String?).self) { group in
+            for provider in providers {
+                group.addTask {
+                    let providerID = provider.rawValue
+                    let fetchService = await ModelFetchService()
+                    let keychainStore = await KeychainStore()
+                    do {
+                        let (models, didFetchFresh) = try await fetchModelsForProvider(
+                            provider: provider,
+                            providerID: providerID,
+                            forceRefresh: forceRefresh,
+                            cacheExpiration: cacheExpiration,
+                            cacheSnapshot: cacheSnapshot,
+                            keychainStore: keychainStore,
+                            fetchService: fetchService,
+                            logger: logger
+                        )
+                        return (providerID, models, didFetchFresh, nil)
+                    } catch {
+                        let cached = cacheSnapshot[providerID]?.models ?? []
+                        return (providerID, cached, false, error.localizedDescription)
+                    }
+                }
+            }
+
+            for await (providerID, models, didFetchFresh, errorMessage) in group {
+                modelsByProvider[providerID] = models
+                if didFetchFresh {
+                    updatedCache[providerID] = (models, Date())
+                }
+                if let errorMessage {
+                    errors.append((providerID: providerID, message: errorMessage))
+                }
+            }
+        }
+
+        return BackgroundResult(
+            modelsByProvider: modelsByProvider,
+            updatedCache: updatedCache,
+            errors: errors
+        )
+    }
+
+    private static func fetchModelsForProvider(
+        provider: KeychainStore.ProviderKey,
+        providerID: String,
+        forceRefresh: Bool,
+        cacheExpiration: TimeInterval,
+        cacheSnapshot: [String: (models: [LLMModel], fetchedAt: Date)],
+        keychainStore: KeychainStore,
+        fetchService: ModelFetchService,
+        logger: Logger
+    ) async throws -> ([LLMModel], Bool) {
+        let canonicalProviderID = ProviderID.canonicalID(from: providerID)
+
+        let hasAPIKey = (await keychainStore.apiKey(for: provider) != nil)
+        let cachedEntry = cacheSnapshot[providerID]
+
+        if !forceRefresh, let cached = cachedEntry {
+            let age = Date().timeIntervalSince(cached.fetchedAt)
+            if age < cacheExpiration {
+                let merged = overlayWithProvidersConfig(
+                    providerID: canonicalProviderID,
+                    fetchedModels: cached.models
+                )
+                return (merged, false)
+            }
+        }
+
+        let curatedDefaults = curatedModels(forCanonicalProviderID: canonicalProviderID)
+
+        if canonicalProviderID == "anthropic" || canonicalProviderID == "xai" {
+            if hasAPIKey {
+                do {
+                    let fetched = try await fetchService.fetchModels(for: provider)
+                    if !fetched.isEmpty {
+                        let merged = overlayWithProvidersConfig(
+                            providerID: canonicalProviderID,
+                            fetchedModels: fetched
+                        )
+                        return (merged, true)
+                    }
+                } catch {
+                    logger.info(
+                        "Official /models fetch failed for \(canonicalProviderID): \(error.localizedDescription)"
+                    )
+                }
+            }
+
+            do {
+                let modelsDevModels = try await ModelsDevService.shared.fetchModels(
+                    for: canonicalProviderID
+                )
+                if !modelsDevModels.isEmpty {
+                    let fetched = modelsDevModels.map { $0.toLLMModel() }
+                    let merged = overlayWithProvidersConfig(
+                        providerID: canonicalProviderID,
+                        fetchedModels: fetched
+                    )
+                    return (merged, true)
+                }
+            } catch {
+                logger.info(
+                    "models.dev fetch failed for \(canonicalProviderID): \(error.localizedDescription)"
+                )
+            }
+
+            if let cached = cachedEntry, !cached.models.isEmpty {
+                let merged = overlayWithProvidersConfig(
+                    providerID: canonicalProviderID,
+                    fetchedModels: cached.models
+                )
+                return (merged, false)
+            }
+
+            return (curatedDefaults, false)
+        }
+
+        do {
+            let modelsDevModels = try await ModelsDevService.shared.fetchModels(
+                for: canonicalProviderID
+            )
+            if !modelsDevModels.isEmpty {
+                let fetched = modelsDevModels.map { $0.toLLMModel() }
+                let merged = overlayWithProvidersConfig(
+                    providerID: canonicalProviderID,
+                    fetchedModels: fetched
+                )
+                return (merged, true)
+            }
+        } catch {
+            logger.info(
+                "models.dev fetch failed for \(canonicalProviderID): \(error.localizedDescription)"
+            )
+        }
+
+        if hasAPIKey {
+            do {
+                let fetched = try await fetchService.fetchModels(for: provider)
+                if !fetched.isEmpty {
+                    let merged = overlayWithProvidersConfig(
+                        providerID: canonicalProviderID,
+                        fetchedModels: fetched
+                    )
+                    return (merged, true)
+                }
+            } catch {
+                logger.info(
+                    "Provider API fetch failed for \(canonicalProviderID): \(error.localizedDescription)"
+                )
+            }
+        }
+
+        if let cached = cachedEntry, !cached.models.isEmpty {
+            let merged = overlayWithProvidersConfig(
+                providerID: canonicalProviderID,
+                fetchedModels: cached.models
+            )
+            return (merged, false)
+        }
+
+        return (curatedDefaults, false)
+    }
+
+    private static func curatedModels(forCanonicalProviderID providerID: String) -> [LLMModel] {
+        let config = makeDefaultConfig()
+        switch providerID {
+        case "openai":
+            return config.openAI.models
+        case "anthropic":
+            return config.anthropic.models
+        case "google":
+            return config.googleAI.models
+        case "mistral":
+            return config.mistral.models
+        case "xai":
+            return config.xai.models
+        case "openrouter":
+            return config.openRouter.models
+        default:
+            return []
+        }
+    }
+
+    private static func overlayWithProvidersConfig(providerID: String, fetchedModels: [LLMModel])
+        -> [LLMModel] {
+        let canonicalProviderID = ProviderID.canonicalID(from: providerID)
+        let defaults = curatedModels(forCanonicalProviderID: canonicalProviderID)
+
+        guard !defaults.isEmpty else {
+            return fetchedModels
+        }
+
+        var mergedByID: [String: LLMModel] = Dictionary(
+            uniqueKeysWithValues: defaults.map { ($0.id, $0) })
+        var newIDs: [String] = []
+
+        for model in fetchedModels {
+            if let existing = mergedByID[model.id] {
+                let incomingName = model.displayName
+                let finalName: String
+                if shouldAdoptDisplayName(
+                    incomingName,
+                    forModelID: model.id,
+                    currentDisplayName: existing.displayName
+                ) {
+                    finalName = incomingName
+                } else {
+                    finalName = existing.displayName
+                }
+
+                mergedByID[model.id] = LLMModel(
+                    id: existing.id,
+                    name: finalName,
+                    maxOutputTokens: model.maxOutputTokens,
+                    contextWindow: model.contextWindow,
+                    supportsToolUse: model.supportsToolUse
+                )
+            } else {
+                let name = model.displayName.isEmpty ? model.id : model.displayName
+                mergedByID[model.id] = LLMModel(
+                    id: model.id,
+                    name: name,
+                    maxOutputTokens: model.maxOutputTokens,
+                    contextWindow: model.contextWindow,
+                    supportsToolUse: model.supportsToolUse
+                )
+                newIDs.append(model.id)
+            }
+        }
+
+        var ordered: [LLMModel] = []
+        ordered.reserveCapacity(mergedByID.count)
+
+        for model in defaults {
+            if let merged = mergedByID[model.id] {
+                ordered.append(merged)
+            }
+        }
+
+        for id in newIDs.sorted() {
+            if let merged = mergedByID[id] {
+                ordered.append(merged)
+            }
+        }
+
+        return ordered
+    }
+
+    private static func shouldAdoptDisplayName(
+        _ incoming: String,
+        forModelID id: String,
+        currentDisplayName: String
+    ) -> Bool {
+        let trimmed = incoming.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return false }
+        if ProviderID.lookupKey(from: trimmed) == ProviderID.lookupKey(from: id) {
+            return false
+        }
+        return trimmed != currentDisplayName
     }
 }
 
