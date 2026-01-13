@@ -8,8 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		A3C9CD872F0190D7005AC351 /* Textual in Frameworks */ = {isa = PBXBuildFile; productRef = A3C9CD862F0190D7005AC351 /* Textual */; };
-		A3D0D0F52F144D3E0081C74D /* Python.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A3D0D0F42F144D3E0081C74D /* Python.xcframework */; platformFilters = (ios, ); };
-		A3D0D0F62F144D3E0081C74D /* Python.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A3D0D0F42F144D3E0081C74D /* Python.xcframework */; platformFilters = (ios, ); settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A3F5589C2EFEEBAC00AC1AFE /* ComplexModule in Frameworks */ = {isa = PBXBuildFile; productRef = A3F5589B2EFEEBAC00AC1AFE /* ComplexModule */; };
 		A3F5589E2EFEEBAC00AC1AFE /* Numerics in Frameworks */ = {isa = PBXBuildFile; productRef = A3F5589D2EFEEBAC00AC1AFE /* Numerics */; };
 		A3F558A02EFEEBAC00AC1AFE /* RealModule in Frameworks */ = {isa = PBXBuildFile; productRef = A3F5589F2EFEEBAC00AC1AFE /* RealModule */; };
@@ -52,7 +50,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				A3D0D0F62F144D3E0081C74D /* Python.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -74,7 +71,7 @@
 		A3C71F262ED9389A0088DF32 /* llmHub.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = llmHub.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3C71F372ED9389B0088DF32 /* llmHubTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = llmHubTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3C71F412ED9389B0088DF32 /* llmHubUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = llmHubUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		A3D0D0F42F144D3E0081C74D /* Python.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = Python.xcframework; path = Frameworks/Python.xcframework; sourceTree = "<group>"; };
+		A3D0DD262F149D8C0081C74D /* Scriptsprepare_python_framework.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = Scriptsprepare_python_framework.sh; sourceTree = "<group>"; };
 		B3000010303030300001 /* CodeExecutionXPCProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeExecutionXPCProtocol.swift; sourceTree = "<group>"; };
 		B3000011303030300001 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		B3000012303030300001 /* CodeExecutionServiceDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeExecutionServiceDelegate.swift; sourceTree = "<group>"; };
@@ -163,7 +160,6 @@
 			files = (
 				A3F5589E2EFEEBAC00AC1AFE /* Numerics in Frameworks */,
 				A3F5589C2EFEEBAC00AC1AFE /* ComplexModule in Frameworks */,
-				A3D0D0F52F144D3E0081C74D /* Python.xcframework in Frameworks */,
 				A3C9CD872F0190D7005AC351 /* Textual in Frameworks */,
 				A3F558A02EFEEBAC00AC1AFE /* RealModule in Frameworks */,
 			);
@@ -202,6 +198,7 @@
 				A3C71FBF2EDB64DD0088DF32 /* Tests */,
 				A3C71FCB2EDB64F50088DF32 /* Docs */,
 				A3D0D0F32F144D3D0081C74D /* Frameworks */,
+				A3D0DD262F149D8C0081C74D /* Scriptsprepare_python_framework.sh */,
 			);
 			sourceTree = "<group>";
 		};
@@ -219,7 +216,6 @@
 		A3D0D0F32F144D3D0081C74D /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				A3D0D0F42F144D3E0081C74D /* Python.xcframework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -250,7 +246,6 @@
 				A3C71F242ED9389A0088DF32 /* Resources */,
 				B3000040303030300001 /* Embed XPC Services */,
 				A3D0D0F72F144D3E0081C74D /* Embed Frameworks */,
-				A3D0D0F82F144D3E0081C74D /* Copy Python Stdlib */,
 			);
 			buildRules = (
 			);
@@ -408,23 +403,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		A3D0D0F82F144D3E0081C74D /* Copy Python Stdlib */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"$(PROJECT_DIR)/Frameworks/Python.xcframework",
-			);
-			name = "Copy Python Stdlib";
-			outputPaths = (
-				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/PythonHome/lib/python3.14",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "set -e\n\n# Only run for iOS builds\nif [ \"$PLATFORM_NAME\" != \"iphoneos\" ] && [ \"$PLATFORM_NAME\" != \"iphonesimulator\" ]; then\n  exit 0\nfi\n\n# Select xcframework slice\nSLICE=\"ios-arm64\"\nif [ \"$PLATFORM_NAME\" = \"iphonesimulator\" ]; then\n  SLICE=\"ios-arm64_x86_64-simulator\"\nfi\n\nPYTHON_XCFRAMEWORK=\"$PROJECT_DIR/Frameworks/Python.xcframework\"\nSRC_STDLIB=\"$PYTHON_XCFRAMEWORK/$SLICE/lib/python3.14\"\n\nDEST_PYTHONHOME=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/PythonHome\"\nDEST_LIB=\"$DEST_PYTHONHOME/lib\"\nDEST_STDLIB=\"$DEST_LIB/python3.14\"\n\necho \"[Copy Python Stdlib] PLATFORM_NAME=$PLATFORM_NAME\"\necho \"[Copy Python Stdlib] SLICE=$SLICE\"\necho \"[Copy Python Stdlib] SRC_STDLIB=$SRC_STDLIB\"\necho \"[Copy Python Stdlib] DEST_STDLIB=$DEST_STDLIB\"\n\nif [ ! -d \"$SRC_STDLIB\" ]; then\n  echo \"[Copy Python Stdlib] ERROR: Source stdlib not found at $SRC_STDLIB\"\n  exit 1\nfi\n\nmkdir -p \"$DEST_LIB\"\nrm -rf \"$DEST_STDLIB\"\n/usr/bin/ditto \"$SRC_STDLIB\" \"$DEST_STDLIB\"\n\necho \"[Copy Python Stdlib] OK\"\n";
-			showEnvVarsInLog = 0;
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -506,7 +484,8 @@
 				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
 				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
 				ENABLE_RESOURCE_ACCESS_USB = NO;
-				ENABLE_USER_SELECTED_FILES = readonly;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				FRAMEWORK_SEARCH_PATHS = "$(PROJECT_DIR)/Frameworks";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = llmHub/Info.plist;
@@ -528,8 +507,6 @@
 				MACOSX_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
 				OTHER_LDFLAGS = "-ObjC";
-				"OTHER_SWIFT_FLAGS[sdk=iphonesimulator*]" = "$(inherited) -Xcc -fmodule-map-file=$(PROJECT_DIR)/Frameworks/Python.xcframework/ios-arm64_x86_64-simulator/Python.framework/Headers/module.modulemap";
-				"OTHER_SWIFT_FLAGS[sdk=iphoneos*]" = "$(inherited) -Xcc -fmodule-map-file=$(PROJECT_DIR)/Frameworks/Python.xcframework/ios-arm64/Python.framework/Headers/module.modulemap";
 				PRODUCT_BUNDLE_IDENTIFIER = Syntra.llmHub;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -576,7 +553,8 @@
 				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
 				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
 				ENABLE_RESOURCE_ACCESS_USB = NO;
-				ENABLE_USER_SELECTED_FILES = readonly;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				FRAMEWORK_SEARCH_PATHS = "$(PROJECT_DIR)/Frameworks";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = llmHub/Info.plist;
@@ -598,8 +576,6 @@
 				MACOSX_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
 				OTHER_LDFLAGS = "-ObjC";
-				"OTHER_SWIFT_FLAGS[sdk=iphonesimulator*]" = "$(inherited) -Xcc -fmodule-map-file=$(PROJECT_DIR)/Frameworks/Python.xcframework/ios-arm64_x86_64-simulator/Python.framework/Headers/module.modulemap";
-				"OTHER_SWIFT_FLAGS[sdk=iphoneos*]" = "$(inherited) -Xcc -fmodule-map-file=$(PROJECT_DIR)/Frameworks/Python.xcframework/ios-arm64/Python.framework/Headers/module.modulemap";
 				PRODUCT_BUNDLE_IDENTIFIER = Syntra.llmHub;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;

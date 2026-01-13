@@ -20,7 +20,12 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
         """
 
     nonisolated var parameters: ToolParametersSchema {
-        ToolParametersSchema(
+        #if os(iOS)
+        let supportedLanguages: [SupportedLanguage] = [.javascript]
+        #else
+        let supportedLanguages: [SupportedLanguage] = SupportedLanguage.allCases
+        #endif
+        return ToolParametersSchema(
             properties: [
                 "code": ToolProperty(
                     type: .string,
@@ -29,7 +34,7 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
                 "language": ToolProperty(
                     type: .string,
                     description: "The programming language of the code",
-                    enumValues: SupportedLanguage.allCases.map { $0.rawValue }
+                    enumValues: supportedLanguages.map { $0.rawValue }
                 )
             ],
             required: ["code", "language"]
@@ -148,6 +153,15 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
         print("🔍 [executeCode] Code length: \(code.count) chars")
         print("🔍 [executeCode] Security mode: \(securityMode)")
         print("🔍 [executeCode] Timeout: \(timeoutSeconds)s")
+
+        #if os(iOS)
+        if language != .javascript {
+            throw ToolError.executionFailed(
+                "Only JavaScript is supported for code execution on iOS. Python/Swift/TypeScript/Dart require macOS.",
+                retryable: false
+            )
+        }
+        #endif
         
         logger.info("Executing \(language.rawValue) code (\(code.count) chars)")
 
@@ -200,6 +214,9 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
         } catch let error as CodeExecutionError {
             print("❌ [executeCode] Caught CodeExecutionError: \(error.localizedDescription)")
             logger.error("Execution failed: \(error.localizedDescription)")
+            if case .timeout(let seconds) = error {
+                throw ToolError.timeout(after: TimeInterval(seconds))
+            }
             throw ToolError.executionFailed(error.localizedDescription, retryable: false)
         } catch {
             print("❌ [executeCode] Caught unexpected error: \(error)")

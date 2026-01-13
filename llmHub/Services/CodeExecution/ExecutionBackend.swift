@@ -58,14 +58,8 @@ enum ExecutionBackendFactory: Sendable {
         return backend
         #elseif os(iOS)
         print("🔍 [ExecutionBackendFactory] Platform detected: iOS")
-        #if canImport(Python)
-        print("🔍 [ExecutionBackendFactory] canImport(Python): true")
-        #else
-        print("🔍 [ExecutionBackendFactory] canImport(Python): false")
-        #endif
-        let backend = iOSPythonExecutionBackend()
-        print("🔍 [ExecutionBackendFactory] Default backend: iOSPythonExecutionBackend")
-        print("🔍 [ExecutionBackendFactory] Backend type: \(type(of: backend))")
+        let backend = iOSJavaScriptExecutionBackend()
+        print("🔍 [ExecutionBackendFactory] Default backend: iOSJavaScriptExecutionBackend")
         return backend
         #else
         print("🔍 [ExecutionBackendFactory] Platform detected: unknown")

@@ -16,7 +16,95 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
     private let logger = Logger(subsystem: "com.llmhub", category: "iOSPythonExecutionBackend")
     private let initQueue = DispatchQueue(label: "com.llmhub.python.init")
     private let executionQueue = DispatchQueue(label: "com.llmhub.python.execute")
+    private let timeoutQueue = DispatchQueue(label: "com.llmhub.python.timeout")
     nonisolated(unsafe) private var isPythonInitialized = false
+
+    private final class ExecutionCompletionState: @unchecked Sendable {
+        private let lock = NSLock()
+        nonisolated(unsafe) private var finished = false
+
+        nonisolated func tryFinish() -> Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            guard !finished else { return false }
+            finished = true
+            return true
+        }
+
+        nonisolated func isFinished() -> Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            return finished
+        }
+    }
+
+    private final class ExecutionContinuationBox<T: Sendable>: @unchecked Sendable {
+        private let lock = NSLock()
+        nonisolated(unsafe) private var continuation: CheckedContinuation<T, Error>?
+        nonisolated(unsafe) private var pendingError: Error?
+        nonisolated(unsafe) private var timer: DispatchSourceTimer?
+        nonisolated(unsafe) private var shouldCancelTimer = false
+
+        nonisolated func set(_ continuation: CheckedContinuation<T, Error>) {
+            lock.lock()
+            self.continuation = continuation
+            let error = pendingError
+            pendingError = nil
+            if error != nil {
+                self.continuation = nil
+            }
+            lock.unlock()
+
+            if let error {
+                continuation.resume(throwing: error)
+            }
+        }
+
+        nonisolated func setTimer(_ timer: DispatchSourceTimer) {
+            lock.lock()
+            self.timer = timer
+            let shouldCancel = shouldCancelTimer
+            shouldCancelTimer = false
+            lock.unlock()
+
+            if shouldCancel {
+                timer.cancel()
+            }
+        }
+
+        nonisolated func cancelTimer() {
+            lock.lock()
+            let timer = timer
+            self.timer = nil
+            if timer == nil {
+                shouldCancelTimer = true
+            }
+            lock.unlock()
+
+            timer?.cancel()
+        }
+
+        nonisolated func resume(throwing error: Error) {
+            lock.lock()
+            let continuation = continuation
+            self.continuation = nil
+            if continuation == nil {
+                pendingError = error
+            }
+            lock.unlock()
+
+            continuation?.resume(throwing: error)
+        }
+
+        nonisolated func resume(returning value: T) {
+            lock.lock()
+            let continuation = continuation
+            self.continuation = nil
+            lock.unlock()
+
+            continuation?.resume(returning: value)
+        }
+    }
 
     // MARK: - ExecutionBackend
 
@@ -79,14 +167,16 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         let startTime = Date()
         let timeoutSeconds = clampTimeout(timeout)
 
-        let output = try await withTimeout(seconds: timeoutSeconds) { [weak self] in
-            guard let self else {
-                throw CodeExecutionError.executionCancelled
-            }
-            return try await self.runOnExecutionQueue {
+        let output = try await withTaskCancellationHandler {
+            try await runOnExecutionQueueWithTimeout(seconds: timeoutSeconds) { [weak self] in
+                guard let self else {
+                    throw CodeExecutionError.executionCancelled
+                }
                 try self.ensurePythonInitialized()
                 return try self.executePythonCode(code, workingDirectory: workingDirectory)
             }
+        } onCancel: { [weak self] in
+            self?.requestPythonInterrupt()
         }
 
         let executionTimeMs = Int(Date().timeIntervalSince(startTime) * 1000)
@@ -282,11 +372,10 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         PyConfig_InitPythonConfig(&config)
         defer { PyConfig_Clear(&config) }
 
-        let setHomeStatus: PyStatus = pythonHome.withCString { cString in
-            var homePointer = config.home
-            let status = PyConfig_SetBytesString(&config, &homePointer, cString)
-            config.home = homePointer
-            return status
+        let setHomeStatus: PyStatus = withUnsafeMutablePointer(to: &config) { configPtr in
+            pythonHome.withCString { cString in
+                PyConfig_SetBytesString(configPtr, &configPtr.pointee.home, cString)
+            }
         }
         guard PyStatus_Exception(setHomeStatus) == 0 else {
             throw CodeExecutionError.processLaunchFailed("Failed to set PYTHONHOME")
@@ -499,17 +588,20 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         defer { Py_XDECREF(stringIOClass) }
 
         guard let stdoutIO = PyObject_CallObject(stringIOClass, nil),
-              let stderrIO = PyObject_CallObject(stringIOClass, nil) else {
+              let stderrIO = PyObject_CallObject(stringIOClass, nil),
+              let stdinIO = PyObject_CallObject(stringIOClass, nil) else {
             PyErr_Clear()
             throw CodeExecutionError.processLaunchFailed("Failed to create stdout/stderr buffers.")
         }
         defer {
             Py_XDECREF(stdoutIO)
             Py_XDECREF(stderrIO)
+            Py_XDECREF(stdinIO)
         }
 
         let originalStdout = PyObject_GetAttrString(sysModule, "stdout")
         let originalStderr = PyObject_GetAttrString(sysModule, "stderr")
+        let originalStdin = PyObject_GetAttrString(sysModule, "stdin")
         defer {
             if let originalStdout {
                 PyObject_SetAttrString(sysModule, "stdout", originalStdout)
@@ -519,10 +611,15 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
                 PyObject_SetAttrString(sysModule, "stderr", originalStderr)
                 Py_XDECREF(originalStderr)
             }
+            if let originalStdin {
+                PyObject_SetAttrString(sysModule, "stdin", originalStdin)
+                Py_XDECREF(originalStdin)
+            }
         }
 
         guard PyObject_SetAttrString(sysModule, "stdout", stdoutIO) == 0,
-              PyObject_SetAttrString(sysModule, "stderr", stderrIO) == 0 else {
+              PyObject_SetAttrString(sysModule, "stderr", stderrIO) == 0,
+              PyObject_SetAttrString(sysModule, "stdin", stdinIO) == 0 else {
             PyErr_Clear()
             throw CodeExecutionError.processLaunchFailed("Failed to redirect stdout/stderr.")
         }
@@ -697,32 +794,72 @@ final class iOSPythonExecutionBackend: ExecutionBackend, @unchecked Sendable {
         }
     }
 
-    nonisolated private func withTimeout<T: Sendable>(
+    nonisolated private func runOnExecutionQueueWithTimeout<T: Sendable>(
         seconds: Int,
-        operation: @Sendable @escaping () async throws -> T
+        _ work: @escaping @Sendable () throws -> T
     ) async throws -> T {
-        try await withThrowingTaskGroup(of: T.self) { group in
-            group.addTask {
-                try await operation()
-            }
+        let state = ExecutionCompletionState()
+        let box = ExecutionContinuationBox<T>()
 
-            group.addTask {
-                try await Task.sleep(nanoseconds: UInt64(seconds) * 1_000_000_000)
-                throw CodeExecutionError.timeout(seconds: seconds)
-            }
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                box.set(continuation)
 
-            guard let result = try await group.next() else {
-                group.cancelAll()
-                throw CodeExecutionError.processLaunchFailed("Execution failed without result.")
-            }
+                if state.isFinished() {
+                    return
+                }
 
-            group.cancelAll()
-            return result
+                if Task.isCancelled, state.tryFinish() {
+                    self.requestPythonInterrupt()
+                    box.resume(throwing: CodeExecutionError.executionCancelled)
+                    return
+                }
+
+                let timer = DispatchSource.makeTimerSource(queue: timeoutQueue)
+                timer.schedule(deadline: .now() + .seconds(seconds))
+                box.setTimer(timer)
+                timer.setEventHandler { [weak self] in
+                    guard state.tryFinish() else { return }
+                    box.cancelTimer()
+                    self?.requestPythonInterrupt()
+                    box.resume(throwing: CodeExecutionError.timeout(seconds: seconds))
+                }
+                timer.resume()
+
+                executionQueue.async {
+                    guard !state.isFinished() else {
+                        box.cancelTimer()
+                        return
+                    }
+
+                    do {
+                        let value = try work()
+                        guard state.tryFinish() else { return }
+                        box.cancelTimer()
+                        box.resume(returning: value)
+                    } catch {
+                        guard state.tryFinish() else { return }
+                        box.cancelTimer()
+                        box.resume(throwing: error)
+                    }
+                }
+            }
+        } onCancel: { [weak self] in
+            self?.requestPythonInterrupt()
+            if state.tryFinish() {
+                box.cancelTimer()
+                box.resume(throwing: CodeExecutionError.executionCancelled)
+            }
         }
     }
 
     nonisolated private func clampTimeout(_ timeout: Int) -> Int {
         min(max(timeout, 5), 30)
+    }
+
+    nonisolated private func requestPythonInterrupt() {
+        guard Py_IsInitialized() != 0 else { return }
+        PyErr_SetInterrupt()
     }
 
     nonisolated private func callNoArgMethod(

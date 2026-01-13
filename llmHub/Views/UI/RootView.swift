@@ -141,6 +141,7 @@ struct CanvasRootView: View {
                     handleArtifactComment(artifact: artifact, comment: comment)
                     selectedArtifactForDetail = nil
                 }
+                .environment(chatVM)
                 .frame(minWidth: 700, minHeight: 500)
             #else
                 NavigationStack {
@@ -158,6 +159,7 @@ struct CanvasRootView: View {
                         }
                     }
                 }
+                .environment(chatVM)
             #endif
         }
         .environment(\.openArtifactDetail) { artifact in
@@ -182,6 +184,7 @@ struct CanvasRootView: View {
         .environment(chatVM)  // Explicit environment injection for alert stability
         .sheet(isPresented: $chatVM.showAgentStepLimitConfigSheet) {
             agentStepLimitConfigSheet()
+                .environment(chatVM)
         }
         .onPreferenceChange(ComposerHeightPreferenceKey.self) { height in
             guard abs(composerHeight - height) > 0.5 else { return }
@@ -213,6 +216,7 @@ struct CanvasRootView: View {
                     }
                     .environmentObject(modelRegistry)
                 }
+                .environment(chatVM)
             }
             // iOS: Left sidebar as bottom sheet
             .sheet(isPresented: $leftSidebarVisible) {
@@ -238,6 +242,7 @@ struct CanvasRootView: View {
                         }
                     }
                 }
+                .environment(chatVM)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
             }
@@ -260,6 +265,7 @@ struct CanvasRootView: View {
                         }
                     }
                 }
+                .environment(chatVM)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
             }
