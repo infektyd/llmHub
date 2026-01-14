@@ -1049,7 +1049,7 @@ struct ModernSidebarLeft: View {
             onNewConversation: {}
         )
         .modelContainer(container.container)
-        .previewEnvironment()
+        .environment(WorkbenchViewModel())
         .frame(width: 320, height: 760)
         .padding()
     }
