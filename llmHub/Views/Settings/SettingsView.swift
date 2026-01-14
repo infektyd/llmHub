@@ -25,6 +25,7 @@ struct SettingsView: View {
     enum SettingsSection: String, CaseIterable, Identifiable, Hashable {
         case providers = "Providers"
         case tools = "Tools"
+        case memory = "Memory"
         case appearance = "Appearance"
         case advanced = "Advanced"
         case about = "About"
@@ -38,6 +39,7 @@ struct SettingsView: View {
             switch self {
             case .providers: return "key.fill"
             case .tools: return "wrench.and.screwdriver"
+            case .memory: return "brain"
             case .appearance: return "paintbrush.fill"
             case .advanced: return "gearshape.2.fill"
             case .about: return "info.circle.fill"
@@ -123,6 +125,8 @@ struct SettingsView: View {
                     ProvidersSection(viewModel: viewModel)
                 case .tools:
                     ToolsSection(viewModel: viewModel)
+                case .memory:
+                    MemoryViewerView()
                 case .appearance:
                     AppearanceSection()
                 case .advanced:
@@ -156,6 +160,8 @@ private struct SettingsDetailView: View {
                     ProvidersSection(viewModel: viewModel)
                 case .tools:
                     ToolsSection(viewModel: viewModel)
+                case .memory:
+                    MemoryViewerView()
                 case .appearance:
                     AppearanceSection()
                 case .advanced:

@@ -28,12 +28,22 @@ final class KeychainStore: Sendable {
     private let backend: KeychainBacking
     private let accessGroupsOverride: [String]?
 
+    private static var isRunningInXcodePreview: Bool {
+        let env = ProcessInfo.processInfo.environment
+        if env["XCODE_RUNNING_FOR_PREVIEWS"] == "1" { return true }
+        if env["XCODE_RUNNING_FOR_PLAYGROUNDS"] == "1" { return true }
+        return false
+    }
+
     init(backend: KeychainBacking = SystemKeychainBacking(), accessGroups: [String]? = nil) {
         self.backend = backend
         self.accessGroupsOverride = accessGroups
     }
 
     func updateKey(_ key: String?, for provider: ProviderKey) async throws {
+        if Self.isRunningInXcodePreview {
+            return
+        }
         logDiagnosticsOnce(for: provider)
         guard let data = key?.data(using: .utf8) else {
             try await deleteKeys(for: provider, includeLegacy: true)
@@ -62,6 +72,9 @@ final class KeychainStore: Sendable {
     }
 
     func apiKey(for provider: ProviderKey) async -> String? {
+        if Self.isRunningInXcodePreview {
+            return nil
+        }
         logDiagnosticsOnce(for: provider)
         if let key = readKey(
             service: Self.service,
@@ -246,6 +259,9 @@ final class KeychainStore: Sendable {
 
     private func configuredAccessGroups() -> [String] {
         #if os(macOS)
+        if Self.isRunningInXcodePreview {
+            return []
+        }
         guard let task = SecTaskCreateFromSelf(nil as CFAllocator?) else { return [] }
         let entitlement = SecTaskCopyValueForEntitlement(
             task,

@@ -116,7 +116,16 @@ class WorkbenchViewModel {
         let entity = ChatSessionEntity(session: newSession)
         modelContext.insert(entity)
 
+        // Creating a new session should behave like a clean single-selection state
+        selectedConversationIDs.removeAll()
         selectedConversationID = newSession.id
+
+        // ✅ Persist immediately so UI + fetches see it deterministically
+        do {
+            try modelContext.save()
+        } catch {
+            vmLogger.error("Failed to save new conversation: \(error.localizedDescription)")
+        }
     }
 
     /// Toggles selection for a conversation (Cmd+click behavior).
@@ -191,6 +200,11 @@ class WorkbenchViewModel {
 
         let idsToDelete = Array(selectedConversationIDs)
         lifecycleService.deleteAll(sessionIDs: idsToDelete, reason: .userDeleted, modelContext: modelContext)
+
+        // ✅ If the primary selection was among the deleted, clear it
+        if let selected = selectedConversationID, idsToDelete.contains(selected) {
+            selectedConversationID = nil
+        }
 
         selectedConversationIDs.removeAll()
     }

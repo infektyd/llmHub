@@ -16,27 +16,32 @@ struct llmHubApp: App {
     // MARK: - State
 
     /// Central registry for managing available LLM models across all providers.
-    @StateObject private var modelRegistry = ModelRegistry()
+    @StateObject private var modelRegistry: ModelRegistry
 
     /// State for FoundationModels diagnostics
-    @State private var afmDiagnostics = AFMDiagnosticsState()
+    @State private var afmDiagnostics: AFMDiagnosticsState
 
     /// Settings manager for app-wide configuration
-    @State private var settingsManager = SettingsManager()
+    @State private var settingsManager: SettingsManager
 
     private let modelContainer: ModelContainer
 
     // MARK: - Body
 
     init() {
-        Self.ensureDataDirectoriesExist()
-        
-        #if DEBUG
-        ArtifactImportDiagnostics.isEnabled = true
-        print("🔍 Artifact import diagnostics enabled (DEBUG build)")
-        #endif
-
-        print("SwiftData: initializing ModelContainer (CloudKit disabled)")
+        if PreviewMode.isRunning {
+            _modelRegistry = StateObject(wrappedValue: ModelRegistry())
+            _afmDiagnostics = State(initialValue: AFMDiagnosticsState())
+            _settingsManager = State(
+                initialValue: SettingsManager(
+                    userDefaults: UserDefaults(suiteName: "llmHub.preview") ?? .standard
+                )
+            )
+        } else {
+            _modelRegistry = StateObject(wrappedValue: ModelRegistry())
+            _afmDiagnostics = State(initialValue: AFMDiagnosticsState())
+            _settingsManager = State(initialValue: SettingsManager())
+        }
 
         let schema = Schema([
             ChatSessionEntity.self,
@@ -47,6 +52,37 @@ struct llmHubApp: App {
             ArtifactEntity.self,
             MemoryEntity.self
         ])
+
+        if PreviewMode.isRunning {
+            print("SwiftData: initializing ModelContainer (Preview in-memory)")
+
+            do {
+                let configuration = ModelConfiguration(
+                    schema: schema,
+                    isStoredInMemoryOnly: true
+                )
+                modelContainer = try ModelContainer(for: schema, configurations: [configuration])
+                print("SwiftData: ModelContainer initialized successfully")
+            } catch {
+                print("Unresolved error loading container", error)
+                let fallbackConfiguration = ModelConfiguration(
+                    schema: schema,
+                    isStoredInMemoryOnly: true
+                )
+                modelContainer = try! ModelContainer(for: schema, configurations: [fallbackConfiguration])
+                print("SwiftData: using in-memory fallback container")
+            }
+            return
+        }
+
+        Self.ensureDataDirectoriesExist()
+        
+        #if DEBUG
+        ArtifactImportDiagnostics.isEnabled = true
+        print("🔍 Artifact import diagnostics enabled (DEBUG build)")
+        #endif
+
+        print("SwiftData: initializing ModelContainer (CloudKit disabled)")
 
         do {
             let configuration = ModelConfiguration(

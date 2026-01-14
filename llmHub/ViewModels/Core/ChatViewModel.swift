@@ -81,6 +81,17 @@ class ChatViewModel {
     /// AFM diagnostics information
     var afmDiagnostics: AFMDiagnostics = AFMDiagnostics()
 
+    // MARK: - Memory Usage Indicator
+
+    /// Number of memories used in the last response.
+    var memoriesUsedCount: Int = 0
+
+    /// Brief summary of memories used (for tooltip).
+    var memoriesUsedSummary: String?
+
+    /// Whether to show the memory indicator animation.
+    var showMemoryIndicator: Bool = false
+
     // ... existing properties ...
 
     /// Adds a reference to the staging area.
@@ -398,7 +409,7 @@ class ChatViewModel {
         showAgentStepLimitConfigSheet = false
     }
 
-    private func resumeAfterStepLimit(modelContext: ModelContext, maxIterationsOverride: Int) async {
+    func resumeAfterStepLimit(modelContext: ModelContext, maxIterationsOverride: Int) async {
         guard let sessionID = lastRunSessionID else {
             logger.error("Cannot resume: missing lastRunSessionID")
             return
@@ -433,7 +444,13 @@ class ChatViewModel {
             streamingText = nil
 
             let service = await ensureChatService(modelContext: modelContext)
-            let domainSession = try await MainActor.run { try service.loadSession(id: sessionID) }
+            let domainSession = try await MainActor.run { 
+                do {
+                    return try service.loadSession(id: sessionID)
+                } catch {
+                    throw error
+                }
+            }
 
             let stream = try await service.streamCompletion(
                 for: domainSession,
@@ -500,6 +517,17 @@ class ChatViewModel {
                     isGenerating = false
                     lastAgentStopReason = reason
                     showAgentStepLimitAlert = true
+
+                case .memoriesUsed(let count, let summary):
+                    memoriesUsedCount = count
+                    memoriesUsedSummary = summary
+                    showMemoryIndicator = true
+
+                    // Auto-hide after 3 seconds
+                    Task { @MainActor [weak self] in
+                        try? await Task.sleep(nanoseconds: 3_000_000_000)
+                        self?.showMemoryIndicator = false
+                    }
                 }
             }
 
@@ -645,7 +673,7 @@ class ChatViewModel {
     }
 
     /// Build UI tool toggle list and authorized tool definitions.
-    private func rebuildToolState(environment: ToolEnvironment) async {
+    func rebuildToolState(environment: ToolEnvironment) async {
         guard let registry = toolRegistry else { return }
         let uiDefaults = UIToolDefinition.defaultTools(for: environment)
         let iconMap = Dictionary(
@@ -1092,6 +1120,17 @@ class ChatViewModel {
                         try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
                         
                         showAgentStepLimitAlert = true
+                    
+                    case .memoriesUsed(let count, let summary):
+                        memoriesUsedCount = count
+                        memoriesUsedSummary = summary
+                        showMemoryIndicator = true
+                        
+                        // Auto-hide after 3 seconds
+                        Task { @MainActor [weak self] in
+                            try? await Task.sleep(nanoseconds: 3_000_000_000)
+                            self?.showMemoryIndicator = false
+                        }
                     }
                 }
 
@@ -1132,7 +1171,7 @@ class ChatViewModel {
         }
     }
 
-    private func mapUISelectionToProviderModel(
+    func mapUISelectionToProviderModel(
         selectedProvider: UILLMProvider?,
         selectedModel: UILLMModel?,
         sessionEntity: ChatSessionEntity
@@ -1206,7 +1245,7 @@ class ChatViewModel {
         }
     }
 
-    private func generateConversationTitle(for session: ChatSessionEntity, modelName: String) {
+    func generateConversationTitle(for session: ChatSessionEntity, modelName: String) {
         let defaultTitles = ["Untitled", "New Conversation", ""]
         guard defaultTitles.contains(session.title) || session.title.isEmpty else {
             return
@@ -1235,7 +1274,7 @@ class ChatViewModel {
         logger.info("Generated conversation title: \(session.title)")
     }
 
-    private func selectEmoji(for content: String) -> String {
+    func selectEmoji(for content: String) -> String {
         if content.contains("code") || content.contains("swift") || content.contains("python")
             || content.contains("programming") || content.contains("javascript")
             || content.contains("typescript") {
@@ -1265,7 +1304,7 @@ class ChatViewModel {
         }
     }
 
-    private func formatModelName(_ modelID: String) -> String {
+    func formatModelName(_ modelID: String) -> String {
         if modelID.hasPrefix("claude-") {
             let parts = modelID.components(separatedBy: "-")
             if parts.count >= 2 {
@@ -1288,19 +1327,19 @@ class ChatViewModel {
         return modelID.prefix(1).uppercased() + modelID.dropFirst()
     }
 
-    private func setLastVisibleMessage(to id: UUID?) {
+    func setLastVisibleMessage(to id: UUID?) {
         guard lastVisibleMessageID != id else { return }
         lastVisibleMessageID = id
     }
 
-    private func resetStreamingState() {
+    func resetStreamingState() {
         streamingText = nil
         streamingMessageID = nil
         streamingStartedAt = nil
         activeGenerationID = nil
     }
 
-    private func handleStreamCompletion(
+    func handleStreamCompletion(
         sessionID: UUID, modelID: String, modelContext: ModelContext
     ) {
         do {
@@ -1331,7 +1370,7 @@ class ChatViewModel {
     }
 
     /// Schedules AFM classification for a conversation session.
-    private func scheduleClassification(for session: ChatSessionEntity, modelContext: ModelContext) {
+    func scheduleClassification(for session: ChatSessionEntity, modelContext: ModelContext) {
         Task { @MainActor [weak self] in
             guard let self else { return }
             guard session.afmClassifiedAt == nil else { return }
@@ -1377,7 +1416,7 @@ class ChatViewModel {
         }
     }
 
-    private func handleStreamError(sessionID: UUID, error: Error, modelContext: ModelContext) {
+    func handleStreamError(sessionID: UUID, error: Error, modelContext: ModelContext) {
         do {
             let descriptor = FetchDescriptor<ChatSessionEntity>(
                 predicate: #Predicate { $0.id == sessionID })
@@ -1471,7 +1510,7 @@ class ChatViewModel {
     }
 
     /// Check if Foundation Models are available using system APIs
-    private func checkFoundationModelsAvailability() async -> Bool {
+    func checkFoundationModelsAvailability() async -> Bool {
         if #available(macOS 15.0, iOS 18.0, *) {
             return SystemLanguageModel.default.availability == .available
         }

@@ -139,6 +139,9 @@ enum ProviderEvent: Sendable {
 
     /// The agent stopped without a normal completion (e.g. iteration cap hit).
     case agentStopped(reason: AgentStopReason)
+    
+    /// Memories were retrieved and injected into the prompt.
+    case memoriesUsed(count: Int, summary: String)
 }
 
 /// Errors specific to LLM providers.
