@@ -18,7 +18,7 @@ Visual reference for where iOS-specific UI elements appear in llmHub.
 │                                     │
 │        ┌────────────────────┐      │
 │        │  Your Message      │      │  ← Messages Area
-│        └────────────────────┘      │     (swipe down dismisses keyboard)
+│        └────────────────────┘      │     (swipe down dismisses keyboard if enabled)
 │                                     │
 │   ┌─────────────────────────────┐  │
 │   │  Assistant Response         │  │
@@ -33,7 +33,7 @@ Visual reference for where iOS-specific UI elements appear in llmHub.
 Legend:
 ⚙️ = Settings button (NEW)
 ⋯ = Menu button (existing)
-🔽 = Keyboard dismiss button (NEW, only when keyboard is up)
+🔽 = Keyboard dismiss button (future/optional)
 🔼 = Send button (existing)
 ```
 
@@ -100,12 +100,12 @@ Tap Done → Dismisses
 Input field | Send button
 ```
 
-### State 2: Keyboard Visible & Focused (NEW)
+### State 2: Keyboard Visible & Focused (future)
 
 ```
 ┌─────────────────────────────────────┐
 │ ┌───────────────┬─────┬──────┐     │
-│ │ Typing text...│ 🔽 │  🔼  │     │  ← Keyboard dismiss button appears
+│ │ Typing text...│ 🔽 │  🔼  │     │  ← Keyboard dismiss button (if implemented)
 │ └───────────────┴─────┴──────┘     │
 └─────────────────────────────────────┘
         ↑           ↑         ↑
@@ -127,7 +127,7 @@ Focus lost → 🔽 disappears
 │         (scrollable)                │
 │                                     │
 │              👇 Swipe down          │
-│         (dismisses keyboard)        │
+│         (dismisses keyboard if enabled) │
 │                                     │
 ├─────────────────────────────────────┤
 │ ┌───────────────┬─────┬──────┐     │
@@ -142,7 +142,7 @@ Focus lost → 🔽 disappears
 │                                     │
 └─────────────────────────────────────┘
 
-Two ways to dismiss:
+Two ways to dismiss (if enabled):
 1. Swipe down on chat messages ↑
 2. Tap 🔽 button in input bar
 ```
@@ -159,7 +159,7 @@ Two ways to dismiss:
                                Tap to open ↓
 
     ┌──────────────────────────────┐
-    │  🔧 Tool Inspector          │
+    │  🔧 Tool Inspector (stub)   │
     ├──────────────────────────────┤
     │  🌐 Provider ▸              │
     │     ┌──────────────────────┐│
@@ -217,30 +217,13 @@ Two ways to dismiss:
 │         Settings               Done    │
 ├────────────────────────────────────────┤
 │  Appearance                            │
-│  Customize theme and glass effects     │
+│  Customize the look and feel          │
 │                                        │
-│  ┌──────────────────────────────────┐ │
-│  │  Theme                           │ │
-│  │                                  │ │
-│  │  ┌─────┐  ┌─────┐  ┌─────┐     │ │
-│  │  │▓▓▓▓▓│  │░░░░░│  │▒▒▒▒▒│     │ │  ← Theme previews
-│  │  │▓▓▓▓▓│  │░░░░░│  │▒▒▒▒▒│     │ │
-│  │  └─────┘  └─────┘  └─────┘     │ │
-│  │  Liquid    Classic  Neon        │ │
-│  │   Glass                          │ │
-│  │    ✓                             │ │  ← Selected
-│  └──────────────────────────────────┘ │
-│                                        │
-│  ┌──────────────────────────────────┐ │
-│  │  Glass Effect Intensity          │ │
-│  │                                  │ │
-│  │  Window Background      80% ━━◉─ │ │  ← Sliders
-│  │  Sidebar                80% ━━◉─ │ │
-│  │  Chat Area              80% ━━◉─ │ │
-│  │  Input Bar              80% ━━◉─ │ │
-│  └──────────────────────────────────┘ │
-│                                        │
-│  [↻ Reset to Defaults]                │
+│  Color Scheme: [System | Light | Dark] │
+│  Font Size:     100% ━━━━━━━◉━━        │
+│  Compact Mode:  [toggle]              │
+│  Show Tokens:   [toggle]              │
+│  Avatar:        👤 🧑‍💻 🤖 ...         │
 ├────────────────────────────────────────┤
 │  🔑 API Keys | 🎨 Appearance | ⚙️     │
 └────────────────────────────────────────┘
@@ -250,36 +233,27 @@ Two ways to dismiss:
 
 ## Color Reference
 
-### Neon Theme Colors (Used in iOS)
+### Canvas/Flat Palette (iOS)
 
-- **Neon Electric Blue**: Settings gear icon, links, buttons
-  - Usage: `Color.neonElectricBlue` or `.foregroundColor(.neonElectricBlue)`
-  
-- **Neon Midnight**: Background color
-  - Usage: `Color.neonMidnight`
-  
-- **Neon Gray**: Secondary text, borders
-  - Usage: `Color.neonGray`
-  
-- **Neon Fuchsia**: Errors, delete actions
-  - Usage: `Color.neonFuchsia`
+- Use `AppColors` tokens from `Utilities/UI/AppColors.swift`
+- Keep surfaces matte; avoid legacy glass materials
 
 ### Button States
 
 ```swift
 // Settings button (leading)
 Image(systemName: "gearshape")
-    .foregroundColor(.neonElectricBlue)  // Neon blue
+    .foregroundColor(AppColors.accent)  // Accent color
 
 // Keyboard dismiss button (when focused)
 Image(systemName: "keyboard.chevron.compact.down")
-    .foregroundColor(.white)             // White icon
-    // Background: translucent gray circle
+    .foregroundColor(AppColors.textPrimary)
+    // Background: matte circle
 
 // Send button (enabled)
 Image(systemName: "arrow.up")
-    .foregroundColor(.white)             // White icon
-    // Background: neon accent tint
+    .foregroundColor(AppColors.textPrimary)
+    // Background: accent tint
 ```
 
 ---
@@ -358,7 +332,7 @@ All UI elements automatically respect:
 All interactive elements meet iOS minimum touch target:
 
 - **Gear icon**: 44pt × 44pt (navigation bar standard)
-- **Keyboard dismiss button**: 32pt × 32pt circle (with 44pt touchable area)
+- **Keyboard dismiss button (if implemented)**: 32pt × 32pt circle (with 44pt touchable area)
 - **Send button**: 32pt × 32pt circle (with 44pt touchable area)
 - **API key action buttons**: 44pt × 44pt
 - **Tab bar items**: Standard iOS height (49pt)
@@ -376,12 +350,12 @@ All interactive elements meet iOS minimum touch target:
 │ Settings in menu bar           │ ⚙️ button in nav bar│
 │ Settings → Settings...         │ Tap ⚙️ → modal      │
 │                                │                      │
-│ Keyboard always dismissible    │ Swipe or 🔽 button  │
+│ Keyboard dismissal             │ Swipe or iOS default│
 │                                │                      │
 │ Fixed window size              │ Full screen layouts  │
 │ 600×500 settings window        │ Adaptive sizing      │
 │                                │                      │
-│ NeonToolbar visible            │ Toolbar in menu ⋯   │
+│ Header bar visible             │ Toolbar in menu ⋯   │
 └───────────────────────────────────────────────────────┘
 ```
 
@@ -393,11 +367,11 @@ All interactive elements meet iOS minimum touch target:
 |---------|----------|----------|
 | Settings gear icon | Top-left navigation bar | iOS only |
 | Settings menu | Menu bar → llmHub → Settings | macOS only |
-| Keyboard dismiss button | Input bar (when focused) | iOS only |
+| Keyboard dismiss button (optional) | Input bar (when focused) | iOS only |
 | Settings modal | Full-screen sheet | iOS |
 | Settings window | Separate window | macOS |
-| Tool inspector | Menu ⋯ → Tool Inspector | iOS |
-| Tool inspector | NeonToolbar (top) | macOS |
+| Tool inspector (stub) | Menu ⋯ → Tool Inspector | iOS |
+| Tool inspector | Right sidebar (ModernSidebarRight) | macOS |
 
 ---
 
@@ -408,7 +382,7 @@ All system SF Symbols used:
 | Icon | Symbol Name | Usage |
 |------|-------------|-------|
 | ⚙️ | `gearshape` | Settings button |
-| 🔽 | `keyboard.chevron.compact.down` | Keyboard dismiss |
+| 🔽 | `keyboard.chevron.compact.down` | Keyboard dismiss (optional) |
 | 🔼 | `arrow.up` | Send message |
 | ⋯ | `ellipsis.circle` | More menu |
 | 🔑 | `key.fill` | API Keys tab |

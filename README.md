@@ -1,6 +1,6 @@
 # llmHub
 
-**llmHub** is a native macOS and iOS AI Workbench, designed to bridge the gap between chat interfaces and powerful agentic workflows. It features a modular "Brain/Hand/Loop" architecture, securely sandboxed code execution (macOS), Model Context Protocol (MCP) integration, and a cutting-edge **Liquid Glass** UI design.
+**llmHub** is a native macOS and iOS AI Workbench, designed to bridge the gap between chat interfaces and powerful agentic workflows. It features a modular "Brain/Hand/Loop" architecture, a Canvas-first flat UI, Model Context Protocol (MCP) scaffolding, and a unified tool system.
 
 ## 🚀 Features
 
@@ -11,16 +11,14 @@
   - Mistral AI (Mistral Large, Codestral, Pixtral)
   - xAI (Grok 4.1, Grok 4)
   - OpenRouter (Aggregator for 100+ models)
-- **Liquid Glass UI**:
-  - State-of-the-art translucent, vibrant interface using iOS 26+ Liquid Glass APIs
-  - Glass morphism effects, interactive elements, and morphing transitions
-  - Platform-optimized for both macOS and iOS
+- **Canvas/Flat UI**:
+  - Canvas-first layout with matte surfaces and minimal decoration
+  - Built for clarity, dense information, and low-ornament workflows
+  - Shared design language across macOS and iOS
 - **Unified Tool System**:
-  - **17+ Tools** with platform-aware availability (iOS vs macOS)
-  - Core tools: Calculator, CodeInterpreter, FileEditor, FileReader, WebSearch
-  - Extended tools: Shell, HTTP, Database, Task Scheduler, Image Generation, and more
-  - Permission-based authorization system
-  - Multi-tier caching (Hot/Warm/Cold) for tool data
+  - Actor-based `ToolRegistry` + concurrent `ToolExecutor` + `ToolAuthorizationService`
+  - Current tools: Calculator, CodeInterpreter, FileReader, FileEditor, FilePatch, WebSearch, HTTPRequest, Shell (macOS only), Workspace, DataVisualization
+  - Permission-based authorization and session-scoped LRU caching for eligible tools
 - **"Brain Swapping" Persistence**:
   - Automatically saves the selected Model and Provider for each session
   - Seamlessly restores context when switching between conversations
@@ -28,9 +26,9 @@
   - Intelligent token estimation and context compaction
   - Smart truncation strategies to stay within model limits
   - Emergency fallback to preserve system prompt and newest messages
-- **Sandboxed Code Execution** (macOS):
-  - Runs generated code (Swift/Python/JavaScript/TypeScript) in a secure, isolated XPC service (`llmHubHelper`)
-  - Protects the host system while allowing complex data analysis and logic execution
+- **Code Execution Backend**:
+  - XPC helper (`llmHubHelper`) exists but is currently disabled on macOS due to entitlements issues
+  - iOS uses a JavaScriptCore-backed engine (JavaScript only)
 - **Model Context Protocol (MCP)**:
   - First-class support for the MCP standard
   - Connect to external MCP servers to expand tool capabilities
@@ -48,8 +46,8 @@ llmHub follows the **Valon/Modi/Core** principles:
 
 ### Prerequisites
 
-- **macOS**: macOS 26.2+ (Sequoia) or later (for Liquid Glass APIs)
-- **iOS**: iOS 26.0+ for iPhone and iPad (for Liquid Glass APIs)
+- **macOS**: macOS 26.2+ (Sequoia) or later
+- **iOS**: iOS 26.0+ for iPhone and iPad
 - **Xcode**: 17.0+ for building
 - **Swift**: 6.2+ with strict concurrency enabled
 
@@ -60,7 +58,7 @@ llmHub follows the **Valon/Modi/Core** principles:
 3. Select target:
    - **llmHub (macOS)** for Mac builds
    - **llmHub (iOS)** for iPhone/iPad builds
-4. **macOS only**: The project includes a helper XPC service (`llmHubHelper`) for sandboxed code execution. Ensure this target builds successfully and is embedded in the main app bundle.
+4. **macOS only**: The project includes a helper XPC service (`llmHubHelper`) for sandboxed code execution. The helper builds, but execution is currently disabled (see `Docs/REALITY_MAP.md`).
 5. Build and Run (Cmd+R).
 
 ## 💡 Usage
@@ -77,17 +75,12 @@ llmHub follows the **Valon/Modi/Core** principles:
 
 - **Chat**: Create new sessions, select models, and interact with the "Brain".
 - **Tools**: The agent will automatically invoke tools (like Code Execution) when asked to perform tasks requiring computation or file access.
-- **Execution**: Code runs in the workbench panel, showing real-time logs and output.
+- **Execution**: The workbench surfaces execution results when the backend is available. (macOS backend is currently disabled.)
 
-### Code Execution (macOS only)
+### Code Execution (Current Status)
 
-llmHub on macOS supports executing code in multiple languages within a secure sandbox:
-
-- **Python**: Full support for data analysis and scripting.
-- **Swift**: Native execution for macOS-specific tasks.
-- **JavaScript/TypeScript**: Supported via Node.js integration.
-
-**Note**: Code execution is currently only available on macOS due to iOS sandboxing restrictions.
+- **macOS**: XPC backend is temporarily disabled due to sandbox/entitlements issues. Code interpreter requests will report unavailable.
+- **iOS**: JavaScript-only execution via JavaScriptCore.
 
 ### File Operations
 
@@ -97,7 +90,7 @@ The agent can read and modify files with your explicit permission. A diff previe
 
 ### macOS
 
-- Full code execution environment with XPC sandboxing
+- XPC helper present, but execution backend is disabled (see `Docs/REALITY_MAP.md`)
 - Multi-window support
 - Dedicated Settings window
 - File system access with permission dialogs
@@ -105,10 +98,9 @@ The agent can read and modify files with your explicit permission. A diff previe
 
 ### iOS
 
-- Touch-optimized UI with Liquid Glass theme
+- Touch-optimized Canvas/flat UI
 - Settings accessible via gear icon in navigation bar
-- Interactive keyboard dismissal (swipe down on messages)
-- Explicit keyboard dismiss button when typing
+- Keyboard behavior follows iOS defaults
 - Native iOS navigation patterns
 - Full API key management in-app
 
@@ -116,7 +108,7 @@ The agent can read and modify files with your explicit permission. A diff previe
 
 ## 🤝 Contributing
 
-This project uses **Swift 6.2** with strict concurrency, **SwiftData** for persistence, and **Liquid Glass** for all UI. Please adhere to the architecture defined in [`Docs/AGENTS.md`](Docs/AGENTS.md) when contributing.
+This project uses **Swift 6.2** with strict concurrency and **SwiftData** for persistence. The UI is Canvas-first and flat; see [`Docs/REALITY_MAP.md`](Docs/REALITY_MAP.md) and [`Docs/AGENTS.md`](Docs/AGENTS.md) when contributing.
 
 > **🤖 AI Assistants**: Please read [`Docs/ONBOARDING_AGENTS.md`](Docs/ONBOARDING_AGENTS.md) for critical context and operational parameters.
 
@@ -124,7 +116,7 @@ This project uses **Swift 6.2** with strict concurrency, **SwiftData** for persi
 
 - **Brain/Hand/Loop**: Providers (LLM) → Tools (Actions) → ChatService (Orchestrator)
 - **Swift 6 Concurrency**: All UI types, ViewModels, and Providers use `@MainActor`
-- **Liquid Glass First**: All new UI must use `.glassEffect()` and `LiquidGlassTokens` for consistency. Do not use wrapper views.
+- **Canvas First**: Use the Canvas/flat styling (AppColors, matte surfaces) and avoid legacy glass-specific modifiers.
 - **Platform Awareness**: Use `#if os(iOS)` and `#if os(macOS)` for platform-specific code
 - **No Placeholders**: Production-quality implementations only (see user rules)
 
@@ -135,7 +127,7 @@ This project uses **Swift 6.2** with strict concurrency, **SwiftData** for persi
 - `llmHub/Services`: Core business logic (ChatService, ToolRegistry, ContextManagement, MCP)
 - `llmHub/Tools`: Tool implementations (core tools + integrations + stubs)
 - `llmHub/ViewModels`: UI state management using `@Observable`
-- `llmHub/Views`: SwiftUI views with Liquid Glass styling
+- `llmHub/Views`: SwiftUI views with Canvas/flat styling
 - `llmHub/Services/ContextManagement`: Token estimation and context compaction
 - `llmHubHelper`: The sandboxed XPC service for code execution (macOS only)
 

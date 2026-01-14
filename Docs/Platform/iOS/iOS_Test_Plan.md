@@ -23,7 +23,7 @@
 
 **Expected**:
 - [ ] Gear icon visible in top-left corner of navigation bar
-- [ ] Gear icon colored in neon electric blue
+- [ ] Gear icon uses the accent color
 - [ ] Icon is tappable (shows touch feedback)
 
 **Result**: ☐ Pass ☐ Fail  
@@ -111,7 +111,7 @@ Repeat Test 1.3 for each provider:
 **Expected**:
 - [ ] Safari/browser opens
 - [ ] Correct provider documentation page loads
-- [ ] Link colored in neon electric blue
+- [ ] Link uses accent color
 
 **Result**: ☐ Pass ☐ Fail  
 **Notes**: _____________________________________________
@@ -121,17 +121,19 @@ Repeat Test 1.3 for each provider:
 ### Test 1.7: Appearance Tab
 **Steps**:
 1. Tap "Appearance" tab at bottom
-2. Tap theme picker dropdown
-3. Select different theme (e.g., "Liquid Glass")
-4. Adjust glass effect sliders
+2. Change Color Scheme (System/Light/Dark)
+3. Adjust Font Size slider
+4. Toggle Compact Mode
+5. Toggle Show Token Counts
+6. Pick a different avatar/emote
 
 **Expected**:
 - [ ] Tab switches to Appearance settings
-- [ ] Theme preview cards visible
-- [ ] Theme picker shows available themes
-- [ ] Selecting theme updates preview in real-time
-- [ ] Sliders adjust opacity (0-100%)
-- [ ] Changes apply immediately (if visible in background)
+- [ ] Color scheme updates immediately
+- [ ] Font size changes reflect in UI typography
+- [ ] Compact mode reduces spacing/padding
+- [ ] Token counts toggle affects message headers
+- [ ] Avatar selection updates in chat UI
 
 **Result**: ☐ Pass ☐ Fail  
 **Notes**: _____________________________________________
@@ -165,7 +167,7 @@ Repeat Test 1.3 for each provider:
 - [ ] Keyboard slides up from bottom
 - [ ] Input field gains focus
 - [ ] Blue border/glow appears on input field
-- [ ] Keyboard dismiss button appears (small circle with chevron icon)
+- [ ] Keyboard dismiss button appears (if implemented)
 
 **Result**: ☐ Pass ☐ Fail  
 **Notes**: _____________________________________________
@@ -180,7 +182,7 @@ Repeat Test 1.3 for each provider:
 **Expected**:
 - [ ] Keyboard slides down and dismisses
 - [ ] Input field loses focus (blue border disappears)
-- [ ] Keyboard dismiss button disappears
+- [ ] Keyboard dismiss button disappears (if implemented)
 - [ ] Message list remains scrollable
 
 **Result**: ☐ Pass ☐ Fail  
@@ -208,6 +210,8 @@ Repeat Test 1.3 for each provider:
 
 ## Test 3: Keyboard Dismiss - Explicit Button
 
+**Note**: Explicit keyboard dismiss button is not currently implemented. Skip this section unless the feature is added.
+
 ### Test 3.1: Button Appears on Focus
 **Steps**:
 1. Tap input field to show keyboard
@@ -216,7 +220,7 @@ Repeat Test 1.3 for each provider:
 **Expected**:
 - [ ] Small circular button appears between input field and send button
 - [ ] Button shows keyboard chevron down icon (`keyboard.chevron.compact.down`)
-- [ ] Button matches Liquid Glass theme (translucent circle)
+- [ ] Button matches Canvas/flat styling (matte circle)
 - [ ] Button animates in with scale + fade transition
 
 **Result**: ☐ Pass ☐ Fail  
@@ -254,20 +258,20 @@ Repeat Test 1.3 for each provider:
 
 ---
 
-### Test 3.4: Button Appearance in Both Themes
+### Test 3.4: Button Appearance in Light/Dark
 **Steps**:
 1. Go to Settings → Appearance
-2. Switch to "Liquid Glass" theme
+2. Switch Color Scheme to "Light"
 3. Return to chat, focus input field, observe dismiss button
 4. Go to Settings → Appearance
-5. Switch to "Classic" theme
+5. Switch Color Scheme to "Dark"
 6. Return to chat, focus input field, observe dismiss button
 
 **Expected**:
-- [ ] **Liquid Glass**: Translucent glass circle with blur effect
-- [ ] **Classic**: Semi-transparent gray circle
-- [ ] Both themes: Button is clearly visible and tappable
-- [ ] Styling matches send button nearby
+- [ ] **Light**: Button remains visible on light background
+- [ ] **Dark**: Button remains visible on dark background
+- [ ] Both schemes: Button is clearly visible and tappable
+- [ ] Styling matches nearby controls
 
 **Result**: ☐ Pass ☐ Fail  
 **Notes**: _____________________________________________
@@ -301,7 +305,7 @@ Repeat Test 1.3 for each provider:
 
 **Expected**:
 - [ ] Keyboard adapts to new orientation
-- [ ] Keyboard dismiss button remains visible
+- [ ] Keyboard dismiss button remains visible (if implemented)
 - [ ] Settings modal (if open) adapts to rotation
 - [ ] No layout breaks or overlaps
 
@@ -351,7 +355,7 @@ Repeat Test 1.3 for each provider:
 
 **Expected**:
 - [ ] Gear icon has accessibility label: "Settings"
-- [ ] Keyboard dismiss button has clear label: "Dismiss keyboard" or similar
+- [ ] Keyboard dismiss button has clear label (if implemented)
 - [ ] Input field properly labeled
 - [ ] All controls navigable with VoiceOver
 
@@ -382,16 +386,18 @@ Repeat Test 1.3 for each provider:
 
 ### Test 5.2: Appearance Settings Persist
 **Steps**:
-1. Change theme to "Liquid Glass"
-2. Adjust several glass opacity sliders
+1. Change Color Scheme (e.g., System → Dark)
+2. Adjust Font Size slider
+3. Toggle Compact Mode
 3. Close Settings
 4. Quit and relaunch app
 5. Open Settings → Appearance
 
 **Expected**:
-- [ ] Selected theme still active
-- [ ] All opacity values preserved
-- [ ] Theme visually applied throughout app
+- [ ] Selected color scheme still active
+- [ ] Font size preserved
+- [ ] Compact mode preserved
+- [ ] Appearance visually applied throughout app
 
 **Result**: ☐ Pass ☐ Fail  
 **Notes**: _____________________________________________
@@ -404,11 +410,11 @@ Repeat Test 1.3 for each provider:
 - [ ] Settings modal opens/closes smoothly (60fps)
 - [ ] Keyboard dismiss animations smooth
 - [ ] No lag when typing in input field
-- [ ] Theme switches apply instantly
+- [ ] Color scheme switches apply instantly
 
 ### Visual Polish
-- [ ] Neon theme colors used consistently
-- [ ] Glass effects render correctly
+- [ ] Canvas/flat colors used consistently
+- [ ] No legacy glass effects visible
 - [ ] No visual glitches or artifacts
 - [ ] Dark mode support correct
 - [ ] Safe area insets respected (notch/Dynamic Island)

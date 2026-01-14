@@ -2,6 +2,8 @@
 
 **Requirements:** macOS 26.2 SDK="25C57", Xcode 26.2 build="17C52", iOS 26.2 SDK="23C53" iPhone=17 pro, Swift 6.2
 
+**Reality Map (authoritative current-state doc):** `Docs/REALITY_MAP.md`
+
 > **Authoritative architectural reference for the llmHub project.**
 
 ---
@@ -11,9 +13,9 @@
 **llmHub** is a native macOS/iOS AI Workbench that bridges conversational chat with powerful agentic workflows. Core priorities:
 
 1. **Frontier Model Integration**: All major providers (OpenAI, Anthropic, Gemini, Mistral, xAI, OpenRouter)
-2. **Liquid Glass UI**: Translucent SwiftUI interface using native `GlassEffect` APIs
+2. **Canvas/Flat UI**: Canvas-first SwiftUI interface with matte surfaces and minimal ornament
 3. **Brain/Hand/Loop Architecture**: Strict separation of reasoning, execution, and orchestration
-4. **Secure Execution**: Sandboxed code execution on macOS via XPC
+4. **Execution Safety**: Code execution backend exists but is currently disabled on macOS
 
 ---
 
@@ -87,27 +89,24 @@
 | **Role**       | Deterministic execution of capabilities                              |
 | **Protocol**   | `Tool` (Sendable) — unified protocol for all tools                   |
 | **Registry**   | `ToolRegistry` — manages tool registration and lookup                |
-| **Categories** | Core (Calculator, FileReader), System (Shell, CodeExec), Cloud (MCP) |
+| **Categories** | Core (Calculator, FileReader), System (Shell, CodeExec), Network (Web/HTTP) |
 
-**Active Tools (17+):**
+**Registered Tools (current app wiring):**
 
-| Tool                    | Platform | Purpose                            |
-| ----------------------- | -------- | ---------------------------------- |
-| `CalculatorTool`        | All      | Mathematical evaluation            |
-| `CodeInterpreterTool`   | macOS    | Swift/Python/JS execution via XPC  |
-| `FileReaderTool`        | All      | File content reading               |
-| `FileEditorTool`        | All      | File creation/modification         |
-| `FilePatchTool`         | All      | Unified diff patching              |
-| `ShellTool`             | macOS    | Terminal command execution         |
-| `ShellSession`          | macOS    | Persistent shell sessions          |
-| `WebSearchTool`         | All      | Web search integration             |
-| `HTTPRequestTool`       | All      | HTTP API calls                     |
-| `WorkspaceTool`         | All      | Workspace item management          |
-| `MCPToolBridge`         | All      | Model Context Protocol integration |
-| `DataVisualizationTool` | All      | Chart/graph generation             |
-| `ImageGenerationTool`   | All      | AI image generation                |
+| Tool                    | Platform | Purpose                                   |
+| ----------------------- | -------- | ----------------------------------------- |
+| `CalculatorTool`        | All      | Mathematical evaluation                   |
+| `CodeInterpreterTool`   | All      | Code execution (macOS backend disabled)   |
+| `FileReaderTool`        | All      | File content reading                      |
+| `FileEditorTool`        | All      | File creation/modification                |
+| `FilePatchTool`         | All      | Unified diff patching                     |
+| `ShellTool`             | macOS    | Terminal command execution                |
+| `WebSearchTool`         | All      | Web search integration                    |
+| `HTTPRequestTool`       | All      | HTTP API calls                            |
+| `WorkspaceTool`         | All      | Workspace item management                 |
+| `DataVisualizationTool` | All      | Chart/graph description output (text/JSON)|
 
-> **Note**: Some tools report availability based on platform and sandbox status.
+> **Note**: `MCPToolBridge` exists but is not wired into the registry; tools under `Tools/Stubs/` are not registered. Availability is platform- and backend-aware.
 
 ### 3. The Loop (Orchestrator)
 
@@ -124,10 +123,10 @@
 | Aspect        | Details                                                        |
 | ------------- | -------------------------------------------------------------- |
 | **Role**      | Securely execute user-generated code                           |
-| **Component** | `llmHubHelper` (XPC Service)                                   |
+| **Component** | `llmHubHelper` (XPC Service) + `CodeExecutionEngine`           |
 | **Protocol**  | `CodeExecutionXPCProtocol`                                     |
-| **Platform**  | macOS only                                                     |
-| **Mechanism** | Main App → XPC → Helper Process → Secure child → stdout/stderr |
+| **Platform**  | macOS (XPC helper), iOS (JavaScriptCore)                        |
+| **Status**    | macOS backend disabled due to entitlements; iOS is JS-only     |
 
 ### 5. Memory Management
 
@@ -140,45 +139,20 @@
 
 ---
 
-## 🎨 Liquid Glass UI
+## 🎨 Canvas/Flat UI
 
-The UI follows the "Liquid Glass" design language with translucent materials, semantic tinting, and fluid animations.
+The UI is Canvas-first: flat/matte surfaces, dense information, and minimal ornament.
 
-### Design Tokens
+### Current UI Anchors
 
-```swift
-LiquidGlassTokens.Spacing.rowGutter    // 12pt
-LiquidGlassTokens.Spacing.sheetInset   // 16pt
-LiquidGlassTokens.Radius.control       // 10pt
-LiquidGlassTokens.Radius.card          // 16pt
-```
-
-### Glass Effect Usage
-
-```swift
-// ✅ Correct - Use native modifier
-.glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
-
-// ✅ Interactive elements
-.glassEffect(GlassEffect.clear.interactive(), in: .capsule)
-
-// ✅ Tinted glass
-.glassEffect(GlassEffect.regular.tint(theme.accent.opacity(0.2)), in: .rect)
-
-// ❌ Never use legacy materials
-.background(.ultraThinMaterial)  // DEPRECATED
-```
-
-### Key UI Components
-
-| Component           | Purpose                                           |
-| ------------------- | ------------------------------------------------- |
-| `NeonChatView`      | Main chat interface                               |
-| `ChatInputPanel`    | Glass input bar with attachments and tool toggles |
-| `NeonMessageBubble` | Message rendering with markdown                   |
-| `ToolResultCard`    | Tool execution result display                     |
-| `TokenUsageCapsule` | Live token/cost display                           |
-| `NeonSidebar`       | Session list and navigation                       |
+| Component               | Purpose                                      |
+| ----------------------- | -------------------------------------------- |
+| `CanvasRootView`        | Main app layout                              |
+| `ModernSidebarLeft`     | Session list and navigation                  |
+| `ModernSidebarRight`    | Inspector and tool toggles (basic)           |
+| `TranscriptCanvasView`  | Transcript surface                           |
+| `Composer`              | Input/composer bar                           |
+| `TextualMessageView`    | Markdown rendering                            |
 
 ---
 
@@ -213,7 +187,7 @@ viewModel.hydrateState(from: session)
 ```
 llmHub/
 ├── App/                    # @main entry point (llmHubApp.swift)
-├── Views/                  # SwiftUI views (Liquid Glass design, Canvas work)
+├── Views/                  # SwiftUI views (Canvas/flat UI)
 │   ├── ContentView.swift   # Entry view
 │   ├── Components/         # Reusable UI components
 │   ├── Settings/           # Settings UI
@@ -230,8 +204,8 @@ llmHub/
 │   ├── ContextManagement/  # Token estimation & compaction
 │   ├── ModelFetch/         # Model registry & fetching
 │   └── Tools/              # Tool execution services
-├── Tools/                  # Tool implementations (flattened: no Core/Integrations)
-│   └── Stubs/              # Placeholder/future tools
+├── Tools/                  # Tool implementations
+│   └── Stubs/              # Future tools (not wired in registry)
 └── Utilities/              # Shared helpers (organized by purpose)
     ├── Extensions/         # Swift/SwiftUI extensions
     ├── Infrastructure/     # KeychainStore, AppLogger, SettingsManager

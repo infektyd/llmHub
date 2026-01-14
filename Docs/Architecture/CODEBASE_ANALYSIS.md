@@ -10,12 +10,12 @@
 ### Entry Point
 
 - `llmHubApp.swift` — Standard SwiftUI `@main` entry
-- Primary window: `NeonWorkbenchWindow.swift` (macOS) / iOS App Scene
+- Primary window: `CanvasRootView` (`RootView.swift`) / iOS App Scene
 
 ### Core Data Flow
 
 ```
-User Input → ChatInputPanel → ChatViewModel.sendMessage()
+User Input → Composer → ChatViewModel.sendMessage()
                                     ↓
                          ChatService.sendMessage()
                                     ↓
@@ -43,8 +43,11 @@ User Input → ChatInputPanel → ChatViewModel.sendMessage()
 | Foundation/URLSession | Networking (providers)                                       |
 | XPC Services          | Code execution sandbox                                       |
 | OSLog                 | Logging                                                      |
+| Textual               | Markdown rendering                                           |
+| Splash                | Syntax highlighting                                          |
+| SwiftCollections      | Data structures                                              |
 
-**No third-party dependencies** — all native Apple frameworks.
+**Third-party dependencies** — Textual, Splash, SwiftCollections.
 
 ---
 
@@ -66,17 +69,17 @@ User Input → ChatInputPanel → ChatViewModel.sendMessage()
   - `CodeInterpreterTool.swift` — Full `Tool` protocol conformance
   - Supports: Swift, Python, JavaScript, TypeScript, Dart
 
-- **UI shell structure**
+- **UI shell structure (Canvas-first)**
 
-  - `NeonWorkbenchWindow.swift` — Three-pane layout (sidebar, chat, inspector)
-  - `NeonChatView.swift` — Message display with scroll tracking
-  - `NeonSidebar.swift` — Conversation history
-  - `NeonToolInspector.swift` — Tool execution display
+  - `RootView.swift` (`CanvasRootView`) — Main layout
+  - `TranscriptView.swift` (`TranscriptCanvasView`) — Message display
+  - `ModernSidebarLeft.swift` — Conversation history
+  - `ModernSidebarRight.swift` — Inspector + tool toggles (basic)
 
-- **Liquid Glass UI Migration**
+- **Canvas/Flat UI**
 
-  - Migration complete and verified
-  - Native `.glassEffect()` usage standard throughout
+  - Canvas-first UI complete; flat/matte surfaces
+  - Legacy Liquid Glass references should be treated as historical
 
 - **Provider configuration** (`ProvidersConfig.swift`)
   - Model definitions for: OpenAI, Anthropic, Google AI, Mistral, xAI, OpenRouter
@@ -109,22 +112,24 @@ User Input → ChatInputPanel → ChatViewModel.sendMessage()
 
 - **ChatService**: Complete orchestration with recursive tool calling (max 10 iterations)
 - **Provider Integration**: All 6 providers fully functional with streaming
-- **Tool System**: 17+ tools with platform-aware availability
+- **Tool System**: 10 registered tools with platform-aware availability
 - **Context Management**: Token estimation and compaction integrated
-- **XPC Code Execution**: Fully functional sandboxed execution (macOS)
+- **Code Execution Backend**: Present but disabled on macOS (XPC entitlements)
 - **SwiftData Persistence**: Complete with bidirectional domain/entity conversion
-- **Liquid Glass UI**: Modern glass-morphism interface throughout
+- **Canvas/Flat UI**: Current design direction
 
 ### ⚠️ Known Limitations
 
-- **REPL Mode**: `CodeExecutionEngine.startREPL()` not yet implemented (throws error)
-- **Some Tools**: Extended tools (Shell, HTTP, Database) may be stubs requiring additional setup
+- **Code Execution (macOS)**: Backend forced unavailable pending XPC entitlements fix
+- **FileReaderTool**: Image description is a stub response
+- **Tool Inspector**: Visibility flag exists (`toolInspectorVisible`) but no wired UI
+- **Stub Tools**: `Tools/Stubs/` not registered (Database, ImageGeneration, TaskScheduler, etc.)
 
 ### TODOs & FIXMEs
 
 None found via code search. Documentation mentions planned features in `AGENTS.md`:
 
-- Multi-window support with glass coordination
+- Multi-window support with shared UI state
 - Widget for quick prompts
 - visionOS port
 - Apple Intelligence integration
@@ -138,7 +143,7 @@ From `AGENTS.md` roadmap:
 
 ```
 Near-term:
-- [x] Complete Liquid Glass migration
+- [x] Canvas UI baseline
 - [ ] Multi-window support
 - [ ] Widget for quick prompts
 
@@ -156,9 +161,9 @@ Medium-term:
 
 | Component             | Status                                |
 | --------------------- | ------------------------------------- |
-| `ChatInputPanel`      | ✅ Connected to ChatService           |
+| `Composer`            | ✅ Connected to ChatService           |
 | `ModelPicker`         | ✅ Model selection works              |
-| `ToolInspector`       | ✅ Shows real tool execution          |
+| `ToolInspector`       | ⚠️ Stub/partial (visibility flag only) |
 | Sidebar conversations | ✅ SwiftData persistence works        |
 | `ChatService`         | ✅ Fully orchestrated Brain/Hand/Loop |
 | Streaming UI          | ✅ Consumes `AsyncThrowingStream`     |
@@ -215,12 +220,12 @@ Medium-term:
 
 - ✅ Architecture is sound and fully implemented (Brain/Hand/Loop pattern)
 - ✅ Persistence layer complete (SwiftData with domain/entity conversion)
-- ✅ XPC code execution backend complete (macOS sandboxed execution)
-- ✅ UI complete with Liquid Glass design system
+- ⚠️ macOS code execution backend disabled (XPC entitlements)
+- ✅ Canvas/flat UI is current
 - ✅ Build succeeds with Swift 6.2 strict concurrency
-- ✅ Chat flow fully functional (real LLM calls, streaming, tool execution)
+- ✅ Chat flow functional (LLM calls, streaming, tool execution)
 - ✅ API key management UI implemented (Settings with Keychain storage)
-- ✅ Tools fully wired and functional (17+ tools with platform awareness)
+- ✅ Tools wired (10 registered tools; stubs not registered)
 - ✅ Context management integrated (token estimation and compaction)
 - ✅ All 6 providers functional with streaming support
 

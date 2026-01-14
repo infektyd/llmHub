@@ -10,6 +10,7 @@
 ```
 Docs/
 ├── README.md                  ← You are here (navigation index)
+├── REALITY_MAP.md             ← Current UI/tooling reality snapshot
 ├── AGENTS.md                  ← Agent tier guidelines (Haiku/Sonnet/Opus)
 ├── ONBOARDING_AGENTS.md       ← Critical context for AI assistants
 ├── CLAUDE.md                  ← Claude-specific guidelines
@@ -52,7 +53,7 @@ Docs/
 │   └── Sidecar_Memory_Isolation.md
 │
 ├── UI/                        ← UI design & implementation
-│   ├── LiquidGlass_Design_Spec.md
+│   ├── LiquidGlass_Design_Spec.md  ← Legacy (archived spec)
 │   ├── VIEW_FILE_MAP.md
 │   ├── LLMHub_UI_ToolWiring_Map.md
 │   ├── APP_ICON_SETUP_GUIDE.md
@@ -92,7 +93,8 @@ Docs/
 | **iOS development**                | `Platform/iOS/iOS_Quick_Reference.md`          |
 | **macOS XPC Helper service**       | `Platform/macOS/llmHubHelper_README.md`        |
 | **Security audit**                 | `Security/SECURITY_AUDIT_FILE_ACCESS_*.md`     |
-| **UI design system (Liquid Glass)**| `UI/LiquidGlass_Design_Spec.md`                |
+| **Reality Map (current state)**   | `REALITY_MAP.md`                               |
+| **UI design (legacy)**            | `UI/LiquidGlass_Design_Spec.md`                |
 | **Tool system architecture**       | `Architecture/UNIFIED_TOOL_SYSTEM_*.md`        |
 | **See recent changes**             | `Changelogs/2025-12.md`                        |
 | **Troubleshoot issues**            | `Diagnostics/`                                 |
@@ -107,6 +109,7 @@ Docs/
 2. **`AGENTS.md`** - Tier-based guidelines (which model for which task)
 3. **`CLAUDE.md`** - Claude-specific best practices
 4. **`CONVENTIONS.md`** - Code style and architectural patterns
+5. **`REALITY_MAP.md`** - Current UI/tooling status
 
 ---
 

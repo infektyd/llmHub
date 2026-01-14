@@ -5,16 +5,17 @@
 **Current Date**: January 2026
 **Project Phase**: Optimization & Feature Complete (Maintenance Mode for Core, Active Dev for Features).
 
+**Reality Map (authoritative current-state doc):** `Docs/REALITY_MAP.md`
+
 ---
 
 ## 🛑 Critical Directives (Non-Negotiable)
 
-1.  **Liquid Glass UI Only**:
+1.  **Canvas/Flat UI Only**:
 
-    - **NEVER** use opaque materials, standard lists, or default backgrounds.
-    - **ALWAYS** use `.glassEffect()` from `LiquidGlassTokens`.
-    - **ALWAYS** respect `LiquidGlassTokens.Spacing` and `Radius`.
-    - The UI must look translucent, futuristic, and premium ("Wow" factor).
+    - **ALWAYS** follow Canvas-first, matte surfaces with minimal ornament.
+    - **Use** `AppColors` and existing Canvas components (`CanvasRootView`, `TranscriptCanvasView`, `ModernSidebar*`).
+    - **AVOID** legacy glass-specific modifiers (`.glassEffect`, `LiquidGlassTokens`).
 
 2.  **Swift 6 Strict Concurrency**:
 
@@ -28,7 +29,7 @@
     - The codebase supports **macOS** and **iOS** in a single target.
     - Use `#if os(macOS)` and `#if os(iOS)` for platform-divergent code.
     - **iOS Restrictions**: No XPC service access, no `Process`, restricted file access.
-    - **macOS Features**: `llmHubHelper` (XPC), Window management, Menu bar.
+    - **macOS Features**: `llmHubHelper` (XPC exists but execution is currently disabled), Window management, Menu bar.
 
 4.  **No Legacy Tools**:
     - **Aider** artifacts (`.aider*`) have been **permanently removed**. Do not attempt to restore them.
@@ -44,7 +45,7 @@
 | :------------------ | :------------------------------ | :------------- |
 | `llmHub/`           | **Main App Source**             | **READ/WRITE** |
 | ├── `App/`          | App entry point (@main)         | Monitor        |
-| ├── `Views/`        | SwiftUI Views (Glass, Canvas)   | **Active Dev** |
+| ├── `Views/`        | SwiftUI Views (Canvas/flat UI)  | **Active Dev** |
 | │   └── `Components/` | Reusable UI (Artifacts/System/Chat) | **Active Dev** |
 | ├── `ViewModels/`   | UI Logic & State                | **Active Dev** |
 | │   ├── `Core/`     | ChatViewModel & interactions    | **Active Dev** |
@@ -94,13 +95,20 @@
 
 ## 🛠 Active Tools (Jan 2026)
 
+Registered in `ChatViewModel`:
+
 1.  `CalculatorTool`
-2.  `CodeInterpreterTool` (macOS XPC)
+2.  `CodeInterpreterTool` (macOS backend disabled; iOS JS-only)
 3.  `FileEditorTool`
 4.  `FileReaderTool`
-5.  `WebSearchTool`
-6.  `ShellTool` (macOS)
-7.  ...and others in `llmHub/Tools/`.
+5.  `FilePatchTool`
+6.  `WebSearchTool`
+7.  `HTTPRequestTool`
+8.  `ShellTool` (macOS only)
+9.  `WorkspaceTool`
+10. `DataVisualizationTool`
+
+Other tools exist in `Tools/Stubs/` but are not registered.
 
 ---
 

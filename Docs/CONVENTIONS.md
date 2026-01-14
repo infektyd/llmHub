@@ -1,5 +1,7 @@
 # llmHub Development Conventions
 
+**Reality Map (authoritative current-state doc):** `Docs/REALITY_MAP.md`
+
 ## Swift 6.2 Strict Concurrency
 - `@MainActor` for UI types, providers, view models
 - `actor` for isolated state (ToolRegistry, registries)
@@ -12,17 +14,15 @@
 - Nil callback properties in `onDisappear` (e.g., `onAddReference = nil`)
 - Add `deinit { print("🗑️ ClassName deallocated") }` during debugging
 
-## Liquid Glass UI
-- Use `.glassEffect()` modifier, never `.ultraThinMaterial`
-- Reference `LiquidGlassTokens.Spacing.*` and `LiquidGlassTokens.Radius.*`
-- No legacy glass wrapper views
-- `.buttonStyle(.glass)` for buttons
-- `.interactive()` for touch-responsive elements
+## Canvas/Flat UI
+- Use Canvas-first, matte styling (`AppColors`, `UIAppearance`)
+- Prefer existing Canvas layout components in `Views/UI/`
+- Avoid legacy glass modifiers and tokens
 
 ## Tool System
 - All tools conform to unified `Tool` protocol (Sendable)
 - Tools are `nonisolated struct` with platform-aware availability
-- Register in `ToolRegistry.shared`
+- Register tools in the `ToolRegistry` created in `ChatViewModel`
 - Populate `ToolMetrics` (startTime, endTime, durationMs) for observability
 - Tool results injected as `role: .tool` messages with `toolCallID`
 
@@ -38,12 +38,10 @@
 - Complex types JSON-encoded into `Data` fields (e.g., `[ToolCall]`, `[ChatContentPart]`)
 - `@Relationship(deleteRule: .cascade)` for parent-child relationships
 
-## XPC Code Execution (macOS only)
-- `CodeInterpreterTool` uses `llmHubHelper` XPC service
-- Helper is NOT sandboxed (full system access by design)
-- No import restrictions (personal use tool)
+## Code Execution Backend
+- `CodeInterpreterTool` exists, but macOS backend is currently disabled (entitlements/sandbox issue)
+- iOS uses JavaScriptCore backend (JavaScript only)
 - Timeout enforced, temp file cleanup
-- Supports: Python, JavaScript, TypeScript, Swift, Dart
 
 ## Error Handling
 - Tool errors: Inject `.tool` message with error content, continue loop
