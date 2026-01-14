@@ -1,115 +1,66 @@
 # iOS Quick Reference Guide
 
-Quick guide for iOS-specific patterns used in llmHub.
+Quick guide for iOS-specific patterns used in llmHub (Canvas/flat UI).
 
 ---
 
 ## Settings Access Pattern
 
 ### Implementation Location
-`llmHub/Views/Chat/NeonChatView.swift`
+`llmHub/Views/UI/RootView.swift`
 
 ### Code Pattern
 ```swift
 // State management
-#if os(iOS)
-@State private var showingSettings = false
+#if !os(macOS)
+@State private var showSettings = false
 @EnvironmentObject private var modelRegistry: ModelRegistry
 #endif
 
-// Toolbar button
-#if os(iOS)
-.toolbar {
-    ToolbarItem(placement: .navigationBarLeading) {
-        Button {
-            showingSettings = true
-        } label: {
-            Image(systemName: "gearshape")
-                .foregroundColor(.neonElectricBlue)
-        }
-    }
-}
-#endif
-
 // Sheet presentation
-#if os(iOS)
-.sheet(isPresented: $showingSettings) {
+#if !os(macOS)
+.sheet(isPresented: $showSettings) {
     NavigationStack {
         SettingsView()
             .navigationTitle("Settings")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
-                        showingSettings = false
+                ToolbarItem(placement: .cancellationAction) {
+                    Button { showSettings = false } label: {
+                        Image(systemName: "xmark")
                     }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Done") { showSettings = false }
                 }
             }
             .environmentObject(modelRegistry)
     }
-    .presentationDetents([.large])
-    .presentationDragIndicator(.visible)
 }
 #endif
 ```
 
 ### Key Points
-- Always wrap iOS-specific UI in `#if os(iOS)`
+- Keep iOS-specific UI behind `#if !os(macOS)` or `#if os(iOS)`
 - Use `.sheet()` for modal presentations
-- Include "Done" button in top-right for dismissal
+- Include a clear dismissal control
 - Pass environment objects explicitly to sheets
-- Use `.presentationDetents([.large])` for full-screen modals
 
 ---
 
-## Keyboard Dismiss Pattern
+## Keyboard Behavior
 
-### Interactive Dismiss (ScrollView)
+### Current State
+- Input focus is managed in `llmHub/Views/UI/Composer/Composer.swift` via `@FocusState`.
+- There is **no explicit keyboard dismiss button** wired today.
 
-**Location**: `llmHub/Views/Chat/NeonChatView.swift`
-
+### Optional Pattern (If Adding Manual Dismiss)
 ```swift
-ScrollView {
-    // content
-}
-#if os(iOS)
-.scrollDismissesKeyboard(.interactively)
-#endif
-```
-
-### Explicit Dismiss Button
-
-**Location**: `llmHub/Views/Chat/NeonChatInput.swift`
-
-```swift
-// Use existing @FocusState
 @FocusState private var isInputFocused: Bool
 
-// Conditional button in HStack
-#if os(iOS)
-if isInputFocused {
-    keyboardDismissButton
+Button(action: { isInputFocused = false }) {
+    Image(systemName: "keyboard.chevron.compact.down")
 }
-#endif
-
-// Button definition
-#if os(iOS)
-private var keyboardDismissButton: some View {
-    Button(action: { isInputFocused = false }) {
-        Image(systemName: "keyboard.chevron.compact.down")
-            .frame(width: 32, height: 32)
-            .background(keyboardDismissButtonBackground)
-    }
-    .transition(.scale.combined(with: .opacity))
-}
-#endif
 ```
-
-### Key Points
-- Use `.scrollDismissesKeyboard(.interactively)` on scrollable content
-- Leverage `@FocusState` to track keyboard visibility
-- Show dismiss button conditionally when focused
-- Use smooth transitions for button appearance/disappearance
-- Match theme styling (glass effects, colors)
 
 ---
 
@@ -117,27 +68,19 @@ private var keyboardDismissButton: some View {
 
 ### Pattern
 ```swift
-.frame(width: someWidth, height: someHeight)
-```
-
-### Make It Conditional
-```swift
 #if os(macOS)
 .frame(width: 600, height: 500)
 #endif
-// iOS: No fixed frame, fills available space
+// iOS: no fixed frame, fills available space
 ```
 
 ### Example
 `llmHub/Views/Settings/SettingsView.swift`:
 ```swift
-TabView {
-    // tabs...
-}
 #if os(macOS)
 .frame(width: 600, height: 500)
 #endif
-.background(Color.neonMidnight)
+.background(AppColors.backgroundPrimary)
 ```
 
 ---
@@ -160,17 +103,9 @@ TabView {
 #endif
 ```
 
-### Title Display Modes
-- `.inline`: Small title in navigation bar (most common)
-- `.large`: Large title that shrinks on scroll
-- `.automatic`: System decides based on context
-
 ---
 
 ## Environment Objects in Sheets (iOS)
-
-### Problem
-Environment objects don't automatically propagate to sheets on iOS.
 
 ### Solution
 Explicitly pass environment objects:
@@ -179,31 +114,8 @@ Explicitly pass environment objects:
     NavigationStack {
         SomeView()
             .environmentObject(modelRegistry)
-            .environment(\.theme, themeManager.current)
     }
 }
-```
-
----
-
-## Sheet Presentation Styles (iOS)
-
-### Common Detents
-```swift
-.presentationDetents([.medium])           // Half screen
-.presentationDetents([.large])            // Full screen
-.presentationDetents([.medium, .large])   // Resizable
-```
-
-### Drag Indicator
-```swift
-.presentationDragIndicator(.visible)   // Show swipe indicator
-.presentationDragIndicator(.hidden)    // Hide indicator
-```
-
-### Background Interaction
-```swift
-.presentationBackgroundInteraction(.enabled) // Can interact with background
 ```
 
 ---
@@ -223,17 +135,6 @@ Button("Focus") {
 }
 ```
 
-### Dismiss Keyboard
-```swift
-// Option 1: Set focus to false
-isInputFocused = false
-
-// Option 2: Global dismiss (use sparingly)
-#if os(iOS)
-UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-#endif
-```
-
 ---
 
 ## Platform Detection
@@ -244,15 +145,6 @@ UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to:
 // iOS-only code
 #elseif os(macOS)
 // macOS-only code
-#endif
-```
-
-### Runtime Check (avoid if possible)
-```swift
-#if canImport(UIKit)
-// iOS/iPadOS/tvOS
-#elseif canImport(AppKit)
-// macOS
 #endif
 ```
 
@@ -285,16 +177,6 @@ NSSound.beep()
 #endif
 ```
 
-### 3. Window Management
-```swift
-// ❌ iOS doesn't have NSWindow
-NSApp.keyWindow?.close()
-
-// ✅ Use environment dismiss
-@Environment(\.dismiss) var dismiss
-dismiss()
-```
-
 ---
 
 ## Testing Checklist for iOS Features
@@ -302,33 +184,28 @@ dismiss()
 Before considering an iOS feature complete:
 
 - [ ] Builds without errors on iOS target
-- [ ] No compiler warnings
 - [ ] Wrapped in `#if os(iOS)` appropriately
 - [ ] Works on both iPhone and iPad
-- [ ] Handles both portrait and landscape
 - [ ] Respects safe areas (notch, Dynamic Island)
-- [ ] Keyboard interactions smooth
 - [ ] Sheet presentations animate correctly
 - [ ] Environment objects passed correctly
 - [ ] Dark mode support
 - [ ] Accessibility labels present
-- [ ] VoiceOver navigable
 
 ---
 
 ## Resources
 
 ### Related Files
-- `llmHub/Views/Chat/NeonChatView.swift` - iOS navigation, settings access
-- `llmHub/Views/Chat/NeonChatInput.swift` - Keyboard handling
-- `llmHub/Views/Settings/SettingsView.swift` - Cross-platform settings
+- `llmHub/Views/UI/RootView.swift` - iOS settings sheet
+- `llmHub/Views/UI/Composer/Composer.swift` - Input focus handling
+- `llmHub/Views/Settings/SettingsView.swift` - Cross-platform settings UI
 - `llmHub/App/llmHubApp.swift` - Platform-specific app scenes
 
 ### Documentation
-- `Docs/IOS_SETTINGS_KEYBOARD_IMPLEMENTATION.md` - Implementation details
-- `Docs/iOS_Test_Plan.md` - Comprehensive testing guide
-- `AGENTS.md` - Code style and architecture
-- `CLAUDE.md` - Overall architecture
+- `Docs/Platform/iOS/iOS_Test_Plan.md` - Comprehensive testing guide
+- `Docs/AGENTS.md` - Code style and architecture
+- `Docs/CLAUDE.md` - Overall architecture
 
 ### Apple Documentation
 - [Human Interface Guidelines - iOS](https://developer.apple.com/design/human-interface-guidelines/ios)

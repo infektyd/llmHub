@@ -29,7 +29,7 @@ This document captures patterns to minimize costs while maintaining quality.
 ### When to Use Opus (Sparingly)
 
 1. **Project kickoff** — Set up AGENTS.md, establish patterns
-2. **New subsystem design** — Create implementation docs like LIQUID_GLASS_MIGRATION.md
+2. **New subsystem design** — Create implementation docs in `Docs/Architecture/`
 3. **When stuck** — Sonnet tried twice and failed
 4. **Architecture reviews** — Once a month, audit the codebase
 5. **Complex debugging** — Race conditions, memory issues, async bugs
@@ -98,7 +98,7 @@ When you use Opus, ask it to create a document like this:
 - Quick syntax questions
 
 ### Development (Sonnet - Balanced)
-- "Implement Step 3 from LIQUID_GLASS_MIGRATION.md"
+- "Implement Step 3 from the feature implementation guide"
 - "Add a new Tool following the pattern in CalculatorTool"
 - "Write tests for ChatService"
 - "Fix this bug: [paste error]"
@@ -114,8 +114,8 @@ When you use Opus, ask it to create a document like this:
 
 ### Do This ✅
 ```
-"Look at AGENTS.md and implement the first migration in 
-LIQUID_GLASS_MIGRATION.md. The file is NeonChatInput.swift."
+"Look at AGENTS.md and Docs/REALITY_MAP.md, then update
+TranscriptCanvasView.swift to match the current Canvas UI conventions."
 ```
 - References existing docs (AI reads them, not you typing)
 - Specific file target
@@ -123,9 +123,8 @@ LIQUID_GLASS_MIGRATION.md. The file is NeonChatInput.swift."
 
 ### Don't Do This ❌
 ```
-"I have this app and it uses SwiftUI and I want to add 
-Liquid Glass and here's what my files look like [pastes 
-500 lines] and I want the buttons to be glass and..."
+"I have this app and it uses SwiftUI and I want to redo the UI,
+here are 500 lines, please make it look modern and glossy..."
 ```
 - Wastes tokens on context the AI already has
 - Vague scope = multiple clarification rounds = more tokens
@@ -139,7 +138,7 @@ You now have:
 | File | Purpose | Saves You |
 |------|---------|-----------|
 | `AGENTS.md` | Project context for any AI model | Re-explaining architecture every session |
-| `LIQUID_GLASS_MIGRATION.md` | Step-by-step Liquid Glass work | Opus re-architecting each session |
+| `REALITY_MAP.md` | Current-state snapshot (UI + tools) | Re-solving solved problems |
 | `UI_FIXES_SUMMARY.md` | Record of past decisions | Re-solving solved problems |
 
 ### Keep Adding:
@@ -166,7 +165,7 @@ You now have:
 ```
 "Following AGENTS.md conventions, implement [feature] in [file]"
 
-"Look at LIQUID_GLASS_MIGRATION.md and complete Migration [N]"
+"Look at Docs/REALITY_MAP.md and update [file] to match current UI/tools"
 
 "Add a new tool called [Name]Tool following the Tool protocol in ToolRegistry.swift"
 
@@ -178,8 +177,8 @@ You now have:
 ### Opus Prompts (Investment Sessions)
 ```
 "Review my project architecture in AGENTS.md. I want to add [major feature]. 
-Create an implementation document that Sonnet can follow, similar to 
-LIQUID_GLASS_MIGRATION.md. Include exact code snippets and file locations."
+Create an implementation document that Sonnet can follow, similar to other
+docs in Docs/Architecture/. Include exact code snippets and file locations."
 
 "Sonnet has failed twice to fix [issue]. Here's what we tried: [context]. 
 Debug this and explain what's actually happening."
@@ -208,12 +207,12 @@ Keep a simple log:
 ```
 Date       | Model  | Task                           | Result
 -----------|--------|--------------------------------|--------
-2025-12-04 | Opus   | Create LIQUID_GLASS_MIGRATION  | ✅ Doc created
+2025-12-04 | Opus   | Create implementation guide    | ✅ Doc created
 2025-12-04 | Sonnet | Implement Phase 1              | ✅ 3 files
-2025-12-05 | Sonnet | Migration 1: NeonChatInput     | ✅ 
-2025-12-05 | Haiku  | Add docs to GlassCard          | ✅
-2025-12-05 | Sonnet | Migration 2: NeonToolbar       | ❌ Needs Opus
-2025-12-06 | Opus   | Debug toolbar issue            | ✅ Fixed + updated doc
+2025-12-05 | Sonnet | Migration 1: Header update     | ✅ 
+2025-12-05 | Haiku  | Add docs to ArtifactCard       | ✅
+2025-12-05 | Sonnet | Migration 2: Sidebar update    | ❌ Needs Opus
+2025-12-06 | Opus   | Debug layout issue             | ✅ Fixed + updated doc
 ```
 
 This helps you see patterns — what needs Opus, what doesn't.

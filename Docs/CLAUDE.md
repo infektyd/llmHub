@@ -21,6 +21,8 @@ log stream --predicate 'subsystem == "com.llmhub"'
 
 **Requirements:** macOS 26.2 SDK="25C57", Xcode 26.2 build="17C52", iOS 26.2 SDK="23C53" iPhone=17 pro, Swift 6.2
 
+**Reality Map (authoritative current-state doc):** `Docs/REALITY_MAP.md`
+
 ## Architecture: Brain/Hand/Loop
 
 llmHub is a native macOS AI Workbench for LLMs with a modular architecture:
@@ -34,10 +36,8 @@ llmHub is a native macOS AI Workbench for LLMs with a modular architecture:
 **Hand (Tools)** - Deterministic tools in `llmHub/Tools/`
 
 - Conform to `Tool` protocol with platform-aware availability
-- **Core Tools**: Calculator, CodeInterpreterTool (Swift/Python/JS via XPC), FileEditorTool, FileReaderTool, WebSearchTool
-- **Extended Tools**: Shell, HTTPRequest, ImageGeneration, DataVisualization, FilePatch, Workspace, ShellSession, MCPToolBridge
-- **17+ tools total** with unified registration via `ToolRegistry`
-- **Legacy**: Original tools use `LegacyTool` protocol (renamed from `Tool` during architecture unification)
+- **Registered Tools**: Calculator, CodeInterpreterTool (macOS backend disabled; iOS JS-only), FileEditorTool, FileReaderTool, FilePatchTool, WebSearchTool, HTTPRequestTool, ShellTool (macOS only), WorkspaceTool, DataVisualizationTool
+- **Additional**: MCPToolBridge and tools under `Tools/Stubs/` exist but are not wired into the registry
 
 **Loop (Orchestrator)** - `ChatService` in `llmHub/Services/Chat/ChatService.swift`
 
@@ -54,18 +54,17 @@ llmHub is a native macOS AI Workbench for LLMs with a modular architecture:
 - `actor` for isolated state (CodeExecutionEngine)
 - All cross-actor parameters must be `Sendable`
 
-**XPC Sandboxed Execution**
+**Code Execution Backend**
 
-- Code runs in separate `llmHubHelper` XPC service
-- Main app sandboxed; XPC helper unsandboxed for execution
-- Protocol: `CodeExecutionXPCProtocol`
+- XPC helper (`llmHubHelper`) exists but is disabled on macOS due to entitlements/sandbox issues
+- iOS uses a JavaScriptCore backend (JavaScript only)
+- Protocol: `CodeExecutionXPCProtocol` for macOS XPC path
 
-**Liquid Glass UI (SwiftUI)**
+**Canvas/Flat UI (SwiftUI)**
 
-- Use `.glassEffect()` on views. Reference `LiquidGlassTokens` for spacing and radii. Do not use legacy wrapper views.
-- `.buttonStyle(.glass)` for buttons
-- `.interactive()` for touch-responsive elements
-- Avoid legacy `.ultraThinMaterial`
+- Use Canvas-first, matte styling (`AppColors`, `UIAppearance`)
+- Prefer existing Canvas components (`CanvasRootView`, `TranscriptCanvasView`, `ModernSidebar*`)
+- Avoid legacy glass modifiers and tokens
 
 **Persistence**
 
@@ -119,8 +118,8 @@ llmHub is a native macOS AI Workbench for LLMs with a modular architecture:
 
 **New UI Component:**
 
-1. Create in `Views/Components/` or `Views/Glass/`
-2. Use Liquid Glass (`glassEffect()`)
+1. Create in `Views/Components/` or `Views/UI/`
+2. Follow Canvas/flat styling conventions
 3. Use `@Observable` for view models
 
 ## Agent Tier Guidelines
@@ -128,20 +127,19 @@ llmHub is a native macOS AI Workbench for LLMs with a modular architecture:
 From `Docs/AGENTS.md`:
 
 - **Haiku:** Quick tasks, follow patterns exactly, single-file changes, syntax help
-- **Sonnet:** New features, UI components, provider integrations, multi-file changes. Liquid Glass mandatory for UI.
+- **Sonnet:** New features, UI components, provider integrations, multi-file changes. Canvas/flat UI mandatory.
 - **Opus:** Architecture design, complex concurrency bugs, 5+ file refactors, subsystem design
 
 Escalate to Opus if uncertain about architecture or existing patterns seem wrong.
 
-## Current Status (December 2025)
+## Current Status (January 2026)
 
-- ✅ **Fully Functional**: Complete Brain/Hand/Loop implementation with all 6 providers
-- ✅ **17+ Tools**: Unified tool system with platform-aware availability
-- ✅ **Context Management**: Token estimation and compaction integrated into ChatService
-- ✅ **Liquid Glass UI**: Modern glass-morphism interface throughout
-- ✅ **Swift 6.2**: Strict concurrency compliance with `@MainActor` and `Sendable`
-- ✅ **Streaming**: Full async streaming support via `AsyncThrowingStream`
-- ✅ **Persistence**: SwiftData with bidirectional domain/entity conversion
+- ✅ **Brain/Hand/Loop** implemented with all 6 providers
+- ✅ **Tool system** wired with 10 registered tools (see Reality Map)
+- ✅ **Context management** integrated into `ChatService`
+- ✅ **Canvas/flat UI** is the current design direction
+- ⚠️ **macOS code execution** disabled pending XPC entitlements fix
+- ✅ **Swift 6.2**, streaming, and SwiftData persistence in place
 
 ## Notes
 
