@@ -168,7 +168,12 @@ public final class SettingsManager {
 // MARK: - SwiftUI Environment
 
 private struct SettingsManagerKey: EnvironmentKey {
-    static let defaultValue = SettingsManager()
+    static let defaultValue: SettingsManager = {
+        if PreviewMode.isRunning {
+            return SettingsManager(userDefaults: UserDefaults(suiteName: "llmHub.preview") ?? .standard)
+        }
+        return SettingsManager()
+    }()
 }
 
 extension EnvironmentValues {

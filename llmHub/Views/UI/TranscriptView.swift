@@ -8,13 +8,10 @@
 
 import SwiftUI
 
-// Note: Textual will be imported once package is added
-
 // MARK: - Composer Height Environment
 
-/// Environment key for injecting composer height to enable bottom safe area inset
 private struct ComposerHeightKey: EnvironmentKey {
-    static let defaultValue: CGFloat = 100  // Reasonable fallback
+    static let defaultValue: CGFloat = 100
 }
 
 extension EnvironmentValues {
@@ -24,7 +21,6 @@ extension EnvironmentValues {
     }
 }
 
-/// PreferenceKey for measuring composer height from RootView
 struct ComposerHeightPreferenceKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
@@ -32,8 +28,8 @@ struct ComposerHeightPreferenceKey: PreferenceKey {
     }
 }
 
-/// Canvas view for displaying the conversation transcript
-/// No message bubbles - flat design with role labels
+// MARK: - Transcript Canvas
+
 struct TranscriptCanvasView: View {
     let rows: [TranscriptRowViewModel]
     let streamingRow: TranscriptRowViewModel?
@@ -54,11 +50,14 @@ struct TranscriptCanvasView: View {
                             .id(rowVM.id)
                     }
                 }
+                // 🔧 CRITICAL FIX — expand transcript width
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, uiCompactMode ? 16 : 24)
                 .padding(.vertical, uiCompactMode ? 16 : 24)
             }
+            // 🔧 CRITICAL FIX — expand scroll container width
+            .frame(maxWidth: .infinity)
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                // Reserve space for the overlaid composer bar
                 Color.clear.frame(height: composerHeight)
             }
             .background(AppColors.backgroundPrimary)
@@ -87,9 +86,8 @@ struct TranscriptCanvasView: View {
     }
 }
 
-// MARK: - SwiftData container (production integration)
+// MARK: - SwiftData Container
 
-/// Container view that bridges SwiftData + streaming overlay into a plain `TranscriptCanvasView`.
 struct TranscriptCanvasSessionView: View {
     let session: ChatSessionEntity
 
@@ -101,9 +99,6 @@ struct TranscriptCanvasSessionView: View {
 
     var body: some View {
         TranscriptCanvasView(rows: persistedRows, streamingRow: streamingOverlayRow)
-            .onChange(of: chatVM.streamingDisplayMessage) { _, _ in
-                // The pure view handles scrolling; this container just recomputes rows.
-            }
     }
 
     private var persistedRows: [TranscriptRowViewModel] {
@@ -113,7 +108,6 @@ struct TranscriptCanvasSessionView: View {
     private var streamingOverlayRow: TranscriptRowViewModel? {
         guard let streaming = chatVM.streamingDisplayMessage else { return nil }
 
-        // Only show overlay when it isn't already persisted (join via generationID).
         if let generationID = streaming.generationID {
             let lastPersistedAssistantGenerationID: UUID? =
                 messages.reversed().first(where: { $0.role == "assistant" || $0.role == "model" })?
@@ -128,7 +122,6 @@ struct TranscriptCanvasSessionView: View {
             )
         }
 
-        // Defensive fallback: still show a streaming row even if generationID is missing.
         return mapToViewModel(streaming, isStreaming: true, rowID: persistedRowID(streaming.id))
     }
 
@@ -136,160 +129,94 @@ struct TranscriptCanvasSessionView: View {
         mapToViewModel(entity.asDomain(), isStreaming: false, rowID: persistedRowID(entity.id))
     }
 
-    // swiftlint:disable:next function_body_length
-    private func mapToViewModel(_ message: ChatMessage, isStreaming: Bool, rowID: String)
-        -> TranscriptRowViewModel {
-        let headerMetaText = tokenMetaText(for: message)
-
-        // Handle tool result messages as compact artifact cards
-        if message.role == .tool {
-            let meta = message.toolResultMeta
-            let toolName = meta?.toolName ?? inferredToolName(from: message.content) ?? "Tool"
-            let statusEmoji = (meta?.success ?? true) ? "🔧" : "❌"
-            let status: ArtifactStatus = (meta?.success ?? true) ? .success : .failure
-
-            // Truncate preview for compact display
-            let previewLines = message.content.components(separatedBy: "\n")
-            let maxPreviewLines = 50
-            let truncatedPreview = previewLines.prefix(maxPreviewLines).joined(separator: "\n")
-            let wasTruncated = previewLines.count > maxPreviewLines || (meta?.truncated ?? false)
-            let truncationNote = wasTruncated ? "\n... (\(previewLines.count) lines total)" : ""
-
-            let toolArtifact = ArtifactPayload(
-                id: message.id,
-                title: "\(statusEmoji) \(toolName)",
-                kind: .toolResult,
-                status: status,
-                previewText: truncatedPreview + truncationNote,
-                actions: [.copy],
-                metadata: meta?.metadata
-            )
-
-            return TranscriptRowViewModel(
-                id: rowID,
-                role: message.role,
-                headerLabel: "\(statusEmoji) \(toolName)",
-                headerMetaText: headerMetaText,
-                content: "",  // Empty content - card renders the result
-                isStreaming: isStreaming,
-                generationID: message.generationID,
-                artifacts: [toolArtifact]
-            )
-        }
-
-        // Runtime artifact detection for non-tool messages
-        let detection = ArtifactService.detect(from: message.content, messageID: message.id)
-        let cleanContent = detection.cleanContent
-
-        // Merge detected artifacts with persisted metadata artifacts
-        var mergedArtifacts = detection.artifacts
-
-        let persistedArtifacts = message.artifactMetadatas.map { meta in
-            ArtifactPayload(
-                id: meta.id,
-                title: meta.filename,
-                kind: mapArtifactKind(meta.language),
-                status: .success,
-                previewText: meta.content,
-                actions: [.copy, .open],
-                metadata: nil
-            )
-        }
-
-        mergedArtifacts.append(contentsOf: persistedArtifacts)
-
-        let isUser = message.role == .user
-        let label = isUser ? "You" : providerLabel()
-
-        return TranscriptRowViewModel(
-            id: rowID,
+    // Map a domain ChatMessage into a TranscriptRowViewModel with streaming/rowID context
+    private func mapToViewModel(_ message: ChatMessage, isStreaming: Bool, rowID: UUID) -> TranscriptRowViewModel {
+        TranscriptRowViewModel(
+            id: rowID.uuidString,
             role: message.role,
-            headerLabel: label,
-            headerMetaText: headerMetaText,
-            content: cleanContent,  // Use cleaned content
+            headerLabel: headerLabel(for: message),
+            headerMetaText: headerMetaText(for: message),
+            content: message.content,
             isStreaming: isStreaming,
             generationID: message.generationID,
-            artifacts: mergedArtifacts
+            artifacts: artifacts(for: message)
         )
     }
 
-    private func tokenMetaText(for message: ChatMessage) -> String? {
-        // Prefer real token usage when available; otherwise fall back to an estimate.
-        if let usage = message.tokenUsage {
-            let total = usage.inputTokens + usage.outputTokens + usage.cachedTokens
-            return "\(total)t"
-        }
-        // If the message is empty, avoid showing a noisy estimate.
-        guard !message.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            return nil
-        }
-        return "≈\(message.estimatedTokens)t"
-    }
-
-    private func inferredToolName(from content: String) -> String? {
-        guard let data = content.data(using: .utf8) else { return nil }
-        guard let any = try? JSONSerialization.jsonObject(with: data, options: []) else { return nil }
-        guard let dict = any as? [String: Any] else { return nil }
-
-        if let toolName = dict["toolName"] as? String, !toolName.isEmpty { return toolName }
-        if let toolName = dict["tool_name"] as? String, !toolName.isEmpty { return toolName }
-        if let toolName = dict["name"] as? String, !toolName.isEmpty { return toolName }
-        return nil
-    }
-
-    private func providerLabel() -> String {
-        if !session.model.isEmpty { return cleanModelName(session.model) }
-        return "Assistant"
-    }
-
-    // Kept for metadata mapping usage
-    private func mapArtifactKind(_ lang: CodeLanguage) -> ArtifactKind {
-        switch lang {
-        case .json, .swift, .python, .javascript: return .code
-        case .markdown, .text: return .text
+    private func headerLabel(for message: ChatMessage) -> String {
+        switch message.role {
+        case .user: return "You"
+        case .assistant: return "Assistant"
+        case .system: return "System"
+        case .tool: return "Tool"
         }
     }
 
-    private func persistedRowID(_ id: UUID) -> String {
-        "message:\(id.uuidString)"
+    private func headerMetaText(for message: ChatMessage) -> String? {
+        // Approximate token count; UI decides whether to show it via settings
+        let approxTokens = message.estimatedTokens
+        return "≈\(approxTokens)t"
     }
 
-    private func streamingRowID(sessionID: UUID, generationID: UUID) -> String {
-        "streaming:\(sessionID.uuidString):\(generationID.uuidString)"
+    private func artifacts(for message: ChatMessage) -> [ArtifactPayload] {
+        let metadatas = message.artifactMetadatas
+        return metadatas.map { meta in
+            let id = Canvas2StableIDs.artifactID(messageID: message.id, metadata: meta)
+            let kind: ArtifactKind = {
+                switch meta.language {
+                case .text: return .text
+                case .markdown: return .text
+                default: return .code
+                }
+            }()
+            var actions: [ArtifactAction] = [.copy]
+            if meta.fileURL != nil { actions.append(.open) }
+            let info: [String: String] = [
+                "language": meta.language.displayName,
+                "size": "\(meta.sizeBytes) B"
+            ]
+            return ArtifactPayload(
+                id: id,
+                title: meta.filename,
+                kind: kind,
+                status: .success,
+                previewText: meta.content,
+                actions: actions,
+                metadata: info
+            )
+        }
+    }
+
+    // Generate stable IDs for persisted and streaming rows
+    private func persistedRowID(_ id: UUID) -> UUID { id }
+
+    private func streamingRowID(sessionID: UUID, generationID: UUID) -> UUID {
+        // Derive a deterministic UUID by namespacing the session and generation IDs into a UUID v5-like hash.
+        // Since we don't have a UUID v5 helper here, combine and hash into a UUID deterministically.
+        let combined = sessionID.uuidString + ":" + generationID.uuidString
+        var hasher = Hasher()
+        hasher.combine(combined)
+        let hash = hasher.finalize()
+        // Expand the hash into a UUID by repeating/bit-casting deterministically
+        let upper = UInt64(bitPattern: Int64(hash))
+        let lower = UInt64(bitPattern: Int64(~hash))
+        return UUID(uuid: (
+            UInt8((upper >> 56) & 0xFF),
+            UInt8((upper >> 48) & 0xFF),
+            UInt8((upper >> 40) & 0xFF),
+            UInt8((upper >> 32) & 0xFF),
+            UInt8((upper >> 24) & 0xFF),
+            UInt8((upper >> 16) & 0xFF),
+            UInt8((upper >> 8) & 0xFF),
+            UInt8(upper & 0xFF),
+            UInt8((lower >> 56) & 0xFF),
+            UInt8((lower >> 48) & 0xFF),
+            UInt8((lower >> 40) & 0xFF),
+            UInt8((lower >> 32) & 0xFF),
+            UInt8((lower >> 24) & 0xFF),
+            UInt8((lower >> 16) & 0xFF),
+            UInt8((lower >> 8) & 0xFF),
+            UInt8(lower & 0xFF)
+        ))
     }
 }
-
-#if DEBUG
-    #Preview("TranscriptCanvas • 20 messages + artifacts") {
-        TranscriptCanvasView(
-            rows: Canvas2PreviewFixtures.longTranscriptRows(messageCount: 20),
-            streamingRow: nil
-        )
-        .frame(width: 900, height: 800)
-    }
-
-    #Preview("TranscriptCanvas • Long markdown + code") {
-        let rows = [
-            TranscriptRowViewModel(
-                id: "message:\(Canvas2PreviewFixtures.IDs.assistant1.uuidString)",
-                role: .assistant,
-                headerLabel: "Assistant",
-                headerMetaText: "123t",
-                content: Canvas2PreviewFixtures.markdownLongWithCode,
-                isStreaming: false,
-                generationID: UUID(uuidString: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
-                artifacts: [Canvas2PreviewFixtures.codeFileArtifact()]
-            )
-        ]
-        TranscriptCanvasView(rows: rows, streamingRow: nil)
-            .frame(width: 900, height: 800)
-    }
-
-    #Preview("TranscriptCanvas • Streaming overlay") {
-        @Previewable @State var isStreaming = true
-        let rows = Canvas2PreviewFixtures.shortTranscriptRows()
-        let streaming = isStreaming ? Canvas2PreviewFixtures.streamingRow() : nil
-        return TranscriptCanvasView(rows: rows, streamingRow: streaming)
-            .frame(width: 900, height: 800)
-    }
-#endif

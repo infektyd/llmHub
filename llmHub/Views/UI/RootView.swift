@@ -381,7 +381,23 @@ struct CanvasRootView: View {
                 }
             )
         }
+        // Memory usage indicator (appears above composer when memories are used)
+        .overlay(alignment: .bottom) {
+            HStack {
+                Spacer()
+                MemoryIndicatorView(
+                    count: chatVM.memoriesUsedCount,
+                    summary: chatVM.memoriesUsedSummary,
+                    isVisible: $chatVM.showMemoryIndicator
+                )
+                .padding(.bottom, 8)
+                Spacer()
+            }
+            .padding(.bottom, composerHeight)
+            .allowsHitTesting(false)
+        }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppColors.backgroundPrimary)
     }
 
     // Debug/Verification Helper

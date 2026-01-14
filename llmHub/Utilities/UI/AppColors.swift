@@ -12,53 +12,71 @@ enum AppColors {
     // MARK: - Light / Dark palettes
 
     enum Dark {
+        /// Main background (deep charcoal, not pure black)
         static let backgroundPrimary = Color(red: 0.07, green: 0.07, blue: 0.08)
-        static let backgroundSecondary = Color(red: 0.10, green: 0.10, blue: 0.12)
 
-        static let surface = Color(red: 0.12, green: 0.12, blue: 0.14)
+        /// Slight contrast layer (sidebar / secondary panels)
+        static let backgroundSecondary = Color(red: 0.11, green: 0.11, blue: 0.13)
 
-        static let textPrimary = Color.white.opacity(0.92)
-        static let textSecondary = Color.white.opacity(0.72)
-        static let textTertiary = Color.white.opacity(0.50)
+        /// Card / surface layer
+        static let surface = Color(red: 0.14, green: 0.14, blue: 0.16)
 
-        static let accent = Color(red: 0.78, green: 0.44, blue: 0.28)
-        static let accentSecondary = Color(red: 0.22, green: 0.64, blue: 0.52)
+        /// Text hierarchy (never pure white)
+        static let textPrimary = Color.white.opacity(0.90)
+        static let textSecondary = Color.white.opacity(0.70)
+        static let textTertiary = Color.white.opacity(0.48)
 
-        static let success = Color(red: 0.22, green: 0.74, blue: 0.46)
+        /// Warm accent (matches your Light accent family)
+        static let accent = Color(red: 0.89, green: 0.56, blue: 0.42)
 
-        /// Shadow color used for elevated surfaces.
-        static let shadowSmoke = Color.black.opacity(0.28)
+        /// Secondary accent (muted warm neutral)
+        static let accentSecondary = Color(red: 0.62, green: 0.50, blue: 0.44)
 
-        /// Subtle user-message bubble background.
+        /// Success green
+        static let success = Color(red: 0.34, green: 0.72, blue: 0.54)
+
+        /// Shadow color used for elevated surfaces
+        static let shadowSmoke = Color.black.opacity(0.32)
+
+        /// Subtle user-message bubble background
         static let userBubble = Color.white.opacity(0.06)
 
-        /// A neutral, slightly warm gray used as an option in UI pickers.
+        /// Neutral gray option for pickers
         static let smoke = Color(red: 0.55, green: 0.56, blue: 0.58)
     }
-
+    
     enum Light {
-        static let backgroundPrimary = Color(red: 0.98, green: 0.98, blue: 0.99)
-        static let backgroundSecondary = Color(red: 0.94, green: 0.95, blue: 0.96)
+        /// Main background (warm paper)
+        static let backgroundPrimary = Color(red: 0.980, green: 0.976, blue: 0.961) // #FAF9F5-ish
 
-        static let surface = Color.white
+        /// Slight contrast layer (subtle panel/background separation)
+        static let backgroundSecondary = Color(red: 0.965, green: 0.960, blue: 0.945)
 
-        static let textPrimary = Color.black.opacity(0.88)
-        static let textSecondary = Color.black.opacity(0.66)
-        static let textTertiary = Color.black.opacity(0.45)
+        /// Card / input field surface (nearly-white, still warm)
+        static let surface = Color(red: 1.000, green: 0.998, blue: 0.992)
 
-        static let accent = Color(red: 0.72, green: 0.36, blue: 0.22)
-        static let accentSecondary = Color(red: 0.18, green: 0.56, blue: 0.46)
+        /// Text uses softened black to match the calm look (avoid pure black)
+        static let textPrimary = Color.black.opacity(0.78)
+        static let textSecondary = Color.black.opacity(0.55)
+        static let textTertiary = Color.black.opacity(0.38)
 
-        static let success = Color(red: 0.18, green: 0.62, blue: 0.38)
+        /// Warm muted accent (star + send button vibe)
+        static let accent = Color(red: 0.89, green: 0.56, blue: 0.42)
 
-        /// Shadow color used for elevated surfaces.
-        static let shadowSmoke = Color.black.opacity(0.10)
+        /// Secondary accent (muted warm neutral accent for softer UI elements)
+        static let accentSecondary = Color(red: 0.80, green: 0.62, blue: 0.52)
 
-        /// Subtle user-message bubble background.
-        static let userBubble = Color.black.opacity(0.04)
+        /// Success green (soft, modern)
+        static let success = Color(red: 0.32, green: 0.68, blue: 0.56)
 
-        /// A neutral, slightly warm gray used as an option in UI pickers.
-        static let smoke = Color(red: 0.62, green: 0.63, blue: 0.65)
+        /// Shadow color used for elevated surfaces (very subtle in light mode)
+        static let shadowSmoke = Color.black.opacity(0.08)
+
+        /// Subtle user-message bubble background (barely-there ink)
+        static let userBubble = Color.black.opacity(0.03)
+
+        /// Neutral warm gray used as an option in UI pickers.
+        static let smoke = Color(red: 0.68, green: 0.67, blue: 0.64)
     }
 
     // MARK: - Typography

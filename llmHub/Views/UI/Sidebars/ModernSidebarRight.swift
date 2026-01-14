@@ -8,6 +8,7 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
+import Combine
 
 // MARK: - Inspector State
 
@@ -107,6 +108,7 @@ struct ModernSidebarRight: View {
     @AppStorage("sidebar.right.mode") private var storedMode: String = InspectorMode.focus.rawValue
     @AppStorage("sidebar.right.section.tools.expanded") private var toolsExpanded: Bool = true
     @AppStorage("sidebar.right.section.files.expanded") private var filesExpanded: Bool = true
+    @AppStorage("sidebar.right.section.workspace.expanded") private var workspaceExpanded: Bool = true
     @AppStorage("sidebar.right.section.context.expanded") private var contextExpanded: Bool = false
     @AppStorage("sidebar.right.section.tokens.expanded") private var tokensExpanded: Bool = false
     @AppStorage("sidebar.right.section.logs.expanded") private var logsExpanded: Bool = false
@@ -121,6 +123,9 @@ struct ModernSidebarRight: View {
     @State private var showFilePicker = false
     @State private var showFolderPicker = false
     @State private var isDropTargeted = false
+
+    // Workspace files state
+    @State private var workspaceVM = WorkspaceFilesViewModel()
 
     @FocusState private var searchFocused: Bool
 
@@ -140,6 +145,7 @@ struct ModernSidebarRight: View {
                     // Always visible sections
                     toolsSection
                     filesSection
+                    workspaceSection
 
                     // Debug-only sections
                     if state.mode == .debug {
@@ -188,6 +194,10 @@ struct ModernSidebarRight: View {
         .onAppear {
             state.mode = InspectorMode(rawValue: storedMode) ?? .focus
             Task { await loadSandboxedArtifacts() }
+            workspaceVM.startObserving()
+        }
+        .onDisappear {
+            workspaceVM.stopObserving()
         }
         .onChange(of: state.searchText) { _, newValue in
             debounceTask?.cancel()
@@ -489,6 +499,138 @@ struct ModernSidebarRight: View {
     private var formattedTotalSize: String {
         let total = sandboxedArtifacts.reduce(0) { $0 + $1.sizeBytes }
         return ByteCountFormatter.string(fromByteCount: Int64(total), countStyle: .file)
+    }
+
+    // MARK: - Workspace Section
+
+    private var workspaceSection: some View {
+        let fileCount = workspaceVM.files.count
+        let totalSize = workspaceVM.files.reduce(0) { $0 + $1.sizeBytes }
+        let sizeText = ByteCountFormatter.string(fromByteCount: Int64(totalSize), countStyle: .file)
+        
+        return sidebarSection(
+            title: "Workspace",
+            systemImage: "externaldrive.connected.to.line.below",
+            countText: "\(fileCount) · \(sizeText)",
+            isExpanded: $workspaceExpanded,
+            trailing: {
+                HStack(spacing: 4) {
+                    // iCloud indicator
+                    Image(systemName: workspaceVM.isICloudAvailable ? "icloud.fill" : "icloud.slash")
+                        .font(.system(size: 10 * uiScale))
+                        .foregroundStyle(workspaceVM.isICloudAvailable ? .green : AppColors.textTertiary)
+                        .help(workspaceVM.isICloudAvailable ? "Syncing to iCloud" : "Using local storage")
+                    
+                    // Refresh button
+                    Button {
+                        Task { await workspaceVM.refresh() }
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 11 * uiScale, weight: .semibold))
+                            .foregroundStyle(AppColors.textSecondary)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(workspaceVM.isLoading)
+                    
+                    // Actions menu
+                    Menu {
+                        #if os(macOS)
+                        Button {
+                            workspaceVM.openInFinder()
+                        } label: {
+                            Label("Show in Finder", systemImage: "folder")
+                        }
+                        
+                        Divider()
+                        #endif
+                        
+                        Button(role: .destructive) {
+                            Task { await workspaceVM.clearAllFiles() }
+                        } label: {
+                            Label("Clear All Files", systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .font(.system(size: 11 * uiScale))
+                            .foregroundStyle(AppColors.textSecondary)
+                    }
+                    .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
+                }
+            }
+        ) {
+            if workspaceVM.isLoading {
+                HStack {
+                    Spacer()
+                    ProgressView()
+                        .scaleEffect(0.7)
+                    Spacer()
+                }
+                .padding(.vertical, 8)
+            } else if let error = workspaceVM.errorMessage {
+                VStack(spacing: 4) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundStyle(.orange)
+                    Text(error)
+                        .font(.system(size: 10 * uiScale))
+                        .foregroundStyle(AppColors.textSecondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.vertical, 8)
+            } else if workspaceVM.files.isEmpty {
+                workspaceEmptyState
+            } else {
+                // Location indicator
+                Text(workspaceVM.workspaceLocation)
+                    .font(.system(size: 9 * uiScale, design: .monospaced))
+                    .foregroundStyle(AppColors.textTertiary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .padding(.horizontal, 4)
+                    .padding(.bottom, 4)
+                
+                // File list
+                ForEach(workspaceVM.files) { file in
+                    WorkspaceFileRow(
+                        file: file,
+                        uiScale: uiScale,
+                        onCopy: {
+                            Task {
+                                if let contents = await workspaceVM.copyFileContents(file) {
+                                    #if os(macOS)
+                                    NSPasteboard.general.clearContents()
+                                    NSPasteboard.general.setString(contents, forType: .string)
+                                    #else
+                                    UIPasteboard.general.string = contents
+                                    #endif
+                                }
+                            }
+                        },
+                        onDelete: {
+                            Task { await workspaceVM.deleteFile(file) }
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    private var workspaceEmptyState: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "doc.text.magnifyingglass")
+                .font(.system(size: 24))
+                .foregroundStyle(AppColors.textTertiary)
+            
+            Text("No execution outputs")
+                .font(.system(size: 12 * uiScale))
+                .foregroundStyle(AppColors.textSecondary)
+            
+            Text("Run code to see outputs here")
+                .font(.system(size: 10 * uiScale))
+                .foregroundStyle(AppColors.textTertiary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 16)
     }
 
     // MARK: - Context Section
@@ -913,6 +1055,117 @@ private struct LogEntryRow: View {
             .textSelection(.enabled)
             .padding(.horizontal, 8)
             .padding(.vertical, 2)
+    }
+}
+
+private struct WorkspaceFileRow: View {
+    let file: WorkspaceFile
+    let uiScale: CGFloat
+    let onCopy: () -> Void
+    let onDelete: () -> Void
+    
+    @State private var isHovering = false
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            // Icon with type-based color
+            Image(systemName: file.fileType.icon)
+                .font(.system(size: 11 * uiScale))
+                .foregroundStyle(iconColor)
+                .frame(width: 16)
+            
+            // Filename
+            VStack(alignment: .leading, spacing: 1) {
+                Text(displayFilename)
+                    .font(.system(size: 11 * uiScale))
+                    .foregroundStyle(AppColors.textPrimary)
+                    .lineLimit(1)
+                
+                HStack(spacing: 4) {
+                    Text(file.fileType.rawValue.capitalized)
+                        .font(.system(size: 9 * uiScale, weight: .medium))
+                        .foregroundStyle(iconColor.opacity(0.8))
+                    
+                    Text("·")
+                        .foregroundStyle(AppColors.textTertiary)
+                    
+                    Text(ByteCountFormatter.string(fromByteCount: Int64(file.sizeBytes), countStyle: .file))
+                        .font(.system(size: 9 * uiScale))
+                        .foregroundStyle(AppColors.textTertiary)
+                }
+            }
+            
+            Spacer()
+            
+            // Actions on hover
+            if isHovering {
+                HStack(spacing: 6) {
+                    Button {
+                        onCopy()
+                    } label: {
+                        Image(systemName: "doc.on.doc")
+                            .font(.system(size: 10 * uiScale))
+                            .foregroundStyle(AppColors.textSecondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Copy contents")
+                    
+                    Button {
+                        onDelete()
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.system(size: 10 * uiScale))
+                            .foregroundStyle(AppColors.textSecondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Delete file")
+                }
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background {
+            if isHovering {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(AppColors.backgroundSecondary)
+            }
+        }
+        .contentShape(Rectangle())
+        .onHover { hovering in
+            isHovering = hovering
+        }
+    }
+    
+    private var iconColor: Color {
+        switch file.fileType {
+        case .code: return AppColors.accent
+        case .output: return .green
+        case .error: return .red
+        case .image: return .purple
+        case .data: return .blue
+        case .other: return AppColors.textSecondary
+        }
+    }
+    
+    /// Strips UUID prefix from code execution output filenames for cleaner display
+    private var displayFilename: String {
+        let name = file.filename
+        
+        // Pattern: output_<UUID>.txt -> output.txt
+        // Pattern: code_<UUID>.swift -> code.swift
+        let patterns = ["output_", "error_", "code_"]
+        for pattern in patterns {
+            if name.hasPrefix(pattern) {
+                let afterPrefix = name.dropFirst(pattern.count)
+                // Find the UUID (36 chars) and extension
+                if afterPrefix.count > 36,
+                   let dotIndex = afterPrefix.lastIndex(of: ".") {
+                    let ext = afterPrefix[dotIndex...]
+                    return String(pattern.dropLast()) + String(ext)  // "output.txt"
+                }
+            }
+        }
+        return name
     }
 }
 

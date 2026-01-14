@@ -1049,6 +1049,7 @@ struct ModernSidebarLeft: View {
             onNewConversation: {}
         )
         .modelContainer(container.container)
+        .previewEnvironment()
         .frame(width: 320, height: 760)
         .padding()
     }

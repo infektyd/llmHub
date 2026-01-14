@@ -536,6 +536,10 @@ final class ChatService {
                                 logger.debug(
                                     "Injected \(snapshots.count) memories into system prompt")
 
+                                // Emit memory usage event for UI
+                                let memorySummary = "\(snapshots.count) \(snapshots.count == 1 ? "memory" : "memories") informing this response"
+                                continuation.yield(.memoriesUsed(count: snapshots.count, summary: memorySummary))
+
                                 if var firstMsg = messagesForCompaction.first,
                                     firstMsg.role == .system {
                                     firstMsg.content = "\(memoryXML)\n\n\(firstMsg.content)"
@@ -822,6 +826,10 @@ final class ChatService {
                             case .agentStopped:
                                 // Providers never emit this; only ChatService emits agentStopped.
                                 break
+                            
+                            case .memoriesUsed(let count, let summary):
+                                // Pass through memory usage event
+                                continuation.yield(.memoriesUsed(count: count, summary: summary))
                             }
                         }
 
@@ -1029,6 +1037,10 @@ final class ChatService {
                 throw err
             case .toolUse, .toolExecuting, .usage, .reference, .thinking, .contextCompacted,
                 .agentStopped:
+                continue
+            
+            case .memoriesUsed:
+                // Memory usage doesn't affect summary generation
                 continue
             }
         }
