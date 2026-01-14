@@ -112,10 +112,21 @@ struct ArtifactCardView: View {
     }
 
     private var textContent: some View {
-        Text(payload.previewText)
-            .font(.system(size: 14 * uiScale))
-            .foregroundStyle(AppColors.textPrimary)
-            .textSelection(.enabled)
+        Group {
+            if payload.kind == .toolResult {
+                TextualMessageView(
+                    content: payload.previewText,
+                    isStreaming: false,
+                    role: .tool,
+                    generationID: nil
+                )
+            } else {
+                Text(payload.previewText)
+                    .font(.system(size: 14 * uiScale))
+                    .foregroundStyle(AppColors.textPrimary)
+                    .textSelection(.enabled)
+            }
+        }
     }
 
     private var iconForKind: String {
