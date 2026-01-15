@@ -103,7 +103,7 @@ struct TranscriptCanvasSessionView: View {
 
     private var persistedRows: [TranscriptRowViewModel] {
         let toolCallArgumentsByID = buildToolCallArgumentsIndex(messages)
-        return messages.map { mapToViewModel($0, toolCallArgumentsByID: toolCallArgumentsByID) }
+        return buildTranscriptRows(messages, toolCallArgumentsByID: toolCallArgumentsByID)
     }
 
     private var streamingOverlayRow: TranscriptRowViewModel? {
@@ -175,6 +175,118 @@ struct TranscriptCanvasSessionView: View {
                 partialResult[call.id] = call.input
             }
         }
+    }
+
+    private struct ToolRunBundleBuildResult {
+        let bundleRow: TranscriptRowViewModel
+        let nextIndex: Int
+    }
+
+    private func buildTranscriptRows(
+        _ messages: [ChatMessageEntity],
+        toolCallArgumentsByID: [String: String]
+    ) -> [TranscriptRowViewModel] {
+        var rows: [TranscriptRowViewModel] = []
+        var index = 0
+        while index < messages.count {
+            let entity = messages[index]
+            let message = entity.asDomain()
+            if message.role == .assistant,
+               let toolCalls = message.toolCalls,
+               !toolCalls.isEmpty {
+                let toolCallIDs = toolCalls.map { $0.id }.filter { !$0.isEmpty }
+                let assistantRow = mapToViewModel(entity, toolCallArgumentsByID: toolCallArgumentsByID)
+                rows.append(assistantRow)
+                if toolCallIDs.count == toolCalls.count,
+                   let bundleResult = buildToolRunBundleRow(
+                    parentEntity: entity,
+                    startIndex: index + 1,
+                    expectedToolCallIDs: toolCallIDs,
+                    messages: messages,
+                    toolCallArgumentsByID: toolCallArgumentsByID
+                   ) {
+                    rows.append(bundleResult.bundleRow)
+                    index = bundleResult.nextIndex
+                    continue
+                }
+                index += 1
+                continue
+            }
+
+            rows.append(mapToViewModel(entity, toolCallArgumentsByID: toolCallArgumentsByID))
+            index += 1
+        }
+        return rows
+    }
+
+    private func buildToolRunBundleRow(
+        parentEntity: ChatMessageEntity,
+        startIndex: Int,
+        expectedToolCallIDs: [String],
+        messages: [ChatMessageEntity],
+        toolCallArgumentsByID: [String: String]
+    ) -> ToolRunBundleBuildResult? {
+        let expectedToolCallIDSet = Set(expectedToolCallIDs)
+        var toolRows: [TranscriptRowViewModel] = []
+        var matchedIDs = Set<String>()
+        var cursor = startIndex
+
+        while cursor < messages.count {
+            let nextEntity = messages[cursor]
+            let nextMessage = nextEntity.asDomain()
+            guard nextMessage.role == .tool else { break }
+            guard let toolCallID = nextMessage.toolCallID else { return nil }
+            guard expectedToolCallIDSet.contains(toolCallID) else { break }
+            toolRows.append(
+                mapToViewModel(
+                    nextMessage,
+                    isStreaming: false,
+                    rowID: persistedRowID(nextEntity.id),
+                    toolCallArgumentsByID: toolCallArgumentsByID
+                )
+            )
+            matchedIDs.insert(toolCallID)
+            cursor += 1
+            if matchedIDs.count == expectedToolCallIDSet.count { break }
+        }
+
+        guard !toolRows.isEmpty else { return nil }
+
+        let status = toolRunBundleStatus(
+            expectedCount: expectedToolCallIDSet.count,
+            toolRows: toolRows
+        )
+        let bundleID = "tool-bundle:\(parentEntity.id.uuidString)"
+        let bundle = ToolRunBundleViewModel(
+            id: bundleID,
+            parentAssistantMessageID: parentEntity.id,
+            toolRows: toolRows,
+            status: status
+        )
+        let bundleRow = TranscriptRowViewModel(
+            id: bundleID,
+            kind: .toolRunBundle(bundle),
+            role: .tool,
+            headerLabel: "Tool Run",
+            headerMetaText: nil,
+            content: "",
+            isStreaming: false,
+            generationID: parentEntity.generationID,
+            artifacts: []
+        )
+        return ToolRunBundleBuildResult(bundleRow: bundleRow, nextIndex: cursor)
+    }
+
+    private func toolRunBundleStatus(
+        expectedCount: Int,
+        toolRows: [TranscriptRowViewModel]
+    ) -> ToolRunBundleStatus {
+        guard toolRows.count >= expectedCount else { return .running }
+        let successValues = toolRows.compactMap { $0.toolResultMeta?.success }
+        guard successValues.count == toolRows.count else { return .running }
+        if successValues.allSatisfy({ $0 }) { return .success }
+        if successValues.allSatisfy({ !$0 }) { return .failure }
+        return .partialFailure
     }
 
     private func headerLabel(for message: ChatMessage) -> String {
