@@ -9,6 +9,12 @@
 import Foundation
 import SwiftUI
 
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
+
 struct ToolResultCardView: View {
     let viewModel: TranscriptRowViewModel
 

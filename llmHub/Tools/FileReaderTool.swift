@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import ImageIO
 import OSLog
 import PDFKit
 import UniformTypeIdentifiers
@@ -146,6 +147,7 @@ nonisolated struct FileReaderTool: Tool {
                 (content, truncated, nextOffset) = try readCSV(
                     url: resolvedURL, maxLength: maxLength)
             case "png", "jpg", "jpeg", "gif", "webp", "heic":
+                context.logger.debug("Generating image metadata summary for \(resolvedURL.lastPathComponent)")
                 content = try describeImage(url: resolvedURL)
                 truncated = false
                 nextOffset = content.count
@@ -267,7 +269,52 @@ nonisolated struct FileReaderTool: Tool {
     }
 
     private func describeImage(url: URL) throws -> String {
-        return "Image description not implemented in migration yet for \(url.lastPathComponent)"
+        let fileName = url.lastPathComponent
+        var details: [String] = []
+
+        let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
+        let source = CGImageSourceCreateWithURL(url as CFURL, sourceOptions)
+
+        if let source {
+            let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
+            let width = (properties?[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue
+            let height = (properties?[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue
+            if let width, let height {
+                details.append("\(width)x\(height) px")
+            }
+
+            if let colorModel = properties?[kCGImagePropertyColorModel] as? String {
+                details.append(colorModel)
+            }
+
+            if let depth = (properties?[kCGImagePropertyDepth] as? NSNumber)?.intValue {
+                details.append("\(depth)-bit")
+            }
+
+            if let imageType = CGImageSourceGetType(source) as String?,
+                let utType = UTType(imageType),
+                let mimeType = utType.preferredMIMEType {
+                details.insert(mimeType, at: 0)
+            }
+        } else {
+            details.append("metadata unavailable")
+        }
+
+        if let fileType = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType,
+            !details.contains(fileType) {
+            details.insert(fileType, at: 0)
+        }
+
+        if let bytes = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size]) as? NSNumber
+        {
+            details.append("\(bytes.intValue) bytes")
+        }
+
+        if details.isEmpty {
+            return "Image: \(fileName)"
+        }
+
+        return "Image: \(fileName)\nDetails: \(details.joined(separator: ", "))"
     }
 
     private func applyLineWindow(
