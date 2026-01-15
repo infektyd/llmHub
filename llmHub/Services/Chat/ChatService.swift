@@ -911,13 +911,17 @@ final class ChatService {
                                 )
 
                                 // Create and save tool result message
+                                var toolMetadata = callResult.result.metadata
+                                let durationMs = callResult.metrics.durationMs
+                                if durationMs > 0 {
+                                    toolMetadata["duration_ms"] = "\(durationMs)"
+                                }
                                 let toolMeta = ToolResultMeta(
                                     toolName: toolName,
                                     success: callResult.success,
                                     truncated: callResult.result.truncated,
                                     error: callResult.success ? nil : callResult.output,
-                                    metadata: callResult.result.metadata.isEmpty
-                                        ? nil : callResult.result.metadata
+                                    metadata: toolMetadata.isEmpty ? nil : toolMetadata
                                 )
 
                                 let toolResultMessage = ChatMessage(

@@ -102,7 +102,8 @@ struct TranscriptCanvasSessionView: View {
     }
 
     private var persistedRows: [TranscriptRowViewModel] {
-        messages.map { mapToViewModel($0) }
+        let toolCallArgumentsByID = buildToolCallArgumentsIndex(messages)
+        return messages.map { mapToViewModel($0, toolCallArgumentsByID: toolCallArgumentsByID) }
     }
 
     private var streamingOverlayRow: TranscriptRowViewModel? {
@@ -118,19 +119,39 @@ struct TranscriptCanvasSessionView: View {
             return mapToViewModel(
                 streaming,
                 isStreaming: true,
-                rowID: streamingRowID(sessionID: session.id, generationID: generationID)
+                rowID: streamingRowID(sessionID: session.id, generationID: generationID),
+                toolCallArgumentsByID: [:]
             )
         }
 
-        return mapToViewModel(streaming, isStreaming: true, rowID: persistedRowID(streaming.id))
+        return mapToViewModel(
+            streaming,
+            isStreaming: true,
+            rowID: persistedRowID(streaming.id),
+            toolCallArgumentsByID: [:]
+        )
     }
 
-    private func mapToViewModel(_ entity: ChatMessageEntity) -> TranscriptRowViewModel {
-        mapToViewModel(entity.asDomain(), isStreaming: false, rowID: persistedRowID(entity.id))
+    private func mapToViewModel(
+        _ entity: ChatMessageEntity,
+        toolCallArgumentsByID: [String: String]
+    ) -> TranscriptRowViewModel {
+        mapToViewModel(
+            entity.asDomain(),
+            isStreaming: false,
+            rowID: persistedRowID(entity.id),
+            toolCallArgumentsByID: toolCallArgumentsByID
+        )
     }
 
     // Map a domain ChatMessage into a TranscriptRowViewModel with streaming/rowID context
-    private func mapToViewModel(_ message: ChatMessage, isStreaming: Bool, rowID: UUID) -> TranscriptRowViewModel {
+    private func mapToViewModel(
+        _ message: ChatMessage,
+        isStreaming: Bool,
+        rowID: UUID,
+        toolCallArgumentsByID: [String: String]
+    ) -> TranscriptRowViewModel {
+        let toolCallArguments = message.toolCallID.flatMap { toolCallArgumentsByID[$0] }
         TranscriptRowViewModel(
             id: rowID.uuidString,
             role: message.role,
@@ -139,8 +160,21 @@ struct TranscriptCanvasSessionView: View {
             content: message.content,
             isStreaming: isStreaming,
             generationID: message.generationID,
-            artifacts: artifacts(for: message)
+            artifacts: artifacts(for: message),
+            toolCallID: message.toolCallID,
+            toolResultMeta: message.toolResultMeta,
+            toolCallArguments: toolCallArguments
         )
+    }
+
+    private func buildToolCallArgumentsIndex(_ messages: [ChatMessageEntity]) -> [String: String] {
+        messages.reduce(into: [:]) { partialResult, entity in
+            let message = entity.asDomain()
+            guard let toolCalls = message.toolCalls, !toolCalls.isEmpty else { return }
+            for call in toolCalls {
+                partialResult[call.id] = call.input
+            }
+        }
     }
 
     private func headerLabel(for message: ChatMessage) -> String {

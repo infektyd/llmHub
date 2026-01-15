@@ -26,7 +26,9 @@ struct TranscriptRow: View {
             roleLabel
 
             // Content body
-            if !viewModel.content.isEmpty {
+            if viewModel.role == .tool {
+                ToolResultCardView(viewModel: viewModel)
+            } else if !viewModel.content.isEmpty {
                 if isUser {
                     TextualMessageView(
                         content: viewModel.content,
