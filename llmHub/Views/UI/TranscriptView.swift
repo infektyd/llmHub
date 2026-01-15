@@ -260,7 +260,9 @@ struct TranscriptCanvasSessionView: View {
         let bundle = ToolRunBundleViewModel(
             id: bundleID,
             parentAssistantMessageID: parentEntity.id,
+            title: "Run Bundle",
             toolRows: toolRows,
+            expectedToolCount: expectedToolCallIDSet.count,
             status: status
         )
         let bundleRow = TranscriptRowViewModel(
