@@ -152,7 +152,7 @@ struct TranscriptCanvasSessionView: View {
         toolCallArgumentsByID: [String: String]
     ) -> TranscriptRowViewModel {
         let toolCallArguments = message.toolCallID.flatMap { toolCallArgumentsByID[$0] }
-        TranscriptRowViewModel(
+        return TranscriptRowViewModel(
             id: rowID.uuidString,
             role: message.role,
             headerLabel: headerLabel(for: message),

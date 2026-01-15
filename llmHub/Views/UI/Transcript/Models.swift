@@ -20,9 +20,35 @@ struct TranscriptRowViewModel: Identifiable, Equatable {
     let isStreaming: Bool
     let generationID: UUID?
     let artifacts: [ArtifactPayload]
-    let toolCallID: String? = nil
-    let toolResultMeta: ToolResultMeta? = nil
-    let toolCallArguments: String? = nil
+    let toolCallID: String?
+    let toolResultMeta: ToolResultMeta?
+    let toolCallArguments: String?
+
+    init(
+        id: String,
+        role: MessageRole,
+        headerLabel: String,
+        headerMetaText: String?,
+        content: String,
+        isStreaming: Bool,
+        generationID: UUID?,
+        artifacts: [ArtifactPayload],
+        toolCallID: String? = nil,
+        toolResultMeta: ToolResultMeta? = nil,
+        toolCallArguments: String? = nil
+    ) {
+        self.id = id
+        self.role = role
+        self.headerLabel = headerLabel
+        self.headerMetaText = headerMetaText
+        self.content = content
+        self.isStreaming = isStreaming
+        self.generationID = generationID
+        self.artifacts = artifacts
+        self.toolCallID = toolCallID
+        self.toolResultMeta = toolResultMeta
+        self.toolCallArguments = toolCallArguments
+    }
 
     // Equatable conformance for efficient SwiftUI diffing
     static func == (lhs: TranscriptRowViewModel, rhs: TranscriptRowViewModel) -> Bool {
