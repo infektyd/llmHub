@@ -26,7 +26,9 @@ struct TranscriptRow: View {
             roleLabel
 
             // Content body
-            if viewModel.role == .tool {
+            if case .toolRunBundle(let bundle) = viewModel.kind {
+                ToolRunBundleRowView(bundle: bundle)
+            } else if viewModel.role == .tool {
                 ToolResultCardView(viewModel: viewModel)
             } else if !viewModel.content.isEmpty {
                 if isUser {

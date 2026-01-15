@@ -11,8 +11,30 @@ import SwiftUI
 
 // MARK: - View Models
 
+enum ToolRunBundleStatus: String, Equatable {
+    case running
+    case success
+    case partialFailure
+    case failure
+}
+
+struct ToolRunBundleViewModel: Identifiable, Equatable {
+    let id: String
+    let parentAssistantMessageID: UUID
+    let toolRows: [TranscriptRowViewModel]
+    let status: ToolRunBundleStatus
+
+    var toolCount: Int { toolRows.count }
+}
+
+enum TranscriptRowKind: Equatable {
+    case message
+    case toolRunBundle(ToolRunBundleViewModel)
+}
+
 struct TranscriptRowViewModel: Identifiable, Equatable {
     let id: String
+    let kind: TranscriptRowKind
     let role: MessageRole
     let headerLabel: String  // e.g. "Claude 3.5 Sonnet", "You"
     let headerMetaText: String?
@@ -26,6 +48,7 @@ struct TranscriptRowViewModel: Identifiable, Equatable {
 
     init(
         id: String,
+        kind: TranscriptRowKind = .message,
         role: MessageRole,
         headerLabel: String,
         headerMetaText: String?,
@@ -38,6 +61,7 @@ struct TranscriptRowViewModel: Identifiable, Equatable {
         toolCallArguments: String? = nil
     ) {
         self.id = id
+        self.kind = kind
         self.role = role
         self.headerLabel = headerLabel
         self.headerMetaText = headerMetaText
@@ -52,7 +76,8 @@ struct TranscriptRowViewModel: Identifiable, Equatable {
 
     // Equatable conformance for efficient SwiftUI diffing
     static func == (lhs: TranscriptRowViewModel, rhs: TranscriptRowViewModel) -> Bool {
-        return lhs.id == rhs.id && lhs.role == rhs.role && lhs.headerLabel == rhs.headerLabel
+        return lhs.id == rhs.id && lhs.kind == rhs.kind && lhs.role == rhs.role
+            && lhs.headerLabel == rhs.headerLabel
             && lhs.headerMetaText == rhs.headerMetaText
             && lhs.content == rhs.content && lhs.isStreaming == rhs.isStreaming
             && lhs.generationID == rhs.generationID
