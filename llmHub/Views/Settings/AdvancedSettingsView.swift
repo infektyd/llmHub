@@ -273,6 +273,27 @@ struct AdvancedSettingsView: View {
                 }
                 .toggleStyle(.switch)
                 .padding(uiCompactMode ? 12 : 16)
+
+                Divider()
+                    .padding(.horizontal, uiCompactMode ? 12 : 16)
+
+                Toggle(
+                    isOn: Binding(
+                        get: { settingsManager.settings.developerModeManualToolTriggering },
+                        set: { settingsManager.settings.developerModeManualToolTriggering = $0 }
+                    )
+                ) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Developer Mode (Manual Tool Triggering)")
+                            .font(.system(size: 14 * uiScale, weight: .medium))
+                            .foregroundStyle(AppColors.textPrimary)
+                        Text("Show developer-only controls to run tools manually")
+                            .font(.system(size: 11 * uiScale))
+                            .foregroundStyle(AppColors.textTertiary)
+                    }
+                }
+                .toggleStyle(.switch)
+                .padding(uiCompactMode ? 12 : 16)
             }
 
             // Reset button

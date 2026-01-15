@@ -115,6 +115,7 @@ struct CanvasRootView: View {
                             isVisible: $rightSidebarVisible,
                             inspectorState: inspectorState
                         )
+                        .environment(viewModel)
                         .frame(width: sidebarWidth)
                         .padding(.trailing, outerPadding)
                         .padding(.top, outerPadding)
@@ -253,6 +254,7 @@ struct CanvasRootView: View {
                         isVisible: $rightSidebarVisible,
                         inspectorState: inspectorState
                     )
+                    .environment(viewModel)
                     .navigationTitle("Inspector")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
@@ -272,6 +274,7 @@ struct CanvasRootView: View {
         #endif
         .onAppear {
             print("DEBUG: CanvasRootView chatVM ID: \(ObjectIdentifier(chatVM))")
+            chatVM.workbenchVM = viewModel
             ensureDefaultConversationSelection()
         }
         .onChange(of: viewModel.selectedConversationID) { _, newValue in

@@ -80,6 +80,9 @@ public struct AppSettings: Codable, Sendable {
     /// Enable context compaction to stay within token limits
     public var contextCompactionEnabled: Bool = true
 
+    /// Enables developer-only UI features (manual tool triggering)
+    public var developerModeManualToolTriggering: Bool = false
+
     // MARK: - Provider Defaults
 
     /// Default provider ID to select on launch
@@ -111,6 +114,72 @@ public struct AppSettings: Codable, Sendable {
 
     public init() {
         // Use default values defined above
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case colorScheme
+        case compactMode
+        case showTokenCounts
+        case fontSize
+        case userEmote
+        case defaultToolPermissions
+        case autoScroll
+        case streamingThrottle
+        case contextCompactionEnabled
+        case developerModeManualToolTriggering
+        case defaultProviderID
+        case defaultModel
+        case recentSessionLimit
+        case autoSaveInterval
+        case networkTimeout
+        case maxContextTokens
+        case summaryGenerationEnabled
+    }
+
+    public init(from decoder: Decoder) throws {
+        let defaults = AppSettings.defaultSettings
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        colorScheme = try container.decodeIfPresent(ColorSchemeChoice.self, forKey: .colorScheme)
+            ?? defaults.colorScheme
+        compactMode = try container.decodeIfPresent(Bool.self, forKey: .compactMode)
+            ?? defaults.compactMode
+        showTokenCounts = try container.decodeIfPresent(Bool.self, forKey: .showTokenCounts)
+            ?? defaults.showTokenCounts
+        fontSize = try container.decodeIfPresent(CGFloat.self, forKey: .fontSize)
+            ?? defaults.fontSize
+        userEmote = try container.decodeIfPresent(String.self, forKey: .userEmote)
+            ?? defaults.userEmote
+
+        defaultToolPermissions =
+            try container.decodeIfPresent([String: Bool].self, forKey: .defaultToolPermissions)
+            ?? defaults.defaultToolPermissions
+        autoScroll = try container.decodeIfPresent(Bool.self, forKey: .autoScroll)
+            ?? defaults.autoScroll
+        streamingThrottle = try container.decodeIfPresent(Int.self, forKey: .streamingThrottle)
+            ?? defaults.streamingThrottle
+        contextCompactionEnabled =
+            try container.decodeIfPresent(Bool.self, forKey: .contextCompactionEnabled)
+            ?? defaults.contextCompactionEnabled
+        developerModeManualToolTriggering =
+            try container.decodeIfPresent(Bool.self, forKey: .developerModeManualToolTriggering)
+            ?? defaults.developerModeManualToolTriggering
+
+        defaultProviderID = try container.decodeIfPresent(String.self, forKey: .defaultProviderID)
+            ?? defaults.defaultProviderID
+        defaultModel = try container.decodeIfPresent(String.self, forKey: .defaultModel)
+            ?? defaults.defaultModel
+        recentSessionLimit = try container.decodeIfPresent(Int.self, forKey: .recentSessionLimit)
+            ?? defaults.recentSessionLimit
+        autoSaveInterval = try container.decodeIfPresent(Double.self, forKey: .autoSaveInterval)
+            ?? defaults.autoSaveInterval
+        networkTimeout = try container.decodeIfPresent(TimeInterval.self, forKey: .networkTimeout)
+            ?? defaults.networkTimeout
+        maxContextTokens = try container.decodeIfPresent(Int.self, forKey: .maxContextTokens)
+            ?? defaults.maxContextTokens
+        summaryGenerationEnabled =
+            try container.decodeIfPresent(Bool.self, forKey: .summaryGenerationEnabled)
+            ?? defaults.summaryGenerationEnabled
     }
 
     // MARK: - Validation
