@@ -305,9 +305,7 @@ class ChatViewModel {
 
         let baseEnvironment = ToolEnvironment.current
         #if os(macOS)
-            // TODO: Fix XPC helper entitlements - crashes on sandbox init
-            // let backendAvailable = await CodeExecutionEngine().isBackendAvailable
-            let backendAvailable = false  // Temporarily disabled due to sandbox crash
+            let backendAvailable = await CodeExecutionEngine().isBackendAvailable
             let toolEnvironment = ToolEnvironment(
                 platform: baseEnvironment.platform,
                 isSimulator: baseEnvironment.isSimulator,
