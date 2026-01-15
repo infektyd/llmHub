@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import os
 
 /// Structured reasons why a tool may be unavailable.
 enum ToolUnavailableReason: Sendable, Equatable {
@@ -216,8 +217,22 @@ struct ToolEnvironment: Sendable {
     extension ToolEnvironment {
         fileprivate nonisolated static func detectCodeExecutionBackend(timeout: TimeInterval = 1.0)
             -> Bool {
-            // On macOS assume availability; the code interpreter tool will perform runtime checks.
-            return true
+            let availabilityState = OSAllocatedUnfairLock(initialState: false)
+            let semaphore = DispatchSemaphore(value: 0)
+
+            Task.detached {
+                let backend = XPCExecutionBackend()
+                let availability = await backend.isAvailable
+                availabilityState.withLock { $0 = availability }
+                semaphore.signal()
+            }
+
+            let waitResult = semaphore.wait(timeout: .now() + timeout)
+            guard waitResult == .success else {
+                return false
+            }
+
+            return availabilityState.withLock { $0 }
         }
     }
 #else
@@ -233,72 +248,6 @@ struct ToolEnvironment: Sendable {
     }
 #endif
 
-#if os(iOS)
-extension ToolEnvironment {
-    /// Detect if Python.xcframework is available in the app bundle.
-    fileprivate nonisolated static func detectPythonFramework() -> Bool {
-        print("\n🔍 [ToolEnvironment] ========== PYTHON DETECTION ==========")
-        
-        guard let frameworksPath = Bundle.main.privateFrameworksPath else {
-            print("❌ [ToolEnvironment] Bundle.main.privateFrameworksPath is nil")
-            print("🔍 [ToolEnvironment] ========================================\n")
-            return false
-        }
-        print("✅ [ToolEnvironment] Frameworks path: \(frameworksPath)")
-        
-        let pythonFrameworkPath = (frameworksPath as NSString)
-            .appendingPathComponent("Python.framework")
-        print("🔍 [ToolEnvironment] Checking for Python.framework at: \(pythonFrameworkPath)")
-        
-        let fileManager = FileManager.default
-        var isDirectory: ObjCBool = false
-        
-        let exists = fileManager.fileExists(atPath: pythonFrameworkPath, isDirectory: &isDirectory)
-        print("🔍 [ToolEnvironment] fileExists: \(exists)")
-        print("🔍 [ToolEnvironment] isDirectory: \(isDirectory.boolValue)")
-        
-        let frameworkLibPath = (pythonFrameworkPath as NSString).appendingPathComponent("lib")
-        var frameworkLibIsDirectory: ObjCBool = false
-        let frameworkLibExists = fileManager.fileExists(atPath: frameworkLibPath, isDirectory: &frameworkLibIsDirectory)
-        let frameworkLibEntries = (try? fileManager.contentsOfDirectory(atPath: frameworkLibPath)) ?? []
-        let frameworkStdlibCandidates = frameworkLibEntries.filter { $0.hasPrefix("python3.") }
-        let hasFrameworkStdlib = frameworkLibExists && frameworkLibIsDirectory.boolValue && !frameworkStdlibCandidates.isEmpty
-
-        let resourcesPythonHome = Bundle.main.resourceURL?.appendingPathComponent("PythonHome")
-        let resourcesLibPath = resourcesPythonHome?.appendingPathComponent("lib").path
-        var resourcesLibIsDirectory: ObjCBool = false
-        let resourcesLibExists = resourcesLibPath.map { fileManager.fileExists(atPath: $0, isDirectory: &resourcesLibIsDirectory) } ?? false
-        let resourcesLibEntries = resourcesLibPath.flatMap { try? fileManager.contentsOfDirectory(atPath: $0) } ?? []
-        let resourcesStdlibCandidates = resourcesLibEntries.filter { $0.hasPrefix("python3.") }
-        let hasResourcesStdlib = resourcesLibExists && resourcesLibIsDirectory.boolValue && !resourcesStdlibCandidates.isEmpty
-
-        let resourcesPythonHomePath = resourcesPythonHome?.path ?? "nil"
-
-        print("🔍 [ToolEnvironment] PythonHome (resources): \(resourcesPythonHomePath)")
-        print("🔍 [ToolEnvironment] framework lib/ exists: \(frameworkLibExists)")
-        print("🔍 [ToolEnvironment] framework lib/ isDirectory: \(frameworkLibIsDirectory.boolValue)")
-        print("🔍 [ToolEnvironment] framework stdlib candidates: \(frameworkStdlibCandidates)")
-        print("🔍 [ToolEnvironment] resources lib/ exists: \(resourcesLibExists)")
-        print("🔍 [ToolEnvironment] resources lib/ isDirectory: \(resourcesLibIsDirectory.boolValue)")
-        print("🔍 [ToolEnvironment] resources stdlib candidates: \(resourcesStdlibCandidates)")
-
-        let hasStdlib = hasFrameworkStdlib || hasResourcesStdlib
-        let result = exists && isDirectory.boolValue && hasStdlib
-        
-        if result {
-            print("✅ [ToolEnvironment] Python.framework + stdlib DETECTED")
-        } else if exists && isDirectory.boolValue {
-            print("❌ [ToolEnvironment] Python.framework detected but stdlib missing")
-        } else {
-            print("❌ [ToolEnvironment] Python.framework NOT FOUND")
-        }
-        
-        print("🔍 [ToolEnvironment] ========================================\n")
-        return result
-    }
-}
-#endif
-
 #if !os(macOS)
     extension ToolEnvironment {
         fileprivate nonisolated static func frameworkLinked(_ name: String) -> Bool {
@@ -312,3 +261,4 @@ extension ToolEnvironment {
         }
     }
 #endif
+

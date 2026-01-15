@@ -18,6 +18,7 @@
         private let logger = Logger(subsystem: "com.llmhub", category: "XPCExecutionBackend")
         /// Queue for XPC connections.
         private let connectionQueue = DispatchQueue(label: "com.llmhub.xpc.connection")
+        private let availabilityTimeout: TimeInterval = 1.0
 
         /// The underlying XPC connection.
         nonisolated(unsafe) private var _connection: NSXPCConnection?
@@ -95,15 +96,39 @@
             get async {
                 do {
                     let proxy = try remoteProxy()
-                    return await withCheckedContinuation { continuation in
-                        proxy.ping { success in
-                            continuation.resume(returning: success)
-                        }
-                    }
+                    return await ping(proxy, timeout: availabilityTimeout)
                 } catch {
                     print("❌ [XPCExecutionBackend] Availability check failed: \(error.localizedDescription)")
                     logger.error("XPC availability check failed: \(error.localizedDescription)")
                     return false
+                }
+            }
+        }
+
+        private func ping(
+            _ proxy: CodeExecutionXPCProtocol,
+            timeout: TimeInterval
+        ) async -> Bool {
+            let timeoutNs = UInt64(max(timeout, 0.1) * 1_000_000_000)
+            return await withCheckedContinuation { continuation in
+                var finished = false
+                let lock = NSLock()
+
+                let finish: (Bool) -> Void = { value in
+                    lock.lock()
+                    defer { lock.unlock() }
+                    guard !finished else { return }
+                    finished = true
+                    continuation.resume(returning: value)
+                }
+
+                proxy.ping { success in
+                    finish(success)
+                }
+
+                Task {
+                    try? await Task.sleep(nanoseconds: timeoutNs)
+                    finish(false)
                 }
             }
         }
