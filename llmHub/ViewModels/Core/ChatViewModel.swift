@@ -219,6 +219,7 @@ class ChatViewModel {
 
     private var toolExecutionElapsedSeconds: [String: Int] = [:]
     private var toolExecutionCancelHandlers: [String: () -> Void] = [:]
+    private var toolExecutionStartDates: [String: Date] = [:]
     private var toolTimerTask: Task<Void, Never>?
 
     /// Tracks the previous session to trigger cleanup/distillation on switch.
@@ -230,6 +231,8 @@ class ChatViewModel {
     private var toolRegistry: ToolRegistry?
     private var toolExecutor: ToolExecutor?
     private var toolEnvironment: ToolEnvironment = .current
+
+    weak var workbenchVM: WorkbenchViewModel?
 
     /// Workspace root used for tool/file operations.
     var workspaceRootDisplayPath: String {
@@ -504,7 +507,8 @@ class ChatViewModel {
                     self.handleStreamError(
                         sessionID: sessionID, error: error, modelContext: modelContext)
 
-                case .usage, .thinking, .toolUse, .toolExecuting, .reference, .contextCompacted:
+                case .usage, .thinking, .toolUse, .toolExecuting, .toolExecutionStarted,
+                    .toolExecutionFinished, .reference, .contextCompacted:
                     // Existing UI hooks are already wired on the primary send path; this continuation
                     // path intentionally stays minimal.
                     break
@@ -676,8 +680,12 @@ class ChatViewModel {
     func rebuildToolState(environment: ToolEnvironment) async {
         guard let registry = toolRegistry else { return }
         let uiDefaults = UIToolDefinition.defaultTools(for: environment)
-        let iconMap = Dictionary(
-            uniqueKeysWithValues: uiDefaults.map { ($0.name.lowercased(), $0.icon) })
+        var iconMap: [String: String] = [:]
+        for tool in uiDefaults {
+            let key = tool.name.lowercased()
+            iconMap[key] = tool.icon
+            iconMap[key.replacingOccurrences(of: " ", with: "_")] = tool.icon
+        }
 
         let tools = await registry.allTools()
 
@@ -686,7 +694,8 @@ class ChatViewModel {
         for tool in tools {
             let availability = tool.availability(in: environment)
             let permission = authService?.checkAccess(for: tool.name) ?? .notDetermined
-            let icon = iconMap[tool.name.lowercased()] ?? "wrench.and.screwdriver"
+            let key = tool.name.lowercased()
+            let icon = iconMap[key] ?? "wrench.and.screwdriver"
 
             let toggle = UIToolToggleItem(
                 id: tool.name,
@@ -1085,6 +1094,62 @@ class ChatViewModel {
                         executingToolNames.insert(name)
                         logger.info("Tool executing: \(name)")
 
+                    case .toolExecutionStarted(let id, let name, _):
+                        executingToolNames.insert(name)
+                        toolExecutionStartDates[id] = Date()
+                        let startDate = toolExecutionStartDates[id] ?? Date()
+                        let icon = toolToggles.first(where: { $0.id == name })?.icon
+                            ?? "wrench.and.screwdriver"
+
+                        if let workbenchVM {
+                            workbenchVM.activeToolExecution = ToolExecution(
+                                id: id,
+                                toolID: name,
+                                name: name,
+                                icon: icon,
+                                status: .running,
+                                output: "",
+                                elapsedSeconds: 0,
+                                timestamp: startDate
+                            )
+                        }
+
+                        startToolTimer(toolCallID: id) { [weak self] in
+                            guard let self else { return }
+                            Task { @MainActor in
+                                await self.stopGeneration()
+                            }
+                        }
+
+                        logger.info("Tool execution started: \(name) (id: \(id))")
+
+                    case .toolExecutionFinished(let id, let name, let success, let output):
+                        let startDate = toolExecutionStartDates[id] ?? Date()
+                        let elapsed = toolExecutionElapsedSeconds[id]
+                        let icon = toolToggles.first(where: { $0.id == name })?.icon
+                            ?? "wrench.and.screwdriver"
+                        let status: ToolExecution.ExecutionStatus = success ? .completed : .failed
+
+                        stopToolTimer(toolCallID: id)
+                        executingToolNames.remove(name)
+
+                        if let workbenchVM {
+                            workbenchVM.activeToolExecution = ToolExecution(
+                                id: id,
+                                toolID: name,
+                                name: name,
+                                icon: icon,
+                                status: status,
+                                output: output,
+                                elapsedSeconds: elapsed,
+                                timestamp: startDate
+                            )
+                        }
+
+                        logger.info(
+                            "Tool execution finished: \(name) (id: \(id)), success=\(success)"
+                        )
+
                     case .reference(let ref):
                         logger.debug("Reference: \(ref)")
 
@@ -1217,31 +1282,135 @@ class ChatViewModel {
         return (providerID, modelID)
     }
 
-    func triggerTool(_ tool: UIToolDefinition, workbenchVM: WorkbenchViewModel) {
-        let executionID = UUID().uuidString
-        let execution = ToolExecution(
-            id: executionID,
+    private func isDeveloperModeManualToolTriggeringEnabled() -> Bool {
+        let defaults = UserDefaults.standard
+        guard let data = defaults.data(forKey: "llmHub.appSettings.v1") else { return false }
+        guard let settings = try? JSONDecoder().decode(AppSettings.self, from: data) else { return false }
+        return settings.developerModeManualToolTriggering
+    }
+
+    func triggerTool(
+        _ tool: UIToolDefinition,
+        workbenchVM: WorkbenchViewModel,
+        input: String = "{}"
+    ) {
+        guard isDeveloperModeManualToolTriggeringEnabled() else {
+            let execution = ToolExecution(
+                id: UUID().uuidString,
+                toolID: tool.id.uuidString,
+                name: tool.name,
+                icon: tool.icon,
+                status: .failed,
+                output: "Enable Developer Mode (Manual Tool Triggering) in Settings to run tools manually.",
+                timestamp: Date()
+            )
+            workbenchVM.activeToolExecution = execution
+            workbenchVM.toolInspectorVisible = true
+            return
+        }
+
+        guard let sessionID = workbenchVM.selectedConversationID else {
+            let execution = ToolExecution(
+                id: UUID().uuidString,
+                toolID: tool.id.uuidString,
+                name: tool.name,
+                icon: tool.icon,
+                status: .failed,
+                output: "No active conversation selected.",
+                timestamp: Date()
+            )
+            workbenchVM.activeToolExecution = execution
+            workbenchVM.toolInspectorVisible = true
+            return
+        }
+
+        guard let toolExecutor, let authService else {
+            let execution = ToolExecution(
+                id: UUID().uuidString,
+                toolID: tool.id.uuidString,
+                name: tool.name,
+                icon: tool.icon,
+                status: .failed,
+                output: "Tool system not initialized.",
+                timestamp: Date()
+            )
+            workbenchVM.activeToolExecution = execution
+            workbenchVM.toolInspectorVisible = true
+            return
+        }
+
+        let toolCallID = UUID().uuidString
+        let startedAt = Date()
+
+        toolExecutionStartDates[toolCallID] = startedAt
+
+        workbenchVM.activeToolExecution = ToolExecution(
+            id: toolCallID,
             toolID: tool.id.uuidString,
             name: tool.name,
             icon: tool.icon,
             status: .running,
-            output: "Executing \(tool.name)...",
-            timestamp: Date()
+            output: "",
+            timestamp: startedAt
         )
-
-        workbenchVM.activeToolExecution = execution
         workbenchVM.toolInspectorVisible = true
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+        let task = Task { [toolEnvironment] in
+            let workspacePath =
+                toolEnvironment.sandboxRoot ?? WorkspaceResolver.resolve(platform: toolEnvironment.platform)
+            let context = ToolContext(
+                sessionID: sessionID,
+                workspacePath: workspacePath,
+                session: ToolSession(id: sessionID),
+                authorization: authService
+            )
+            let call = ToolCall(id: toolCallID, name: tool.name, input: input)
+
+            let result = await toolExecutor.executeSingle(call, context: context)
+
+            await MainActor.run {
+                if Task.isCancelled {
+                    workbenchVM.activeToolExecution = ToolExecution(
+                        id: toolCallID,
+                        toolID: tool.id.uuidString,
+                        name: tool.name,
+                        icon: tool.icon,
+                        status: .cancelled,
+                        output: "Cancelled",
+                        elapsedSeconds: self.toolExecutionElapsedSeconds[toolCallID],
+                        timestamp: startedAt
+                    )
+                    self.stopToolTimer(toolCallID: toolCallID)
+                    return
+                }
+
+                workbenchVM.activeToolExecution = ToolExecution(
+                    id: toolCallID,
+                    toolID: tool.id.uuidString,
+                    name: tool.name,
+                    icon: tool.icon,
+                    status: result.success ? .completed : .failed,
+                    output: result.output,
+                    elapsedSeconds: self.toolExecutionElapsedSeconds[toolCallID],
+                    timestamp: startedAt
+                )
+                self.stopToolTimer(toolCallID: toolCallID)
+            }
+        }
+
+        startToolTimer(toolCallID: toolCallID) { [weak self] in
+            task.cancel()
             workbenchVM.activeToolExecution = ToolExecution(
-                id: executionID,
+                id: toolCallID,
                 toolID: tool.id.uuidString,
                 name: tool.name,
                 icon: tool.icon,
-                status: .completed,
-                output: "Successfully executed \(tool.name)\n\nResult: Sample output data...",
-                timestamp: execution.timestamp
+                status: .cancelled,
+                output: "Cancelled",
+                elapsedSeconds: self?.toolExecutionElapsedSeconds[toolCallID],
+                timestamp: startedAt
             )
+            self?.stopToolTimer(toolCallID: toolCallID)
         }
     }
 
@@ -1459,6 +1628,9 @@ class ChatViewModel {
     func stopGeneration() async {
         guard isGenerating else { return }
 
+        // Flip this early to prevent recursive stopGeneration calls via tool cancel handlers.
+        isGenerating = false
+
         if let gen = activeGenerationID {
             await ImageLoader.shared.cancelLoads(for: gen)
         }
@@ -1474,7 +1646,6 @@ class ChatViewModel {
         generationTask = nil
 
         // Reset generation state
-        isGenerating = false
         resetStreamingState()
         executingToolNames.removeAll()
 
@@ -1521,6 +1692,9 @@ class ChatViewModel {
 
     /// Start tracking elapsed time for a tool execution
     func startToolTimer(toolCallID: String, cancelHandler: @escaping () -> Void) {
+        if toolExecutionStartDates[toolCallID] == nil {
+            toolExecutionStartDates[toolCallID] = Date()
+        }
         toolExecutionElapsedSeconds[toolCallID] = 0
         toolExecutionCancelHandlers[toolCallID] = cancelHandler
 
@@ -1531,8 +1705,16 @@ class ChatViewModel {
                     try? await Task.sleep(nanoseconds: 1_000_000_000)  // 1 second
 
                     // Update all active tool timers (throttled to 1 Hz)
-                    for toolCallID in toolExecutionElapsedSeconds.keys {
+                    let toolCallIDs = Array(toolExecutionElapsedSeconds.keys)
+                    for toolCallID in toolCallIDs {
                         toolExecutionElapsedSeconds[toolCallID, default: 0] += 1
+
+                        if let workbenchVM,
+                            var active = workbenchVM.activeToolExecution,
+                            active.id == toolCallID {
+                            active.elapsedSeconds = toolExecutionElapsedSeconds[toolCallID]
+                            workbenchVM.activeToolExecution = active
+                        }
                     }
                 }
             }
@@ -1543,6 +1725,7 @@ class ChatViewModel {
     func stopToolTimer(toolCallID: String) {
         toolExecutionElapsedSeconds.removeValue(forKey: toolCallID)
         toolExecutionCancelHandlers.removeValue(forKey: toolCallID)
+        toolExecutionStartDates.removeValue(forKey: toolCallID)
 
         // Cancel timer task if no tools are running
         if toolExecutionElapsedSeconds.isEmpty {
@@ -1553,10 +1736,10 @@ class ChatViewModel {
 
     /// Cancel a running tool execution
     func cancelToolExecution(toolCallID: String) {
-        if let cancelHandler = toolExecutionCancelHandlers[toolCallID] {
-            cancelHandler()
-            stopToolTimer(toolCallID: toolCallID)
-        }
+        guard let cancelHandler = toolExecutionCancelHandlers[toolCallID] else { return }
+        toolExecutionCancelHandlers.removeValue(forKey: toolCallID)
+        cancelHandler()
+        stopToolTimer(toolCallID: toolCallID)
     }
 
     #if DEBUG

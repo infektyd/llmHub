@@ -124,6 +124,10 @@ enum ProviderEvent: Sendable {
     case toolUse(id: String, name: String, input: String)
     /// Indicates a tool is being executed by the agent loop.
     case toolExecuting(name: String)
+    /// Indicates a tool execution is starting (after tool calls have been accumulated).
+    case toolExecutionStarted(id: String, name: String, input: String)
+    /// Indicates a tool execution finished with output.
+    case toolExecutionFinished(id: String, name: String, success: Bool, output: String)
     /// The completion of the message generation.
     case completion(message: ChatMessage)
     /// The response was truncated due to max_tokens limit (finish_reason: "length").

@@ -101,25 +101,29 @@ public struct ToolExecution: Identifiable, Sendable {
     public let icon: String
     public var status: ExecutionStatus
     public var output: String
+    public var elapsedSeconds: Int?
     public let timestamp: Date
 
     public enum ExecutionStatus: String, Sendable {
         case running
         case completed
         case failed
+        case cancelled
 
         var color: Color {
             switch self {
             case .running: return .blue
             case .completed: return .green
             case .failed: return .red
+            case .cancelled: return .orange
             }
         }
     }
 
     public init(
         id: String = UUID().uuidString, toolID: String, name: String, icon: String,
-        status: ExecutionStatus = .running, output: String = "", timestamp: Date = Date()
+        status: ExecutionStatus = .running, output: String = "", elapsedSeconds: Int? = nil,
+        timestamp: Date = Date()
     ) {
         self.id = id
         self.toolID = toolID
@@ -127,6 +131,7 @@ public struct ToolExecution: Identifiable, Sendable {
         self.icon = icon
         self.status = status
         self.output = output
+        self.elapsedSeconds = elapsedSeconds
         self.timestamp = timestamp
     }
 }

@@ -707,6 +707,12 @@ final class ChatService {
                                 // This event is only emitted by ChatService, not providers.
                                 break
 
+                            case .toolExecutionStarted:
+                                break
+
+                            case .toolExecutionFinished:
+                                break
+
                             case .usage(let usage):
                                 if let flushed = tokenBatcher.flush() {
                                     continuation.yield(.token(text: flushed))
@@ -876,6 +882,9 @@ final class ChatService {
                             // Rationale: ToolResultCard UI needs "executing" state to appear live.
                             for call in accumulatedToolCalls {
                                 continuation.yield(.toolExecuting(name: call.name))
+                                continuation.yield(
+                                    .toolExecutionStarted(id: call.id, name: call.name, input: call.input)
+                                )
                             }
 
                             // Streaming execution output from ToolExecutor if needed, or just await all
@@ -890,6 +899,15 @@ final class ChatService {
 
                                 logger.info(
                                     "Executed tool: \(toolName), success: \(callResult.success)"
+                                )
+
+                                continuation.yield(
+                                    .toolExecutionFinished(
+                                        id: toolCallID,
+                                        name: toolName,
+                                        success: callResult.success,
+                                        output: toolResultOutput
+                                    )
                                 )
 
                                 // Create and save tool result message
@@ -1035,8 +1053,8 @@ final class ChatService {
                 return summary
             case .error(let err):
                 throw err
-            case .toolUse, .toolExecuting, .usage, .reference, .thinking, .contextCompacted,
-                .agentStopped:
+            case .toolUse, .toolExecuting, .toolExecutionStarted, .toolExecutionFinished, .usage,
+                .reference, .thinking, .contextCompacted, .agentStopped:
                 continue
             
             case .memoriesUsed:

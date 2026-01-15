@@ -58,6 +58,7 @@ extension Optional where Wrapped == ToolExecution {
                 && left.icon == right.icon
                 && left.status.rawValue == right.status.rawValue
                 && left.output == right.output
+                && left.elapsedSeconds == right.elapsedSeconds
                 && left.timestamp == right.timestamp
         }
     }
@@ -101,6 +102,8 @@ struct ModernSidebarRight: View {
     let inspectorState: CanvasInspectorState
 
     @Environment(ChatViewModel.self) private var viewModel
+    @Environment(WorkbenchViewModel.self) private var workbenchVM
+    @Environment(\.settingsManager) private var settingsManager
     @Environment(\.uiCompactMode) private var uiCompactMode
     @Environment(\.uiScale) private var uiScale
 
@@ -339,7 +342,13 @@ struct ModernSidebarRight: View {
                 emptyRow("No tools found")
             } else {
                 ForEach(filteredTools) { tool in
-                    InspectorToolRow(tool: tool, viewModel: viewModel, uiScale: uiScale)
+                    InspectorToolRow(
+                        tool: tool,
+                        viewModel: viewModel,
+                        workbenchVM: workbenchVM,
+                        developerModeEnabled: settingsManager.settings.developerModeManualToolTriggering,
+                        uiScale: uiScale
+                    )
                 }
             }
         }
@@ -367,6 +376,24 @@ struct ModernSidebarRight: View {
                         Capsule()
                             .fill(statusColor(for: execution.status).opacity(0.15))
                     }
+
+                if execution.status == .running {
+                    let seconds = execution.elapsedSeconds ?? Int(Date().timeIntervalSince(execution.timestamp))
+                    Text("\(seconds)s")
+                        .font(.system(size: 10 * uiScale, weight: .medium, design: .monospaced))
+                        .foregroundStyle(AppColors.textTertiary)
+                }
+
+                if execution.status == .running {
+                    Button {
+                        viewModel.cancelToolExecution(toolCallID: execution.id)
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 12 * uiScale, weight: .semibold))
+                            .foregroundStyle(AppColors.textSecondary)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
 
             if !execution.output.isEmpty {
@@ -393,6 +420,7 @@ struct ModernSidebarRight: View {
         case .running: return AppColors.accent
         case .completed: return .green
         case .failed: return .red
+        case .cancelled: return .orange
         }
     }
 
@@ -857,7 +885,12 @@ struct ModernSidebarRight: View {
 private struct InspectorToolRow: View {
     let tool: UIToolToggleItem
     let viewModel: ChatViewModel
+    let workbenchVM: WorkbenchViewModel
+    let developerModeEnabled: Bool
     let uiScale: CGFloat
+
+    @State private var showRunPopover: Bool = false
+    @State private var toolInputText: String = "{}"
 
     var body: some View {
         HStack(spacing: 10) {
@@ -878,6 +911,47 @@ private struct InspectorToolRow: View {
             }
 
             Spacer()
+
+            if developerModeEnabled, tool.isAvailable, tool.isEnabled {
+                Button {
+                    showRunPopover = true
+                } label: {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 11 * uiScale, weight: .semibold))
+                        .foregroundStyle(AppColors.textSecondary)
+                }
+                .buttonStyle(.plain)
+                .popover(isPresented: $showRunPopover) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(tool.name)
+                            .font(.system(size: 13 * uiScale, weight: .semibold))
+                            .foregroundStyle(AppColors.textPrimary)
+
+                        TextEditor(text: $toolInputText)
+                            .font(.system(size: 11 * uiScale, design: .monospaced))
+                            .frame(height: 120)
+
+                        HStack {
+                            Spacer()
+                            Button("Cancel") {
+                                showRunPopover = false
+                            }
+                            Button("Run") {
+                                let def = UIToolDefinition(
+                                    id: UUID(),
+                                    name: tool.name,
+                                    icon: tool.icon,
+                                    description: tool.description
+                                )
+                                viewModel.triggerTool(def, workbenchVM: workbenchVM, input: toolInputText)
+                                showRunPopover = false
+                            }
+                        }
+                    }
+                    .padding(14)
+                    .frame(width: 360)
+                }
+            }
 
             Toggle(
                 "",
@@ -1167,12 +1241,13 @@ private struct WorkspaceFileRow: View {
         }
         return name
     }
+
 }
 
 // MARK: - Previews
 
 #if DEBUG
-    #Preview("ModernSidebarRight - Focus") {
+    #Preview("ModernSidebarRight") {
         @Previewable @State var visible = true
 
         let state = CanvasInspectorState(
@@ -1193,6 +1268,8 @@ private struct WorkspaceFileRow: View {
 
         ModernSidebarRight(isVisible: $visible, inspectorState: state)
             .environment(ChatViewModel())
+            .environment(WorkbenchViewModel())
+            .environment(\.settingsManager, SettingsManager())
             .frame(width: 320, height: 700)
             .padding()
     }
@@ -1202,6 +1279,8 @@ private struct WorkspaceFileRow: View {
 
         ModernSidebarRight(isVisible: $visible, inspectorState: .empty())
             .environment(ChatViewModel())
+            .environment(WorkbenchViewModel())
+            .environment(\.settingsManager, SettingsManager())
             .frame(width: 320, height: 700)
             .padding()
     }
