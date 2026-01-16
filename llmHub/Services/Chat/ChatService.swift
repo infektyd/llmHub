@@ -127,6 +127,8 @@ final class ChatService {
     private let memoryRetrievalService: MemoryRetrievalService
     /// Service for memory management.
     private let memoryManagementService: MemoryManagementService
+    /// Service for labeling tool run bundles.
+    private let toolRunLabelerService: ToolRunLabelerService
 
     /// Logger instance.
     private let logger = Logger(subsystem: "com.llmhub", category: "ChatService")
@@ -196,7 +198,8 @@ final class ChatService {
         toolAuthorizationService: ToolAuthorizationService? = nil,
         contextManager: ContextManagementService = ContextManagementService(),
         memoryRetrievalService: MemoryRetrievalService = MemoryRetrievalService(),
-        memoryManagementService: MemoryManagementService = MemoryManagementService()
+        memoryManagementService: MemoryManagementService = MemoryManagementService(),
+        toolRunLabelerService: ToolRunLabelerService = ToolRunLabelerService()
     ) {
         self.modelContext = modelContext
         self.providerRegistry = providerRegistry
@@ -209,6 +212,7 @@ final class ChatService {
         self.contextManager = contextManager
         self.memoryRetrievalService = memoryRetrievalService
         self.memoryManagementService = memoryManagementService
+        self.toolRunLabelerService = toolRunLabelerService
     }
 
     // MARK: - Timeout Helper
@@ -392,6 +396,57 @@ final class ChatService {
             session.hasArtifacts = metadata.hasArtifacts
 
             try? self.modelContext.save()
+        }
+    }
+
+    private func shouldGenerateToolRunLabel(for toolCalls: [ToolCall]) -> Bool {
+        guard !toolCalls.isEmpty else { return false }
+        if toolCalls.count >= 2 { return true }
+        return AppSettings.load().smartRunLabelsEnabled
+    }
+
+    private func scheduleToolRunLabelIfNeeded(
+        parentMessageID: UUID,
+        toolCalls: [ToolCall],
+        expectedToolCount: Int
+    ) {
+        guard shouldGenerateToolRunLabel(for: toolCalls) else { return }
+
+        Task { @MainActor in
+            guard
+                let entity = try? self.modelContext.fetch(
+                    FetchDescriptor<ChatMessageEntity>(predicate: #Predicate { $0.id == parentMessageID })
+                ).first
+            else { return }
+
+            if entity.toolRunLabelAttemptedAt != nil || entity.toolRunLabelData != nil {
+                return
+            }
+
+            entity.toolRunLabelAttemptedAt = Date()
+            try? self.modelContext.save()
+
+            let toolCallsSnapshot = toolCalls
+            let expectedCount = expectedToolCount
+
+            Task.detached(priority: .utility) { [weak self] in
+                guard let self else { return }
+                let label = await self.toolRunLabelerService.label(
+                    for: toolCallsSnapshot,
+                    expectedToolCount: expectedCount
+                )
+                guard let label, let data = try? JSONEncoder().encode(label) else { return }
+
+                await MainActor.run {
+                    guard
+                        let refreshed = try? self.modelContext.fetch(
+                            FetchDescriptor<ChatMessageEntity>(predicate: #Predicate { $0.id == parentMessageID })
+                        ).first
+                    else { return }
+                    refreshed.toolRunLabelData = data
+                    try? self.modelContext.save()
+                }
+            }
         }
     }
 
@@ -671,6 +726,7 @@ final class ChatService {
 
                         // Track accumulated tool calls for this iteration
                         var accumulatedToolCalls: [ToolCall] = []
+                        var parentAssistantMessageIDForRun: UUID?
                         var assistantTextBuffer = ""
                         var tokenBatcher = TokenBatcher()
                         var didPersistAssistantMessage = false
@@ -778,6 +834,7 @@ final class ChatService {
                                     try await MainActor.run {
                                         try service.appendMessage(assistantMsg, to: sessionID)
                                     }
+                                    parentAssistantMessageIDForRun = assistantMsg.id
                                     didPersistAssistantMessage = true
                                 } else {
                                     // Normal completion - save and we're done
@@ -821,6 +878,7 @@ final class ChatService {
                                     try await MainActor.run {
                                         try service.appendMessage(assistantMsg, to: sessionID)
                                     }
+                                    parentAssistantMessageIDForRun = assistantMsg.id
                                     didPersistAssistantMessage = true
                                 } else {
                                     var persisted = msg
@@ -871,6 +929,7 @@ final class ChatService {
                                 try await MainActor.run {
                                     try service.appendMessage(assistantMsg, to: sessionID)
                                 }
+                                parentAssistantMessageIDForRun = assistantMsg.id
                             }
 
                             // Execute using ToolExecutor
@@ -948,6 +1007,14 @@ final class ChatService {
                                     try service.appendMessage(toolResultMessage, to: sessionID)
                                 }
 
+                            }
+
+                            if let parentID = parentAssistantMessageIDForRun {
+                                service.scheduleToolRunLabelIfNeeded(
+                                    parentMessageID: parentID,
+                                    toolCalls: accumulatedToolCalls,
+                                    expectedToolCount: accumulatedToolCalls.count
+                                )
                             }
 
                             // Continue the loop to let LLM process tool results

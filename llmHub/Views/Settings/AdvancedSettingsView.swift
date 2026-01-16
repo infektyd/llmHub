@@ -279,6 +279,27 @@ struct AdvancedSettingsView: View {
 
                 Toggle(
                     isOn: Binding(
+                        get: { settingsManager.settings.smartRunLabelsEnabled },
+                        set: { settingsManager.settings.smartRunLabelsEnabled = $0 }
+                    )
+                ) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Smart Run Labels")
+                            .font(.system(size: 14 * uiScale, weight: .medium))
+                            .foregroundStyle(AppColors.textPrimary)
+                        Text("Generate short run bundle titles using privacy-safe tool summaries")
+                            .font(.system(size: 11 * uiScale))
+                            .foregroundStyle(AppColors.textTertiary)
+                    }
+                }
+                .toggleStyle(.switch)
+                .padding(uiCompactMode ? 12 : 16)
+
+                Divider()
+                    .padding(.horizontal, uiCompactMode ? 12 : 16)
+
+                Toggle(
+                    isOn: Binding(
                         get: { settingsManager.settings.developerModeManualToolTriggering },
                         set: { settingsManager.settings.developerModeManualToolTriggering = $0 }
                     )

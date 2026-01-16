@@ -49,6 +49,9 @@ public enum ColorSchemeChoice: String, Codable, CaseIterable, Sendable {
 /// Persisted to UserDefaults with automatic encoding/decoding.
 public struct AppSettings: Codable, Sendable {
 
+    /// UserDefaults key for persisted settings data.
+    public static let storageKey = "llmHub.appSettings.v1"
+
     // MARK: - Appearance
 
     /// User's preferred color scheme (.system, .light, .dark)
@@ -110,6 +113,9 @@ public struct AppSettings: Codable, Sendable {
     /// Enable automatic conversation summary generation
     public var summaryGenerationEnabled: Bool = true
 
+    /// Enable smart tool run labels for run bundles
+    public var smartRunLabelsEnabled: Bool = false
+
     // MARK: - Initialization
 
     public init() {
@@ -134,6 +140,7 @@ public struct AppSettings: Codable, Sendable {
         case networkTimeout
         case maxContextTokens
         case summaryGenerationEnabled
+        case smartRunLabelsEnabled
     }
 
     public init(from decoder: Decoder) throws {
@@ -180,6 +187,9 @@ public struct AppSettings: Codable, Sendable {
         summaryGenerationEnabled =
             try container.decodeIfPresent(Bool.self, forKey: .summaryGenerationEnabled)
             ?? defaults.summaryGenerationEnabled
+        smartRunLabelsEnabled =
+            try container.decodeIfPresent(Bool.self, forKey: .smartRunLabelsEnabled)
+            ?? defaults.smartRunLabelsEnabled
     }
 
     // MARK: - Validation
@@ -215,6 +225,17 @@ public struct AppSettings: Codable, Sendable {
 
     /// Returns a fresh instance with all default values.
     public static let defaultSettings = AppSettings()
+
+    /// Loads settings from UserDefaults, falling back to defaults if missing or invalid.
+    public static func load(from userDefaults: UserDefaults = .standard) -> AppSettings {
+        guard let data = userDefaults.data(forKey: storageKey),
+            var loaded = try? JSONDecoder().decode(AppSettings.self, from: data)
+        else {
+            return .defaultSettings
+        }
+        loaded.validate()
+        return loaded
+    }
 }
 
 // MARK: - Bundle Extension

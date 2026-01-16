@@ -261,6 +261,7 @@ struct TranscriptCanvasSessionView: View {
             id: bundleID,
             parentAssistantMessageID: parentEntity.id,
             title: "Run Bundle",
+            label: parentEntity.toolRunLabel,
             toolRows: toolRows,
             expectedToolCount: expectedToolCallIDSet.count,
             status: status
