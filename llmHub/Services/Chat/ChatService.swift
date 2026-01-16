@@ -615,6 +615,29 @@ final class ChatService {
 
                         // Build tool definitions for provider, filtered by user authorization.
                         let availableTools = await registry.availableTools(in: env)
+                        let toolsPolicy = ToolsEnabledPolicyResolver.resolve()
+                        let lastUserMessage = llmMessages.last(where: { $0.role == .user })
+                        let lastUserText = lastUserMessage?.content ?? ""
+                        let hasKnownAttachments =
+                            !(lastUserMessage?.attachments.isEmpty ?? true)
+                            || !attachments.isEmpty
+                            || !images.isEmpty
+                        var heuristicInput = userMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if heuristicInput.isEmpty {
+                            heuristicInput = lastUserText
+                        }
+                        if heuristicInput.isEmpty, hasKnownAttachments {
+                            heuristicInput = "attachment file"
+                        } else if hasKnownAttachments {
+                            heuristicInput += " attachment file"
+                        }
+                        if !references.isEmpty {
+                            heuristicInput += " reference"
+                        }
+                        let allowedToolNames = ToolRelevanceHeuristics.allowedToolNames(
+                            policy: toolsPolicy,
+                            userMessage: heuristicInput
+                        )
 
                         // SECURITY: Always check authorization, even if auth service is nil.
                         // Secure-by-default: tools are disabled unless explicitly authorized.
@@ -644,14 +667,29 @@ final class ChatService {
                                 "⚠️ No authorization service configured, all tools disabled")
                         }
 
-                        let exportedToolDefs = enabledTools.compactMap { ToolDefinition(from: $0) }
+                        let filteredTools: [any Tool]
+                        if toolsPolicy == .workhorse {
+                            filteredTools = enabledTools
+                        } else {
+                            filteredTools = enabledTools.filter { allowedToolNames.contains($0.name) }
+                        }
+                        if toolsPolicy != .workhorse {
+                            logger.debug(
+                                "🧰 Tool policy '\(toolsPolicy.rawValue)' allowed \(filteredTools.count)/\(enabledTools.count) tools"
+                            )
+                        }
+
+                        let exportedToolDefs = filteredTools.compactMap { ToolDefinition(from: $0) }
                         let allToolDefs: [ToolDefinition] = exportedToolDefs
+                        let toolCountForProvider: Int =
+                            (provider.supportsToolCalling && !allToolDefs.isEmpty) ? allToolDefs.count : 0
 
                         // Inject an authoritative tool manifest into the system prompt so models don't hallucinate tooling.
                         let toolManifest = ToolManifest.systemPrompt(
                             tools: allToolDefs,
                             toolCallingAvailable: provider.supportsToolCalling
                         )
+                        let toolManifestSize = toolManifest.count
                         if var firstMsg = messagesForCompaction.first, firstMsg.role == .system {
                             firstMsg.content = ToolManifest.upsert(
                                 into: firstMsg.content,
@@ -683,6 +721,10 @@ final class ChatService {
                                     summaryMaxTokens: summaryMaxTokens
                                 )
                             }
+                        )
+
+                        logger.debug(
+                            "🔍 [ChatService] Tool metrics - tools: \(toolCountForProvider), manifestChars: \(toolManifestSize), inputTokens≈\(compactionResult.finalTokens)"
                         )
 
                         // Notify UI if compaction occurred
