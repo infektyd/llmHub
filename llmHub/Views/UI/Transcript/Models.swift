@@ -33,14 +33,18 @@ struct ToolRunBundleViewModel: Identifiable, Equatable {
         if let labelTitle = sanitizedTitle {
             return labelTitle
         }
-        return Self.makeTitle(toolNameCounts: toolNameCounts, expectedToolCount: expectedToolCount)
+        return Self.makeTitle(
+            toolNameCounts: toolNameCounts,
+            expectedToolCount: expectedToolCount,
+            status: status
+        )
     }
 
     var displayRationale: String {
         if let labelRationale = sanitizedRationale {
             return labelRationale
         }
-        return Self.makeRationale(toolNameCounts: toolNameCounts)
+        return Self.makeRationale(toolNameCounts: toolNameCounts, status: status)
     }
 
     private var sanitizedTitle: String? {
@@ -78,9 +82,10 @@ struct ToolRunBundleViewModel: Identifiable, Equatable {
     private static func makeTitle(
         toolNameCounts: [String: Int],
         expectedToolCount: Int,
+        status: ToolRunBundleStatus,
         maxLength: Int = 60
     ) -> String {
-        let fallback = "Running tools"
+        let fallback = titlePrefix(for: status)
         guard !toolNameCounts.isEmpty else { return fallback }
 
         let sortedNames = toolNameCounts.keys.sorted {
@@ -117,12 +122,14 @@ struct ToolRunBundleViewModel: Identifiable, Equatable {
         return title.count <= maxLength ? title : fallback
     }
 
-    private static func makeRationale(toolNameCounts: [String: Int], maxLength: Int = 140) -> String {
+    private static func makeRationale(
+        toolNameCounts: [String: Int],
+        status: ToolRunBundleStatus,
+        maxLength: Int = 140
+    ) -> String {
         let toolNames = Array(toolNameCounts.keys)
         let categories = orderedCategories(from: toolNames)
-        guard !categories.isEmpty else {
-            return "Executing tools to gather results."
-        }
+        guard !categories.isEmpty else { return fallbackRationale(for: status) }
 
         let needsContext = categories.contains { $0.isContextGathering }
         let needsEditing = categories.contains { $0 == .editingFiles }
@@ -150,11 +157,48 @@ struct ToolRunBundleViewModel: Identifiable, Equatable {
 
         let maxSummaryLength = maxLength - purpose.count - 1
         let summary = summarizedCategories(categories, maxLength: maxSummaryLength)
-        let rationale = "\(summary) \(purpose)"
-        if rationale.count <= maxLength {
-            return rationale
+        let baseRationale = "\(summary) \(purpose)"
+        if let statusNote = statusRationaleSuffix(for: status) {
+            let candidate = "\(baseRationale) \(statusNote)"
+            if candidate.count <= maxLength {
+                return candidate
+            }
         }
-        return "Executing tools to gather results."
+        if baseRationale.count <= maxLength {
+            return baseRationale
+        }
+        return fallbackRationale(for: status)
+    }
+
+    private static func titlePrefix(for status: ToolRunBundleStatus) -> String {
+        switch status {
+        case .running: return "Running tools"
+        case .success: return "Tools completed"
+        case .partialFailure: return "Tools partially failed"
+        case .failure: return "Tools failed"
+        }
+    }
+
+    private static func statusRationaleSuffix(for status: ToolRunBundleStatus) -> String? {
+        switch status {
+        case .running: return "Still running."
+        case .success: return "All tools succeeded."
+        case .partialFailure: return "Some tools failed."
+        case .failure: return "All tools failed."
+        }
+    }
+
+    private static func fallbackRationale(for status: ToolRunBundleStatus) -> String {
+        switch status {
+        case .running:
+            return "Executing tools to gather results."
+        case .success:
+            return "Tools completed successfully."
+        case .partialFailure:
+            return "Tools completed with some failures."
+        case .failure:
+            return "Tools failed to complete."
+        }
     }
 
     private static func summarizedCategories(

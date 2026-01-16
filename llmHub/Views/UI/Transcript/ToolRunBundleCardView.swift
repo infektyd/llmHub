@@ -101,20 +101,38 @@ struct ToolRunBundleCardView: View {
                 }
             }
         case .success:
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 12 * uiScale, weight: .semibold))
-                .foregroundStyle(AppColors.success)
-                .accessibilityLabel("Succeeded")
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 12 * uiScale, weight: .semibold))
+                    .foregroundStyle(AppColors.success)
+                Text("Succeeded")
+                    .font(.system(size: 11 * uiScale, weight: .medium))
+                    .foregroundStyle(AppColors.textSecondary)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Succeeded")
         case .partialFailure:
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 12 * uiScale, weight: .semibold))
-                .foregroundStyle(.orange)
-                .accessibilityLabel("Partial failure")
+            HStack(spacing: 6) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 12 * uiScale, weight: .semibold))
+                    .foregroundStyle(.orange)
+                Text("Partial failure")
+                    .font(.system(size: 11 * uiScale, weight: .medium))
+                    .foregroundStyle(AppColors.textSecondary)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Partial failure")
         case .failure:
-            Image(systemName: "xmark.octagon.fill")
-                .font(.system(size: 12 * uiScale, weight: .semibold))
-                .foregroundStyle(.red)
-                .accessibilityLabel("Failed")
+            HStack(spacing: 6) {
+                Image(systemName: "xmark.octagon.fill")
+                    .font(.system(size: 12 * uiScale, weight: .semibold))
+                    .foregroundStyle(.red)
+                Text("Failed")
+                    .font(.system(size: 11 * uiScale, weight: .medium))
+                    .foregroundStyle(AppColors.textSecondary)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Failed")
         }
     }
 
