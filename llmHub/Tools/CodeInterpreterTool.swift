@@ -174,7 +174,7 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
             }
 
             print("🔍 [executeCode] Requesting user approval...")
-            let approved = await handler(code, language)
+            let approved = await requestApproval(handler, code: code, language: language)
             if !approved {
                 print("❌ [executeCode] FAILED: User denied approval")
                 throw CodeExecutionError.approvalDenied
@@ -191,7 +191,7 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
 
         // Notify start
         print("🔍 [executeCode] Calling onExecutionStart callback...")
-        onExecutionStart?(request)
+        notifyExecutionStart(request)
 
         do {
             print("🔍 [executeCode] Calling engine.execute()...")
@@ -203,7 +203,7 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
             print("🔍 [executeCode] Result: exitCode=\(result.exitCode), time=\(result.executionTimeMs)ms")
 
             // Notify completion
-            onExecutionComplete?(result)
+            notifyExecutionComplete(result)
 
             let workspaceID = CloudWorkspaceManager.shared.defaultWorkspaceID()
             Task.detached(priority: .utility) {
@@ -245,7 +245,7 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
                 throw CodeExecutionError.approvalDenied
             }
 
-            let approved = await handler(code, language)
+            let approved = await requestApproval(handler, code: code, language: language)
             if !approved {
                 throw CodeExecutionError.approvalDenied
             }
@@ -257,14 +257,14 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
             timeoutSeconds: timeoutSeconds
         )
 
-        onExecutionStart?(request)
+        notifyExecutionStart(request)
 
         let result = try await engine.execute(
             request: request,
             securityMode: securityMode
         )
 
-        onExecutionComplete?(result)
+        notifyExecutionComplete(result)
 
         let workspaceID = CloudWorkspaceManager.shared.defaultWorkspaceID()
         Task.detached(priority: .utility) {
@@ -284,6 +284,33 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
     /// - Returns: An array of `InterpreterInfo`.
     func checkAvailability() async -> [InterpreterInfo] {
         await engine.checkAllInterpreters()
+    }
+
+    private func notifyExecutionStart(_ request: CodeExecutionRequest) {
+        guard let onExecutionStart else { return }
+        Task { @MainActor in
+            onExecutionStart(request)
+        }
+    }
+
+    private func notifyExecutionComplete(_ result: CodeExecutionResult) {
+        guard let onExecutionComplete else { return }
+        Task { @MainActor in
+            onExecutionComplete(result)
+        }
+    }
+
+    private func requestApproval(
+        _ handler: @escaping (String, SupportedLanguage) async -> Bool,
+        code: String,
+        language: SupportedLanguage
+    ) async -> Bool {
+        await withCheckedContinuation { continuation in
+            Task { @MainActor in
+                let approved = await handler(code, language)
+                continuation.resume(returning: approved)
+            }
+        }
     }
 }
 

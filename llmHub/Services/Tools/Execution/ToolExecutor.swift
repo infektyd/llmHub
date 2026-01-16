@@ -157,7 +157,12 @@ actor ToolExecutor {
         // Check authorization status
         // SECURITY: .notDetermined is treated as .denied (secure by default)
         // Use conversation-scoped authorization via context.sessionID
-        let status = await auth.checkAccess(for: tool.name, conversationID: context.sessionID)
+        // NOTE: ToolAuthorizationService is @MainActor, so we must hop to MainActor for the check
+        let toolName = tool.name
+        let sessionID = context.sessionID
+        let status = await MainActor.run {
+            auth.checkAccess(for: toolName, conversationID: sessionID)
+        }
         if status != .authorized {
             metrics.markEnd()
             metrics.errorClass = .authorizationDenied

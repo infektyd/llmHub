@@ -20,12 +20,21 @@
       }
     },
     {
+      "identity" : "swiftui-math",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/gonzalezreal/swiftui-math",
+      "state" : {
+        "revision" : "0b5c2cfaaec8d6193db206f675048eeb5ce95f71",
+        "version" : "0.1.0"
+      }
+    },
+    {
       "identity" : "textual",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/gonzalezreal/textual.git",
       "state" : {
-        "revision" : "675933ec315767ad3deacff33fcc46eb2b25ae4c",
-        "version" : "0.1.1"
+        "revision" : "a03c1e103d88de4ea0dd8320ea1611ec0d4b29b3",
+        "version" : "0.2.0"
       }
     }
   ],
