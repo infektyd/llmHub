@@ -189,7 +189,11 @@ struct CanvasRootView: View {
         }
         .onPreferenceChange(ComposerHeightPreferenceKey.self) { height in
             guard abs(composerHeight - height) > 0.5 else { return }
-            composerHeight = height
+            Task { @MainActor in
+                await Task.yield()
+                guard abs(composerHeight - height) > 0.5 else { return }
+                composerHeight = height
+            }
         }
         // Rationale: ChatViewModel is owned once at the CanvasRootView level and must be available
         // throughout the canvas UI tree (composer, transcript, diagnostics) via SwiftUI's
