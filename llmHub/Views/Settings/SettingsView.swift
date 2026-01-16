@@ -541,7 +541,8 @@ struct ToolsSection: View {
                         Spacer()
                     }
                 } else {
-                    ForEach(Array(viewModel.toolToggles.enumerated()), id: \.element.id) { index, tool in
+                    ForEach(Array(viewModel.toolToggles.enumerated()), id: \.element.id) {
+                        index, tool in
                         ToolToggleRow(
                             tool: tool,
                             onToggle: { enabled in
@@ -632,7 +633,7 @@ struct AppearanceSection: View {
 
     private let emoteOptions: [String] = [
         "👤", "🧑‍💻", "🧑", "👨", "👩", "🧔", "👨‍💼", "👩‍💼",
-        "🦊", "🐱", "🤖", "👾", "🎮", "⚡️", "🔥", "💎", "🌟"
+        "🦊", "🐱", "🤖", "👾", "🎮", "⚡️", "🔥", "💎", "🌟",
     ]
 
     var body: some View {
@@ -742,6 +743,25 @@ struct AppearanceSection: View {
                 Divider()
                     .padding(.horizontal, uiCompactMode ? 14 : 16)
 
+                // Force inline paste toggle
+                Toggle(
+                    isOn: Binding(
+                        get: { UserDefaults.standard.bool(forKey: "forceInlinePaste") },
+                        set: { UserDefaults.standard.set($0, forKey: "forceInlinePaste") }
+                    )
+                ) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Force Inline Paste")
+                            .font(.system(size: 14 * uiScale, weight: .medium))
+                            .foregroundStyle(AppColors.textPrimary)
+                        Text("Always paste text inline, never auto-convert to attachment")
+                            .font(.system(size: 11 * uiScale))
+                            .foregroundStyle(AppColors.textTertiary)
+                    }
+                }
+                .toggleStyle(.switch)
+                .padding(uiCompactMode ? 14 : 16)
+
                 // User avatar/emote
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
@@ -760,7 +780,9 @@ struct AppearanceSection: View {
                         .font(.system(size: 11 * uiScale))
                         .foregroundStyle(AppColors.textTertiary)
 
-                    let columns = [GridItem(.adaptive(minimum: uiCompactMode ? 32 : 36), spacing: 8)]
+                    let columns = [
+                        GridItem(.adaptive(minimum: uiCompactMode ? 32 : 36), spacing: 8)
+                    ]
                     LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
                         ForEach(emoteOptions, id: \.self) { emote in
                             Button {
@@ -768,7 +790,10 @@ struct AppearanceSection: View {
                             } label: {
                                 Text(emote)
                                     .font(.system(size: 16 * uiScale))
-                                    .frame(width: uiCompactMode ? 32 : 36, height: uiCompactMode ? 28 : 32)
+                                    .frame(
+                                        width: uiCompactMode ? 32 : 36,
+                                        height: uiCompactMode ? 28 : 32
+                                    )
                                     .background {
                                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                                             .fill(
@@ -1064,12 +1089,13 @@ struct LinkRow: View {
                     isEnabled: false,
                     isAvailable: false,
                     unavailableReason: "Requires macOS"
-                )
+                ),
             ]
         }
 
         static func mockSettingsViewModel(withKeys: Bool = false, withTools: Bool = true)
-            -> SettingsViewModel {
+            -> SettingsViewModel
+        {
             let viewModel = SettingsViewModel()
             if withKeys {
                 viewModel.openAIKey = "sk-mock-key-12345"
