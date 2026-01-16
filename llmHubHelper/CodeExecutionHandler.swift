@@ -35,7 +35,12 @@ final class CodeExecutionHandler: NSObject, CodeExecutionXPCProtocol {
     ) {
         logger.info("Executing \(language) code (\(code.count) chars)")
 
+        let semaphore = DispatchSemaphore(value: 0)
+        var resultData: Data?
+        var resultError: Error?
+
         Task {
+            defer { semaphore.signal() }
             do {
                 let result = try await executor.execute(
                     code: code,
@@ -45,16 +50,16 @@ final class CodeExecutionHandler: NSObject, CodeExecutionXPCProtocol {
                 )
 
                 let encoder = JSONEncoder()
-                let data = try encoder.encode(result)
-
+                resultData = try encoder.encode(result)
                 logger.info("Execution completed: exit=\(result.exitCode), time=\(result.executionTimeMs)ms")
-                reply(data, nil)
-
             } catch {
                 logger.error("Execution failed: \(error.localizedDescription)")
-                reply(nil, error)
+                resultError = error
             }
         }
+
+        semaphore.wait()
+        reply(resultData, resultError)
     }
 
     /// Checks for the availability of an interpreter.
@@ -67,17 +72,26 @@ final class CodeExecutionHandler: NSObject, CodeExecutionXPCProtocol {
     ) {
         logger.debug("Checking interpreter for \(language)")
 
-        Task {
-            let (path, version) = await executor.findInterpreter(for: language)
+        let semaphore = DispatchSemaphore(value: 0)
+        var interpreterPath: String?
+        var interpreterVersion: String?
+        var interpreterError: Error?
 
+        Task {
+            defer { semaphore.signal() }
+            let (path, version) = await executor.findInterpreter(for: language)
             if let path = path {
                 logger.debug("Found \(language) at \(path)")
-                reply(path, version, nil)
+                interpreterPath = path
+                interpreterVersion = version
             } else {
                 logger.debug("Interpreter for \(language) not found")
-                reply(nil, nil, XPCExecutionError.interpreterNotFound(language))
+                interpreterError = XPCExecutionError.interpreterNotFound(language)
             }
         }
+
+        semaphore.wait()
+        reply(interpreterPath, interpreterVersion, interpreterError)
     }
 
     /// Retrieves the version of the helper service.

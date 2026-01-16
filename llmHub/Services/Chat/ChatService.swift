@@ -563,19 +563,25 @@ final class ChatService {
 
                         // SECURITY: Always check authorization, even if auth service is nil.
                         // Secure-by-default: tools are disabled unless explicitly authorized.
+                        // NOTE: ToolAuthorizationService is @MainActor, so auth checks must hop to MainActor.
                         var enabledTools: [any Tool] = []
                         if let auth = service.toolAuthorizationService {
-                            // Conversation-scoped authorization check
-                            for tool in availableTools {
-                                let status = auth.checkAccess(
-                                    for: tool.name, conversationID: currentSession.id)
-                                if status == .authorized {
-                                    enabledTools.append(tool)
-                                } else {
-                                    logger.debug(
-                                        "🔒 Tool '\(tool.name)' blocked (status: \(status.rawValue)) for conversation \(currentSession.id.uuidString.prefix(8))"
-                                    )
+                            // Conversation-scoped authorization check - must run on MainActor
+                            let conversationID = currentSession.id
+                            enabledTools = await MainActor.run {
+                                var authorized: [any Tool] = []
+                                for tool in availableTools {
+                                    let status = auth.checkAccess(
+                                        for: tool.name, conversationID: conversationID)
+                                    if status == .authorized {
+                                        authorized.append(tool)
+                                    } else {
+                                        logger.debug(
+                                            "🔒 Tool '\(tool.name)' blocked (status: \(status.rawValue)) for conversation \(conversationID.uuidString.prefix(8))"
+                                        )
+                                    }
                                 }
+                                return authorized
                             }
                         } else {
                             // No authorization service = no tools enabled (secure by default)

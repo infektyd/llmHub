@@ -54,17 +54,22 @@
             newConnection.remoteObjectInterface = NSXPCInterface(
                 with: CodeExecutionXPCProtocol.self)
 
-            newConnection.invalidationHandler = { [weak self] in
+            let invalidationHandler: @Sendable () -> Void = { [weak self] in
+                guard let self else { return }
                 print("❌ [XPCExecutionBackend] XPC connection invalidated")
-                self?.logger.warning("XPC connection invalidated")
-                self?.resetConnection(shouldInvalidate: false, reason: "invalidation handler")
+                self.logger.warning("XPC connection invalidated")
+                self.resetConnection(shouldInvalidate: false, reason: "invalidation handler")
             }
 
-            newConnection.interruptionHandler = { [weak self] in
+            let interruptionHandler: @Sendable () -> Void = { [weak self] in
+                guard let self else { return }
                 print("❌ [XPCExecutionBackend] XPC connection interrupted")
-                self?.logger.warning("XPC connection interrupted")
-                self?.resetConnection(shouldInvalidate: true, reason: "interruption handler")
+                self.logger.warning("XPC connection interrupted")
+                self.resetConnection(shouldInvalidate: true, reason: "interruption handler")
             }
+
+            newConnection.invalidationHandler = invalidationHandler
+            newConnection.interruptionHandler = interruptionHandler
 
             newConnection.resume()
             _connection = newConnection
@@ -77,12 +82,16 @@
 
         /// Get the remote proxy object.
         private func remoteProxy() throws -> CodeExecutionXPCProtocol {
+            let errorHandler: @Sendable (Error) -> Void = { [weak self] error in
+                guard let self else { return }
+                let errorDesc = error.localizedDescription
+                print("❌ [XPCExecutionBackend] remoteObjectProxy error: \(errorDesc)")
+                self.logger.error("XPC remote object error: \(errorDesc)")
+                self.resetConnection(shouldInvalidate: true, reason: "remote object error")
+            }
             guard
-                let proxy = connection.remoteObjectProxyWithErrorHandler({ [weak self] error in
-                    print("❌ [XPCExecutionBackend] remoteObjectProxy error: \(error.localizedDescription)")
-                    self?.logger.error("XPC remote object error: \(error.localizedDescription)")
-                    self?.resetConnection(shouldInvalidate: true, reason: "remote object error")
-                }) as? CodeExecutionXPCProtocol
+                let proxy = connection.remoteObjectProxyWithErrorHandler(errorHandler)
+                    as? CodeExecutionXPCProtocol
             else {
                 throw XPCExecutionError.connectionFailed
             }

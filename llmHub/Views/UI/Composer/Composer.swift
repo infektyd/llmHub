@@ -278,6 +278,8 @@ struct ComposerBarView: View {
         markdownDebounceTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: 50_000_000)
             guard !Task.isCancelled else { return }
+            await Task.yield()
+            guard inputText != parsed else { return }
             isNormalizingMarkdown = true
             defer { isNormalizingMarkdown = false }
             inputText = parsed
