@@ -300,7 +300,7 @@ class ChatViewModel {
             { MistralProvider(keychain: keychain, config: config.mistral) },
             { GoogleAIProvider(keychain: keychain, config: config.googleAI) },
             { XAIProvider(keychain: keychain, config: config.xai) },
-            { OpenRouterProvider(keychain: keychain, config: config.openRouter) }
+            { OpenRouterProvider(keychain: keychain, config: config.openRouter) },
         ])
 
         let baseEnvironment = ToolEnvironment.current
@@ -333,7 +333,7 @@ class ChatViewModel {
             FilePatchTool(),
             WorkspaceTool(),
             CodeInterpreterTool(environment: toolEnvironment),
-            DataVisualizationTool()
+            DataVisualizationTool(),
         ]
 
         let toolRegistry = await ToolRegistry(tools: tools)
@@ -445,7 +445,7 @@ class ChatViewModel {
             streamingText = nil
 
             let service = await ensureChatService(modelContext: modelContext)
-            let domainSession = try await MainActor.run { 
+            let domainSession = try await MainActor.run {
                 do {
                     return try service.loadSession(id: sessionID)
                 } catch {
@@ -464,7 +464,8 @@ class ChatViewModel {
                 try Task.checkCancellation()
                 switch event {
                 case .token(let text):
-                    if let updated = await streamAccumulator.append(token: streamToken, delta: text) {
+                    if let updated = await streamAccumulator.append(token: streamToken, delta: text)
+                    {
                         uiContinuation.yield(updated)
                     }
 
@@ -576,6 +577,45 @@ class ChatViewModel {
     /// Whether the artifact library panel is visible
     var showArtifactLibrary: Bool = false
 
+    /// Converts a SandboxedArtifact to an Attachment for message sending.
+    private func makeAttachment(from sandboxArtifact: SandboxedArtifact) async -> Attachment? {
+        let fullPath = await ArtifactSandboxService.shared.artifactPath(for: sandboxArtifact)
+
+        // Determine attachment type from MIME
+        let type: AttachmentType
+        if sandboxArtifact.mimeType.hasPrefix("image/") {
+            type = .image
+        } else if sandboxArtifact.mimeType == "application/pdf" {
+            type = .pdf
+        } else if sandboxArtifact.mimeType.hasPrefix("text/")
+            || sandboxArtifact.filename.hasSuffix(".swift")
+            || sandboxArtifact.filename.hasSuffix(".py")
+            || sandboxArtifact.filename.hasSuffix(".js")
+            || sandboxArtifact.filename.hasSuffix(".json")
+        {
+            type = .code
+        } else {
+            type = .text
+        }
+
+        // Read preview for text/code files
+        let preview: String?
+        if type == .code || type == .text {
+            preview = try? String(contentsOf: fullPath, encoding: .utf8)
+                .prefix(200)
+                .map { String($0) }
+        } else {
+            preview = nil
+        }
+
+        return Attachment(
+            filename: sandboxArtifact.filename,
+            url: fullPath,
+            type: type,
+            previewText: preview
+        )
+    }
+
     /// Import a file from an external location into the artifact sandbox.
     /// This COPIES the file to the sandbox - LLMs can only access the copy.
     ///
@@ -586,6 +626,13 @@ class ChatViewModel {
         do {
             let artifact = try await ArtifactSandboxService.shared.importFile(from: url)
             recentlyImportedArtifacts.append(artifact)
+
+            // AUTO-STAGE: Convert to Attachment and add to staged list
+            if let attachment = await makeAttachment(from: artifact) {
+                stagedAttachments.append(attachment)
+                logger.info("✅ Auto-staged artifact as attachment: \(artifact.filename)")
+            }
+
             logger.info("Imported file to sandbox: \(artifact.filename)")
             return artifact
         } catch {
@@ -606,6 +653,13 @@ class ChatViewModel {
             let artifact = try await ArtifactSandboxService.shared.importData(
                 data, filename: filename)
             recentlyImportedArtifacts.append(artifact)
+
+            // AUTO-STAGE: Convert to Attachment and add to staged list
+            if let attachment = await makeAttachment(from: artifact) {
+                stagedAttachments.append(attachment)
+                logger.info("✅ Auto-staged artifact as attachment: \(artifact.filename)")
+            }
+
             logger.info("Imported data to sandbox: \(artifact.filename)")
             return artifact
         } catch {
@@ -622,6 +676,15 @@ class ChatViewModel {
         do {
             let artifacts = try await ArtifactSandboxService.shared.importFolder(from: url)
             recentlyImportedArtifacts.append(contentsOf: artifacts)
+
+            // AUTO-STAGE: Convert to Attachments and add to staged list
+            for artifact in artifacts {
+                if let attachment = await makeAttachment(from: artifact) {
+                    stagedAttachments.append(attachment)
+                }
+            }
+            logger.info("✅ Auto-staged \(artifacts.count) artifacts as attachments")
+
             logger.info("Imported folder to sandbox: \(artifacts.count) files")
             return artifacts
         } catch {
@@ -1037,7 +1100,7 @@ class ChatViewModel {
                         // Ensure environment stability before triggering UI state changes
                         // This gives SwiftUI time to propagate environment updates before
                         // any alert/sheet presentations fire in response to state changes
-                        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
+                        try? await Task.sleep(nanoseconds: 100_000_000)  // 0.1 second
 
                         self.handleStreamCompletion(
                             sessionID: sessionID, modelID: modelID, modelContext: modelContext)
@@ -1096,7 +1159,8 @@ class ChatViewModel {
                         executingToolNames.insert(name)
                         toolExecutionStartDates[id] = Date()
                         let startDate = toolExecutionStartDates[id] ?? Date()
-                        let icon = toolToggles.first(where: { $0.id == name })?.icon
+                        let icon =
+                            toolToggles.first(where: { $0.id == name })?.icon
                             ?? "wrench.and.screwdriver"
 
                         if let workbenchVM {
@@ -1124,7 +1188,8 @@ class ChatViewModel {
                     case .toolExecutionFinished(let id, let name, let success, let output):
                         let startDate = toolExecutionStartDates[id] ?? Date()
                         let elapsed = toolExecutionElapsedSeconds[id]
-                        let icon = toolToggles.first(where: { $0.id == name })?.icon
+                        let icon =
+                            toolToggles.first(where: { $0.id == name })?.icon
                             ?? "wrench.and.screwdriver"
                         let status: ToolExecution.ExecutionStatus = success ? .completed : .failed
 
@@ -1157,8 +1222,8 @@ class ChatViewModel {
                         )
                         self.contextCompactionMessage =
                             "⚡️ Context optimized: \(droppedMessages) "
-                                + "message\(droppedMessages == 1 ? "" : "s") compacted, "
-                                + "\(tokensSaved) tokens saved"
+                            + "message\(droppedMessages == 1 ? "" : "s") compacted, "
+                            + "\(tokensSaved) tokens saved"
                         self.showContextCompactionNotification = true
 
                         Task { @MainActor [weak self] in
@@ -1178,17 +1243,17 @@ class ChatViewModel {
 
                         logger.warning("Agent stopped: \(String(describing: reason))")
                         lastAgentStopReason = reason
-                        
+
                         // Ensure SwiftData + environment updates complete before showing alert
-                        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
-                        
+                        try? await Task.sleep(nanoseconds: 100_000_000)  // 0.1 second
+
                         showAgentStepLimitAlert = true
-                    
+
                     case .memoriesUsed(let count, let summary):
                         memoriesUsedCount = count
                         memoriesUsedSummary = summary
                         showMemoryIndicator = true
-                        
+
                         // Auto-hide after 3 seconds
                         Task { @MainActor [weak self] in
                             try? await Task.sleep(nanoseconds: 3_000_000_000)
@@ -1283,7 +1348,9 @@ class ChatViewModel {
     private func isDeveloperModeManualToolTriggeringEnabled() -> Bool {
         let defaults = UserDefaults.standard
         guard let data = defaults.data(forKey: "llmHub.appSettings.v1") else { return false }
-        guard let settings = try? JSONDecoder().decode(AppSettings.self, from: data) else { return false }
+        guard let settings = try? JSONDecoder().decode(AppSettings.self, from: data) else {
+            return false
+        }
         return settings.developerModeManualToolTriggering
     }
 
@@ -1299,7 +1366,8 @@ class ChatViewModel {
                 name: tool.name,
                 icon: tool.icon,
                 status: .failed,
-                output: "Enable Developer Mode (Manual Tool Triggering) in Settings to run tools manually.",
+                output:
+                    "Enable Developer Mode (Manual Tool Triggering) in Settings to run tools manually.",
                 timestamp: Date()
             )
             workbenchVM.activeToolExecution = execution
@@ -1355,7 +1423,8 @@ class ChatViewModel {
 
         let task = Task { [toolEnvironment] in
             let workspacePath =
-                toolEnvironment.sandboxRoot ?? WorkspaceResolver.resolve(platform: toolEnvironment.platform)
+                toolEnvironment.sandboxRoot
+                ?? WorkspaceResolver.resolve(platform: toolEnvironment.platform)
             let context = ToolContext(
                 sessionID: sessionID,
                 workspacePath: workspacePath,
@@ -1444,27 +1513,35 @@ class ChatViewModel {
     func selectEmoji(for content: String) -> String {
         if content.contains("code") || content.contains("swift") || content.contains("python")
             || content.contains("programming") || content.contains("javascript")
-            || content.contains("typescript") {
+            || content.contains("typescript")
+        {
             return "💻"
         } else if content.contains("math") || content.contains("calculate")
-            || content.contains("number") || content.contains("equation") {
+            || content.contains("number") || content.contains("equation")
+        {
             return "🧮"
         } else if content.contains("help") || content.contains("how") || content.contains("what")
-            || content.contains("why") {
+            || content.contains("why")
+        {
             return "❓"
         } else if content.contains("write") || content.contains("essay") || content.contains("blog")
-            || content.contains("article") {
+            || content.contains("article")
+        {
             return "✍️"
-        } else if content.contains("search") || content.contains("find") || content.contains("look") {
+        } else if content.contains("search") || content.contains("find") || content.contains("look")
+        {
             return "🔍"
         } else if content.contains("image") || content.contains("photo")
-            || content.contains("picture") {
+            || content.contains("picture")
+        {
             return "🖼️"
         } else if content.contains("data") || content.contains("analyze")
-            || content.contains("analysis") {
+            || content.contains("analysis")
+        {
             return "📊"
         } else if content.contains("bug") || content.contains("error") || content.contains("fix")
-            || content.contains("debug") {
+            || content.contains("debug")
+        {
             return "🔧"
         } else {
             return "💬"
@@ -1709,7 +1786,8 @@ class ChatViewModel {
 
                         if let workbenchVM,
                             var active = workbenchVM.activeToolExecution,
-                            active.id == toolCallID {
+                            active.id == toolCallID
+                        {
                             active.elapsedSeconds = toolExecutionElapsedSeconds[toolCallID]
                             workbenchVM.activeToolExecution = active
                         }

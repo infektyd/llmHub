@@ -29,7 +29,7 @@ struct OpenAIProvider: LLMProvider {
             guard let key = await keychain.apiKey(for: .openai) else { return [:] }
             return [
                 "Authorization": "Bearer \(key)",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             ]
         }
     }
@@ -97,14 +97,48 @@ struct OpenAIProvider: LLMProvider {
             toolCount: tools?.count ?? 0
         )
 
+        // MARK: - Message Sequence Validation
+        // Log role sequence for debugging (no content exposed)
+        MessageSequenceValidator.logRoleSequence(provider: "OpenAI", messages: messages)
+
+        // Sanitize message sequence - fail-open, drops invalid messages
+        let validationResult = MessageSequenceValidator.sanitize(
+            messages: messages, provider: "OpenAI")
+        let sanitizedMessages = validationResult.sanitizedMessages
+
+        if validationResult.wasModified {
+            LLMTrace.sequenceValidation(
+                provider: "OpenAI",
+                originalCount: messages.count,
+                sanitizedCount: sanitizedMessages.count,
+                droppedRoles: validationResult.droppedRoles
+            )
+        }
+
+        // MARK: - Request Instrumentation
+        let toolCount = tools?.count ?? 0
+        let manifestSizeChars = toolCount * 100  // Conservative estimate
+        let manifestSizeTokens = manifestSizeChars / 4
+        let totalTokenEstimate =
+            TokenEstimator.estimate(messages: sanitizedMessages) + manifestSizeTokens
+
+        LLMTrace.requestInstrumentation(
+            provider: "OpenAI",
+            messageCount: sanitizedMessages.count,
+            toolCount: toolCount,
+            manifestSizeChars: manifestSizeChars,
+            manifestSizeTokensEstimate: manifestSizeTokens,
+            totalTokenEstimate: totalTokenEstimate
+        )
+
         let manager = OpenAIManager(apiKey: apiKey)
         let endpoint = ModelRouter.endpoint(for: model)
         let requestThinking = shouldRequestThinking(
             model: model, preference: options.thinkingPreference)
         let isResponsesAPI = (endpoint == .responses)
 
-        // Map messages
-        let openAIMessages = messages.map { msg -> OpenAIChatMessage in
+        // Map sanitized messages
+        let openAIMessages = sanitizedMessages.map { msg -> OpenAIChatMessage in
             // Handle tool role messages - Responses API requires "user" role instead of "tool"
             if msg.role == .tool {
                 let mappedRole: String
@@ -222,7 +256,8 @@ struct OpenAIProvider: LLMProvider {
                         var streamRequest = request
                         if let bodyData = request.httpBody,
                             var json = try? JSONSerialization.jsonObject(with: bodyData)
-                                as? [String: Any] {
+                                as? [String: Any]
+                        {
                             json["stream"] = true
                             streamRequest.httpBody = try JSONSerialization.data(
                                 withJSONObject: json)
@@ -230,7 +265,8 @@ struct OpenAIProvider: LLMProvider {
                         streamRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
 
                         if let bodyData = streamRequest.httpBody,
-                            let bodyStr = String(data: bodyData, encoding: .utf8) {
+                            let bodyStr = String(data: bodyData, encoding: .utf8)
+                        {
                             LLMTrace.requestDetails(
                                 provider: "OpenAI (Responses)",
                                 url: streamRequest.url?.absoluteString ?? "unknown",
@@ -336,12 +372,15 @@ struct OpenAIProvider: LLMProvider {
                         }
 
                         func resolveToolCallID(from dict: [String: Any], fallbackIndex: Int?)
-                            -> String {
+                            -> String
+                        {
                             if let id = firstString(
-                                dict, keys: ["id", "tool_call_id", "call_id", "item_id"]) {
+                                dict, keys: ["id", "tool_call_id", "call_id", "item_id"])
+                            {
                                 return id
                             }
-                            if let index = fallbackIndex, let mapped = contentBlockIDByIndex[index] {
+                            if let index = fallbackIndex, let mapped = contentBlockIDByIndex[index]
+                            {
                                 return mapped
                             }
                             if let index = fallbackIndex {
@@ -368,7 +407,8 @@ struct OpenAIProvider: LLMProvider {
                                     let index = dict["index"] as? Int
                                     if blockType == "text" {
                                         if let text = firstString(
-                                            block, keys: ["text", "content", "value"]) {
+                                            block, keys: ["text", "content", "value"])
+                                        {
                                             if !text.isEmpty {
                                                 fullText += text
                                                 continuation.yield(.token(text: text))
@@ -413,7 +453,8 @@ struct OpenAIProvider: LLMProvider {
 
                                 case "message_delta":
                                     if let dict,
-                                        let usageDict = dict["usage"] as? [String: Any] {
+                                        let usageDict = dict["usage"] as? [String: Any]
+                                    {
                                         let inputTokens =
                                             firstInt(
                                                 usageDict, keys: ["input_tokens", "prompt_tokens"])
@@ -438,7 +479,8 @@ struct OpenAIProvider: LLMProvider {
 
                                 case "error":
                                     if let dict,
-                                        let errorDict = dict["error"] as? [String: Any] {
+                                        let errorDict = dict["error"] as? [String: Any]
+                                    {
                                         let message =
                                             firstString(
                                                 errorDict, keys: ["message", "error", "type"])
@@ -561,7 +603,8 @@ struct OpenAIProvider: LLMProvider {
                     var streamRequest = request
                     if let bodyData = request.httpBody,
                         var json = try? JSONSerialization.jsonObject(with: bodyData)
-                            as? [String: Any] {
+                            as? [String: Any]
+                    {
                         json["stream"] = true
                         json["stream_options"] = ["include_usage": true]
                         streamRequest.httpBody = try JSONSerialization.data(withJSONObject: json)
@@ -569,7 +612,8 @@ struct OpenAIProvider: LLMProvider {
                     streamRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
 
                     if let bodyData = streamRequest.httpBody,
-                        let bodyStr = String(data: bodyData, encoding: .utf8) {
+                        let bodyStr = String(data: bodyData, encoding: .utf8)
+                    {
                         LLMTrace.requestDetails(
                             provider: "OpenAI", url: streamRequest.url?.absoluteString ?? "unknown",
                             bodyPreview: bodyStr)
