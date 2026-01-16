@@ -507,9 +507,9 @@ final class ChatService {
                             try service.loadSession(id: sessionID)
                         }
 
-                        // Start from persisted history, but enrich the most recent user message
+                        // Start from persisted history (chronological), but enrich the most recent user message
                         // with any inline images/attachments for this request only.
-                        var llmMessages = currentSession.messages
+                        var llmMessages = currentSession.messages.sorted { $0.createdAt < $1.createdAt }
 
                         // Defense-in-depth: never include sidecar-origin content in chat prompting,
                         // even if it somehow made it into persistence.

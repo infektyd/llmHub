@@ -11,7 +11,7 @@ import FoundationModels
 nonisolated final class ToolRunLabelerService: Sendable {
     private let keychainStore: KeychainStore
 
-    init(keychainStore: KeychainStore = KeychainStore()) {
+    init(keychainStore: KeychainStore) {
         self.keychainStore = keychainStore
     }
 
@@ -168,8 +168,8 @@ nonisolated final class ToolRunLabelerService: Sendable {
     }
 }
 
-private struct ToolRunLabelSummary: Encodable {
-    struct ToolEntry: Encodable {
+nonisolated struct ToolRunLabelSummary: Encodable {
+    nonisolated struct ToolEntry: Encodable {
         let name: String
         let category: String
         let count: Int
@@ -209,7 +209,7 @@ private struct ToolRunLabelSummary: Encodable {
     }
 }
 
-private enum ToolRunLabelCategory: String {
+nonisolated enum ToolRunLabelCategory: String {
     case readingFiles = "reading_files"
     case searching = "searching"
     case browsingFiles = "browsing_files"

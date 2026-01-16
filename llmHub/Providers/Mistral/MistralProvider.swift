@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 @MainActor
 struct MistralProvider: LLMProvider {
@@ -74,6 +75,10 @@ struct MistralProvider: LLMProvider {
 
         let manager = MistralManager(apiKey: apiKey)
 
+        #if DEBUG
+        debugLogRequest(model: model, messages: messages)
+        #endif
+
         // Map messages
         let mistralMessages = messages.map { msg -> MistralMessage in
             // Check for parts
@@ -143,6 +148,62 @@ struct MistralProvider: LLMProvider {
             promptMode: shouldUseReasoningMode ? "reasoning" : nil
         )
     }
+
+    #if DEBUG
+    private static let debugLogger = Logger(subsystem: "com.llmhub", category: "LLMRequest")
+
+    private func debugLogRequest(model: String, messages: [ChatMessage]) {
+        let roles = messages.suffix(10).map { $0.role.rawValue }
+        Self.debugLogger.debug(
+            "🐛 [Mistral] model=\(model, privacy: .public) roles(last10)=\(roles.joined(separator: " → "), privacy: .public)"
+        )
+
+        let lastTwo = messages.suffix(2)
+        for msg in lastTwo {
+            let preview = sanitizePreview(msg.content)
+            Self.debugLogger.debug(
+                "🐛 [Mistral] role=\(msg.role.rawValue, privacy: .public) preview=\(preview, privacy: .public)"
+            )
+        }
+    }
+
+    private func sanitizePreview(_ text: String) -> String {
+        var sanitized = text
+        if let start = sanitized.range(of: ToolManifest.startMarker),
+            let end = sanitized.range(
+                of: ToolManifest.endMarker,
+                range: start.upperBound..<sanitized.endIndex
+            ) {
+            sanitized.replaceSubrange(
+                start.lowerBound..<end.upperBound,
+                with: "[tool manifest omitted]"
+            )
+        }
+
+        sanitized = redactTokens(in: sanitized)
+        let trimmed = sanitized.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.count <= 60 { return trimmed }
+        return String(trimmed.prefix(60))
+    }
+
+    private func redactTokens(in text: String) -> String {
+        var out = text
+        let jsonPattern =
+            #"(\"(?:key|api_key|apikey|access_token|token|authorization)\"\s*:\s*\")[^\"]*\""#
+        out = out.replacingOccurrences(
+            of: jsonPattern,
+            with: #"$1[REDACTED]\""#,
+            options: .regularExpression
+        )
+        let bearerPattern = #"(?i)\bBearer\s+[A-Za-z0-9._-]+"#
+        out = out.replacingOccurrences(
+            of: bearerPattern,
+            with: "Bearer [REDACTED]",
+            options: .regularExpression
+        )
+        return out
+    }
+    #endif
 
     func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {
         AsyncThrowingStream(ProviderEvent.self) { continuation in
