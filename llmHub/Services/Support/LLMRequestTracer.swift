@@ -74,6 +74,60 @@ struct LLMTrace {
         logger.info("🔧 [\(provider)] Tool call: \(toolName) (id: \(toolId.prefix(12)))")
     }
 
+    // MARK: - Request Instrumentation (DEBUG-safe, no content logged)
+
+    /// Log request cost instrumentation metrics.
+    /// All values are estimates; no message content is included.
+    nonisolated static func requestInstrumentation(
+        provider: String,
+        messageCount: Int,
+        toolCount: Int,
+        manifestSizeChars: Int,
+        manifestSizeTokensEstimate: Int,
+        totalTokenEstimate: Int
+    ) {
+        logger.info(
+            """
+            📊 [\(provider)] Instrumentation: \
+            msgs=\(messageCount), tools=\(toolCount), \
+            manifest=\(manifestSizeChars)ch/~\(manifestSizeTokensEstimate)tok, \
+            total=~\(totalTokenEstimate)tok
+            """
+        )
+    }
+
+    /// Log message sequence validation results.
+    nonisolated static func sequenceValidation(
+        provider: String,
+        originalCount: Int,
+        sanitizedCount: Int,
+        droppedRoles: [String]
+    ) {
+        if originalCount != sanitizedCount {
+            logger.warning(
+                "⚠️ [\(provider)] Sequence sanitized: \(originalCount) → \(sanitizedCount) messages, dropped: \(droppedRoles.joined(separator: ", "))"
+            )
+        }
+    }
+
+    /// Log attachment metrics for debugging.
+    /// DEBUG-safe: logs count, filenames, types, and sizes. Never logs file contents or absolute paths.
+    nonisolated static func attachmentMetrics(
+        provider: String,
+        attachmentCount: Int,
+        attachmentMeta: [(id: String, filename: String, type: String, bytes: Int)]
+    ) {
+        if attachmentCount > 0 {
+            let summary = attachmentMeta.prefix(3).map {
+                "\($0.filename)(\($0.type),\($0.bytes)B)"
+            }.joined(separator: ", ")
+            let more = attachmentCount > 3 ? " +\(attachmentCount - 3) more" : ""
+            logger.info("📎 [\(provider)] Attachments: \(attachmentCount) - \(summary)\(more)")
+        } else {
+            logger.debug("📎 [\(provider)] Attachments: 0")
+        }
+    }
+
     // MARK: - Errors
 
     /// Log API errors

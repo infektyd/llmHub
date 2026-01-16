@@ -30,7 +30,7 @@ struct MistralProvider: LLMProvider {
             guard let key = await keychain.apiKey(for: .mistral) else { return [:] }
             return [
                 "Authorization": "Bearer \(key)",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             ]
         }
     }
@@ -73,14 +73,49 @@ struct MistralProvider: LLMProvider {
         }
         LLMTrace.authStatus(provider: "Mistral", hasKey: true)
 
+        // MARK: - Message Sequence Validation (Fixes HTTP 400 invalid_request_message_order)
+        // Log role sequence for debugging (no content exposed)
+        MessageSequenceValidator.logRoleSequence(provider: "Mistral", messages: messages)
+
+        // Sanitize message sequence - fail-open, drops invalid messages
+        let validationResult = MessageSequenceValidator.sanitize(
+            messages: messages, provider: "Mistral")
+        let sanitizedMessages = validationResult.sanitizedMessages
+
+        if validationResult.wasModified {
+            LLMTrace.sequenceValidation(
+                provider: "Mistral",
+                originalCount: messages.count,
+                sanitizedCount: sanitizedMessages.count,
+                droppedRoles: validationResult.droppedRoles
+            )
+        }
+
+        // MARK: - Request Instrumentation
+        let toolCount = tools?.count ?? 0
+        // Estimate manifest size from tool definitions (description + name + params ~= average 100 chars per tool)
+        let manifestSizeChars = toolCount * 100  // Conservative estimate
+        let manifestSizeTokens = manifestSizeChars / 4  // ~4 chars per token
+        let totalTokenEstimate =
+            TokenEstimator.estimate(messages: sanitizedMessages) + manifestSizeTokens
+
+        LLMTrace.requestInstrumentation(
+            provider: "Mistral",
+            messageCount: sanitizedMessages.count,
+            toolCount: toolCount,
+            manifestSizeChars: manifestSizeChars,
+            manifestSizeTokensEstimate: manifestSizeTokens,
+            totalTokenEstimate: totalTokenEstimate
+        )
+
         let manager = MistralManager(apiKey: apiKey)
 
         #if DEBUG
-        debugLogRequest(model: model, messages: messages)
+            debugLogRequest(model: model, messages: sanitizedMessages)
         #endif
 
-        // Map messages
-        let mistralMessages = messages.map { msg -> MistralMessage in
+        // Map sanitized messages
+        let mistralMessages = sanitizedMessages.map { msg -> MistralMessage in
             // Check for parts
             if !msg.parts.isEmpty {
                 var mistralParts: [MistralContentPart] = []
@@ -150,59 +185,60 @@ struct MistralProvider: LLMProvider {
     }
 
     #if DEBUG
-    private static let debugLogger = Logger(subsystem: "com.llmhub", category: "LLMRequest")
+        private static let debugLogger = Logger(subsystem: "com.llmhub", category: "LLMRequest")
 
-    private func debugLogRequest(model: String, messages: [ChatMessage]) {
-        let roles = messages.suffix(10).map { $0.role.rawValue }
-        Self.debugLogger.debug(
-            "🐛 [Mistral] model=\(model, privacy: .public) roles(last10)=\(roles.joined(separator: " → "), privacy: .public)"
-        )
-
-        let lastTwo = messages.suffix(2)
-        for msg in lastTwo {
-            let preview = sanitizePreview(msg.content)
+        private func debugLogRequest(model: String, messages: [ChatMessage]) {
+            let roles = messages.suffix(10).map { $0.role.rawValue }
             Self.debugLogger.debug(
-                "🐛 [Mistral] role=\(msg.role.rawValue, privacy: .public) preview=\(preview, privacy: .public)"
+                "🐛 [Mistral] model=\(model, privacy: .public) roles(last10)=\(roles.joined(separator: " → "), privacy: .public)"
             )
-        }
-    }
 
-    private func sanitizePreview(_ text: String) -> String {
-        var sanitized = text
-        if let start = sanitized.range(of: ToolManifest.startMarker),
-            let end = sanitized.range(
-                of: ToolManifest.endMarker,
-                range: start.upperBound..<sanitized.endIndex
-            ) {
-            sanitized.replaceSubrange(
-                start.lowerBound..<end.upperBound,
-                with: "[tool manifest omitted]"
-            )
+            let lastTwo = messages.suffix(2)
+            for msg in lastTwo {
+                let preview = sanitizePreview(msg.content)
+                Self.debugLogger.debug(
+                    "🐛 [Mistral] role=\(msg.role.rawValue, privacy: .public) preview=\(preview, privacy: .public)"
+                )
+            }
         }
 
-        sanitized = redactTokens(in: sanitized)
-        let trimmed = sanitized.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.count <= 60 { return trimmed }
-        return String(trimmed.prefix(60))
-    }
+        private func sanitizePreview(_ text: String) -> String {
+            var sanitized = text
+            if let start = sanitized.range(of: ToolManifest.startMarker),
+                let end = sanitized.range(
+                    of: ToolManifest.endMarker,
+                    range: start.upperBound..<sanitized.endIndex
+                )
+            {
+                sanitized.replaceSubrange(
+                    start.lowerBound..<end.upperBound,
+                    with: "[tool manifest omitted]"
+                )
+            }
 
-    private func redactTokens(in text: String) -> String {
-        var out = text
-        let jsonPattern =
-            #"(\"(?:key|api_key|apikey|access_token|token|authorization)\"\s*:\s*\")[^\"]*\""#
-        out = out.replacingOccurrences(
-            of: jsonPattern,
-            with: #"$1[REDACTED]\""#,
-            options: .regularExpression
-        )
-        let bearerPattern = #"(?i)\bBearer\s+[A-Za-z0-9._-]+"#
-        out = out.replacingOccurrences(
-            of: bearerPattern,
-            with: "Bearer [REDACTED]",
-            options: .regularExpression
-        )
-        return out
-    }
+            sanitized = redactTokens(in: sanitized)
+            let trimmed = sanitized.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.count <= 60 { return trimmed }
+            return String(trimmed.prefix(60))
+        }
+
+        private func redactTokens(in text: String) -> String {
+            var out = text
+            let jsonPattern =
+                #"(\"(?:key|api_key|apikey|access_token|token|authorization)\"\s*:\s*\")[^\"]*\""#
+            out = out.replacingOccurrences(
+                of: jsonPattern,
+                with: #"$1[REDACTED]\""#,
+                options: .regularExpression
+            )
+            let bearerPattern = #"(?i)\bBearer\s+[A-Za-z0-9._-]+"#
+            out = out.replacingOccurrences(
+                of: bearerPattern,
+                with: "Bearer [REDACTED]",
+                options: .regularExpression
+            )
+            return out
+        }
     #endif
 
     func streamResponse(from request: URLRequest) -> AsyncThrowingStream<ProviderEvent, Error> {
@@ -214,14 +250,16 @@ struct MistralProvider: LLMProvider {
                     // Ensure stream=true in body
                     if let bodyData = request.httpBody,
                         var json = try? JSONSerialization.jsonObject(with: bodyData)
-                            as? [String: Any] {
+                            as? [String: Any]
+                    {
                         json["stream"] = true
                         streamRequest.httpBody = try JSONSerialization.data(withJSONObject: json)
                     }
                     streamRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
 
                     if let bodyData = streamRequest.httpBody,
-                        let bodyStr = String(data: bodyData, encoding: .utf8) {
+                        let bodyStr = String(data: bodyData, encoding: .utf8)
+                    {
                         LLMTrace.requestDetails(
                             provider: "Mistral",
                             url: streamRequest.url?.absoluteString ?? "unknown",
