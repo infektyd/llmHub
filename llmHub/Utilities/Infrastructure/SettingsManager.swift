@@ -26,7 +26,7 @@ public final class SettingsManager {
 
     // MARK: - Constants
 
-    private static let settingsKey = "llmHub.appSettings.v1"
+    private static let settingsKey = AppSettings.storageKey
 
     // MARK: - Private Properties
 

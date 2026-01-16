@@ -22,6 +22,7 @@ struct ToolRunBundleViewModel: Identifiable, Equatable {
     let id: String
     let parentAssistantMessageID: UUID
     let title: String
+    let label: ToolRunLabel?
     let toolRows: [TranscriptRowViewModel]
     let expectedToolCount: Int
     let status: ToolRunBundleStatus
@@ -29,11 +30,31 @@ struct ToolRunBundleViewModel: Identifiable, Equatable {
     var toolCount: Int { toolRows.count }
 
     var displayTitle: String {
-        Self.makeTitle(toolNameCounts: toolNameCounts, expectedToolCount: expectedToolCount)
+        if let labelTitle = sanitizedTitle {
+            return labelTitle
+        }
+        return Self.makeTitle(toolNameCounts: toolNameCounts, expectedToolCount: expectedToolCount)
     }
 
     var displayRationale: String {
-        Self.makeRationale(toolNameCounts: toolNameCounts)
+        if let labelRationale = sanitizedRationale {
+            return labelRationale
+        }
+        return Self.makeRationale(toolNameCounts: toolNameCounts)
+    }
+
+    private var sanitizedTitle: String? {
+        guard let label else { return nil }
+        let trimmed = label.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return String(trimmed.prefix(60))
+    }
+
+    private var sanitizedRationale: String? {
+        guard let label else { return nil }
+        let trimmed = label.rationale.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return String(trimmed.prefix(140))
     }
 
     private var toolNameCounts: [String: Int] {

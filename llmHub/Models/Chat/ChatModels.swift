@@ -38,6 +38,13 @@ struct ChatSession: Identifiable, Sendable {
     var isPinned: Bool = false
 }
 
+/// Persisted label metadata for a tool run bundle.
+nonisolated struct ToolRunLabel: Codable, Equatable, Sendable {
+    let title: String
+    let rationale: String
+    let tags: [String]?
+}
+
 /// Represents a folder used to organize chat sessions.
 struct ChatFolder: Identifiable, Hashable, Sendable {
     /// The unique identifier of the folder.
@@ -846,6 +853,11 @@ final class ChatMessageEntity {
     /// The JSON encoded data for tool result metadata.
     var toolResultMetaData: Data?  // JSON encoded ToolResultMeta
 
+    /// The JSON encoded data for tool run labels.
+    var toolRunLabelData: Data?  // JSON encoded ToolRunLabel
+    /// Timestamp for when a tool run label attempt was made (success or failure).
+    var toolRunLabelAttemptedAt: Date?
+
     /// Whether this message is eligible to influence chat memory/prompting.
     /// Defaults to `chat` for legacy rows.
     var provenanceChannelRaw: String?
@@ -874,6 +886,8 @@ final class ChatMessageEntity {
         toolCallID = message.toolCallID
         toolCallsData = try? JSONEncoder().encode(message.toolCalls)
         toolResultMetaData = try? JSONEncoder().encode(message.toolResultMeta)
+        toolRunLabelData = nil
+        toolRunLabelAttemptedAt = nil
 
         provenanceChannelRaw = message.provenance.channel.rawValue
         provenanceModel = message.provenance.model
@@ -940,5 +954,10 @@ extension ChatMessageEntity {
 
     var rendersContentAsArtifact: Bool {
         asDomain().rendersContentAsArtifact
+    }
+
+    var toolRunLabel: ToolRunLabel? {
+        guard let data = toolRunLabelData, !data.isEmpty else { return nil }
+        return try? JSONDecoder().decode(ToolRunLabel.self, from: data)
     }
 }
