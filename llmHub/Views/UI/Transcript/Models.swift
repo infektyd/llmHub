@@ -9,6 +9,37 @@ import CryptoKit
 import Foundation
 import SwiftUI
 
+// MARK: - Attachment Chip Info
+
+/// Lightweight info for displaying attachment chips in transcript rows.
+/// Avoids storing full file paths or URLs for safety/portability.
+struct AttachmentChipInfo: Identifiable, Equatable, Sendable {
+    let id: UUID
+    let filename: String
+    let mimeType: String
+    let byteSize: Int
+    let typeIcon: String
+
+    init(id: UUID, filename: String, mimeType: String, byteSize: Int, typeIcon: String) {
+        self.id = id
+        self.filename = filename
+        self.mimeType = mimeType
+        self.byteSize = byteSize
+        self.typeIcon = typeIcon
+    }
+
+    /// Human-readable size (e.g., "12 KB")
+    var formattedSize: String {
+        if byteSize < 1024 {
+            return "\(byteSize) B"
+        } else if byteSize < 1024 * 1024 {
+            return String(format: "%.1f KB", Double(byteSize) / 1024)
+        } else {
+            return String(format: "%.1f MB", Double(byteSize) / (1024 * 1024))
+        }
+    }
+}
+
 // MARK: - View Models
 
 enum ToolRunBundleStatus: String, Equatable {
@@ -319,6 +350,8 @@ struct TranscriptRowViewModel: Identifiable, Equatable {
     let isStreaming: Bool
     let generationID: UUID?
     let artifacts: [ArtifactPayload]
+    /// Attachments for display (user messages show attachment chips)
+    let attachments: [AttachmentChipInfo]
     let toolCallID: String?
     let toolResultMeta: ToolResultMeta?
     let toolCallArguments: String?
@@ -333,6 +366,7 @@ struct TranscriptRowViewModel: Identifiable, Equatable {
         isStreaming: Bool,
         generationID: UUID?,
         artifacts: [ArtifactPayload],
+        attachments: [AttachmentChipInfo] = [],
         toolCallID: String? = nil,
         toolResultMeta: ToolResultMeta? = nil,
         toolCallArguments: String? = nil
@@ -346,6 +380,7 @@ struct TranscriptRowViewModel: Identifiable, Equatable {
         self.isStreaming = isStreaming
         self.generationID = generationID
         self.artifacts = artifacts
+        self.attachments = attachments
         self.toolCallID = toolCallID
         self.toolResultMeta = toolResultMeta
         self.toolCallArguments = toolCallArguments
@@ -359,6 +394,7 @@ struct TranscriptRowViewModel: Identifiable, Equatable {
             && lhs.content == rhs.content && lhs.isStreaming == rhs.isStreaming
             && lhs.generationID == rhs.generationID
             && lhs.artifacts == rhs.artifacts
+            && lhs.attachments == rhs.attachments
             && lhs.toolCallID == rhs.toolCallID
             && lhs.toolResultMeta == rhs.toolResultMeta
             && lhs.toolCallArguments == rhs.toolCallArguments

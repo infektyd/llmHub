@@ -601,9 +601,11 @@ class ChatViewModel {
         // Read preview for text/code files
         let preview: String?
         if type == .code || type == .text {
-            preview = try? String(contentsOf: fullPath, encoding: .utf8)
-                .prefix(200)
-                .map { String($0) }
+            if let contents = try? String(contentsOf: fullPath, encoding: .utf8) {
+                preview = String(contents.prefix(200))
+            } else {
+                preview = nil
+            }
         } else {
             preview = nil
         }
@@ -1016,6 +1018,22 @@ class ChatViewModel {
             session.updatedAt = Date()
             modelContext.insert(userEntity)
             try modelContext.save()
+
+            // DEBUG-safe attachment metrics (no paths, no content)
+            #if DEBUG
+                if !messageAttachments.isEmpty {
+                    let totalBytes = messageAttachments.reduce(0) { sum, att in
+                        let size =
+                            (try? FileManager.default.attributesOfItem(atPath: att.url.path)[.size]
+                                as? Int) ?? 0
+                        return sum + size
+                    }
+                    let filenames = messageAttachments.map { $0.filename }.joined(separator: ", ")
+                    logger.info(
+                        "📎 [SEND] attachmentCount=\(messageAttachments.count), totalBytes=\(totalBytes), filenames=[\(filenames)]"
+                    )
+                }
+            #endif
         } catch {
             logger.error("Failed to persist user message: \(error.localizedDescription)")
             return

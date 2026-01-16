@@ -56,6 +56,16 @@ struct TranscriptRow: View {
                 }
             }
 
+            // Attachment chips for user messages
+            if isUser && !viewModel.attachments.isEmpty {
+                HStack(spacing: 8) {
+                    ForEach(viewModel.attachments) { chip in
+                        TranscriptAttachmentChip(chip: chip)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+
             // Artifacts
             if !viewModel.artifacts.isEmpty {
                 ForEach(viewModel.artifacts) { artifact in
@@ -116,7 +126,8 @@ struct TranscriptRow: View {
 
             if settingsManager.settings.showTokenCounts,
                 let meta = viewModel.headerMetaText,
-                !meta.isEmpty {
+                !meta.isEmpty
+            {
                 Text(meta)
                     .font(
                         .system(
