@@ -65,11 +65,23 @@ struct ComposerBarView: View {
     }
 
     var body: some View {
-        HStack(spacing: uiCompactMode ? 10 : 12) {
+        HStack(alignment: .bottom, spacing: uiCompactMode ? 10 : 12) {
             attachmentButton
-            inputBubble
+                .padding(.bottom, uiCompactMode ? 8 : 10)
+
+            VStack(alignment: .leading, spacing: 0) {
+                ComposerAttachmentTray(
+                    attachments: stagedAttachments,
+                    onRemove: onRemoveAttachment
+                )
+                inputBubble
+            }
+
             rightSidebarButton
+                .padding(.bottom, uiCompactMode ? 8 : 10)
+
             settingsButton
+                .padding(.bottom, uiCompactMode ? 8 : 10)
         }
         .padding(uiCompactMode ? 10 : 12)
         .background {
@@ -103,11 +115,11 @@ struct ComposerBarView: View {
         }
         .buttonStyle(.plain)
     }
+
     private var inputBubble: some View {
         VStack(alignment: .leading, spacing: 4) {
             stagedArtifactsStrip
             inputRow
-            stagedAttachmentsStrip
         }
         .padding(.horizontal, uiCompactMode ? 10 : 12)
         .padding(.vertical, uiCompactMode ? 8 : 10)
@@ -204,23 +216,6 @@ struct ComposerBarView: View {
             }
             .buttonStyle(.plain)
             .disabled(!canSend)
-        }
-    }
-
-    @ViewBuilder
-    private var stagedAttachmentsStrip: some View {
-        if !stagedAttachments.isEmpty {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(stagedAttachments) { attachment in
-                        AttachmentPreviewChip(attachment: attachment) {
-                            onRemoveAttachment(attachment.id)
-                        }
-                    }
-                }
-                .padding(.horizontal, 4)
-                .padding(.bottom, 4)
-            }
         }
     }
 
