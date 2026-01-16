@@ -221,7 +221,7 @@ struct ToolEnvironment: Sendable {
             let semaphore = DispatchSemaphore(value: 0)
 
             Task.detached {
-                let backend = XPCExecutionBackend()
+                let backend = XPCExecutionBackend.shared
                 let availability = await backend.isAvailable
                 availabilityState.withLock { $0 = availability }
                 semaphore.signal()

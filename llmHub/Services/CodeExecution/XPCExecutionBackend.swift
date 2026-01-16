@@ -14,11 +14,19 @@
     /// Connects to the llmHubHelper XPC service for code execution outside the sandbox.
     final class XPCExecutionBackend: ExecutionBackend, @unchecked Sendable {
 
+        static let shared = XPCExecutionBackend()
+
         /// Logger instance.
         private let logger = Logger(subsystem: "com.llmhub", category: "XPCExecutionBackend")
         /// Queue for XPC connections.
         private let connectionQueue = DispatchQueue(label: "com.llmhub.xpc.connection")
         private let availabilityTimeout: TimeInterval = 1.0
+
+        init() {
+            #if DEBUG
+            print("🧭 [XPCExecutionBackend] Backend instance created")
+            #endif
+        }
 
         /// The underlying XPC connection.
         nonisolated(unsafe) private var _connection: NSXPCConnection?
@@ -75,6 +83,9 @@
             _connection = newConnection
 
             print("✅ [XPCExecutionBackend] XPC connection resumed")
+            #if DEBUG
+            print("🧭 [XPCExecutionBackend] XPC connection established")
+            #endif
             logger.info("XPC connection established to \(kCodeExecutionXPCServiceName)")
 
             return newConnection
@@ -251,6 +262,9 @@
         // MARK: - Cleanup
 
         deinit {
+            #if DEBUG
+            print("🧭 [XPCExecutionBackend] Backend instance deinit")
+            #endif
             resetConnection(shouldInvalidate: true, reason: "deinit")
         }
     }
