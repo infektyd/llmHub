@@ -133,7 +133,7 @@ struct MessageSequenceValidator: Sendable {
                     continue
                 }
                 
-                guard let originIndex = toolCallOrigins[toolCallID] else {
+                guard toolCallOrigins[toolCallID] != nil else {
                     // No matching assistant message requested this tool
                     droppedRoles.append("tool[orphan:\(String(toolCallID.prefix(8)))]")
                     logger.warning(
