@@ -415,7 +415,8 @@ final class ChatService {
         Task { @MainActor in
             guard
                 let entity = try? self.modelContext.fetch(
-                    FetchDescriptor<ChatMessageEntity>(predicate: #Predicate { $0.id == parentMessageID })
+                    FetchDescriptor<ChatMessageEntity>(
+                        predicate: #Predicate { $0.id == parentMessageID })
                 ).first
             else { return }
 
@@ -440,7 +441,8 @@ final class ChatService {
                 await MainActor.run {
                     guard
                         let refreshed = try? self.modelContext.fetch(
-                            FetchDescriptor<ChatMessageEntity>(predicate: #Predicate { $0.id == parentMessageID })
+                            FetchDescriptor<ChatMessageEntity>(
+                                predicate: #Predicate { $0.id == parentMessageID })
                         ).first
                     else { return }
                     refreshed.toolRunLabelData = data
@@ -509,13 +511,16 @@ final class ChatService {
 
                         // Start from persisted history (chronological), but enrich the most recent user message
                         // with any inline images/attachments for this request only.
-                        var llmMessages = currentSession.messages.sorted { $0.createdAt < $1.createdAt }
+                        var llmMessages = currentSession.messages.sorted {
+                            $0.createdAt < $1.createdAt
+                        }
 
                         // Defense-in-depth: never include sidecar-origin content in chat prompting,
                         // even if it somehow made it into persistence.
                         llmMessages.removeAll { $0.provenance.channel == .sidecar }
                         if !images.isEmpty || !attachments.isEmpty || !references.isEmpty,
-                            let lastUserIndex = llmMessages.lastIndex(where: { $0.role == .user }) {
+                            let lastUserIndex = llmMessages.lastIndex(where: { $0.role == .user })
+                        {
                             let baseUserMessage = llmMessages[lastUserIndex]
 
                             // Build updated parts by appending images if provided
@@ -592,11 +597,14 @@ final class ChatService {
                                     "Injected \(snapshots.count) memories into system prompt")
 
                                 // Emit memory usage event for UI
-                                let memorySummary = "\(snapshots.count) \(snapshots.count == 1 ? "memory" : "memories") informing this response"
-                                continuation.yield(.memoriesUsed(count: snapshots.count, summary: memorySummary))
+                                let memorySummary =
+                                    "\(snapshots.count) \(snapshots.count == 1 ? "memory" : "memories") informing this response"
+                                continuation.yield(
+                                    .memoriesUsed(count: snapshots.count, summary: memorySummary))
 
                                 if var firstMsg = messagesForCompaction.first,
-                                    firstMsg.role == .system {
+                                    firstMsg.role == .system
+                                {
                                     firstMsg.content = "\(memoryXML)\n\n\(firstMsg.content)"
                                     messagesForCompaction[0] = firstMsg
                                 } else {
@@ -622,7 +630,8 @@ final class ChatService {
                             !(lastUserMessage?.attachments.isEmpty ?? true)
                             || !attachments.isEmpty
                             || !images.isEmpty
-                        var heuristicInput = userMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+                        var heuristicInput = userMessage.trimmingCharacters(
+                            in: .whitespacesAndNewlines)
                         if heuristicInput.isEmpty {
                             heuristicInput = lastUserText
                         }
@@ -671,7 +680,9 @@ final class ChatService {
                         if toolsPolicy == .workhorse {
                             filteredTools = enabledTools
                         } else {
-                            filteredTools = enabledTools.filter { allowedToolNames.contains($0.name) }
+                            filteredTools = enabledTools.filter {
+                                allowedToolNames.contains($0.name)
+                            }
                         }
                         if toolsPolicy != .workhorse {
                             logger.debug(
@@ -682,7 +693,8 @@ final class ChatService {
                         let exportedToolDefs = filteredTools.compactMap { ToolDefinition(from: $0) }
                         let allToolDefs: [ToolDefinition] = exportedToolDefs
                         let toolCountForProvider: Int =
-                            (provider.supportsToolCalling && !allToolDefs.isEmpty) ? allToolDefs.count : 0
+                            (provider.supportsToolCalling && !allToolDefs.isEmpty)
+                            ? allToolDefs.count : 0
 
                         // Inject an authoritative tool manifest into the system prompt so models don't hallucinate tooling.
                         let toolManifest = ToolManifest.systemPrompt(
@@ -835,7 +847,8 @@ final class ChatService {
                                 // and keep the agent loop going.
                                 if accumulatedToolCalls.isEmpty,
                                     let toolCalls = msg.toolCalls,
-                                    !toolCalls.isEmpty {
+                                    !toolCalls.isEmpty
+                                {
                                     logger.info(
                                         "Completion contained tool calls: \(toolCalls.count), continuing agent loop."
                                     )
@@ -852,7 +865,8 @@ final class ChatService {
                                 if !accumulatedToolCalls.isEmpty {
                                     var assistantMsg = msg
                                     assistantMsg.generationID = generationID
-                                    if assistantMsg.content.isEmpty && !assistantTextBuffer.isEmpty {
+                                    if assistantMsg.content.isEmpty && !assistantTextBuffer.isEmpty
+                                    {
                                         // Rebuild message to update immutable `parts`
                                         assistantMsg = ChatMessage(
                                             id: msg.id,
@@ -903,7 +917,8 @@ final class ChatService {
                                 // Handle like completion but forward the truncated event
                                 if accumulatedToolCalls.isEmpty,
                                     let toolCalls = msg.toolCalls,
-                                    !toolCalls.isEmpty {
+                                    !toolCalls.isEmpty
+                                {
                                     accumulatedToolCalls = toolCalls
                                     for tc in toolCalls {
                                         continuation.yield(
@@ -938,7 +953,7 @@ final class ChatService {
                             case .agentStopped:
                                 // Providers never emit this; only ChatService emits agentStopped.
                                 break
-                            
+
                             case .memoriesUsed(let count, let summary):
                                 // Pass through memory usage event
                                 continuation.yield(.memoriesUsed(count: count, summary: summary))
@@ -990,7 +1005,8 @@ final class ChatService {
                             for call in accumulatedToolCalls {
                                 continuation.yield(.toolExecuting(name: call.name))
                                 continuation.yield(
-                                    .toolExecutionStarted(id: call.id, name: call.name, input: call.input)
+                                    .toolExecutionStarted(
+                                        id: call.id, name: call.name, input: call.input)
                                 )
                             }
 
@@ -1175,7 +1191,7 @@ final class ChatService {
             case .toolUse, .toolExecuting, .toolExecutionStarted, .toolExecutionFinished, .usage,
                 .reference, .thinking, .contextCompacted, .agentStopped:
                 continue
-            
+
             case .memoriesUsed:
                 // Memory usage doesn't affect summary generation
                 continue
@@ -1235,7 +1251,8 @@ final class ChatService {
 
     /// Updates the session metadata (last usage, total cost).
     func updateSessionMetadata(sessionID: UUID, lastTokenUsage: TokenUsage, additionalCost: Decimal)
-        throws {
+        throws
+    {
         guard
             let entity = try modelContext.fetch(
                 FetchDescriptor<ChatSessionEntity>(predicate: #Predicate { $0.id == sessionID })
@@ -1419,6 +1436,22 @@ final class ChatService {
     /// Formats non-image attachments into a request-only prompt block.
     /// This keeps the persisted chat transcript clean while still giving the model the file contents.
     private func formatAttachmentsForRequest(_ attachments: [Attachment]) -> String {
+        // DEBUG-safe attachment metrics (no paths, no content)
+        #if DEBUG
+            if !attachments.isEmpty {
+                let totalBytes = attachments.reduce(0) { sum, att in
+                    let size =
+                        (try? FileManager.default.attributesOfItem(atPath: att.url.path)[.size]
+                            as? Int) ?? 0
+                    return sum + size
+                }
+                let filenames = attachments.map { $0.filename }.joined(separator: ", ")
+                logger.info(
+                    "📎 [REQUEST] attachmentCount=\(attachments.count), totalBytes=\(totalBytes), filenames=[\(filenames)]"
+                )
+            }
+        #endif
+
         let maxBytes = 100 * 1024
 
         var blocks: [String] = []
@@ -1521,13 +1554,15 @@ final class ChatService {
 
         // WebP: RIFF....WEBP (bytes 0-3: RIFF, bytes 8-11: WEBP)
         if bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46
-            && bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50 {
+            && bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50
+        {
             return "image/webp"
         }
 
         // TIFF: 49 49 2A 00 (little-endian) or 4D 4D 00 2A (big-endian)
         if (bytes[0] == 0x49 && bytes[1] == 0x49 && bytes[2] == 0x2A && bytes[3] == 0x00)
-            || (bytes[0] == 0x4D && bytes[1] == 0x4D && bytes[2] == 0x00 && bytes[3] == 0x2A) {
+            || (bytes[0] == 0x4D && bytes[1] == 0x4D && bytes[2] == 0x00 && bytes[3] == 0x2A)
+        {
             return "image/tiff"
         }
 

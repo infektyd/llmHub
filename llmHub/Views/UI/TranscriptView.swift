@@ -152,6 +152,18 @@ struct TranscriptCanvasSessionView: View {
         toolCallArgumentsByID: [String: String]
     ) -> TranscriptRowViewModel {
         let toolCallArguments = message.toolCallID.flatMap { toolCallArgumentsByID[$0] }
+
+        // Extract attachment info for user messages
+        let attachmentChips: [AttachmentChipInfo] = message.attachments.map { attachment in
+            AttachmentChipInfo(
+                id: attachment.id,
+                filename: attachment.filename,
+                mimeType: mimeType(for: attachment.type),
+                byteSize: fileSize(for: attachment),
+                typeIcon: attachment.type.icon
+            )
+        }
+
         return TranscriptRowViewModel(
             id: rowID.uuidString,
             role: message.role,
@@ -161,10 +173,31 @@ struct TranscriptCanvasSessionView: View {
             isStreaming: isStreaming,
             generationID: message.generationID,
             artifacts: artifacts(for: message),
+            attachments: attachmentChips,
             toolCallID: message.toolCallID,
             toolResultMeta: message.toolResultMeta,
             toolCallArguments: toolCallArguments
         )
+    }
+
+    private func mimeType(for type: AttachmentType) -> String {
+        switch type {
+        case .image: return "image/*"
+        case .pdf: return "application/pdf"
+        case .text: return "text/plain"
+        case .code: return "text/x-source"
+        case .other: return "application/octet-stream"
+        }
+    }
+
+    private func fileSize(for attachment: Attachment) -> Int {
+        // Best-effort size from file attributes, fallback to preview text length
+        if let attrs = try? FileManager.default.attributesOfItem(atPath: attachment.url.path),
+            let size = attrs[.size] as? Int
+        {
+            return size
+        }
+        return attachment.previewText?.utf8.count ?? 0
     }
 
     private func buildToolCallArgumentsIndex(_ messages: [ChatMessageEntity]) -> [String: String] {
@@ -192,19 +225,22 @@ struct TranscriptCanvasSessionView: View {
             let entity = messages[index]
             let message = entity.asDomain()
             if message.role == .assistant,
-               let toolCalls = message.toolCalls,
-               !toolCalls.isEmpty {
+                let toolCalls = message.toolCalls,
+                !toolCalls.isEmpty
+            {
                 let toolCallIDs = toolCalls.map { $0.id }.filter { !$0.isEmpty }
-                let assistantRow = mapToViewModel(entity, toolCallArgumentsByID: toolCallArgumentsByID)
+                let assistantRow = mapToViewModel(
+                    entity, toolCallArgumentsByID: toolCallArgumentsByID)
                 rows.append(assistantRow)
                 if toolCallIDs.count == toolCalls.count,
-                   let bundleResult = buildToolRunBundleRow(
-                    parentEntity: entity,
-                    startIndex: index + 1,
-                    expectedToolCallIDs: toolCallIDs,
-                    messages: messages,
-                    toolCallArgumentsByID: toolCallArgumentsByID
-                   ) {
+                    let bundleResult = buildToolRunBundleRow(
+                        parentEntity: entity,
+                        startIndex: index + 1,
+                        expectedToolCallIDs: toolCallIDs,
+                        messages: messages,
+                        toolCallArgumentsByID: toolCallArgumentsByID
+                    )
+                {
                     rows.append(bundleResult.bundleRow)
                     index = bundleResult.nextIndex
                     continue
@@ -322,7 +358,7 @@ struct TranscriptCanvasSessionView: View {
             if meta.fileURL != nil { actions.append(.open) }
             let info: [String: String] = [
                 "language": meta.language.displayName,
-                "size": "\(meta.sizeBytes) B"
+                "size": "\(meta.sizeBytes) B",
             ]
             return ArtifactPayload(
                 id: id,
@@ -349,23 +385,24 @@ struct TranscriptCanvasSessionView: View {
         // Expand the hash into a UUID by repeating/bit-casting deterministically
         let upper = UInt64(bitPattern: Int64(hash))
         let lower = UInt64(bitPattern: Int64(~hash))
-        return UUID(uuid: (
-            UInt8((upper >> 56) & 0xFF),
-            UInt8((upper >> 48) & 0xFF),
-            UInt8((upper >> 40) & 0xFF),
-            UInt8((upper >> 32) & 0xFF),
-            UInt8((upper >> 24) & 0xFF),
-            UInt8((upper >> 16) & 0xFF),
-            UInt8((upper >> 8) & 0xFF),
-            UInt8(upper & 0xFF),
-            UInt8((lower >> 56) & 0xFF),
-            UInt8((lower >> 48) & 0xFF),
-            UInt8((lower >> 40) & 0xFF),
-            UInt8((lower >> 32) & 0xFF),
-            UInt8((lower >> 24) & 0xFF),
-            UInt8((lower >> 16) & 0xFF),
-            UInt8((lower >> 8) & 0xFF),
-            UInt8(lower & 0xFF)
-        ))
+        return UUID(
+            uuid: (
+                UInt8((upper >> 56) & 0xFF),
+                UInt8((upper >> 48) & 0xFF),
+                UInt8((upper >> 40) & 0xFF),
+                UInt8((upper >> 32) & 0xFF),
+                UInt8((upper >> 24) & 0xFF),
+                UInt8((upper >> 16) & 0xFF),
+                UInt8((upper >> 8) & 0xFF),
+                UInt8(upper & 0xFF),
+                UInt8((lower >> 56) & 0xFF),
+                UInt8((lower >> 48) & 0xFF),
+                UInt8((lower >> 40) & 0xFF),
+                UInt8((lower >> 32) & 0xFF),
+                UInt8((lower >> 24) & 0xFF),
+                UInt8((lower >> 16) & 0xFF),
+                UInt8((lower >> 8) & 0xFF),
+                UInt8(lower & 0xFF)
+            ))
     }
 }
