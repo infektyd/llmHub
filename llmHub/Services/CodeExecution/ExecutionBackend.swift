@@ -52,7 +52,7 @@ enum ExecutionBackendFactory: Sendable {
     static func createDefault() -> any ExecutionBackend {
         #if os(macOS)
         print("🔍 [ExecutionBackendFactory] Platform detected: macOS")
-        let backend = XPCExecutionBackend()
+        let backend = XPCExecutionBackend.shared
         print("🔍 [ExecutionBackendFactory] Default backend: XPCExecutionBackend")
         print("🔍 [ExecutionBackendFactory] Backend type: \(type(of: backend))")
         return backend
