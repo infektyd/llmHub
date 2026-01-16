@@ -55,6 +55,14 @@ class ChatViewModel {
     /// Staged attachments for the next message.
     var stagedAttachments: [Attachment] = []
 
+    /// User preference: force all pastes to stay inline regardless of size.
+    /// Persisted via UserDefaults.
+    @ObservationIgnored
+    var forceInlinePaste: Bool {
+        get { UserDefaults.standard.bool(forKey: "forceInlinePaste") }
+        set { UserDefaults.standard.set(newValue, forKey: "forceInlinePaste") }
+    }
+
     /// Indicates whether the view model is currently streaming/generating a response.
     var isGenerating: Bool = false
 
@@ -693,6 +701,57 @@ class ChatViewModel {
             logger.error("Failed to import folder to sandbox: \(error.localizedDescription)")
             return []
         }
+    }
+
+    // MARK: - Large Paste Handling
+
+    /// Handles large pasted text by converting it to an artifact attachment.
+    ///
+    /// - Parameter text: The pasted text content.
+    /// - Returns: A stub string to insert in composer (e.g., "📄 Attached: paste_xxx.json (id: ABC123)"),
+    ///            or nil if the paste should remain inline.
+    func handleLargePaste(text: String) async -> String? {
+        // Evaluate with PasteConversionEngine
+        let result = PasteConversionEngine.evaluate(
+            text: text,
+            forceInline: forceInlinePaste
+        )
+
+        // DEBUG-safe logging (no content)
+        #if DEBUG
+            logger.info(
+                "[PASTE] charCount=\(result.charCount), lineCount=\(result.lineCount), action=\(result.action == .attach ? "attach" : "inline"), ext=\(result.detectedExtension)"
+            )
+        #endif
+
+        // If inline, return nil (no stub needed)
+        guard result.action == .attach else {
+            return nil
+        }
+
+        // Convert text to Data
+        guard let data = text.data(using: .utf8) else {
+            logger.error("Failed to encode pasted text as UTF-8")
+            return nil
+        }
+
+        // Import to sandbox
+        let artifact = await importDataToSandbox(data: data, filename: result.suggestedFilename)
+
+        guard artifact != nil else {
+            logger.error("Failed to import paste to sandbox")
+            return nil
+        }
+
+        // DEBUG-safe logging
+        #if DEBUG
+            logger.info(
+                "[PASTE] bytesWritten=\(data.count), filename=\(result.suggestedFilename), id=\(result.shortID)"
+            )
+        #endif
+
+        // Return stub for composer insertion
+        return "📄 Attached: \(result.suggestedFilename) (id: \(result.shortID))"
     }
 
     /// Clear the recently imported artifacts list.

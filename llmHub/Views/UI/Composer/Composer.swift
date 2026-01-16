@@ -30,12 +30,24 @@ struct ComposerBarView: View {
     let onRemoveAttachment: (UUID) -> Void
     let onAddAttachment: () -> Void
     let onFilesDropped: ([URL]) -> Void
+    let onLargePaste: (String) -> Void
+    let forceInlinePaste: Bool
 
     @FocusState private var isInputFocused: Bool
     @State private var selection = AttributedTextSelection()
     @State private var isNormalizingMarkdown = false
     @State private var markdownDebounceTask: Task<Void, Never>?
     @State private var isDropTargeted = false
+
+    // MARK: - Paste Detection State
+    /// Re-entrancy guard: true while programmatically editing text (e.g., inserting stub)
+    @State private var isProgrammaticEdit = false
+    /// Last known character count for delta detection
+    @State private var lastCharCount = 0
+    /// Last known line count for delta detection
+    @State private var lastLineCount = 0
+    /// ID of last handled paste to prevent double-handling
+    @State private var lastHandledPasteID: UUID?
 
     @Environment(\.uiCompactMode) private var uiCompactMode
     @Environment(\.uiScale) private var uiScale
@@ -160,8 +172,14 @@ struct ComposerBarView: View {
                     inputText = updatedText
                     selection = updatedSelection
                 }
-                .onChange(of: plainText) { _, newValue in
+                .onChange(of: plainText) { oldValue, newValue in
+                    detectAndHandleLargePaste(oldText: oldValue, newText: newValue)
                     normalizeMarkdownIfAppropriate(sourceText: newValue)
+                }
+                .onAppear {
+                    // Initialize paste detection baseline
+                    lastCharCount = plainText.count
+                    lastLineCount = plainText.components(separatedBy: .newlines).count
                 }
                 .onKeyPress(.return, phases: [.down]) { keyPress in
                     handleReturnKey(keyPress)
@@ -287,11 +305,110 @@ struct ComposerBarView: View {
         }
     }
 
+    // MARK: - Paste Detection
+
+    /// Detects large paste events and routes them to attachment conversion.
+    ///
+    /// Uses delta detection with re-entrancy guards to avoid:
+    /// - False positives from typing/autocomplete
+    /// - Double-handling when stub is inserted
+    /// - Layout storm issues
+    private func detectAndHandleLargePaste(oldText: String, newText: String) {
+        // Guard 1: Skip if programmatic edit (e.g., stub insertion)
+        guard !isProgrammaticEdit else { return }
+
+        // Guard 2: Skip if force inline is enabled
+        guard !forceInlinePaste else {
+            // Still update tracking
+            lastCharCount = newText.count
+            lastLineCount = newText.components(separatedBy: .newlines).count
+            return
+        }
+
+        // Guard 3: Skip if markdown normalization in progress
+        guard !isNormalizingMarkdown else { return }
+
+        // Calculate deltas
+        let newCharCount = newText.count
+        let oldCharCount = oldText.count
+        let deltaChars = newCharCount - oldCharCount
+
+        let newLineCount = newText.components(separatedBy: .newlines).count
+        let oldLineCount = oldText.components(separatedBy: .newlines).count
+        let deltaLines = newLineCount - oldLineCount
+
+        // Only consider positive deltas (insertions, not deletions)
+        guard deltaChars > 0 else {
+            lastCharCount = newCharCount
+            lastLineCount = newLineCount
+            return
+        }
+
+        // Check if this looks like a paste (large delta)
+        guard
+            PasteConversionEngine.looksLikePaste(
+                deltaChars: deltaChars,
+                deltaLines: deltaLines
+            )
+        else {
+            lastCharCount = newCharCount
+            lastLineCount = newLineCount
+            return
+        }
+
+        // Evaluate the pasted content for conversion
+        // Extract just the pasted portion (approximation: the new chars added)
+        let pastedContent: String
+        if deltaChars == newCharCount {
+            // Entire text is new (paste into empty field)
+            pastedContent = newText
+        } else {
+            // Try to extract added portion from the end
+            // This is an approximation - paste could be anywhere
+            pastedContent = newText
+        }
+
+        let result = PasteConversionEngine.evaluate(
+            text: pastedContent,
+            forceInline: forceInlinePaste
+        )
+
+        // Only handle if should attach
+        guard result.action == .attach else {
+            lastCharCount = newCharCount
+            lastLineCount = newLineCount
+            return
+        }
+
+        // Generate unique ID to prevent double-handling
+        let pasteID = result.artifactID
+        guard lastHandledPasteID != pasteID else { return }
+        lastHandledPasteID = pasteID
+
+        // Set re-entrancy guard before modifying text
+        isProgrammaticEdit = true
+
+        // Call the large paste handler (will import to sandbox and insert stub)
+        onLargePaste(pastedContent)
+
+        // Reset input to remove the pasted content (handler will insert stub)
+        // We restore the old text; the callback is responsible for inserting stub
+        inputText = AttributedString(oldText)
+
+        // Schedule guard reset to avoid race conditions
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 100_000_000)  // 100ms
+            isProgrammaticEdit = false
+            lastCharCount = plainText.count
+            lastLineCount = plainText.components(separatedBy: .newlines).count
+        }
+    }
+
     /// Handles files dropped onto the composer, importing them to the artifact sandbox.
     private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
         Task { @MainActor in
             var urls: [URL] = []
-            
+
             // Process providers sequentially on main actor to avoid data races
             for provider in providers {
                 if provider.canLoadObject(ofClass: URL.self) {
@@ -305,12 +422,12 @@ struct ComposerBarView: View {
                     }
                 }
             }
-            
+
             if !urls.isEmpty {
                 self.onFilesDropped(urls)
             }
         }
-        
+
         return true
     }
 }
@@ -373,7 +490,17 @@ struct ComposerBar: View {
                         await chatVM.importFileToSandbox(url: url)
                     }
                 }
-            }
+            },
+            onLargePaste: { pastedText in
+                Task { @MainActor in
+                    let result = await chatVM.handleLargePaste(text: pastedText)
+                    if let stub = result {
+                        // Insert stub at cursor position
+                        inputText = AttributedString(String(inputText.characters) + stub)
+                    }
+                }
+            },
+            forceInlinePaste: chatVM.forceInlinePaste
         )
         .fileImporter(
             isPresented: $isFilePickerPresented,
@@ -491,7 +618,9 @@ struct ComposerBar: View {
             onRemoveArtifact: { _ in },
             onRemoveAttachment: { _ in },
             onAddAttachment: {},
-            onFilesDropped: { _ in }
+            onFilesDropped: { _ in },
+            onLargePaste: { _ in },
+            forceInlinePaste: false
         )
         .padding()
         .frame(width: 900)
@@ -517,7 +646,9 @@ struct ComposerBar: View {
             onRemoveArtifact: { _ in },
             onRemoveAttachment: { _ in },
             onAddAttachment: {},
-            onFilesDropped: { _ in }
+            onFilesDropped: { _ in },
+            onLargePaste: { _ in },
+            forceInlinePaste: false
         )
         .padding()
         .frame(width: 900)
@@ -543,7 +674,9 @@ struct ComposerBar: View {
             onRemoveArtifact: { _ in },
             onRemoveAttachment: { _ in },
             onAddAttachment: {},
-            onFilesDropped: { _ in }
+            onFilesDropped: { _ in },
+            onLargePaste: { _ in },
+            forceInlinePaste: false
         )
         .padding()
         .frame(width: 900)
@@ -569,7 +702,9 @@ struct ComposerBar: View {
             onRemoveArtifact: { _ in },
             onRemoveAttachment: { _ in },
             onAddAttachment: {},
-            onFilesDropped: { _ in }
+            onFilesDropped: { _ in },
+            onLargePaste: { _ in },
+            forceInlinePaste: false
         )
         .padding()
         .frame(width: 900)
