@@ -626,10 +626,9 @@ final class ChatService {
                         let toolsPolicy = ToolsEnabledPolicyResolver.resolve()
                         let lastUserMessage = llmMessages.last(where: { $0.role == .user })
                         let lastUserText = lastUserMessage?.content ?? ""
-                        let hasKnownAttachments =
-                            !(lastUserMessage?.attachments.isEmpty ?? true)
-                            || !attachments.isEmpty
-                            || !images.isEmpty
+                        let outgoingAttachments = lastUserMessage?.attachments ?? []
+                        let attachmentCount = outgoingAttachments.count
+                        let hasKnownAttachments = attachmentCount > 0
                         var heuristicInput = userMessage.trimmingCharacters(
                             in: .whitespacesAndNewlines)
                         if heuristicInput.isEmpty {
@@ -648,6 +647,22 @@ final class ChatService {
                             userMessage: heuristicInput,
                             hasKnownAttachments: hasKnownAttachments
                         )
+                        let artifactToolNames = ToolRelevanceHeuristics.artifactTools
+                        let availableToolNames = Set(availableTools.map { $0.name })
+                        let availableArtifactToolNames =
+                            artifactToolNames.intersection(availableToolNames)
+                        let artifactToolsEnabled: Bool
+                        if attachmentCount > 0 {
+                            if toolsPolicy == .workhorse {
+                                artifactToolsEnabled = !availableArtifactToolNames.isEmpty
+                            } else {
+                                artifactToolsEnabled =
+                                    !availableArtifactToolNames.isDisjoint(
+                                        with: allowedToolNames)
+                            }
+                        } else {
+                            artifactToolsEnabled = false
+                        }
 
                         // SECURITY: Always check authorization, even if auth service is nil.
                         // Secure-by-default: tools are disabled unless explicitly authorized.
@@ -656,6 +671,14 @@ final class ChatService {
                         if let auth = service.toolAuthorizationService {
                             // Conversation-scoped authorization check - must run on MainActor
                             let conversationID = currentSession.id
+                            if attachmentCount > 0 {
+                                await MainActor.run {
+                                    auth.authorizeArtifactToolsIfNeeded(
+                                        conversationID: conversationID,
+                                        attachmentCount: attachmentCount
+                                    )
+                                }
+                            }
                             enabledTools = await MainActor.run {
                                 var authorized: [any Tool] = []
                                 for tool in availableTools {
@@ -690,6 +713,11 @@ final class ChatService {
                                 "🧰 Tool policy '\(toolsPolicy.rawValue)' allowed \(filteredTools.count)/\(enabledTools.count) tools"
                             )
                         }
+                        let authorizedToolNames = Set(enabledTools.map { $0.name })
+                        let artifactToolsAuthorized =
+                            attachmentCount > 0
+                            && !availableArtifactToolNames.isEmpty
+                            && availableArtifactToolNames.isSubset(of: authorizedToolNames)
 
                         let exportedToolDefs = filteredTools.compactMap { ToolDefinition(from: $0) }
                         let allToolDefs: [ToolDefinition] = exportedToolDefs
@@ -706,8 +734,7 @@ final class ChatService {
 
                         // Attachment Manifest Injection
                         // If there are staged attachments, inject a dedicated system message before the user message.
-                        let stagedAttachments =
-                            attachments.isEmpty ? (lastUserMessage?.attachments ?? []) : attachments
+                        let stagedAttachments = outgoingAttachments
                         // Convert [Attachment] to [SandboxedArtifact] for manifest generation
                         // Optimization: Avoid hitting disk/sandbox service if possible, but listArtifacts is fast.
                         // However, Attachment objects might not map 1:1 if just staged.
@@ -804,6 +831,9 @@ final class ChatService {
 
                         logger.info(
                             "🔵 [ChatService] Building request - messages: \(messagesForRequest.count), tools: \(toolDefsForProvider?.count ?? 0), thinking: \(options.thinkingPreference.rawValue)"
+                        )
+                        logger.debug(
+                            "artifactToolsEnabled=\(artifactToolsEnabled); artifactToolsAuthorized=\(artifactToolsAuthorized)"
                         )
 
                         let request = try await provider.buildRequest(
