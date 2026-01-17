@@ -168,6 +168,28 @@ class ToolAuthorizationService: ObservableObject {
         saveConversationPermissions()
     }
 
+    /// Auto-authorize artifact tools for conversations with attachments.
+    func authorizeArtifactToolsIfNeeded(conversationID: UUID, attachmentCount: Int) {
+        guard attachmentCount > 0 else { return }
+        let artifactToolIDs = ToolRelevanceHeuristics.artifactTools
+        guard !artifactToolIDs.isEmpty else { return }
+        if conversationPermissions[conversationID] == nil {
+            conversationPermissions[conversationID] = [:]
+        }
+        var didChange = false
+        for toolID in artifactToolIDs {
+            if conversationPermissions[conversationID]?[toolID] != .authorized {
+                conversationPermissions[conversationID]?[toolID] = .authorized
+                didChange = true
+            }
+        }
+        if didChange {
+            logger.debug(
+                "🔐 [\(conversationID.uuidString.prefix(8))] Auto-authorized artifact tools for attachments"
+            )
+        }
+    }
+
     /// Clears all permissions for a conversation (useful on conversation end).
     func clearConversationPermissions(conversationID: UUID) {
         conversationPermissions.removeValue(forKey: conversationID)
