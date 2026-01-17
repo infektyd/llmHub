@@ -99,12 +99,24 @@ struct MistralProvider: LLMProvider {
         let totalTokenEstimate =
             TokenEstimator.estimate(messages: sanitizedMessages) + manifestSizeTokens
 
+        let attachmentCount = sanitizedMessages.reduce(0) { $0 + $1.attachments.count }
+        let attachmentTotalBytes = sanitizedMessages.reduce(0) { total, message in
+            total
+                + message.attachments.reduce(0) { subtotal, attachment in
+                    let size = (try? FileManager.default.attributesOfItem(atPath: attachment.url.path)[.size]) as? NSNumber
+                    return subtotal + (size?.intValue ?? 0)
+                }
+        }
+
         LLMTrace.requestInstrumentation(
             provider: "Mistral",
             messageCount: sanitizedMessages.count,
             toolCount: toolCount,
+            manifestInjected: toolCount > 0,
             manifestSizeChars: manifestSizeChars,
             manifestSizeTokensEstimate: manifestSizeTokens,
+            attachmentCount: attachmentCount,
+            attachmentTotalBytes: attachmentTotalBytes,
             totalTokenEstimate: totalTokenEstimate
         )
 

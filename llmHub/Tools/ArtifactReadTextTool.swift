@@ -37,7 +37,7 @@ nonisolated struct ArtifactReadTextTool: Tool {
         )
     }
 
-    let permissionLevel: ToolPermissionLevel = .readOnly
+    let permissionLevel: ToolPermissionLevel = .sensitive
     let requiredCapabilities: [ToolCapability] = [.fileSystem]
     let weight: ToolWeight = .heavy
     let isCacheable = true
@@ -79,10 +79,10 @@ nonisolated struct ArtifactReadTextTool: Tool {
         }
 
         let maxChars = min(
-            arguments.integer("maxChars") ?? defaultMaxChars,
+            arguments.int("maxChars") ?? defaultMaxChars,
             absoluteMaxChars
         )
-        let offset = max(arguments.integer("offset") ?? 0, 0)
+        let offset = max(arguments.int("offset") ?? 0, 0)
 
         // Get file URL from sandbox
         let fileURL = await ArtifactSandboxService.shared.artifactPath(for: artifact)
@@ -136,9 +136,8 @@ nonisolated struct ArtifactReadTextTool: Tool {
         let jsonData = try JSONSerialization.data(withJSONObject: result, options: .prettyPrinted)
         let jsonString = String(data: jsonData, encoding: .utf8) ?? "{}"
 
-        return ToolResult(
-            content: jsonString,
-            metrics: .empty,
+        return ToolResult.success(
+            jsonString,
             metadata: ["id": idString, "bytes_read": String(data.count)],
             truncated: truncated
         )

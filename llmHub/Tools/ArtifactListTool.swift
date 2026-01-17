@@ -23,7 +23,7 @@ nonisolated struct ArtifactListTool: Tool {
         )
     }
 
-    let permissionLevel: ToolPermissionLevel = .readOnly
+    let permissionLevel: ToolPermissionLevel = .sensitive
     let requiredCapabilities: [ToolCapability] = []
     let weight: ToolWeight = .fast
     let isCacheable = false
@@ -36,9 +36,8 @@ nonisolated struct ArtifactListTool: Tool {
         let artifacts = await ArtifactSandboxService.shared.listArtifacts()
 
         if artifacts.isEmpty {
-            return ToolResult(
-                content: "No artifacts available. The user has not shared any files yet.",
-                metrics: .empty,
+            return ToolResult.success(
+                "No artifacts available. The user has not shared any files yet.",
                 metadata: ["count": "0"],
                 truncated: false
             )
@@ -57,9 +56,8 @@ nonisolated struct ArtifactListTool: Tool {
         let jsonData = try JSONSerialization.data(withJSONObject: items, options: .prettyPrinted)
         let jsonString = String(data: jsonData, encoding: .utf8) ?? "[]"
 
-        return ToolResult(
-            content: jsonString,
-            metrics: .empty,
+        return ToolResult.success(
+            jsonString,
             metadata: ["count": String(artifacts.count)],
             truncated: false
         )
