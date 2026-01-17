@@ -342,6 +342,10 @@ class ChatViewModel {
             WorkspaceTool(),
             CodeInterpreterTool(environment: toolEnvironment),
             DataVisualizationTool(),
+            ArtifactListTool(),
+            ArtifactOpenTool(),
+            ArtifactReadTextTool(),
+            ArtifactDescribeImageTool(),
         ]
 
         let toolRegistry = await ToolRegistry(tools: tools)
