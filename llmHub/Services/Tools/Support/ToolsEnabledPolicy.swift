@@ -20,10 +20,14 @@ struct ToolsEnabledPolicyResolver {
         defaults: UserDefaults = .standard,
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) -> ToolsEnabledPolicy {
-        if let raw = environment[environmentKey]?.lowercased(), let policy = ToolsEnabledPolicy(rawValue: raw) {
+        if let raw = environment[environmentKey]?.lowercased(),
+            let policy = ToolsEnabledPolicy(rawValue: raw)
+        {
             return policy
         }
-        if let raw = defaults.string(forKey: userDefaultsKey)?.lowercased(), let policy = ToolsEnabledPolicy(rawValue: raw) {
+        if let raw = defaults.string(forKey: userDefaultsKey)?.lowercased(),
+            let policy = ToolsEnabledPolicy(rawValue: raw)
+        {
             return policy
         }
         return .zen
@@ -33,12 +37,25 @@ struct ToolsEnabledPolicyResolver {
 struct ToolRelevanceHeuristics {
     static let coreTools: Set<String> = ["calculator"]
 
-    static func allowedToolNames(policy: ToolsEnabledPolicy, userMessage: String) -> Set<String> {
+    /// Artifact tools that should always be available when attachments are present.
+    static let artifactTools: Set<String> = [
+        "artifact_list", "artifact_open", "artifact_read_text", "artifact_describe_image",
+    ]
+
+    static func allowedToolNames(
+        policy: ToolsEnabledPolicy,
+        userMessage: String,
+        hasKnownAttachments: Bool = false
+    ) -> Set<String> {
         switch policy {
         case .workhorse:
             return []
         case .zen:
-            let relevant = relevantToolNames(for: userMessage)
+            var relevant = relevantToolNames(for: userMessage)
+            // Hard signal: always include artifact tools when attachments present
+            if hasKnownAttachments {
+                relevant.formUnion(artifactTools)
+            }
             return relevant.isEmpty ? coreTools : coreTools.union(relevant)
         }
     }
@@ -63,13 +80,14 @@ struct ToolRelevanceHeuristics {
 
         let fileKeywords = [
             "file", "files", "folder", "folders", "directory", "directories", "path", "paths",
-            "workspace", "repo", "project", "artifact", "artifacts", "diff", "patch", "grep"
+            "workspace", "repo", "project", "artifact", "artifacts", "diff", "patch", "grep",
         ]
         let filePhrases = [
             "read file", "open file", "edit file", "apply patch", "unified diff", "list files",
-            "search files", "search in files", "file contents", "workspace"
+            "search files", "search in files", "file contents", "workspace",
         ]
-        let hasFileContext = hasAnyToken(fileKeywords) || filePhrases.contains(where: containsPhrase)
+        let hasFileContext =
+            hasAnyToken(fileKeywords) || filePhrases.contains(where: containsPhrase)
             || normalized.contains("/")
             || normalized.contains(".swift")
             || normalized.contains(".md")
@@ -83,7 +101,7 @@ struct ToolRelevanceHeuristics {
 
         let calcKeywords = [
             "calculate", "calc", "math", "sum", "average", "avg", "mean", "median", "percent",
-            "percentage", "ratio", "total"
+            "percentage", "ratio", "total",
         ]
         if hasAnyToken(calcKeywords) || containsPhrase("calculate ") {
             tools.insert("calculator")
@@ -91,23 +109,26 @@ struct ToolRelevanceHeuristics {
 
         let plotKeywords = [
             "plot", "graph", "chart", "visualize", "visualization", "histogram", "scatter",
-            "line", "bar", "pie", "heatmap"
+            "line", "bar", "pie", "heatmap",
         ]
         if hasAnyToken(plotKeywords) {
             tools.insert("data_visualization")
         }
 
         let webQualifiers = [
-            "web", "internet", "online", "news", "latest", "current", "google", "bing", "duckduckgo"
+            "web", "internet", "online", "news", "latest", "current", "google", "bing",
+            "duckduckgo",
         ]
         let webSearchVerbs = ["search", "lookup"]
-        let wantsWebSearch = hasAnyToken(webQualifiers) || (hasAnyToken(webSearchVerbs) && !hasFileContext)
+        let wantsWebSearch =
+            hasAnyToken(webQualifiers) || (hasAnyToken(webSearchVerbs) && !hasFileContext)
         if wantsWebSearch {
             tools.insert("web_search")
         }
 
         let httpKeywords = [
-            "http", "https", "api", "endpoint", "curl", "request", "fetch", "webhook", "rest", "graphql"
+            "http", "https", "api", "endpoint", "curl", "request", "fetch", "webhook", "rest",
+            "graphql",
         ]
         if hasAnyToken(httpKeywords) {
             tools.insert("http_request")
@@ -120,9 +141,10 @@ struct ToolRelevanceHeuristics {
 
         let codeKeywords = [
             "code", "python", "javascript", "js", "typescript", "ts", "swift", "dart", "script",
-            "program", "programming"
+            "program", "programming",
         ]
-        if hasAnyToken(codeKeywords) || containsPhrase("run code") || containsPhrase("execute code") {
+        if hasAnyToken(codeKeywords) || containsPhrase("run code") || containsPhrase("execute code")
+        {
             tools.insert("code_interpreter")
         }
 

@@ -645,7 +645,8 @@ final class ChatService {
                         }
                         let allowedToolNames = ToolRelevanceHeuristics.allowedToolNames(
                             policy: toolsPolicy,
-                            userMessage: heuristicInput
+                            userMessage: heuristicInput,
+                            hasKnownAttachments: hasKnownAttachments
                         )
 
                         // SECURITY: Always check authorization, even if auth service is nil.
@@ -702,6 +703,42 @@ final class ChatService {
                             toolCallingAvailable: provider.supportsToolCalling
                         )
                         let toolManifestSize = toolManifest.count
+
+                        // Attachment Manifest Injection
+                        // If there are staged attachments, inject a dedicated system message before the user message.
+                        let stagedAttachments =
+                            attachments.isEmpty ? (lastUserMessage?.attachments ?? []) : attachments
+                        // Convert [Attachment] to [SandboxedArtifact] for manifest generation
+                        // Optimization: Avoid hitting disk/sandbox service if possible, but listArtifacts is fast.
+                        // However, Attachment objects might not map 1:1 if just staged.
+                        // For manifest generation, we need SandboxedArtifacts. Since Attachments in `appendMessage`
+                        // come from staged artifacts, they should have IDs corresponding to sandbox artifacts.
+                        let artifactsForManifest: [SandboxedArtifact] =
+                            await ArtifactSandboxService.shared.listArtifacts().filter { artifact in
+                                stagedAttachments.contains { $0.id == artifact.id }
+                            }
+
+                        let attachmentManifestMsg = AttachmentManifest.makeManifestMessage(
+                            stagedAttachments: artifactsForManifest)
+                        let manifestInjected = attachmentManifestMsg != nil
+                        let (manifestChars, manifestBytes) = AttachmentManifest.manifestSize(
+                            for: artifactsForManifest)
+
+                        // Insert manifest message before user message (or at end of system block)
+                        if let manifestMsg = attachmentManifestMsg {
+                            // Find insertion point: after last system message, or start of conversation
+                            if let lastSystemIndex = messagesForCompaction.lastIndex(where: {
+                                $0.role == .system
+                            }) {
+                                messagesForCompaction.insert(manifestMsg, at: lastSystemIndex + 1)
+                            } else {
+                                messagesForCompaction.insert(manifestMsg, at: 0)
+                            }
+                            logger.info(
+                                "📎 Injected attachment manifest with \(artifactsForManifest.count) items"
+                            )
+                        }
+
                         if var firstMsg = messagesForCompaction.first, firstMsg.role == .system {
                             firstMsg.content = ToolManifest.upsert(
                                 into: firstMsg.content,

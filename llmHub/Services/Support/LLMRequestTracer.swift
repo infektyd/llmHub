@@ -78,19 +78,25 @@ struct LLMTrace {
 
     /// Log request cost instrumentation metrics.
     /// All values are estimates; no message content is included.
+    /// Log request cost instrumentation metrics.
+    /// All values are estimates; no message content is included.
     nonisolated static func requestInstrumentation(
         provider: String,
         messageCount: Int,
         toolCount: Int,
+        manifestInjected: Bool,
         manifestSizeChars: Int,
         manifestSizeTokensEstimate: Int,
+        attachmentCount: Int,
+        attachmentTotalBytes: Int,
         totalTokenEstimate: Int
     ) {
         logger.info(
             """
             📊 [\(provider)] Instrumentation: \
             msgs=\(messageCount), tools=\(toolCount), \
-            manifest=\(manifestSizeChars)ch/~\(manifestSizeTokensEstimate)tok, \
+            manifest=\(manifestInjected ? "YES" : "NO")(\(manifestSizeChars)ch/~\(manifestSizeTokensEstimate)tok), \
+            attachments=\(attachmentCount)/\(attachmentTotalBytes)B, \
             total=~\(totalTokenEstimate)tok
             """
         )
