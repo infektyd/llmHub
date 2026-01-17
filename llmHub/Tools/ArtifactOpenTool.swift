@@ -28,7 +28,7 @@ nonisolated struct ArtifactOpenTool: Tool {
         )
     }
 
-    let permissionLevel: ToolPermissionLevel = .readOnly
+    let permissionLevel: ToolPermissionLevel = .sensitive
     let requiredCapabilities: [ToolCapability] = []
     let weight: ToolWeight = .fast
     let isCacheable = true
@@ -64,9 +64,8 @@ nonisolated struct ArtifactOpenTool: Tool {
         let jsonData = try JSONSerialization.data(withJSONObject: metadata, options: .prettyPrinted)
         let jsonString = String(data: jsonData, encoding: .utf8) ?? "{}"
 
-        return ToolResult(
-            content: jsonString,
-            metrics: .empty,
+        return ToolResult.success(
+            jsonString,
             metadata: ["id": idString],
             truncated: false
         )
