@@ -747,8 +747,8 @@ final class ChatService {
 
                         let attachmentManifestMsg = AttachmentManifest.makeManifestMessage(
                             stagedAttachments: artifactsForManifest)
-                        let manifestInjected = attachmentManifestMsg != nil
-                        let (manifestChars, manifestBytes) = AttachmentManifest.manifestSize(
+                        _ = attachmentManifestMsg != nil
+                        let (_, _) = AttachmentManifest.manifestSize(
                             for: artifactsForManifest)
 
                         // Insert manifest message before user message (or at end of system block)
