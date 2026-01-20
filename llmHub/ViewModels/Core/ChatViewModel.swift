@@ -623,6 +623,7 @@ class ChatViewModel {
         }
 
         return Attachment(
+            id: sandboxArtifact.id,
             filename: sandboxArtifact.filename,
             url: fullPath,
             type: type,
@@ -643,8 +644,7 @@ class ChatViewModel {
 
             // AUTO-STAGE: Convert to Attachment and add to staged list
             if let attachment = await makeAttachment(from: artifact) {
-                stagedAttachments.append(attachment)
-                logger.info("✅ Auto-staged artifact as attachment: \(artifact.filename)")
+                stageAttachmentIfNeeded(attachment)
             }
 
             logger.info("Imported file to sandbox: \(artifact.filename)")
@@ -670,11 +670,8 @@ class ChatViewModel {
 
             // AUTO-STAGE: Convert to Attachment and add to staged list
             if let attachment = await makeAttachment(from: artifact) {
-                stagedAttachments.append(attachment)
-                logger.info("✅ Auto-staged artifact as attachment: \(artifact.filename)")
+                addAttachment(attachment)
             }
-
-            logger.info("Imported data to sandbox: \(artifact.filename)")
             return artifact
         } catch {
             logger.error("Failed to import data to sandbox: \(error.localizedDescription)")
@@ -692,12 +689,15 @@ class ChatViewModel {
             recentlyImportedArtifacts.append(contentsOf: artifacts)
 
             // AUTO-STAGE: Convert to Attachments and add to staged list
+            var stagedCount = 0
             for artifact in artifacts {
                 if let attachment = await makeAttachment(from: artifact) {
-                    stagedAttachments.append(attachment)
+                    if stageAttachmentIfNeeded(attachment) {
+                        stagedCount += 1
+                    }
                 }
             }
-            logger.info("✅ Auto-staged \(artifacts.count) artifacts as attachments")
+            logger.info("✅ Auto-staged \(stagedCount) artifacts as attachments")
 
             logger.info("Imported folder to sandbox: \(artifacts.count) files")
             return artifacts
@@ -777,7 +777,22 @@ class ChatViewModel {
 
     /// Adds an attachment to the staging area.
     func addAttachment(_ attachment: Attachment) {
+        stageAttachmentIfNeeded(attachment)
+    }
+
+    @discardableResult
+    private func stageAttachmentIfNeeded(_ attachment: Attachment) -> Bool {
+        for existing in stagedAttachments {
+            if existing.id == attachment.id || existing.url == attachment.url {
+                return false
+            }
+        }
         stagedAttachments.append(attachment)
+        #if DEBUG
+            let shortID = attachment.id.uuidString.prefix(6)
+            logger.info("[ATTACH_STAGE] stagedCount=\(stagedAttachments.count), id=\(shortID)")
+        #endif
+        return true
     }
 
     /// Removes an attachment from the staging area by index.

@@ -11,21 +11,28 @@ struct ComposerAttachmentTray: View {
     let attachments: [Attachment]
     let onRemove: (UUID) -> Void
 
+    private var uniqueAttachments: [Attachment] {
+        var seen = Set<UUID>()
+        return attachments.filter { attachment in
+            seen.insert(attachment.id).inserted
+        }
+    }
+
     var body: some View {
-        if !attachments.isEmpty {
+        if !uniqueAttachments.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(attachments) { attachment in
+                    ForEach(uniqueAttachments) { attachment in
                         AttachmentPreviewChip(attachment: attachment) {
                             onRemove(attachment.id)
                         }
                     }
                 }
                 .padding(.horizontal, 4)
-                .padding(.vertical, 4)
+                .padding(.vertical, 6)
             }
-            // Constrain height to prevent excessive growth, but enough for chips
-            .frame(height: 38)
+            // Constrain height to prevent excessive growth, but enough for tiles
+            .frame(height: 64)
         }
     }
 }
