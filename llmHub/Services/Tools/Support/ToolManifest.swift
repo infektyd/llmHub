@@ -6,36 +6,52 @@ enum ToolManifest {
 
     static func systemPrompt(tools: [ToolDefinition], toolCallingAvailable: Bool) -> String {
         let header = """
-        You are running inside llmHub, a native macOS/iOS app.
+            You are running inside llmHub, a native macOS/iOS app.
 
-        Tool access is provided ONLY by llmHub and is limited to the tools listed in this message.
-        Do not claim access to external tools (e.g. web browser, Python, filesystem, shell) unless you call an llmHub tool that provides that capability.
-        """
-
-        let toolCallingLine: String =
-            toolCallingAvailable
-            ? """
-            Tool calls are available for this provider in llmHub. Use the provider's native tool/function calling mechanism when you need a tool result.
-            """
-            : """
-            Tool calls are not available for this provider in llmHub. Do not output tool-call JSON or claim tool execution; respond with text only.
+            Tool access is provided ONLY by llmHub and is limited to the tools listed in this message.
+            Do not claim access to external tools (e.g. web browser, Python, filesystem, shell) unless you call an llmHub tool that provides that capability.
             """
 
+        let toolCallingLine: String
         let toolList: String
-        if tools.isEmpty {
-            toolList = "Tools available in this conversation: (none)"
+
+        if toolCallingAvailable {
+            // Tool schemas are being sent separately - use minimal stub to save tokens
+            toolCallingLine = """
+                Tool calls are available for this provider in llmHub. Use the provider's native tool/function calling mechanism when you need a tool result.
+                """
+
+            // Minimal stub: just confirm tools exist without enumerating them
+            if tools.isEmpty {
+                toolList = "Tools available in this conversation: (none)"
+            } else {
+                toolList =
+                    "Tools available in this conversation: \(tools.count) tools enabled (schemas provided via function calling)"
+            }
         } else {
-            let lines = tools
-                .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-                .map { tool in
-                    let hint = whenToCallHint(for: tool.name)
-                    if hint.isEmpty {
-                        return "- \(tool.name): \(tool.description)"
+            // No tool calling support - must enumerate tools in manifest
+            toolCallingLine = """
+                Tool calls are not available for this provider in llmHub. Do not output tool-call JSON or claim tool execution; respond with text only.
+                """
+
+            if tools.isEmpty {
+                toolList = "Tools available in this conversation: (none)"
+            } else {
+                let lines =
+                    tools
+                    .sorted {
+                        $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
                     }
-                    return "- \(tool.name): \(tool.description) (When to call: \(hint))"
-                }
-                .joined(separator: "\n")
-            toolList = "Tools available in this conversation:\n\(lines)"
+                    .map { tool in
+                        let hint = whenToCallHint(for: tool.name)
+                        if hint.isEmpty {
+                            return "- \(tool.name): \(tool.description)"
+                        }
+                        return "- \(tool.name): \(tool.description) (When to call: \(hint))"
+                    }
+                    .joined(separator: "\n")
+                toolList = "Tools available in this conversation:\n\(lines)"
+            }
         }
 
         let body = [header, toolCallingLine, toolList].joined(separator: "\n\n")
