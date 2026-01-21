@@ -144,6 +144,21 @@ struct GoogleAIProvider: LLMProvider {
         // Filter out empty messages just in case
         let validMessages = messages.filter { !$0.content.isEmpty }
 
+        #if DEBUG
+            let droppedCount = messages.count - validMessages.count
+            let droppedRoles = droppedCount > 0 ? Array(repeating: "empty", count: droppedCount) : []
+            LLMTrace.sendDiagnostics(
+                provider: "Gemini",
+                model: model,
+                messageCountPreSanitize: messages.count,
+                messageCountPostSanitize: validMessages.count,
+                sanitizerDidMutate: droppedCount > 0,
+                sanitizerDroppedRoles: droppedRoles,
+                messagesForMetrics: validMessages,
+                tools: tools
+            )
+        #endif
+
         if let last = validMessages.last {
             prompt = last.content
 

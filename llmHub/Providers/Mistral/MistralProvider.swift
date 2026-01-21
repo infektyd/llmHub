@@ -91,6 +91,19 @@ struct MistralProvider: LLMProvider {
             )
         }
 
+        #if DEBUG
+            LLMTrace.sendDiagnostics(
+                provider: "Mistral",
+                model: model,
+                messageCountPreSanitize: messages.count,
+                messageCountPostSanitize: sanitizedMessages.count,
+                sanitizerDidMutate: validationResult.wasModified,
+                sanitizerDroppedRoles: validationResult.droppedRoles,
+                messagesForMetrics: sanitizedMessages,
+                tools: tools
+            )
+        #endif
+
         // MARK: - Request Instrumentation
         let toolCount = tools?.count ?? 0
         // Estimate manifest size from tool definitions (description + name + params ~= average 100 chars per tool)

@@ -54,6 +54,13 @@ struct ComposerBarView: View {
         !trimmedPlainText.isEmpty
     }
 
+    private var focusBinding: Binding<Bool> {
+        Binding(
+            get: { isInputFocused },
+            set: { isInputFocused = $0 }
+        )
+    }
+
     var body: some View {
         HStack(alignment: .bottom, spacing: uiCompactMode ? 10 : 12) {
             attachmentButton
@@ -160,7 +167,7 @@ struct ComposerBarView: View {
 
             PlatformComposerTextView(
                 text: $inputText,
-                isFocused: $isInputFocused,
+                isFocused: focusBinding,
                 forceInlinePaste: forceInlinePaste,
                 onTextChange: { newValue in
                     normalizeMarkdownIfAppropriate(sourceText: newValue)

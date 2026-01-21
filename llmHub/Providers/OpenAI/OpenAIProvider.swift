@@ -115,6 +115,19 @@ struct OpenAIProvider: LLMProvider {
             )
         }
 
+        #if DEBUG
+            LLMTrace.sendDiagnostics(
+                provider: "OpenAI",
+                model: model,
+                messageCountPreSanitize: messages.count,
+                messageCountPostSanitize: sanitizedMessages.count,
+                sanitizerDidMutate: validationResult.wasModified,
+                sanitizerDroppedRoles: validationResult.droppedRoles,
+                messagesForMetrics: sanitizedMessages,
+                tools: tools
+            )
+        #endif
+
         // MARK: - Request Instrumentation
         let toolCount = tools?.count ?? 0
         let manifestSizeChars = toolCount * 100  // Conservative estimate
