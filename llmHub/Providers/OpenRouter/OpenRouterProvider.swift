@@ -77,6 +77,19 @@ struct OpenRouterProvider: LLMProvider {
         }
         LLMTrace.authStatus(provider: "OpenRouter", hasKey: true)
 
+        #if DEBUG
+            LLMTrace.sendDiagnostics(
+                provider: "OpenRouter",
+                model: model,
+                messageCountPreSanitize: messages.count,
+                messageCountPostSanitize: messages.count,
+                sanitizerDidMutate: false,
+                sanitizerDroppedRoles: [],
+                messagesForMetrics: messages,
+                tools: tools
+            )
+        #endif
+
         let manager = OpenRouterManager(apiKey: apiKey)
 
         // Map messages

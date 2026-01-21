@@ -81,7 +81,7 @@ private struct IOSComposerTextView: UIViewRepresentable {
         textView.backgroundColor = .clear
         textView.isScrollEnabled = true
         textView.textContainerInset = .zero
-        textView.textContainer?.lineFragmentPadding = 0
+        textView.textContainer.lineFragmentPadding = 0
         textView.font = UIFont.preferredFont(forTextStyle: .body)
         textView.adjustsFontForContentSizeCategory = true
         textView.delegate = context.coordinator

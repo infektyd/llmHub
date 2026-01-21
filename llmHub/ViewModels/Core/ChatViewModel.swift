@@ -790,7 +790,8 @@ class ChatViewModel {
         stagedAttachments.append(attachment)
         #if DEBUG
             let shortID = attachment.id.uuidString.prefix(6)
-            logger.info("[ATTACH_STAGE] stagedCount=\(stagedAttachments.count), id=\(shortID)")
+            let stagedCount = stagedAttachments.count
+            logger.info("[ATTACH_STAGE] stagedCount=\(stagedCount), id=\(shortID)")
         #endif
         return true
     }

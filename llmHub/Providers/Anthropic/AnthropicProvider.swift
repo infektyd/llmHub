@@ -68,6 +68,19 @@ struct AnthropicProvider: LLMProvider {
         }
         LLMTrace.authStatus(provider: "Anthropic", hasKey: true)
 
+        #if DEBUG
+            LLMTrace.sendDiagnostics(
+                provider: "Anthropic",
+                model: model,
+                messageCountPreSanitize: messages.count,
+                messageCountPostSanitize: messages.count,
+                sanitizerDidMutate: false,
+                sanitizerDroppedRoles: [],
+                messagesForMetrics: messages,
+                tools: tools
+            )
+        #endif
+
         let manager = AnthropicManager(apiKey: key)
 
         // Extract system messages into Anthropic's dedicated `system` field.

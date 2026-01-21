@@ -72,6 +72,19 @@ struct XAIProvider: LLMProvider {
         }
         LLMTrace.authStatus(provider: "xAI", hasKey: true)
 
+        #if DEBUG
+            LLMTrace.sendDiagnostics(
+                provider: "xAI",
+                model: model,
+                messageCountPreSanitize: messages.count,
+                messageCountPostSanitize: messages.count,
+                sanitizerDidMutate: false,
+                sanitizerDroppedRoles: [],
+                messagesForMetrics: messages,
+                tools: tools
+            )
+        #endif
+
         let manager = XAIManager(apiKey: apiKey)
 
         // Map messages

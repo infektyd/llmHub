@@ -134,6 +134,58 @@ struct LLMTrace {
         }
     }
 
+#if DEBUG
+    // MARK: - DEBUG Send Diagnostics
+
+    /// Emit a structured diagnostics line once per send (DEBUG-only).
+    nonisolated static func sendDiagnostics(
+        provider: String,
+        model: String,
+        messageCountPreSanitize: Int,
+        messageCountPostSanitize: Int,
+        sanitizerDidMutate: Bool,
+        sanitizerDroppedRoles: [String],
+        messagesForMetrics: [ChatMessage],
+        tools: [ToolDefinition]?
+    ) {
+        let toolSchemaCount = tools?.count ?? 0
+        let toolManifestChars = LLMRequestDiagnostics.toolManifestCharCount(in: messagesForMetrics)
+        let systemPromptChars = LLMRequestDiagnostics.systemPromptCharCount(in: messagesForMetrics)
+        let toolSchemaChars = LLMRequestDiagnostics.toolSchemaCharCount(for: tools)
+        let attachmentsPresent = LLMRequestDiagnostics.attachmentsPresent(in: messagesForMetrics)
+        let toolCallIds = LLMRequestDiagnostics.toolCallIdCount(in: messagesForMetrics)
+        let dropReasonCounts = LLMRequestDiagnostics.dropReasonCounts(from: sanitizerDroppedRoles)
+        let dropReasonSummary = LLMRequestDiagnostics.formatDropReasonCounts(dropReasonCounts)
+        let systemMessages = messagesForMetrics.filter { $0.role == .system }
+        let estimatedTokensSystem = TokenEstimator.estimate(messages: systemMessages)
+        let toolSchemaTokenEstimate = toolSchemaChars / 4
+        let estimatedTokensTotal =
+            TokenEstimator.estimate(messages: messagesForMetrics) + toolSchemaTokenEstimate
+
+        let mutatedFlag = sanitizerDidMutate ? "yes" : "no"
+        let attachmentsFlag = attachmentsPresent ? "yes" : "no"
+        let msgCounts = "msgs=\(messageCountPreSanitize)→\(messageCountPostSanitize)"
+        let components: [String] = [
+            "🧭 [\(provider)] send_diagnostics",
+            "model=\(model)",
+            msgCounts,
+            "sanitizerMutated=\(mutatedFlag)",
+            "sanitizerDropped=\(sanitizerDroppedRoles.count)",
+            "sanitizerDropReasons=\(dropReasonSummary)",
+            "toolSchemaCount=\(toolSchemaCount)",
+            "toolManifestChars=\(toolManifestChars)",
+            "toolSchemaChars=\(toolSchemaChars)",
+            "systemPromptChars=\(systemPromptChars)",
+            "attachments=\(attachmentsFlag)",
+            "estTokensTotal=\(estimatedTokensTotal)",
+            "estTokensSystem=\(estimatedTokensSystem)",
+            "toolCallIds=\(toolCallIds)"
+        ]
+        let logLine = components.joined(separator: " ")
+        logger.debug("\(logLine, privacy: .public)")
+    }
+#endif
+
     // MARK: - Errors
 
     /// Log API errors
@@ -186,3 +238,102 @@ struct LLMTrace {
         return sanitized
     }
 }
+
+#if DEBUG
+private enum LLMRequestDiagnostics {
+    nonisolated static func toolManifestCharCount(in messages: [ChatMessage]) -> Int {
+        let startMarker = "<llmhub_tool_manifest>"
+        let endMarker = "</llmhub_tool_manifest>"
+        return messages
+            .filter { $0.role == .system }
+            .reduce(0) { total, message in
+                guard let startRange = message.content.range(of: startMarker),
+                    let endRange = message.content.range(
+                        of: endMarker,
+                        range: startRange.upperBound..<message.content.endIndex
+                    )
+                else {
+                    return total
+                }
+                let manifest = message.content[startRange.lowerBound..<endRange.upperBound]
+                return total + manifest.count
+            }
+    }
+
+    nonisolated static func systemPromptCharCount(in messages: [ChatMessage]) -> Int {
+        messages
+            .filter { $0.role == .system }
+            .reduce(0) { $0 + $1.content.count }
+    }
+
+    nonisolated static func toolSchemaCharCount(for tools: [ToolDefinition]?) -> Int {
+        guard let tools, !tools.isEmpty else { return 0 }
+        return tools.reduce(0) { total, tool in
+            total
+                + tool.name.count
+                + tool.description.count
+                + estimateSchemaChars(tool.inputSchema)
+        }
+    }
+
+    nonisolated static func attachmentsPresent(in messages: [ChatMessage]) -> Bool {
+        messages.contains { !$0.attachments.isEmpty }
+    }
+
+    nonisolated static func toolCallIdCount(in messages: [ChatMessage]) -> Int {
+        var ids: Set<String> = []
+        for message in messages {
+            if let toolCalls = message.toolCalls {
+                for call in toolCalls {
+                    ids.insert(call.id)
+                }
+            }
+            if let toolCallID = message.toolCallID {
+                ids.insert(toolCallID)
+            }
+        }
+        return ids.count
+    }
+
+    nonisolated static func dropReasonCounts(from droppedRoles: [String]) -> [String: Int] {
+        guard !droppedRoles.isEmpty else { return [:] }
+        return droppedRoles.reduce(into: [:]) { counts, role in
+            counts[role, default: 0] += 1
+        }
+    }
+
+    nonisolated static func formatDropReasonCounts(_ counts: [String: Int]) -> String {
+        guard !counts.isEmpty else { return "none" }
+        return counts
+            .sorted { $0.key < $1.key }
+            .map { "\($0.key):\($0.value)" }
+            .joined(separator: ",")
+    }
+
+    nonisolated private static func estimateSchemaChars(_ value: Any) -> Int {
+        if let dict = value as? [String: Any] {
+            return dict.reduce(0) { total, entry in
+                total + entry.key.count + estimateSchemaChars(entry.value)
+            }
+        }
+        if let array = value as? [Any] {
+            return array.reduce(0) { total, entry in
+                total + estimateSchemaChars(entry)
+            }
+        }
+        if let string = value as? String {
+            return string.count
+        }
+        if let boolValue = value as? Bool {
+            return boolValue ? 4 : 5
+        }
+        if let number = value as? NSNumber {
+            return String(describing: number).count
+        }
+        if value is NSNull {
+            return 4
+        }
+        return String(describing: value).count
+    }
+}
+#endif
