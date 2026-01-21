@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 @MainActor
 struct OpenAIProvider: LLMProvider {
@@ -7,6 +8,10 @@ struct OpenAIProvider: LLMProvider {
 
     private let keychain: KeychainStore
     private let config: ProvidersConfig.OpenAI
+
+    #if DEBUG
+        private static let logger = Logger(subsystem: "com.llmhub", category: "OpenAIProvider")
+    #endif
 
     var supportsToolCalling: Bool { true }
 
@@ -106,13 +111,30 @@ struct OpenAIProvider: LLMProvider {
             messages: messages, provider: "OpenAI")
         let sanitizedMessages = validationResult.sanitizedMessages
 
-        if validationResult.wasModified {
+        if validationResult.didMutate {
             LLMTrace.sequenceValidation(
                 provider: "OpenAI",
                 originalCount: messages.count,
                 sanitizedCount: sanitizedMessages.count,
                 droppedRoles: validationResult.droppedRoles
             )
+            #if DEBUG
+                Self.logger.debug(
+                    "🔧 [OpenAI] Mutation metrics: user=\(validationResult.droppedUserCount) assistant=\(validationResult.droppedAssistantCount) tool=\(validationResult.droppedToolCount) system=\(validationResult.droppedSystemCount)"
+                )
+                for (reason, count) in validationResult.droppedByReason.sorted(by: {
+                    $0.key < $1.key
+                }) {
+                    Self.logger.debug(
+                        "🔧 [OpenAI] Drop reason '\(reason)': \(count) message(s)")
+                }
+                Self.logger.debug(
+                    "🔧 [OpenAI] Pre-sequence: \(validationResult.preRoleSequence.joined(separator: " → "))"
+                )
+                Self.logger.debug(
+                    "🔧 [OpenAI] Post-sequence: \(validationResult.postRoleSequence.joined(separator: " → "))"
+                )
+            #endif
         }
 
         #if DEBUG
@@ -121,7 +143,7 @@ struct OpenAIProvider: LLMProvider {
                 model: model,
                 messageCountPreSanitize: messages.count,
                 messageCountPostSanitize: sanitizedMessages.count,
-                sanitizerDidMutate: validationResult.wasModified,
+                sanitizerDidMutate: validationResult.didMutate,
                 sanitizerDroppedRoles: validationResult.droppedRoles,
                 messagesForMetrics: sanitizedMessages,
                 tools: tools
@@ -139,7 +161,9 @@ struct OpenAIProvider: LLMProvider {
         let attachmentTotalBytes = sanitizedMessages.reduce(0) { total, message in
             total
                 + message.attachments.reduce(0) { subtotal, attachment in
-                    let size = (try? FileManager.default.attributesOfItem(atPath: attachment.url.path)[.size]) as? NSNumber
+                    let size =
+                        (try? FileManager.default.attributesOfItem(atPath: attachment.url.path)[
+                            .size]) as? NSNumber
                     return subtotal + (size?.intValue ?? 0)
                 }
         }

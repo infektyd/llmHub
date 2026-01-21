@@ -27,12 +27,45 @@ struct MessageSequenceValidator: Sendable {
     struct ValidationResult: Sendable {
         /// The sanitized messages ready for API submission.
         let sanitizedMessages: [ChatMessage]
-        /// Number of messages that were dropped during sanitization.
-        let droppedCount: Int
-        /// Roles of dropped messages (for debug logging).
-        let droppedRoles: [String]
+
+        // MARK: Mutation Summary
         /// Whether any sanitization was performed.
-        var wasModified: Bool { droppedCount > 0 }
+        let didMutate: Bool
+        /// Total number of messages that were dropped during sanitization.
+        let droppedMessageCount: Int
+
+        // MARK: Dropped Messages by Role
+        /// Number of user messages dropped.
+        let droppedUserCount: Int
+        /// Number of assistant messages dropped.
+        let droppedAssistantCount: Int
+        /// Number of tool messages dropped.
+        let droppedToolCount: Int
+        /// Number of system messages dropped.
+        let droppedSystemCount: Int
+
+        // MARK: Dropped Messages by Reason
+        /// Messages dropped with reason counters (e.g., "orphanTool": 2, "duplicateTool": 1).
+        let droppedByReason: [String: Int]
+
+        // MARK: Role Sequences (for debugging and observability)
+        /// Role sequence before sanitization (roles only, no content).
+        let preRoleSequence: [String]
+        /// Role sequence after sanitization (roles only, no content).
+        let postRoleSequence: [String]
+
+        // MARK: Legacy Compatibility
+        /// Roles of dropped messages (for debug logging) - kept for backward compatibility.
+        var droppedRoles: [String] {
+            Array(
+                droppedByReason.flatMap { reason, count in
+                    (0..<count).map { _ in reason }
+                })
+        }
+        /// Legacy alias for droppedMessageCount.
+        var droppedCount: Int { droppedMessageCount }
+        /// Legacy alias for didMutate.
+        var wasModified: Bool { didMutate }
     }
 
     // MARK: - Role Sequence Logging (DEBUG-safe)
@@ -79,12 +112,26 @@ struct MessageSequenceValidator: Sendable {
     /// 1. Remove trailing empty assistant messages (placeholders)
     /// 2. Remove orphaned tool messages (no matching prior assistant toolCall)
     /// 3. Ensure tool messages follow their parent assistant message
+    /// 4. Deduplicate tool responses (same toolCallID)
     nonisolated static func sanitize(
         messages: [ChatMessage],
         provider: String
     ) -> ValidationResult {
+        // MARK: - Capture Pre-Sanitization State
+        let preRoleSequence = messages.map { msg -> String in
+            var role = msg.role.rawValue
+            if msg.role == .assistant, let toolCalls = msg.toolCalls, !toolCalls.isEmpty {
+                role += "[+\(toolCalls.count)tc]"
+            }
+            if msg.role == .tool, let tcID = msg.toolCallID {
+                role += "[→\(String(tcID.prefix(8)))]"
+            }
+            return role
+        }
+
         var sanitized: [ChatMessage] = []
-        var droppedRoles: [String] = []
+        var droppedByReason: [String: Int] = [:]
+        var droppedByRole: [MessageRole: Int] = [:]
 
         // Build a set of valid tool call IDs from assistant messages (in order)
         // This maps toolCallID -> index of the assistant message that requested it
@@ -116,7 +163,8 @@ struct MessageSequenceValidator: Sendable {
 
                 if isTrailing && isEmpty && !hasToolCalls {
                     // Drop trailing empty assistant placeholder
-                    droppedRoles.append("assistant[empty-trailing]")
+                    droppedByReason["trailingEmptyAssistant", default: 0] += 1
+                    droppedByRole[.assistant, default: 0] += 1
                     logger.debug(
                         "⚠️ [\(provider, privacy: .public)] Dropped trailing empty assistant message"
                     )
@@ -127,7 +175,8 @@ struct MessageSequenceValidator: Sendable {
             case .tool:
                 guard let toolCallID = msg.toolCallID else {
                     // Tool message without toolCallID - orphaned
-                    droppedRoles.append("tool[no-id]")
+                    droppedByReason["toolMissingID", default: 0] += 1
+                    droppedByRole[.tool, default: 0] += 1
                     logger.warning(
                         "⚠️ [\(provider, privacy: .public)] Dropped tool message without toolCallID"
                     )
@@ -136,7 +185,8 @@ struct MessageSequenceValidator: Sendable {
 
                 guard toolCallOrigins[toolCallID] != nil else {
                     // No matching assistant message requested this tool
-                    droppedRoles.append("tool[orphan:\(String(toolCallID.prefix(8)))]")
+                    droppedByReason["orphanTool", default: 0] += 1
+                    droppedByRole[.tool, default: 0] += 1
                     logger.warning(
                         "⚠️ [\(provider, privacy: .public)] Dropped orphaned tool message (no matching toolCall)"
                     )
@@ -154,7 +204,8 @@ struct MessageSequenceValidator: Sendable {
 
                 if originInSanitized == nil {
                     // The origin assistant was dropped - this tool result is now orphaned
-                    droppedRoles.append("tool[origin-dropped:\(String(toolCallID.prefix(8)))]")
+                    droppedByReason["toolOriginDropped", default: 0] += 1
+                    droppedByRole[.tool, default: 0] += 1
                     logger.warning(
                         "⚠️ [\(provider, privacy: .public)] Dropped tool message (origin assistant was removed)"
                     )
@@ -163,7 +214,8 @@ struct MessageSequenceValidator: Sendable {
 
                 // Check for duplicate tool responses
                 if answeredToolCalls.contains(toolCallID) {
-                    droppedRoles.append("tool[duplicate:\(String(toolCallID.prefix(8)))]")
+                    droppedByReason["duplicateTool", default: 0] += 1
+                    droppedByRole[.tool, default: 0] += 1
                     logger.warning(
                         "⚠️ [\(provider, privacy: .public)] Dropped duplicate tool response"
                     )
@@ -175,18 +227,38 @@ struct MessageSequenceValidator: Sendable {
             }
         }
 
-        let droppedCount = messages.count - sanitized.count
+        // MARK: - Capture Post-Sanitization State
+        let postRoleSequence = sanitized.map { msg -> String in
+            var role = msg.role.rawValue
+            if msg.role == .assistant, let toolCalls = msg.toolCalls, !toolCalls.isEmpty {
+                role += "[+\(toolCalls.count)tc]"
+            }
+            if msg.role == .tool, let tcID = msg.toolCallID {
+                role += "[→\(String(tcID.prefix(8)))]"
+            }
+            return role
+        }
 
-        if droppedCount > 0 {
+        let droppedMessageCount = messages.count - sanitized.count
+        let didMutate = droppedMessageCount > 0
+
+        if didMutate {
             logger.info(
-                "🔧 [\(provider, privacy: .public)] Sanitized message sequence: dropped \(droppedCount) message(s)"
+                "🔧 [\(provider, privacy: .public)] Sanitized message sequence: dropped \(droppedMessageCount) message(s)"
             )
         }
 
         return ValidationResult(
             sanitizedMessages: sanitized,
-            droppedCount: droppedCount,
-            droppedRoles: droppedRoles
+            didMutate: didMutate,
+            droppedMessageCount: droppedMessageCount,
+            droppedUserCount: droppedByRole[.user, default: 0],
+            droppedAssistantCount: droppedByRole[.assistant, default: 0],
+            droppedToolCount: droppedByRole[.tool, default: 0],
+            droppedSystemCount: droppedByRole[.system, default: 0],
+            droppedByReason: droppedByReason,
+            preRoleSequence: preRoleSequence,
+            postRoleSequence: postRoleSequence
         )
     }
 }

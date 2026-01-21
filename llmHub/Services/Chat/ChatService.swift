@@ -720,7 +720,16 @@ final class ChatService {
                             && availableArtifactToolNames.isSubset(of: authorizedToolNames)
 
                         let exportedToolDefs = filteredTools.compactMap { ToolDefinition(from: $0) }
-                        let allToolDefs: [ToolDefinition] = exportedToolDefs
+
+                        // Apply tool budget to cap tool counts and reduce token bloat
+                        let toolBudget = ToolBudget.resolve(for: toolsPolicy)
+                        let budgetedToolDefs = ToolBudgetEnforcer.applyBudget(
+                            to: exportedToolDefs,
+                            budget: toolBudget,
+                            hasKnownAttachments: attachmentCount > 0
+                        )
+
+                        let allToolDefs: [ToolDefinition] = budgetedToolDefs
                         let toolCountForProvider: Int =
                             (provider.supportsToolCalling && !allToolDefs.isEmpty)
                             ? allToolDefs.count : 0
