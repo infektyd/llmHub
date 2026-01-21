@@ -263,31 +263,73 @@ struct TranscriptCanvasSessionView: View {
         toolCallArgumentsByID: [String: String]
     ) -> ToolRunBundleBuildResult? {
         let expectedToolCallIDSet = Set(expectedToolCallIDs)
-        var toolRows: [TranscriptRowViewModel] = []
-        var matchedIDs = Set<String>()
+        
+        // Build lookup of tool messages by toolCallID over a bounded window
+        // Window extends until: (1) next assistant with toolCalls, or (2) N messages, whichever is first
+        let maxWindowSize = 50
+        var toolMessagesByID: [String: (entity: ChatMessageEntity, index: Int)] = [:]
         var cursor = startIndex
-
-        while cursor < messages.count {
+        var lastToolIndex = startIndex - 1
+        
+        while cursor < messages.count && cursor < startIndex + maxWindowSize {
             let nextEntity = messages[cursor]
             let nextMessage = nextEntity.asDomain()
-            guard nextMessage.role == .tool else { break }
-            guard let toolCallID = nextMessage.toolCallID else { return nil }
-            guard expectedToolCallIDSet.contains(toolCallID) else { break }
-            toolRows.append(
-                mapToViewModel(
-                    nextMessage,
-                    isStreaming: false,
-                    rowID: persistedRowID(nextEntity.id),
-                    toolCallArgumentsByID: toolCallArgumentsByID
-                )
-            )
-            matchedIDs.insert(toolCallID)
+            
+            // Stop if we hit another assistant message with toolCalls
+            if nextMessage.role == .assistant,
+               let toolCalls = nextMessage.toolCalls,
+               !toolCalls.isEmpty {
+                break
+            }
+            
+            // Collect tool messages that match expected IDs
+            if nextMessage.role == .tool,
+               let toolCallID = nextMessage.toolCallID,
+               expectedToolCallIDSet.contains(toolCallID) {
+                // Store first occurrence only (in case of duplicates)
+                if toolMessagesByID[toolCallID] == nil {
+                    toolMessagesByID[toolCallID] = (nextEntity, cursor)
+                    lastToolIndex = cursor
+                }
+            }
+            
             cursor += 1
-            if matchedIDs.count == expectedToolCallIDSet.count { break }
         }
-
-        guard !toolRows.isEmpty else { return nil }
-
+        
+        // Assemble bundle rows by matching expected toolCallIDs in order
+        var toolRows: [TranscriptRowViewModel] = []
+        var matchedIDs = Set<String>()
+        
+        for toolCallID in expectedToolCallIDs {
+            if let (entity, _) = toolMessagesByID[toolCallID] {
+                let message = entity.asDomain()
+                toolRows.append(
+                    mapToViewModel(
+                        message,
+                        isStreaming: false,
+                        rowID: persistedRowID(entity.id),
+                        toolCallArgumentsByID: toolCallArgumentsByID
+                    )
+                )
+                matchedIDs.insert(toolCallID)
+            }
+        }
+        
+        // DEBUG diagnostics for bundling failures
+        if toolRows.isEmpty {
+            #if DEBUG
+            print("[TranscriptView] DEBUG: Bundling skipped for assistant message \(parentEntity.id) - assistant has \(expectedToolCallIDs.count) toolCalls but 0 matched tool results")
+            #endif
+            return nil
+        }
+        
+        if matchedIDs.count != expectedToolCallIDSet.count {
+            let missingIDs = expectedToolCallIDSet.subtracting(matchedIDs)
+            #if DEBUG
+            print("[TranscriptView] DEBUG: Bundling partial match for assistant message \(parentEntity.id) - expected \(expectedToolCallIDSet.count) tool results, found \(matchedIDs.count). Missing toolCallIDs: \(missingIDs.sorted())")
+            #endif
+        }
+        
         let status = toolRunBundleStatus(
             expectedCount: expectedToolCallIDSet.count,
             toolRows: toolRows
@@ -313,7 +355,8 @@ struct TranscriptCanvasSessionView: View {
             generationID: parentEntity.generationID,
             artifacts: []
         )
-        return ToolRunBundleBuildResult(bundleRow: bundleRow, nextIndex: cursor)
+        // Return next index as one past the last tool message we consumed
+        return ToolRunBundleBuildResult(bundleRow: bundleRow, nextIndex: lastToolIndex + 1)
     }
 
     private func toolRunBundleStatus(
