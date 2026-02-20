@@ -17,7 +17,7 @@
   - Shared design language across macOS and iOS
 - **Unified Tool System**:
   - Actor-based `ToolRegistry` + concurrent `ToolExecutor` + `ToolAuthorizationService`
-  - Current tools: Calculator, CodeInterpreter, FileReader, FileEditor, FilePatch, WebSearch, HTTPRequest, Shell (macOS only), Workspace, DataVisualization
+  - Current tools: Calculator, CodeInterpreter, FileReader, FileEditor, FilePatch, WebSearch, HTTPRequest, Shell (macOS only), Workspace, DataVisualization, ArtifactList, ArtifactOpen, ArtifactReadText, ArtifactDescribeImage
   - Permission-based authorization and session-scoped LRU caching for eligible tools
 - **"Brain Swapping" Persistence**:
   - Automatically saves the selected Model and Provider for each session

@@ -93,18 +93,22 @@
 
 **Registered Tools (current app wiring):**
 
-| Tool                    | Platform | Purpose                                   |
-| ----------------------- | -------- | ----------------------------------------- |
-| `CalculatorTool`        | All      | Mathematical evaluation                   |
-| `CodeInterpreterTool`   | All      | Code execution (macOS backend disabled)   |
-| `FileReaderTool`        | All      | File content reading                      |
-| `FileEditorTool`        | All      | File creation/modification                |
-| `FilePatchTool`         | All      | Unified diff patching                     |
-| `ShellTool`             | macOS    | Terminal command execution                |
-| `WebSearchTool`         | All      | Web search integration                    |
-| `HTTPRequestTool`       | All      | HTTP API calls                            |
-| `WorkspaceTool`         | All      | Workspace item management                 |
-| `DataVisualizationTool` | All      | Chart/graph description output (text/JSON)|
+| Tool                       | Platform | Purpose                                        |
+| -------------------------- | -------- | ---------------------------------------------- |
+| `CalculatorTool`           | All      | Mathematical evaluation                        |
+| `CodeInterpreterTool`      | All      | Code execution (macOS backend disabled)        |
+| `FileReaderTool`           | All      | File content reading                           |
+| `FileEditorTool`           | All      | File creation/modification                     |
+| `FilePatchTool`            | All      | Unified diff patching                          |
+| `ShellTool`                | macOS    | Terminal command execution                     |
+| `WebSearchTool`            | All      | Web search integration                         |
+| `HTTPRequestTool`          | All      | HTTP API calls                                 |
+| `WorkspaceTool`            | All      | Workspace item management                      |
+| `DataVisualizationTool`    | All      | Chart/graph description output (text/JSON)     |
+| `ArtifactListTool`         | All      | List artifacts available in the sandbox        |
+| `ArtifactOpenTool`         | All      | Open/focus an artifact in the UI               |
+| `ArtifactReadTextTool`     | All      | Read text content of an artifact               |
+| `ArtifactDescribeImageTool`| All      | Image metadata + dimensions (vision stub)      |
 
 > **Note**: `MCPToolBridge` exists but is not wired into the registry; tools under `Tools/Stubs/` are not registered. Availability is platform- and backend-aware.
 
