@@ -1,6 +1,6 @@
 # Reality Map (Current Implementation)
 
-**Last updated:** 2026-01-14
+**Last updated:** 2026-02-19
 
 This document is the authoritative snapshot of what is implemented today. Use it
 whenever older docs or speculative plans conflict with reality.
@@ -39,6 +39,10 @@ Registered in `ChatViewModel.ensureChatService()`:
 - `ShellTool` (macOS only)
 - `WorkspaceTool`
 - `DataVisualizationTool`
+- `ArtifactListTool`
+- `ArtifactOpenTool`
+- `ArtifactReadTextTool`
+- `ArtifactDescribeImageTool` (image dimensions only; vision description is a stub)
 
 ### Not Wired / Stubbed
 
@@ -51,8 +55,10 @@ Registered in `ChatViewModel.ensureChatService()`:
 
 ## macOS Code Execution Disabled (XPC Backend)
 
-- `ChatViewModel` forces `hasCodeExecutionBackend = false` on macOS due to
-  XPC helper entitlements/sandbox issues (see TODO in code).
+- `ChatViewModel` queries `CodeExecutionEngine().isBackendAvailable` at startup; the
+  result sets `hasCodeExecutionBackend` dynamically rather than forcing `false`.
+- In practice the XPC helper entitlements/sandbox issues mean the backend reports
+  unavailable, so code execution is effectively disabled on macOS.
 - The XPC helper (`llmHubHelper`) and `XPCExecutionBackend` exist but are not
   enabled in the current app build.
 - iOS uses `iOSJavaScriptExecutionBackend` (JavaScript only).
