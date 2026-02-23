@@ -107,6 +107,10 @@ Registered in `ChatViewModel`:
 8.  `ShellTool` (macOS only)
 9.  `WorkspaceTool`
 10. `DataVisualizationTool`
+11. `ArtifactListTool`
+12. `ArtifactOpenTool`
+13. `ArtifactReadTextTool`
+14. `ArtifactDescribeImageTool` (image dimensions only; vision description is a stub)
 
 Other tools exist in `Tools/Stubs/` but are not registered.
 
