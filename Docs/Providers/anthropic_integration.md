@@ -2,7 +2,7 @@
 //  Anthropic_Integration.md
 //  llmHub
 //
-//  Created by Hans Axelsson on 11/29/25.
+//  Created by Developer on 11/29/25.
 //
 Good timing — let me pull the latest API docs to make sure I'm giving you accurate info. A few quick clarifications while I search:
 
@@ -1095,6 +1095,6 @@ The file includes `ClaudeAPIService` with convenience methods like `.complete()`
 //  anthropic_integration.md
 //  llmHub
 //
-//  Created by Hans Axelsson on 11/29/25.
+//  Created by Developer on 11/29/25.
 //
 

@@ -107,7 +107,7 @@ Run through [SECURITY_VERIFICATION_CHECKLIST_2026-01-08.md](SECURITY_VERIFICATIO
 
 ### Unit Tests
 ```bash
-cd /Users/hansaxelsson/llmHub
+cd /Users/developer/llmHub
 xcodebuild test -project llmHub.xcodeproj -scheme llmHub -destination 'platform=macOS'
 ```
 

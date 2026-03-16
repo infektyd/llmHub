@@ -39,7 +39,7 @@
 
 ## 📂 Project Structure Map
 
-**Root**: `/Users/hansaxelsson/llmHub`
+**Root**: `/Users/developer/llmHub`
 
 | Directory           | Purpose                         | Agent Action   |
 | :------------------ | :------------------------------ | :------------- |

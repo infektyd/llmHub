@@ -32,20 +32,20 @@ Tool use: workspace (id: call_A18EE71A)
 #### Read File Tool Calls
 ```
 Tool use: read_file (id: call_3D85B19A)
-Reading file: /Users/hansaxelsson/Library/Containers/Syntra.llmHub/Data/stress_test_data/manual_record_1.json
+Reading file: /Users/developer/Library/Containers/Syntra.llmHub/Data/stress_test_data/manual_record_1.json
 ✅ read_file completed in 10 ms
 
 Tool use: read_file (id: call_1A530636)
-Reading file: /Users/hansaxelsson/Library/Containers/Syntra.llmHub/Data/STRESS_TEST_DASHBOARD.md
+Reading file: /Users/developer/Library/Containers/Syntra.llmHub/Data/STRESS_TEST_DASHBOARD.md
 ✅ read_file completed in 13 ms
 
 Tool use: read_file (id: call_1B0215B8)
 Tool use: read_file (id: call_6B74EDFF)
-Reading file: /Users/hansaxelsson/Library/Containers/Syntra.llmHub/Data/OCRFallbackHandler.swift
-Reading file: /Users/hansaxelsson/Library/Containers/Syntra.llmHub/Data/STRESS_TEST_DASHBOARD.md
+Reading file: /Users/developer/Library/Containers/Syntra.llmHub/Data/OCRFallbackHandler.swift
+Reading file: /Users/developer/Library/Containers/Syntra.llmHub/Data/STRESS_TEST_DASHBOARD.md
 ```
 
-**Workspace Root:** `/Users/hansaxelsson/Library/Containers/Syntra.llmHub/Data`
+**Workspace Root:** `/Users/developer/Library/Containers/Syntra.llmHub/Data`
 
 ### 1.2 When Can Models Access Files?
 
@@ -192,7 +192,7 @@ return home.standardizedFileURL
 
 ### 3.3 The Risk
 
-**On macOS**: Workspace root = **entire home directory** (`/Users/hansaxelsson/`)
+**On macOS**: Workspace root = **entire home directory** (`/Users/developer/`)
 - Gemini can read: `~/Documents`, `~/Desktop`, `~/Downloads`, etc.
 - Gemini can list: All your project folders
 - Gemini **CANNOT** escape: home directory boundary is enforced
@@ -548,7 +548,7 @@ grep "llmhub_tool_manifest" console.jsonl
 Expected output (AFTER hardening):
 ```
 Tool read_file blocked for conversation 41CC0498 (status: denied)
-Workspace root: /Users/hansaxelsson/Library/Containers/Syntra.llmHub/Data/Workspace
+Workspace root: /Users/developer/Library/Containers/Syntra.llmHub/Data/Workspace
 Executed tool: calculator, conversation: 41CC0498, authorized: true
 Unauthorized tool: read_file, conversation: 41CC0498
 Tool manifest injected: 3 tools (calculator, http_request, web_search)

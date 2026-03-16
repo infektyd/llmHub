@@ -8,7 +8,7 @@ Hardened MessageSequenceValidator for Mistral message order issues with a focus 
 
 ### 1. ValidationResult Structure with Mutation Info ✅
 
-**Implementation**: `/Users/hansaxelsson/llmHub/llmHub/Services/Support/MessageSequenceValidator.swift`
+**Implementation**: `/Users/developer/llmHub/llmHub/Services/Support/MessageSequenceValidator.swift`
 
 The `ValidationResult` struct now returns structured mutation information:
 
@@ -50,7 +50,7 @@ struct ValidationResult: Sendable {
 
 ### 2. Unit Tests Coverage ✅
 
-**Implementation**: `/Users/hansaxelsson/llmHub/llmHubTests/Services/MessageSequenceValidatorTests.swift`
+**Implementation**: `/Users/developer/llmHub/llmHubTests/Services/MessageSequenceValidatorTests.swift`
 
 Created comprehensive unit tests covering all scenarios:
 
@@ -87,8 +87,8 @@ Created comprehensive unit tests covering all scenarios:
 
 **Implementations**:
 
-- `/Users/hansaxelsson/llmHub/llmHub/Providers/Mistral/MistralProvider.swift`
-- `/Users/hansaxelsson/llmHub/llmHub/Providers/OpenAI/OpenAIProvider.swift`
+- `/Users/developer/llmHub/llmHub/Providers/Mistral/MistralProvider.swift`
+- `/Users/developer/llmHub/llmHub/Providers/OpenAI/OpenAIProvider.swift`
 
 Both providers now log detailed mutation metrics when `didMutate == true` (DEBUG-only):
 
@@ -207,24 +207,24 @@ When `didMutate == true`, the following logs appear:
 
 ## Files Modified
 
-1. `/Users/hansaxelsson/llmHub/llmHub/Services/Support/MessageSequenceValidator.swift`
+1. `/Users/developer/llmHub/llmHub/Services/Support/MessageSequenceValidator.swift`
    - Enhanced `ValidationResult` struct
    - Added detailed mutation tracking
    - Added pre/post role sequence capture
 
-2. `/Users/hansaxelsson/llmHub/llmHub/Providers/Mistral/MistralProvider.swift`
+2. `/Users/developer/llmHub/llmHub/Providers/Mistral/MistralProvider.swift`
    - Added logger instance
    - Added DEBUG-only mutation metrics logging
    - Updated references to `didMutate`
 
-3. `/Users/hansaxelsson/llmHub/llmHub/Providers/OpenAI/OpenAIProvider.swift`
+3. `/Users/developer/llmHub/llmHub/Providers/OpenAI/OpenAIProvider.swift`
    - Added logger instance
    - Added DEBUG-only mutation metrics logging
    - Updated references to `didMutate`
 
 ## Files Created
 
-1. `/Users/hansaxelsson/llmHub/llmHubTests/Services/MessageSequenceValidatorTests.swift`
+1. `/Users/developer/llmHub/llmHubTests/Services/MessageSequenceValidatorTests.swift`
    - Comprehensive unit test suite
    - 12 test cases covering all scenarios
    - Test helpers for message creation

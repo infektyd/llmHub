@@ -2,7 +2,7 @@
 //  Mistral_Integration.md
 //  llmHub
 //
-//  Created by Hans Axelsson on 11/29/25.
+//  Created by Developer on 11/29/25.
 //
 # Mistral API Complete Integration Reference for Swift
 **Last Updated: November 2025**

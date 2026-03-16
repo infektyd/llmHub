@@ -16,7 +16,7 @@ Each tool_result block must have a corresponding tool_use block in the previous 
 ## Solution Implemented
 
 ### Location
-`/Users/hansaxelsson/llmHub/llmHub/Providers/Anthropic/AnthropicProvider.swift`
+`/Users/developer/llmHub/llmHub/Providers/Anthropic/AnthropicProvider.swift`
 
 ### Changes Made
 

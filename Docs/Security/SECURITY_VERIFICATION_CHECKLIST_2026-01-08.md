@@ -13,7 +13,7 @@ This checklist verifies that the tool authorization hardening prevents unauthori
 
 ### 1. Clean Build
 ```bash
-cd /Users/hansaxelsson/llmHub
+cd /Users/developer/llmHub
 xcodebuild clean -project llmHub.xcodeproj -scheme llmHub
 xcodebuild build -project llmHub.xcodeproj -scheme llmHub
 ```
@@ -310,7 +310,7 @@ log show --predicate 'subsystem == "com.llmhub"' --last 30m | grep "🔴\\|ERROR
 If critical tests fail:
 
 ```bash
-cd /Users/hansaxelsson/llmHub
+cd /Users/developer/llmHub
 git checkout HEAD~1 -- llmHub/Services/Authorization/ToolAuthorizationService.swift
 git checkout HEAD~1 -- llmHub/Services/Chat/ChatService.swift
 git checkout HEAD~1 -- llmHub/Services/Tools/Execution/ToolExecutor.swift

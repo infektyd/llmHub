@@ -2,7 +2,7 @@
 //  Untitled 2.swift
 //  llmHub
 //
-//  Created by Hans Axelsson on 11/29/25.
+//  Created by Developer on 11/29/25.
 //
 Hey, I see you're diving into xAI's Grok API for app integration—cool project! Just a quick note: you mentioned Gemini (Google's model), but since your query's focused on xAI, I'll stick to Grok's capabilities. If you meant Google's API instead, lemme know and I'll pivot. xAI's API is OpenAI-compatible, so it's straightforward to hook up in Swift, especially for iOS apps. It supports text generation, vision (image analysis), image generation, reasoning ("thinking" modes via specific models), and fast inference ("flash"-like with low-latency models). No native video processing yet (as of late Nov 2025), but tool calling lets you chain external services if needed.
 

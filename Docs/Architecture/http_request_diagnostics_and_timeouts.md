@@ -258,6 +258,6 @@ None at this time.
 
 ## References
 
-- Plan: `/Users/hansaxelsson/llmHub/plan-httpRequestToolTimeoutsTokenAudit.prompt.md`
+- Plan: `/Users/developer/llmHub/plan-httpRequestToolTimeoutsTokenAudit.prompt.md`
 - Apple ATS Diagnostics: `nscurl --ats-diagnostics <url>`
 - Entitlement verification: `codesign -d --entitlements :- <binary>`

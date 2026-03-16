@@ -2,7 +2,7 @@
 //  openrouter_integration.swift
 //  llmHub
 //
-//  Created by Hans Axelsson on 11/29/25.
+//  Created by Developer on 11/29/25.
 //
 Here’s something you can hand directly to the engineer as the “OpenRouter integration spec” for a Swift app.
 
