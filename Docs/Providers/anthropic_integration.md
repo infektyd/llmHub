@@ -10,7 +10,7 @@ Good timing — let me pull the latest API docs to make sure I'm giving you accu
 2. **Video** — Same question: do you mean video *input* analysis or something else?
 3. **"Flash"** — Are you referring to streaming responses, or the Haiku model (fastest tier)?
 
-Let me grab the current API specs:I've got fresh data. Let me address your initial questions and then provide the comprehensive guide:
+Let me grab the current API specs:I've got fresh data. Let me address your initial questions and then provide the detailed guide:
 
 **Quick Clarifications:**
 - ❌ **Image generation** — Claude doesn't generate images. That's Midjourney/DALL-E territory. Claude *analyzes* images (vision input).
@@ -19,7 +19,7 @@ Let me grab the current API specs:I've got fresh data. Let me address your initi
 
 Now here's your clean, copy-paste ready Swift integration:
 
----Done! Here's your comprehensive Claude API integration for Swift:
+---Done! Here's your detailed Claude API integration for Swift:
 
 [**Download ClaudeAPIService.swift**](computer:///mnt/user-data/outputs/ClaudeAPIService.swift)
 

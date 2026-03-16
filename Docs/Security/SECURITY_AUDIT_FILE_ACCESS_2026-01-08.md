@@ -406,7 +406,7 @@ All security hardening changes have been implemented as of 2026-01-08.
 - Added paranoid validation with structured error logging
 - Changed authorization check to conversation-scoped: `checkAccess(for:conversationID:context.sessionID)`
 - Treats `.notDetermined` as `.denied` (secure by default)
-- Added comprehensive error logging with call IDs and tool names
+- Added detailed error logging with call IDs and tool names
 
 #### ✅ File 4: WorkspaceResolver.swift
 **Status:** COMPLETE  
@@ -434,7 +434,7 @@ All security hardening changes have been implemented as of 2026-01-08.
 **Status:** COMPLETE  
 **File:** `llmHubTests/Services/ToolAuthorizationSecurityTests.swift`  
 **Coverage:**
-- 19 comprehensive test cases covering:
+- 19 detailed test cases covering:
   - Default deny behavior (global and conversation-scoped)
   - Authorization grant/deny/revoke operations
   - Conversation-scoped isolation and independence

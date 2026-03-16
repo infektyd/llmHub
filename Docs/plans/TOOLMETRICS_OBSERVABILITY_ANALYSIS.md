@@ -283,7 +283,7 @@ enum AppLogger {
 
 ### Future-Ready Infrastructure
 - ✅ ToolMetrics structure supports expansion
-- ✅ errorClass enum is comprehensive (15 types)
+- ✅ errorClass enum is detailed (15 types)
 - ✅ Infrastructure for timing is solid
 - ✅ Cache detection mechanism works
 - ✅ Sendable/Codable traits for serialization
