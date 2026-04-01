@@ -187,14 +187,48 @@ enum ToolErrorClass: String, Sendable, Codable {
 /// Errors thrown during tool execution.
 // MARK: - JSON Value
 
-/// A type-safe wrapper for JSON values, useful for tool arguments and outputs.
-enum JSONValue: Codable, Sendable, Hashable {
+/// A type-safe JSON value type, useful for tool arguments and outputs.
+enum JSONValue: Codable, Sendable, Equatable, Hashable {
     case null
     case bool(Bool)
     case number(Double)
     case string(String)
     case array([JSONValue])
     case object([String: JSONValue])
+
+    nonisolated static func == (lhs: JSONValue, rhs: JSONValue) -> Bool {
+        switch (lhs, rhs) {
+        case (.null, .null): return true
+        case (.bool(let a), .bool(let b)): return a == b
+        case (.number(let a), .number(let b)): return a == b
+        case (.string(let a), .string(let b)): return a == b
+        case (.array(let a), .array(let b)): return a == b
+        case (.object(let a), .object(let b)): return a == b
+        default: return false
+        }
+    }
+
+    nonisolated func hash(into hasher: inout Hasher) {
+        switch self {
+        case .null:
+            hasher.combine(0)
+        case .bool(let v):
+            hasher.combine(1)
+            hasher.combine(v)
+        case .number(let v):
+            hasher.combine(2)
+            hasher.combine(v)
+        case .string(let v):
+            hasher.combine(3)
+            hasher.combine(v)
+        case .array(let v):
+            hasher.combine(4)
+            hasher.combine(v)
+        case .object(let v):
+            hasher.combine(5)
+            hasher.combine(v)
+        }
+    }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
