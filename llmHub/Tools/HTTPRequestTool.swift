@@ -289,14 +289,17 @@ nonisolated struct HTTPRequestTool: Tool {
 
 // MARK: - Helpers
 
+/// URLSession delegate that blocks HTTP redirects by not calling the completion handler.
 private final class RedirectBlocker: NSObject, URLSessionTaskDelegate {
     func urlSession(
         _ session: URLSession,
         task: URLSessionTask,
         willPerformHTTPRedirection response: HTTPURLResponse,
-        newRequest request: URLRequest
-    ) async -> URLRequest? {
-        nil
+        newRequest request: URLRequest,
+        completionHandler: @escaping (URLRequest?) -> Void
+    ) {
+        // Block redirect by returning nil
+        completionHandler(nil)
     }
 }
 
