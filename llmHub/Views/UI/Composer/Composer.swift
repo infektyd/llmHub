@@ -173,7 +173,9 @@ struct ComposerBarView: View {
                     normalizeMarkdownIfAppropriate(sourceText: newValue)
                 },
                 onSelectionChange: { isAtEnd in
-                    isSelectionAtEnd = isAtEnd
+                    DispatchQueue.main.async {
+                        isSelectionAtEnd = isAtEnd
+                    }
                 },
                 onSubmit: {
                     if canSend {
