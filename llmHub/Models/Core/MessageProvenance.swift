@@ -16,19 +16,28 @@ public nonisolated struct MessageProvenance: Codable, Equatable, Sendable {
     public nonisolated enum Channel: String, Codable, Equatable, Sendable {
         case chat
         case sidecar
+        case agent
     }
 
     public var channel: Channel
     public var model: String?
+    public var agentID: String?
+    public var agentName: String?
 
-    public static let chat = MessageProvenance(channel: .chat, model: nil)
+    public static let chat = MessageProvenance(channel: .chat, model: nil, agentID: nil, agentName: nil)
 
     public static func sidecar(model: String) -> MessageProvenance {
-        MessageProvenance(channel: .sidecar, model: model)
+        MessageProvenance(channel: .sidecar, model: model, agentID: nil, agentName: nil)
     }
 
-    public init(channel: Channel, model: String?) {
+    public static func agent(id: String, name: String, model: String? = nil) -> MessageProvenance {
+        MessageProvenance(channel: .agent, model: model, agentID: id, agentName: name)
+    }
+
+    public init(channel: Channel, model: String?, agentID: String? = nil, agentName: String? = nil) {
         self.channel = channel
         self.model = model
+        self.agentID = agentID
+        self.agentName = agentName
     }
 }

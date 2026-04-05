@@ -21,6 +21,7 @@ final class KeychainStore: Sendable {
         case mistral
         case xai
         case openrouter
+        case openclaw
     }
 
     private static let service = "com.llmhub.keys"
@@ -314,24 +315,26 @@ final class KeychainStore: Sendable {
 
 extension KeychainStore: APIKeyProviding {}
 
-private extension KeychainStore.ProviderKey {
-    var legacyAccounts: [String] {
-        switch self {
-        case .openai:
-            return ["openAI", "OpenAI"]
-        case .openrouter:
-            return ["openRouter", "OpenRouter"]
-        case .anthropic:
-            return ["Anthropic"]
-        case .google:
-            return ["Google", "googleAI", "GoogleAI"]
-        case .mistral:
-            return ["Mistral"]
-        case .xai:
-            return ["XAI", "xAI"]
+    private extension KeychainStore.ProviderKey {
+        var legacyAccounts: [String] {
+            switch self {
+            case .openai:
+                return ["openAI", "OpenAI"]
+            case .openrouter:
+                return ["openRouter", "OpenRouter"]
+            case .anthropic:
+                return ["Anthropic"]
+            case .google:
+                return ["Google", "googleAI", "GoogleAI"]
+            case .mistral:
+                return ["Mistral"]
+            case .xai:
+                return ["XAI", "xAI"]
+            case .openclaw:
+                return ["OpenClaw", "openClaw"]
+            }
         }
     }
-}
 
 enum KeychainError: LocalizedError {
     case operationFailed(OSStatus)

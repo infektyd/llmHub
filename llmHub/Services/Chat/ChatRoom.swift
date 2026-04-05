@@ -67,7 +67,7 @@ actor ChatRoom {
     func addAgent(_ agent: Agent) {
         guard !participants.contains(where: { $0.id == agent.id }) else { return }
         participants.append(agent)
-        logger.info("Agent \(agent.name) (\(agent.id)) joined room \(id.uuidString)")
+        logger.info("Agent \(agent.name) (\(agent.id)) joined room \(self.id.uuidString)")
         _broadcast(.room(.agentJoined(agentID: agent.id)))
     }
 

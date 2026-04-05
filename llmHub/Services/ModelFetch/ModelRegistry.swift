@@ -134,6 +134,25 @@ final class ModelRegistry: ObservableObject {
         // Curated defaults (baseline contract)
         let curatedDefaults = curatedModels(forCanonicalProviderID: canonicalProviderID)
 
+        // Special handling: OpenClaw always fetches from local gateway (no API key needed)
+        if canonicalProviderID == "openclaw" {
+            do {
+                logger.info("Fetching OpenClaw agents from local gateway")
+                let fetched = try await fetchService.fetchModels(for: provider)
+                if !fetched.isEmpty {
+                    let merged = overlayWithProvidersConfig(
+                        providerID: canonicalProviderID, fetchedModels: fetched)
+                    logger.info("✅ OpenClaw agents fetched: \(fetched.count)")
+                    return merged
+                }
+            } catch {
+                logger.warning("OpenClaw gateway fetch failed: \(error.localizedDescription)")
+            }
+            // Fallback to curated
+            logger.info("📚 Using curated fallback for OpenClaw")
+            return curatedDefaults
+        }
+
         // Special handling: Anthropic and xAI should be official-first, then models.dev, then cached, then curated.
         if canonicalProviderID == "anthropic" || canonicalProviderID == "xai" {
             // 1) Official provider endpoint
@@ -394,6 +413,8 @@ final class ModelRegistry: ObservableObject {
             return config.xai.models
         case "openrouter":
             return config.openRouter.models
+        case "openclaw":
+            return config.openClaw.models
         default:
             return []
         }
@@ -521,6 +542,23 @@ private enum ModelRegistryBackgroundFetcher {
 
         let curatedDefaults = curatedModels(forCanonicalProviderID: canonicalProviderID)
 
+        // OpenClaw: always fetch from local gateway (no API key needed)
+        if canonicalProviderID == "openclaw" {
+            do {
+                let fetched = try await fetchService.fetchModels(for: provider)
+                if !fetched.isEmpty {
+                    let merged = overlayWithProvidersConfig(
+                        providerID: canonicalProviderID,
+                        fetchedModels: fetched
+                    )
+                    return (merged, true)
+                }
+            } catch {
+                logger.info("OpenClaw gateway fetch failed: \(error.localizedDescription)")
+            }
+            return (curatedDefaults, false)
+        }
+
         if canonicalProviderID == "anthropic" || canonicalProviderID == "xai" {
             if hasAPIKey {
                 do {
@@ -629,6 +667,8 @@ private enum ModelRegistryBackgroundFetcher {
             return config.xai.models
         case "openrouter":
             return config.openRouter.models
+        case "openclaw":
+            return config.openClaw.models
         default:
             return []
         }

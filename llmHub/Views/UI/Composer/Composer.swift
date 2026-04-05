@@ -187,6 +187,7 @@ struct ComposerBarView: View {
                     onLargePaste(pastedText, completion)
                 }
             )
+            .focused($isInputFocused)
             .frame(minHeight: 20, maxHeight: 100)
         }
     }
@@ -314,54 +315,92 @@ struct ComposerBar: View {
     @State private var inputText: AttributedString = ""
     @State private var thinkingPreference: ThinkingPreference = .auto
     @State private var isFilePickerPresented = false
+    @State private var agentAutocompleteQuery: String?
+    @State private var showAgentAutocomplete: Bool = false
 
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
-        ComposerBarView(
-            leftSidebarVisible: $leftSidebarVisible,
-            rightSidebarVisible: $rightSidebarVisible,
-            showSettings: $showSettings,
-            inputText: $inputText,
-            isStreaming: chatVM.isGenerating,
-            stagingArtifacts: chatVM.stagingArtifacts,
-            stagedAttachments: chatVM.stagedAttachments,
-            recentlyImportedArtifacts: chatVM.recentlyImportedArtifacts,
-            onSend: sendMessage,
-            onStop: {
-                Task { await chatVM.stopGeneration() }
-            },
-            onRemoveArtifact: { id in
-                chatVM.removeStagedArtifact(id: id)
-            },
-            onRemoveAttachment: { id in
-                chatVM.removeStagedAttachment(id: id)
-            },
-            onAddAttachment: {
-                isFilePickerPresented = true
-            },
-            onFilesDropped: { urls in
-                Task {
-                    for url in urls {
-                        await chatVM.importFileToSandbox(url: url)
+        ZStack(alignment: .topLeading) {
+            ComposerBarView(
+                leftSidebarVisible: $leftSidebarVisible,
+                rightSidebarVisible: $rightSidebarVisible,
+                showSettings: $showSettings,
+                inputText: $inputText,
+                isStreaming: chatVM.isGenerating,
+                stagingArtifacts: chatVM.stagingArtifacts,
+                stagedAttachments: chatVM.stagedAttachments,
+                recentlyImportedArtifacts: chatVM.recentlyImportedArtifacts,
+                onSend: sendMessage,
+                onStop: {
+                    Task { await chatVM.stopGeneration() }
+                },
+                onRemoveArtifact: { id in
+                    chatVM.removeStagedArtifact(id: id)
+                },
+                onRemoveAttachment: { id in
+                    chatVM.removeStagedAttachment(id: id)
+                },
+                onAddAttachment: {
+                    isFilePickerPresented = true
+                },
+                onFilesDropped: { urls in
+                    Task {
+                        for url in urls {
+                            await chatVM.importFileToSandbox(url: url)
+                        }
                     }
+                },
+                onLargePaste: { pastedText, completion in
+                    Task { @MainActor in
+                        let result = await chatVM.handleLargePaste(text: pastedText)
+                        completion(result)
+                    }
+                },
+                forceInlinePaste: chatVM.forceInlinePaste
+            )
+            .fileImporter(
+                isPresented: $isFilePickerPresented,
+                allowedContentTypes: [.item],  // Accepts any file type
+                allowsMultipleSelection: true
+            ) { result in
+                handleFileSelection(result)
+            }
+
+            // Agent @mention autocomplete overlay
+            if showAgentAutocomplete, let query = agentAutocompleteQuery {
+                let matches = chatVM.agentsMatching(query)
+                if !matches.isEmpty {
+                    AgentAutocompleteView(agents: matches) { agent in
+                        insertAgentMention(agent)
+                    }
+                    .padding(.leading, 12)
+                    .padding(.top, -4)
+                    .transition(.opacity)
                 }
-            },
-            onLargePaste: { pastedText, completion in
-                Task { @MainActor in
-                    let result = await chatVM.handleLargePaste(text: pastedText)
-                    completion(result)
-                }
-            },
-            forceInlinePaste: chatVM.forceInlinePaste
-        )
-        .fileImporter(
-            isPresented: $isFilePickerPresented,
-            allowedContentTypes: [.item],  // Accepts any file type
-            allowsMultipleSelection: true
-        ) { result in
-            handleFileSelection(result)
+            }
         }
+        .onChange(of: String(inputText.characters)) { _, newText in
+            if let mentionSearch = chatVM.currentMentionAgentSearch(from: newText) {
+                agentAutocompleteQuery = mentionSearch
+                showAgentAutocomplete = true
+            } else {
+                agentAutocompleteQuery = nil
+                showAgentAutocomplete = false
+            }
+        }
+    }
+
+    private func insertAgentMention(_ agent: Agent) {
+        let plainText = String(inputText.characters)
+        guard let atRange = plainText.range(of: "@[a-z0-9-]*$", options: .regularExpression) else {
+            return
+        }
+        var newText = plainText
+        newText.replaceSubrange(atRange, with: "@\(agent.id) ")
+        inputText = AttributedString(newText)
+        agentAutocompleteQuery = nil
+        showAgentAutocomplete = false
     }
 
     // MARK: - Private Methods
@@ -379,7 +418,7 @@ struct ComposerBar: View {
             messageText: messageText,
             attachments: nil,
             session: session,
-            modelContext: modelContext,
+            modelContext: modelContext, modelRegistry: modelRegistry,
             selectedProvider: viewModel.selectedProvider,
             selectedModel: viewModel.selectedModel,
             thinkingPreference: thinkingPreference

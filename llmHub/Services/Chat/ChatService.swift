@@ -1187,6 +1187,200 @@ final class ChatService {
         }
     }
 
+    // MARK: - Multi-Agent Group Chat Streaming
+
+    /// Streams responses from multiple agents concurrently in a group-chat room.
+    ///
+    /// Each agent receives the same message history but produces independent responses.
+    /// Events are merged into a single stream tagged with `GroupChatEvent` so the UI
+    /// can attribute tokens, tool calls, and completions to individual agents.
+    ///
+    /// - Parameters:
+    ///   - room: The `ChatRoom` actor coordinating this group chat.
+    ///   - agents: Participating agents (each carries a `ProviderHandle` for resolution).
+    ///   - session: The backing `ChatSession` (shared history, per-session persistence).
+    /// - Returns: An async throwing stream of `GroupChatEvent`.
+    func streamGroupChatCompletion(
+        in room: ChatRoom,
+        agents: [GroupChatAgentConfig],
+        session: ChatSession
+    ) async -> AsyncThrowingStream<GroupChatEvent, Error> {
+        AsyncThrowingStream { continuation in
+            let groupTask = Task {
+                await withThrowingTaskGroup(of: Void.self) { group in
+                    for config in agents {
+                        group.addTask {
+                            do {
+                                try await self.streamSingleAgentInGroup(
+                                    room: room,
+                                    config: config,
+                                    session: session,
+                                    continuation: continuation
+                                )
+                            } catch is CancellationError {
+                                // Room or agent was cancelled; silently stop
+                                return
+                            } catch {
+                                continuation.yield(
+                                    .error(agentID: config.agent.id, error: .server(reason: error.localizedDescription))
+                                )
+                            }
+                        }
+                    }
+                }
+                continuation.finish()
+            }
+
+            continuation.onTermination = { @Sendable _ in
+                groupTask.cancel()
+            }
+        }
+    }
+
+    /// Streams a single agent's response within a group-chat context.
+    ///
+    /// Resolves the provider from the registry using the agent's `ProviderHandle`,
+    /// builds a request with session history, streams events directly, tags them
+    /// with the agent ID, and persists the final message back to the shared session.
+    private func streamSingleAgentInGroup(
+        room: ChatRoom,
+        config: GroupChatAgentConfig,
+        session: ChatSession,
+        continuation: AsyncThrowingStream<GroupChatEvent, Error>.Continuation
+    ) async throws {
+        let agentID = config.agent.id
+        let handle = config.providerHandle
+        let model = config.modelID
+
+        // Resolve the provider from the registry using the handle.
+        let provider = try providerRegistry.provider(for: handle.providerID)
+
+        logger.info(
+            "🟢 [ChatService] Starting group-chat stream for agent '\(agentID)' provider=\(provider.id) model=\(model)"
+        )
+
+        // Read current session history for this agent's request.
+        let history = try await MainActor.run {
+            try self.loadSession(id: session.id).messages.sorted { $0.createdAt < $1.createdAt }
+        }
+
+        // Filter out sidecar messages.
+        let llmMessages = history.filter { $0.provenance.channel != .sidecar }
+
+        let options = LLMRequestOptions(
+            thinkingPreference: session.thinkingPreference,
+            thinkingBudgetTokens: nil
+        )
+
+        // Group chat agents don't use tools to keep things lightweight.
+        // Tool support can be added later if needed.
+        let request = try await provider.buildRequest(
+            messages: llmMessages,
+            model: model,
+            tools: nil,
+            options: options
+        )
+
+        var assistantTextBuffer = ""
+        var tokenBatcher = TokenBatcher()
+        var lastUsage: TokenUsage?
+
+        for try await event in provider.streamResponse(from: request) {
+            try Task.checkCancellation()
+            switch event {
+            case .token(let text):
+                assistantTextBuffer += text
+                if let flushed = tokenBatcher.append(text) {
+                    continuation.yield(.token(agentID: agentID, text: flushed))
+                }
+
+            case .thinking(let thought):
+                continuation.yield(.thinking(agentID: agentID, thought: thought))
+
+            case .toolUse(let id, let name, let input):
+                // Group chat v1: skip tool calls but forward the event.
+                if let flushed = tokenBatcher.flush() {
+                    continuation.yield(.token(agentID: agentID, text: flushed))
+                }
+                continuation.yield(.toolUse(agentID: agentID, id: id, name: name, input: input))
+
+            case .usage(let usage):
+                lastUsage = usage
+                if let flushed = tokenBatcher.flush() {
+                    continuation.yield(.token(agentID: agentID, text: flushed))
+                }
+                continuation.yield(.usage(agentID: agentID, usage: usage))
+
+            case .completion(let msg):
+                if let flushed = tokenBatcher.flush() {
+                    continuation.yield(.token(agentID: agentID, text: flushed))
+                }
+
+                // Build a message tagged with this agent's identity.
+                var tagged = msg
+                tagged.senderAgentID = agentID
+                tagged.generationID = tagged.generationID ?? UUID()
+
+                // If the completion content is empty but we streamed text, use the buffer.
+                if tagged.content.isEmpty && !assistantTextBuffer.isEmpty {
+                    tagged = ChatMessage(
+                        id: tagged.id,
+                        generationID: tagged.generationID,
+                        role: .assistant,
+                        content: assistantTextBuffer,
+                        thoughtProcess: tagged.thoughtProcess,
+                        parts: [.text(assistantTextBuffer)],
+                        attachments: tagged.attachments,
+                        createdAt: tagged.createdAt,
+                        codeBlocks: tagged.codeBlocks,
+                        tokenUsage: lastUsage,
+                        costBreakdown: tagged.costBreakdown,
+                        toolCallID: tagged.toolCallID,
+                        toolCalls: tagged.toolCalls
+                    )
+                    tagged.senderAgentID = agentID
+                }
+
+                // Persist the agent's message to the shared session.
+                try await MainActor.run {
+                    try self.appendMessage(tagged, to: session.id)
+                }
+
+                continuation.yield(.completion(agentID: agentID, message: tagged))
+
+            case .truncated(let msg):
+                if let flushed = tokenBatcher.flush() {
+                    continuation.yield(.token(agentID: agentID, text: flushed))
+                }
+                var tagged = msg
+                tagged.senderAgentID = agentID
+                tagged.generationID = tagged.generationID ?? UUID()
+                continuation.yield(.truncated(agentID: agentID, message: tagged))
+
+            case .error(let err):
+                if let flushed = tokenBatcher.flush() {
+                    continuation.yield(.token(agentID: agentID, text: flushed))
+                }
+                continuation.yield(.error(agentID: agentID, error: err))
+
+            case .agentStopped(let reason):
+                continuation.yield(.agentStopped(agentID: agentID, reason: reason))
+
+            case .toolExecuting, .toolExecutionStarted, .toolExecutionFinished,
+                 .reference, .contextCompacted, .memoriesUsed:
+                // Not expected in group chat (no tools), ignore.
+                break
+            }
+        }
+
+        // Flush any remaining buffered tokens.
+        if let flushed = tokenBatcher.flush() {
+            continuation.yield(.token(agentID: agentID, text: flushed))
+        }
+
+        logger.info("Agent '\(agentID)' completed its group-chat response")
+    }
+
     // MARK: - Rolling Summary ("Summarize Mode")
 
     /// Generates a rolling summary of older conversation turns for context compaction.
@@ -1662,6 +1856,8 @@ enum ChatServiceError: LocalizedError {
     case folderMissing
     /// The tag could not be found.
     case tagMissing
+    /// The provider could not be found.
+    case providerNotFound(String)
 
     /// A localized description of the error.
     var errorDescription: String? {
@@ -1674,6 +1870,8 @@ enum ChatServiceError: LocalizedError {
             return "Folder missing"
         case .tagMissing:
             return "Tag missing"
+        case .providerNotFound(let id):
+            return "Provider not found: \(id)"
         }
     }
 }

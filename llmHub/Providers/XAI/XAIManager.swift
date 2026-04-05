@@ -225,6 +225,10 @@ public struct XAIChatMessage: Encodable {
     public let role: String
     /// The content of the message.
     public let content: Content
+    /// Tool calls made by the model.
+    public let tool_calls: [XAIToolCall]?
+    /// The ID of the tool call this message responds to.
+    public let tool_call_id: String?
 
     /// The content of a chat message.
     public enum Content: Encodable {
@@ -272,15 +276,37 @@ public struct XAIChatMessage: Encodable {
     }
 
     /// Initializes a text message.
-    public init(role: String, content: String) {
+    public init(role: String, content: String, toolCalls: [XAIToolCall]? = nil, toolCallId: String? = nil) {
         self.role = role
         self.content = .text(content)
+        self.tool_calls = toolCalls
+        self.tool_call_id = toolCallId
     }
 
     /// Initializes a multipart message.
-    public init(role: String, parts: [Part]) {
+    public init(role: String, parts: [Part], toolCalls: [XAIToolCall]? = nil, toolCallId: String? = nil) {
         self.role = role
         self.content = .parts(parts)
+        self.tool_calls = toolCalls
+        self.tool_call_id = toolCallId
+    }
+}
+
+/// A tool call within a response.
+public struct XAIToolCall: Codable {
+    /// The tool call ID.
+    public let id: String
+    /// The type of tool.
+    public let type: String
+    /// The function call details.
+    public let function: FunctionCall
+
+    /// The function call details.
+    public struct FunctionCall: Codable {
+        /// The function name.
+        public let name: String
+        /// The arguments string.
+        public let arguments: String
     }
 }
 
@@ -370,6 +396,8 @@ public nonisolated struct XAIChatStreamChunk: Decodable, Sendable {
     public let citations: [String]?
     /// The choices in this chunk.
     public let choices: [Choice]
+    /// Token usage statistics (optional).
+    public let usage: XAIChatResponse.Usage?
 
     /// A choice in the stream chunk.
     public struct Choice: Decodable, Sendable {

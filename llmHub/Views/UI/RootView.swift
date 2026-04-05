@@ -28,6 +28,7 @@ struct CanvasRootView: View {
 
     @State private var leftSidebarVisible: Bool
     @State private var rightSidebarVisible: Bool
+    @State private var agentRosterVisible: Bool = false
     @State private var showSettings: Bool = false
     @State private var selectedArtifactForDetail: ArtifactPayload?
     @State private var composerHeight: CGFloat = 100  // Measured dynamically
@@ -121,6 +122,16 @@ struct CanvasRootView: View {
                         .padding(.top, outerPadding)
                         .padding(.bottom, outerPadding)
                         .transition(.move(edge: .trailing).combined(with: .opacity))
+                    }
+
+                    // Agent roster sidebar (narrower than inspector)
+                    if agentRosterVisible {
+                        AgentRosterSidebarView()
+                            .frame(width: 240)
+                            .padding(.top, outerPadding)
+                            .padding(.bottom, outerPadding)
+                            .transition(.move(edge: .trailing).combined(with: .opacity))
+                            .task { await chatVM.discoverAgents() }
                     }
                 }
 
@@ -275,6 +286,25 @@ struct CanvasRootView: View {
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
             }
+            // iOS: Agent roster as bottom sheet
+            .sheet(isPresented: $agentRosterVisible) {
+                NavigationStack {
+                    AgentRosterSidebarView()
+                        .onAppear {
+                            Task { await chatVM.discoverAgents() }
+                        }
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button { agentRosterVisible = false } label: {
+                                    Image(systemName: "xmark")
+                                }
+                            }
+                        }
+                }
+                .environment(chatVM)
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+            }
         #endif
         .onAppear {
             print("DEBUG: CanvasRootView chatVM ID: \(ObjectIdentifier(chatVM))")
@@ -356,7 +386,8 @@ struct CanvasRootView: View {
                             try? modelContext.save()
                         }
                     ),
-                    leftSidebarVisible: $leftSidebarVisible
+                    leftSidebarVisible: $leftSidebarVisible,
+                    agentRosterVisible: $agentRosterVisible
                 )
                 .environmentObject(modelRegistry)
 
@@ -600,7 +631,8 @@ struct CanvasRootView: View {
         chatVM.sendMessage(
             messageText: message,
             session: session,
-            modelContext: modelContext
+            modelContext: modelContext,
+            modelRegistry: modelRegistry
         )
     }
 }

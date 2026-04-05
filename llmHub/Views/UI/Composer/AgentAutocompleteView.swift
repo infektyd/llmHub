@@ -65,20 +65,13 @@ private struct AgentAutocompleteRow: View {
 
 #if DEBUG
 #Preview("Agent Autocomplete") {
-    @Previewable @State var text = ""
-    @Previewable @State var vm = ChatViewModel.preview()
-    vm.discoveredAgents = [
+    let agents: [Agent] = [
         Agent(id: "syntra", name: "Syntra", emoji: "🔵", status: .online),
         Agent(id: "forge", name: "Forge", emoji: "⚒️", status: .online),
     ]
-
-    VStack {
-        Text("Type @ below to see autocomplete")
-        AgentAutocompleteView(agents: vm.allKnownAgents) { agent in
-            print("Selected \(agent.name)")
-        }
+    return AgentAutocompleteView(agents: agents) { agent in
+        print("Selected \(agent.name)")
     }
-    .environment(vm)
-    .frame(width: 250, height: 120)
+    .frame(width: 250)
 }
 #endif

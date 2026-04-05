@@ -89,6 +89,15 @@ class ChatViewModel {
     /// AFM diagnostics information
     var afmDiagnostics: AFMDiagnostics = AFMDiagnostics()
 
+    // MARK: - Multi-Agent Discovery
+
+    /// Discovered agents from the OpenClaw gateway.
+    var discoveredAgents: [Agent] = []
+    /// Whether agent discovery is currently in progress.
+    var isLoadingAgents: Bool = false
+    /// Last error during agent discovery, if any.
+    var agentDiscoveryError: String?
+
     // MARK: - Memory Usage Indicator
 
     /// Number of memories used in the last response.
@@ -420,6 +429,79 @@ class ChatViewModel {
 
         showAgentStepLimitAlert = false
         showAgentStepLimitConfigSheet = false
+    }
+
+    // MARK: - Agent Discovery
+
+    /// Fetches available agents from the OpenClaw gateway.
+    func discoverAgents() async {
+        isLoadingAgents = true
+        agentDiscoveryError = nil
+        defer { isLoadingAgents = false }
+
+        let manager = OpenClawManager()
+        do {
+            let gatewayAgents = try await manager.listAgents()
+            discoveredAgents = gatewayAgents.map { ga in
+                Agent(
+                    id: ga.id,
+                    name: ga.name,
+                    emoji: Self.emojiForAgent(id: ga.id),
+                    avatar: nil,
+                    status: .online
+                )
+            }
+            logger.info("Discovered \(self.discoveredAgents.count) agent(s) from gateway")
+        } catch {
+            agentDiscoveryError = error.localizedDescription
+            logger.error("Agent discovery failed: \(error.localizedDescription)")
+            // Fall back to hardcoded known agents
+            discoveredAgents = Self.defaultAgents
+        }
+    }
+
+    /// Returns all known agents (already discovered or defaults).
+    var allKnownAgents: [Agent] {
+        discoveredAgents.isEmpty ? Self.defaultAgents : discoveredAgents
+    }
+
+    /// Extracts the current @mention from the text if the cursor is at the end of one.
+    /// Returns the partial agent name being typed (without the @).
+    func currentMentionAgentSearch(from text: String) -> String? {
+        guard let atRange = text.range(of: "@[a-z0-9-]*$", options: .regularExpression) else {
+            return nil
+        }
+        return String(text[atRange].dropFirst())
+    }
+
+    /// Filters available agents by a search prefix (for @mention autocomplete).
+    func agentsMatching(_ prefix: String) -> [Agent] {
+        guard !prefix.isEmpty else { return allKnownAgents }
+        return allKnownAgents.filter {
+            $0.name.lowercased().hasPrefix(prefix.lowercased())
+            || $0.id.lowercased().hasPrefix(prefix.lowercased())
+        }
+    }
+
+    // MARK: - Default Agent Definitions
+
+    private static let defaultAgents: [Agent] = [
+        Agent(id: "syntra", name: "Syntra", emoji: "🔵", status: .online),
+        Agent(id: "forge", name: "Forge", emoji: "⚒️", status: .online),
+        Agent(id: "recon", name: "Recon", emoji: "🔍", status: .online),
+        Agent(id: "pulse", name: "Pulse", emoji: "💓", status: .online),
+        Agent(id: "council", name: "Council", emoji: "🏛️", status: .online),
+    ]
+
+    private static func emojiForAgent(id: String) -> String {
+        switch id.lowercased() {
+        case "syntra": return "🔵"
+        case "forge": return "⚒️"
+        case "recon": return "🔍"
+        case "pulse": return "💓"
+        case "council": return "🏛️"
+        default: return "🤖"
+        }
     }
 
     func resumeAfterStepLimit(modelContext: ModelContext, maxIterationsOverride: Int) async {
@@ -1002,6 +1084,7 @@ class ChatViewModel {
         attachments: [Attachment]? = nil,
         session: ChatSessionEntity,
         modelContext: ModelContext,
+        modelRegistry: ModelRegistry? = nil,
         selectedProvider: UILLMProvider? = nil,
         selectedModel: UILLMModel? = nil,
         thinkingPreference: ThinkingPreference = .auto
@@ -1068,12 +1151,24 @@ class ChatViewModel {
                 break
             }
         }
-
-        let (providerID, modelID) = mapUISelectionToProviderModel(
+        var (providerID, modelID) = mapUISelectionToProviderModel(
             selectedProvider: selectedProvider,
             selectedModel: selectedModel,
             sessionEntity: session
         )
+
+        let agents = modelRegistry?.models(for: "OpenClaw").map { $0.id } ?? ["syntra", "forge", "recon", "pulse", "council"]
+        for agent in agents {
+            if userMessageText.contains("@" + agent) {
+                providerID = "openclaw"
+                modelID = agent
+                session.providerID = providerID
+                session.model = modelID
+            }
+        }
+
+
+
 
         session.providerID = providerID
         session.model = modelID

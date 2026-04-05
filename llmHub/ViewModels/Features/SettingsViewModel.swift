@@ -88,6 +88,13 @@ final class SettingsViewModel: ObservableObject {
                 icon: "arrow.triangle.branch",
                 description: "Unified access to multiple providers",
                 docsURL: URL(string: "https://openrouter.ai/keys")
+            ),
+            ProviderInfo(
+                provider: .openclaw,
+                name: "OpenClaw (Local)",
+                icon: "terminal.fill",
+                description: "Local OpenClaw gateway at localhost:18789",
+                docsURL: nil
             )
         ]
     }
@@ -188,6 +195,8 @@ final class SettingsViewModel: ObservableObject {
     /// Check if a provider has an API key configured.
     /// Note: This is a best-effort synchronous check using the cached @Published properties
     func hasKey(for provider: KeychainStore.ProviderKey) -> Bool {
+        // OpenClaw is always "configured" since it uses local gateway token, not keychain
+        if provider == .openclaw { return true }
         // Use the cached values from @Published properties instead of querying keychain
         let key = keyValue(for: provider)
         return !key.isEmpty
@@ -225,6 +234,12 @@ final class SettingsViewModel: ObservableObject {
             return Binding(
                 get: { self.openRouterKey },
                 set: { self.openRouterKey = $0 }
+            )
+        case .openclaw:
+            // OpenClaw is local and doesn't require an API key
+            return Binding(
+                get: { "" },
+                set: { _ in }
             )
         }
     }
@@ -322,6 +337,7 @@ final class SettingsViewModel: ObservableObject {
         case .mistral: return mistralKey
         case .xai: return xaiKey
         case .openrouter: return openRouterKey
+        case .openclaw: return ""  // OpenClaw doesn't use keychain
         }
     }
 
@@ -333,6 +349,7 @@ final class SettingsViewModel: ObservableObject {
         case .mistral: mistralKey = value
         case .xai: xaiKey = value
         case .openrouter: openRouterKey = value
+        case .openclaw: break  // OpenClaw doesn't use keychain
         }
     }
 

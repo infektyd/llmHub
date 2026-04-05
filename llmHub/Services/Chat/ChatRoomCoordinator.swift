@@ -119,7 +119,7 @@ actor ChatRoomCoordinator {
     // MARK: - Event Subscription
 
     /// Subscribes to a room's `AsyncStream<GroupChatEvent>` for UI observation.
-    func subscribeToRoom(_ roomID: UUID) -> AsyncStream<GroupChatEvent>? {
+    func subscribeToRoom(_ roomID: UUID) async -> AsyncStream<GroupChatEvent>? {
         guard let room = activeRooms[roomID] else {
             logger.warning("Cannot subscribe to nonexistent room \(roomID.uuidString)")
             return nil

@@ -46,12 +46,20 @@ struct ProvidersConfig {
         var pricing: PricingMetadata?
     }
 
+    struct OpenClaw {
+        var baseURL: URL?
+        var apiKey: String?
+        var models: [LLMModel]
+        var pricing: PricingMetadata?
+    }
+
     var openAI = OpenAI(baseURL: nil, apiVersion: nil, models: [], pricing: nil)
     var anthropic = Anthropic(baseURL: nil, apiVersion: nil, models: [], pricing: nil)
     var googleAI = GoogleAI(baseURL: nil, apiVersion: nil, models: [], pricing: nil)
     var mistral = Mistral(baseURL: nil, apiVersion: nil, models: [], pricing: nil)
     var xai = XAI(baseURL: nil, apiVersion: nil, models: [], pricing: nil)
     var openRouter = OpenRouter(baseURL: nil, apiVersion: nil, models: [], pricing: nil)
+    var openClaw = OpenClaw(baseURL: nil, apiKey: nil, models: [], pricing: nil)
 }
 
 /// Creates the default provider configuration with all available models.
@@ -175,6 +183,29 @@ func makeDefaultConfig() -> ProvidersConfig {
         LLMModel(
             id: "anthropic/claude-3.5-sonnet", name: "OR: Claude 3.5 Sonnet", maxOutputTokens: 8192,
             contextWindow: 200000)
+    ]
+
+    // MARK: - OpenClaw (Local Gateway) Models
+    // Models available through the local OpenClaw gateway at localhost:18789
+    config.openClaw.baseURL = URL(string: "http://localhost:18789/v1")
+    config.openClaw.apiKey = "3d0f30ebdb793f1d86523ea3f2ecc52615435a3874810790"
+    config.openClaw.models = [
+        LLMModel(
+            id: "claude-opus-4.6", name: "Claude Opus 4.6", maxOutputTokens: 128000,
+            contextWindow: 1_000_000),
+        LLMModel(
+            id: "claude-sonnet-4.6", name: "Claude Sonnet 4.6", maxOutputTokens: 128000,
+            contextWindow: 1_000_000),
+        LLMModel(
+            id: "claude-haiku-4.5", name: "Claude Haiku 4.5", maxOutputTokens: 65536,
+            contextWindow: 200000),
+        LLMModel(
+            id: "glm-5", name: "GLM 5", maxOutputTokens: 8192, contextWindow: 80000),
+        LLMModel(
+            id: "kimi-k2.5", name: "Kimi K2.5", maxOutputTokens: 65536, contextWindow: 203000),
+        LLMModel(
+            id: "grok-4-1-fast-reasoning", name: "Grok 4.1 Fast (via Gateway)",
+            maxOutputTokens: 16384, contextWindow: 2_000_000),
     ]
 
     return config

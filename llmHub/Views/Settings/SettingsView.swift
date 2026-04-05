@@ -377,8 +377,20 @@ struct ProviderRow: View {
             // Expanded content
             if isExpanded {
                 VStack(alignment: .leading, spacing: 12) {
-                    // API key input
-                    HStack(spacing: 8) {
+                    // Special case for OpenClaw - local gateway, no API key needed
+                    if info.provider == .openclaw {
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(AppColors.success)
+                            Text("Local Gateway - Always Active")
+                                .font(.system(size: 13 * uiScale, weight: .medium))
+                                .foregroundStyle(AppColors.success)
+                        }
+                        .padding(.vertical, 8)
+                    } 
+                    // API key input - hidden for OpenClaw (uses local gateway token)
+                    else if info.provider != .openclaw {
+                        HStack(spacing: 8) {
                         Group {
                             if isKeyVisible {
                                 TextField("API Key", text: $keyBinding)
@@ -409,6 +421,7 @@ struct ProviderRow: View {
                         }
                         .buttonStyle(.plain)
                     }
+                    }  // End: hide API key input for OpenClaw
 
                     // Actions
                     HStack(spacing: 12) {
@@ -438,7 +451,7 @@ struct ProviderRow: View {
                         .disabled(keyBinding.isEmpty || isSaving)
                         .opacity(keyBinding.isEmpty ? 0.5 : 1)
 
-                        if hasKey {
+                        if hasKey && info.provider != .openclaw {
                             Button {
                                 onDelete()
                             } label: {

@@ -151,6 +151,7 @@ struct ModelPickerSheet: View {
         case "mistral": icon = "wind"
         case "xai": icon = "x.circle.fill"
         case "openrouter": icon = "arrow.triangle.branch"
+        case "openclaw": icon = "terminal.fill"
         default: icon = "server.rack"
         }
         return Image(systemName: icon)
@@ -164,6 +165,7 @@ struct ModelPickerSheet: View {
         case "mistral": return "Mistral"
         case "xai": return "xAI"
         case "openrouter": return "OpenRouter"
+        case "openclaw": return "OpenClaw (Local)"
         default: return providerID.capitalized
         }
     }
@@ -181,9 +183,15 @@ struct ModelPickerSheet: View {
     private func checkConfiguredProviders() async {
         let keychain = KeychainStore()
         var configured = Set<String>()
-        for provider in providers where await keychain.apiKey(for: provider) != nil {
-            configured.insert(provider.rawValue)
+        
+        for provider in providers {
+            if provider == .openclaw {
+                configured.insert(provider.rawValue)  // OpenClaw is always configured (local gateway)
+            } else if await keychain.apiKey(for: provider) != nil {
+                configured.insert(provider.rawValue)
+            }
         }
+        
         configuredProviders = configured
     }
 }

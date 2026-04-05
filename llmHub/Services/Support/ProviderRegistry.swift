@@ -132,7 +132,8 @@ enum ProviderID {
         "mistral": "mistral",
         "xai": "xai",
         "grok": "xai",
-        "openrouter": "openrouter"
+        "openrouter": "openrouter",
+        "openclaw": "openclaw"
     ]
 
     static func lookupKey(from raw: String) -> String {

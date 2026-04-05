@@ -38,6 +38,9 @@ final class ModelFetchService {
             return try await fetchMistralModels()
         case .openrouter:
             return try await fetchOpenRouterModels()
+        case .openclaw:
+            // OpenClaw fetches agents dynamically from the gateway's /v1/models endpoint
+            return try await fetchOpenClawModels()
         }
     }
 
@@ -590,6 +593,62 @@ final class ModelFetchService {
             .split(separator: " ")
             .map { $0.capitalized }
             .joined(separator: " ")
+    }
+    
+    // MARK: - OpenClaw Models (Dynamic)
+
+    /// Fetches OpenClaw agents dynamically from the gateway's /v1/models endpoint.
+    private func fetchOpenClawModels() async throws -> [LLMModel] {
+        let config = makeDefaultConfig()
+        let baseURL = config.openClaw.baseURL ?? URL(string: "http://localhost:18789/v1")!
+        let modelsURL = baseURL.appendingPathComponent("models")
+
+        var request = URLRequest(url: modelsURL)
+        request.httpMethod = "GET"
+        if let apiKey = config.openClaw.apiKey {
+            request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        }
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            guard let http = response as? HTTPURLResponse,
+                  (200...299).contains(http.statusCode)
+            else {
+                logger.warning("OpenClaw gateway returned error, falling back to static config")
+                return config.openClaw.models
+            }
+
+            struct GatewayResponse: Decodable {
+                let data: [GatewayModelItem]
+                struct GatewayModelItem: Decodable {
+                    let id: String
+                    let name: String?
+                }
+            }
+
+            let decoded = try JSONDecoder().decode(GatewayResponse.self, from: data)
+            return decoded.data.map { gatewayModel in
+                let displayName: String
+                if let slashIndex = gatewayModel.id.lastIndex(of: "/") {
+                    let agentName = String(gatewayModel.id[ gatewayModel.id.index(after: slashIndex)...])
+                    displayName = agentName.prefix(1).uppercased() + agentName.dropFirst()
+                } else {
+                    displayName = gatewayModel.id
+                }
+
+                return LLMModel(
+                    id: gatewayModel.id,
+                    name: displayName,
+                    maxOutputTokens: 65536,
+                    contextWindow: 128_000,
+                    supportsToolUse: true
+                )
+            }
+        } catch {
+            logger.warning("OpenClaw gateway unreachable, falling back to static config: \(error)")
+            return config.openClaw.models
+        }
     }
 }
 

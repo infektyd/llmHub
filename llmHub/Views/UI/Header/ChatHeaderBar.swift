@@ -10,6 +10,7 @@ struct ChatHeaderBar: View {
     @Binding var selectedProviderID: String
     @Binding var selectedModelID: String
     @Binding var leftSidebarVisible: Bool
+    @Binding var agentRosterVisible: Bool
 
     @EnvironmentObject private var modelRegistry: ModelRegistry
     @State private var isEditingTitle = false
@@ -93,6 +94,24 @@ struct ChatHeaderBar: View {
             }
             .buttonStyle(.plain)
             .keyboardShortcut("m", modifiers: [.command, .shift])
+
+            Button {
+                withAnimation {
+                    agentRosterVisible.toggle()
+                }
+            } label: {
+                Image(systemName: "person.3.fill")
+                    .font(.system(size: 13 * uiScale))
+                    .foregroundStyle(agentRosterVisible ? AppColors.accent : AppColors.textSecondary)
+                    .padding(.horizontal, uiCompactMode ? 7 : 8)
+                    .padding(.vertical, uiCompactMode ? 4 : 5)
+                    .background {
+                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            .fill(AppColors.surface)
+                    }
+            }
+            .buttonStyle(.plain)
+            .help("Agent Roster")
         }
         .padding(.horizontal, uiCompactMode ? 12 : 16)
         .padding(.vertical, uiCompactMode ? 10 : 12)
@@ -145,12 +164,14 @@ struct ChatHeaderBar: View {
         @Previewable @State var provider = "openai"
         @Previewable @State var model = "gpt-4o"
         @Previewable @State var sidebar = true
+        @Previewable @State var agentsVisible = false
 
         ChatHeaderBar(
             title: $title,
             selectedProviderID: $provider,
             selectedModelID: $model,
-            leftSidebarVisible: $sidebar
+            leftSidebarVisible: $sidebar,
+            agentRosterVisible: $agentsVisible
         )
         .environmentObject(ModelRegistry())
         .padding()

@@ -1,0 +1,11 @@
+# Apply clean/smudge filters to all JSON configs that may contain secrets
+openclaw.json filter=secrets
+config.json filter=secrets
+credentials/**/*.json filter=secrets
+discord/*.json filter=secrets
+telegram/*.json filter=secrets
+identity/*.json filter=secrets
+cron/jobs.json filter=secrets
+workspace/cron/jobs.json filter=secrets
+agents/**/auth-profiles*.json filter=secrets
+agents/**/models*.json filter=secrets

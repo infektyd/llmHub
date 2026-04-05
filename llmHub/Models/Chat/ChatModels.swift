@@ -8,6 +8,100 @@
 import Foundation
 import SwiftData
 
+// MARK: - Multi-Agent Group Chat
+
+/// Session type distinguishing single-agent from group chat conversations.
+nonisolated enum SessionType: String, Codable, Equatable, Sendable {
+    case singleAgent
+    case groupChat
+}
+
+/// Represents an AI agent available in the OpenClaw gateway.
+nonisolated struct Agent: Identifiable, Codable, Equatable, Sendable {
+    let id: String
+    let name: String
+    let emoji: String
+    let avatar: String?
+    var status: AgentStatus
+
+    nonisolated enum AgentStatus: String, Codable, Equatable, Sendable {
+        case online
+        case offline
+        case busy
+    }
+
+    init(id: String, name: String, emoji: String = "🤖", avatar: String? = nil, status: AgentStatus = .offline) {
+        self.id = id
+        self.name = name
+        self.emoji = emoji
+        self.avatar = avatar
+        self.status = status
+    }
+}
+
+/// Represents a group chat session with multiple participating agents.
+struct GroupChatSession: Identifiable, Sendable {
+    let id: UUID
+    var title: String
+    let sessionType: SessionType = .groupChat
+    var participants: [Agent]
+    let createdAt: Date
+    var updatedAt: Date
+    var messages: [ChatMessage]
+    var metadata: ChatSessionMetadata
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        participants: [Agent],
+        createdAt: Date = Date(),
+        updatedAt: Date = Date(),
+        messages: [ChatMessage] = [],
+        metadata: ChatSessionMetadata
+    ) {
+        self.id = id
+        self.title = title
+        self.participants = participants
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.messages = messages
+        self.metadata = metadata
+    }
+}
+
+// MARK: - Group Chat Agent Configuration
+
+/// Configuration for a single agent participating in a group chat.
+/// Uses `ProviderHandle` so it can cross concurrency boundaries.
+nonisolated struct GroupChatAgentConfig: Sendable {
+    let agent: Agent
+    /// An opaque handle that can resolve to the actual `LLMProvider` at call time.
+    let providerHandle: ProviderHandle
+    let modelID: String
+
+    init(agent: Agent, providerHandle: ProviderHandle, modelID: String) {
+        self.agent = agent
+        self.providerHandle = providerHandle
+        self.modelID = modelID
+    }
+}
+
+/// An opaque, Sendable handle to an LLM provider that can be resolved
+/// at the point where the provider is actually needed.
+nonisolated struct ProviderHandle: Sendable {
+    /// The canonical provider ID string (e.g. "openai", "anthropic", "openclaw").
+    let providerID: String
+    /// The model ID string this agent should use.
+    let modelID: String
+
+    init(providerID: String, modelID: String) {
+        self.providerID = providerID
+        self.modelID = modelID
+    }
+}
+
+// MARK: - Artifact Detection
+
 /// Represents a chat session in the application, containing all messages and metadata.
 struct ChatSession: Identifiable, Sendable {
     /// The unique identifier of the chat session.
@@ -36,6 +130,8 @@ struct ChatSession: Identifiable, Sendable {
     var tags: [ChatTag] = []
     /// Indicates whether the session is pinned to the top of the list.
     var isPinned: Bool = false
+    /// The type of session (single-agent or group chat).
+    var sessionType: SessionType = .singleAgent
 }
 
 /// Persisted label metadata for a tool run bundle.
@@ -214,6 +310,10 @@ nonisolated struct ChatMessage: Identifiable, Equatable, Sendable {
     /// `.sidecar` MUST NOT be persisted into transcript memory/prompting.
     var provenance: MessageProvenance = .chat
 
+    // Multi-agent support
+    /// Identifies which agent sent this message in a group chat, if applicable.
+    var senderAgentID: String?
+
     // Tool calling support
     /// The ID of the tool call this message is a response to (only for tool role).
     var toolCallID: String?
@@ -229,6 +329,7 @@ nonisolated struct ChatMessage: Identifiable, Equatable, Sendable {
             && lhs.attachments == rhs.attachments && lhs.createdAt == rhs.createdAt
             && lhs.codeBlocks == rhs.codeBlocks && lhs.tokenUsage == rhs.tokenUsage
             && lhs.costBreakdown == rhs.costBreakdown && lhs.provenance == rhs.provenance
+            && lhs.senderAgentID == rhs.senderAgentID
             && lhs.toolCallID == rhs.toolCallID
             && lhs.toolCalls == rhs.toolCalls && lhs.toolResultMeta == rhs.toolResultMeta
     }
@@ -863,6 +964,12 @@ final class ChatMessageEntity {
     var provenanceChannelRaw: String?
     /// Optional model identifier for sidecar-origin messages.
     var provenanceModel: String?
+    /// Agent provenance: ID of the agent for `.agent` channel messages.
+    var provenanceAgentID: String?
+    /// Agent provenance: display name of the agent for `.agent` channel messages.
+    var provenanceAgentName: String?
+    /// Agent identifier for multi-agent group chat messages.
+    var senderAgentID: String?
 
     /// Initializes a new `ChatMessageEntity` from a domain model.
     /// - Parameter message: The `ChatMessage` domain model.
@@ -891,6 +998,9 @@ final class ChatMessageEntity {
 
         provenanceChannelRaw = message.provenance.channel.rawValue
         provenanceModel = message.provenance.model
+        provenanceAgentID = message.provenance.agentID
+        provenanceAgentName = message.provenance.agentName
+        senderAgentID = message.senderAgentID
     }
 
     /// Converts the entity back to a domain model.
@@ -924,9 +1034,12 @@ final class ChatMessageEntity {
 
         // Provenance (default to chat for legacy rows).
         let channel = MessageProvenance.Channel(rawValue: provenanceChannelRaw ?? "chat") ?? .chat
-        domainMsg.provenance = MessageProvenance(channel: channel, model: provenanceModel)
+        domainMsg.provenance = MessageProvenance(
+            channel: channel, model: provenanceModel,
+            agentID: provenanceAgentID, agentName: provenanceAgentName)
 
         domainMsg.thoughtProcess = thoughtProcess
+        domainMsg.senderAgentID = senderAgentID
         // Decode tool result metadata only if data is present and non-empty
         if let metaData = toolResultMetaData, !metaData.isEmpty {
             domainMsg.toolResultMeta = try? JSONDecoder().decode(
