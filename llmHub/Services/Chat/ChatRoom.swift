@@ -100,6 +100,39 @@ actor ChatRoom {
         messageHistory
     }
 
+    // MARK: - Message Routing
+
+    /// Result of routing a message to determine which agents should respond.
+    nonisolated struct RoutingResult: Sendable {
+        /// Agents that should generate a response.
+        let targetAgents: [Agent]
+        /// Whether this was an explicit @mention or a broadcast.
+        let isExplicitMention: Bool
+    }
+
+    /// Determines which agents should respond to a message based on @mentions.
+    /// - If the message contains @agent mentions, only those agents respond.
+    /// - If no @mentions, all participants respond (broadcast).
+    func routeMessage(_ message: ChatMessage) -> RoutingResult {
+        let content = message.content.lowercased()
+        var mentioned: [Agent] = []
+
+        for agent in participants {
+            if content.contains("@" + agent.id.lowercased())
+                || content.contains("@" + agent.name.lowercased())
+            {
+                mentioned.append(agent)
+            }
+        }
+
+        if !mentioned.isEmpty {
+            return RoutingResult(targetAgents: mentioned, isExplicitMention: true)
+        }
+
+        // No explicit mentions — broadcast to all participants.
+        return RoutingResult(targetAgents: participants, isExplicitMention: false)
+    }
+
     // MARK: - Agent Response Streams
 
     /// Returns an AsyncStream of AgentResponse events for a given agent.

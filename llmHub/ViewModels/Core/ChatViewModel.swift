@@ -357,6 +357,7 @@ class ChatViewModel {
             { GoogleAIProvider(keychain: keychain, config: config.googleAI) },
             { XAIProvider(keychain: keychain, config: config.xai) },
             { OpenRouterProvider(keychain: keychain, config: config.openRouter) },
+            { OpenClawProvider(config: config.openClaw) },
         ])
 
         let baseEnvironment = ToolEnvironment.current
@@ -472,7 +473,8 @@ class ChatViewModel {
 
     // MARK: - Agent Discovery
 
-    /// Fetches available agents from the OpenClaw gateway.
+    /// Fetches available agents from the OpenClaw gateway via /v1/models.
+    /// Models with IDs like "openclaw/syntra" are treated as agents.
     func discoverAgents() async {
         isLoadingAgents = true
         agentDiscoveryError = nil
@@ -480,17 +482,24 @@ class ChatViewModel {
 
         let manager = OpenClawManager()
         do {
-            let gatewayAgents = try await manager.listAgents()
-            discoveredAgents = gatewayAgents.map { ga in
-                Agent(
-                    id: ga.id,
-                    name: ga.name,
-                    emoji: Self.emojiForAgent(id: ga.id),
+            let models = try await manager.listModels()
+            // Agent models have an "openclaw/<agentId>" format.
+            // Extract short IDs and build Agent objects.
+            let agents = models.compactMap { model -> Agent? in
+                let parts = model.id.split(separator: "/")
+                guard parts.count == 2 else { return nil }
+                let shortID = String(parts[1])
+                guard !shortID.isEmpty, shortID != "default" else { return nil }
+                return Agent(
+                    id: shortID,
+                    name: model.name ?? shortID.capitalized,
+                    emoji: Self.emojiForAgent(id: shortID),
                     avatar: nil,
                     status: .online
                 )
             }
-            logger.info("Discovered \(self.discoveredAgents.count) agent(s) from gateway")
+            discoveredAgents = agents.isEmpty ? Self.defaultAgents : agents
+            logger.info("Discovered \(self.discoveredAgents.count) agent(s) from gateway /v1/models")
         } catch {
             agentDiscoveryError = error.localizedDescription
             logger.error("Agent discovery failed: \(error.localizedDescription)")
@@ -1196,21 +1205,41 @@ class ChatViewModel {
             sessionEntity: session
         )
 
-        let agents = modelRegistry?.models(for: "OpenClaw").map { $0.id } ?? ["syntra", "forge", "recon", "pulse", "council"]
-        for agent in agents {
-            if userMessageText.contains("@" + agent) {
-                providerID = "openclaw"
-                modelID = agent
-                session.providerID = providerID
-                session.model = modelID
+        // Per-message @mention routing: override provider/model for this message only,
+        // without mutating the session's default provider/model.
+        // Model IDs from the gateway are "openclaw/syntra", "openclaw/forge", etc.
+        // Strip the "openclaw/" prefix to get short names for @mention matching.
+        // The provider will reconstruct the full "openclaw/<agent>" model ID.
+        let registryModelIDs = modelRegistry?.models(for: "OpenClaw").map { $0.id } ?? []
+        let shortAgentNames: [String] = registryModelIDs.compactMap { id in
+            if id.contains("/") {
+                let short = String(id.split(separator: "/").last ?? "")
+                return short.isEmpty ? nil : short
+            }
+            return nil
+        }
+        let openClawAgentIDs = shortAgentNames.isEmpty
+            ? ["syntra", "forge", "recon", "pulse", "council"]
+            : shortAgentNames
+        var mentionedAgentIDs: [String] = []
+        for agent in openClawAgentIDs {
+            if userMessageText.lowercased().contains("@" + agent) {
+                mentionedAgentIDs.append(agent)
             }
         }
 
+        // Single @mention: override provider/model for this message's stream.
+        if let firstMention = mentionedAgentIDs.first, mentionedAgentIDs.count == 1 {
+            providerID = "openclaw"
+            modelID = firstMention
+        }
 
-
-
-        session.providerID = providerID
-        session.model = modelID
+        // Only persist provider/model to session when NOT an @mention override.
+        // This keeps the session's default provider stable across messages.
+        if mentionedAgentIDs.isEmpty {
+            session.providerID = providerID
+            session.model = modelID
+        }
         let sessionID = session.id
 
         do {
@@ -1253,6 +1282,17 @@ class ChatViewModel {
             #endif
         } catch {
             logger.error("Failed to persist user message: \(error.localizedDescription)")
+            return
+        }
+
+        // Group chat routing: if multiple agents are @mentioned, handle as group chat.
+        if mentionedAgentIDs.count > 1 {
+            handleGroupChat(
+                messageText: userMessageText,
+                mentionedAgentIDs: mentionedAgentIDs,
+                session: session,
+                modelContext: modelContext
+            )
             return
         }
 
@@ -1331,6 +1371,20 @@ class ChatViewModel {
                         logger.info(
                             "Completion received, final length: \(message.content.count)")
                         setLastVisibleMessage(to: message.id)
+
+                        // Tag the persisted message with the @mentioned agent's ID
+                        // so the UI can show which agent produced this response.
+                        if let agentID = mentionedAgentIDs.first {
+                            let msgID = message.id
+                            await MainActor.run {
+                                let desc = FetchDescriptor<ChatMessageEntity>(
+                                    predicate: #Predicate { $0.id == msgID })
+                                if let entity = try? modelContext.fetch(desc).first {
+                                    entity.senderAgentID = agentID
+                                    try? modelContext.save()
+                                }
+                            }
+                        }
 
                         // Ensure environment stability before triggering UI state changes
                         // This gives SwiftUI time to propagate environment updates before
@@ -1892,6 +1946,155 @@ class ChatViewModel {
             } catch {
                 self.logger.error("Failed saving classification: \(error.localizedDescription)")
             }
+        }
+    }
+
+    // MARK: - Group Chat (@mention routing to multiple agents)
+
+    /// Handles a group chat message where one or more OpenClaw agents are @mentioned.
+    /// Streams responses sequentially (one agent at a time), tagging each with senderAgentID.
+    private func handleGroupChat(
+        messageText: String,
+        mentionedAgentIDs: [String],
+        session: ChatSessionEntity,
+        modelContext: ModelContext
+    ) {
+        // Build Agent objects for the mentioned agents.
+        let agentMap = Dictionary(uniqueKeysWithValues: allKnownAgents.map { ($0.id, $0) })
+        let targetAgents = mentionedAgentIDs.compactMap { agentMap[$0] }
+        guard !targetAgents.isEmpty else { return }
+
+        logger.info(
+            "🔵 [GroupChat] Routing to agents: \(mentionedAgentIDs.joined(separator: ", "))"
+        )
+
+        isGenerating = true
+        let streamToken = UUID().uuidString
+        let generationID = UUID()
+
+        generationTask = Task { @MainActor in
+            let service = await ensureChatService(modelContext: modelContext)
+            let domainSession = session.asDomain()
+
+            for agent in targetAgents {
+                if Task.isCancelled { break }
+
+                let streamingID = UUID()
+                streamingText = nil
+                streamingMessageID = streamingID
+                activeGenerationID = generationID
+
+                await streamAccumulator.reset()
+                await streamAccumulator.begin(token: streamToken)
+
+                let (uiStream, uiContinuation) = AsyncStream<String>.makeStream()
+                let updateTask = Task { @MainActor in
+                    for await text in uiStream {
+                        scheduleStreamingUpdate(text, messageID: streamingID)
+                    }
+                    flushStreamingUpdate(messageID: streamingID)
+                }
+
+                logger.info(
+                    "🔵 [GroupChat] Streaming response from agent: \(agent.id) (provider=openclaw, model=\(agent.id))"
+                )
+
+                let stream = service.streamAgentResponse(
+                    providerID: "openclaw",
+                    modelID: agent.id,
+                    agentID: agent.id,
+                    session: domainSession
+                )
+
+                do {
+                    for try await event in stream {
+                        try Task.checkCancellation()
+                        switch event {
+                        case .token(let text):
+                            if let updated = await streamAccumulator.append(
+                                token: streamToken, delta: text
+                            ) {
+                                uiContinuation.yield(updated)
+                            }
+                        case .completion(let message):
+                            _ = await streamAccumulator.complete(
+                                token: streamToken, final: message.content
+                            )
+                            uiContinuation.finish()
+                            _ = await updateTask.result
+
+                            // Persist message with senderAgentID
+                            var tagged = message
+                            tagged.senderAgentID = agent.id
+                            tagged.generationID = generationID
+                            let entity = ChatMessageEntity(message: tagged)
+                            entity.session = session
+                            modelContext.insert(entity)
+                            session.updatedAt = Date()
+                            try? modelContext.save()
+
+                            resetStreamingState()
+                            logger.info(
+                                "🔵 [GroupChat] Agent \(agent.id) completed (\(message.content.count) chars)"
+                            )
+
+                        case .truncated(let message):
+                            _ = await streamAccumulator.complete(
+                                token: streamToken, final: message.content
+                            )
+                            uiContinuation.finish()
+                            _ = await updateTask.result
+
+                            var tagged = message
+                            tagged.senderAgentID = agent.id
+                            let entity = ChatMessageEntity(message: tagged)
+                            entity.session = session
+                            modelContext.insert(entity)
+                            try? modelContext.save()
+
+                            resetStreamingState()
+                            logger.warning("🔵 [GroupChat] Agent \(agent.id) response truncated")
+
+                        case .error(let error):
+                            await streamAccumulator.fail(token: streamToken, error: error)
+                            uiContinuation.finish()
+                            _ = await updateTask.result
+
+                            let errorMsg = ChatMessage(
+                                role: .assistant,
+                                content: "Error from \(agent.name): \(error.localizedDescription)",
+                                parts: [.text("Error from \(agent.name): \(error.localizedDescription)")],
+                                senderAgentID: agent.id
+                            )
+                            let entity = ChatMessageEntity(message: errorMsg)
+                            entity.session = session
+                            modelContext.insert(entity)
+                            try? modelContext.save()
+
+                            resetStreamingState()
+                            logger.error(
+                                "🔵 [GroupChat] Agent \(agent.id) error: \(error.localizedDescription)"
+                            )
+
+                        default:
+                            break
+                        }
+                    }
+                } catch {
+                    if error is CancellationError { break }
+                    logger.error(
+                        "🔵 [GroupChat] Agent \(agent.id) stream error: \(error.localizedDescription)"
+                    )
+                }
+
+                await streamAccumulator.reset()
+            }
+
+            // All agents done
+            isGenerating = false
+            generationTask = nil
+            resetStreamingState()
+            logger.info("🔵 [GroupChat] All agents completed")
         }
     }
 

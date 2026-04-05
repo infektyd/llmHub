@@ -64,19 +64,18 @@ struct OpenClawProvider: LLMProvider {
         tools: [ToolDefinition]?,
         options: LLMRequestOptions
     ) async throws -> URLRequest {
-        var targetModel = model
-        
+        // Gateway requires "openclaw" or "openclaw/<agentId>" as model ID.
+        var targetModel = "openclaw"
+
         // MARK: - Dynamic Agent Routing (@mention)
-        // If the user @mentions a specific agent, route the request to that agent on the gateway.
+        // If the user @mentions a specific agent, route to "openclaw/<agentId>" on the gateway.
         if let lastUserMessage = messages.last(where: { $0.role == .user }) {
             let content = lastUserMessage.content.lowercased()
-            // We support any word preceded by @ as a potential agent name
             if let mentionRange = content.range(of: "@[a-z0-9-]+", options: .regularExpression) {
                 let agentName = String(content[mentionRange].dropFirst())
-                // Only route if it's one of the known agents or the user is specifically targeting a known slug
                 let knownAgents = ["syntra", "forge", "recon", "pulse", "council"]
                 if knownAgents.contains(agentName) {
-                    targetModel = agentName
+                    targetModel = "openclaw/\(agentName)"
                 }
             }
         }

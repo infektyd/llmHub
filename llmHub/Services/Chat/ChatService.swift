@@ -1393,6 +1393,120 @@ final class ChatService {
         logger.info("Agent '\(agentID)' completed its group-chat response")
     }
 
+    // MARK: - Single Agent Response (for @mention routing)
+
+    /// Streams a single agent's response, persisting it with the given senderAgentID.
+    /// Used for @mention-based routing where one agent responds per message.
+    func streamAgentResponse(
+        providerID: String,
+        modelID: String,
+        agentID: String,
+        session: ChatSession
+    ) -> AsyncThrowingStream<ProviderEvent, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    let provider = try self.providerRegistry.provider(for: providerID)
+                    self.logger.info(
+                        "🟢 [ChatService] streamAgentResponse - agent=\(agentID) provider=\(providerID) model=\(modelID)"
+                    )
+
+                    let history = try await MainActor.run {
+                        try self.loadSession(id: session.id).messages.sorted {
+                            $0.createdAt < $1.createdAt
+                        }
+                    }
+                    let llmMessages = history.filter { $0.provenance.channel != .sidecar }
+
+                    let options = LLMRequestOptions(
+                        thinkingPreference: session.thinkingPreference,
+                        thinkingBudgetTokens: nil
+                    )
+
+                    let request = try await provider.buildRequest(
+                        messages: llmMessages,
+                        model: modelID,
+                        tools: nil,
+                        options: options
+                    )
+
+                    var assistantTextBuffer = ""
+                    var tokenBatcher = TokenBatcher()
+                    var lastUsage: TokenUsage?
+
+                    for try await event in provider.streamResponse(from: request) {
+                        try Task.checkCancellation()
+                        switch event {
+                        case .token(let text):
+                            assistantTextBuffer += text
+                            if let flushed = tokenBatcher.append(text) {
+                                continuation.yield(.token(text: flushed))
+                            }
+                        case .thinking(let thought):
+                            continuation.yield(.thinking(thought))
+                        case .toolUse(let id, let name, let input):
+                            if let flushed = tokenBatcher.flush() {
+                                continuation.yield(.token(text: flushed))
+                            }
+                            continuation.yield(.toolUse(id: id, name: name, input: input))
+                        case .usage(let usage):
+                            lastUsage = usage
+                            if let flushed = tokenBatcher.flush() {
+                                continuation.yield(.token(text: flushed))
+                            }
+                            continuation.yield(.usage(usage))
+                        case .completion(let msg):
+                            if let flushed = tokenBatcher.flush() {
+                                continuation.yield(.token(text: flushed))
+                            }
+                            var tagged = msg
+                            tagged.senderAgentID = agentID
+                            tagged.generationID = tagged.generationID ?? UUID()
+                            if tagged.content.isEmpty && !assistantTextBuffer.isEmpty {
+                                tagged = ChatMessage(
+                                    id: tagged.id,
+                                    generationID: tagged.generationID,
+                                    role: .assistant,
+                                    content: assistantTextBuffer,
+                                    parts: [.text(assistantTextBuffer)],
+                                    tokenUsage: lastUsage,
+                                    senderAgentID: agentID
+                                )
+                            }
+                            try await MainActor.run {
+                                try self.appendMessage(tagged, to: session.id)
+                            }
+                            continuation.yield(.completion(message: tagged))
+                        case .truncated(let msg):
+                            if let flushed = tokenBatcher.flush() {
+                                continuation.yield(.token(text: flushed))
+                            }
+                            var tagged = msg
+                            tagged.senderAgentID = agentID
+                            continuation.yield(.truncated(message: tagged))
+                        case .error(let err):
+                            if let flushed = tokenBatcher.flush() {
+                                continuation.yield(.token(text: flushed))
+                            }
+                            continuation.yield(.error(err))
+                        default:
+                            break
+                        }
+                    }
+                    continuation.finish()
+                } catch {
+                    if !(error is CancellationError) {
+                        continuation.yield(.error(
+                            .server(reason: "Agent \(agentID) error: \(error.localizedDescription)")
+                        ))
+                    }
+                    continuation.finish()
+                }
+            }
+            continuation.onTermination = { @Sendable _ in task.cancel() }
+        }
+    }
+
     // MARK: - Rolling Summary ("Summarize Mode")
 
     /// Generates a rolling summary of older conversation turns for context compaction.
