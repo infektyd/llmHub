@@ -16,6 +16,7 @@ import SwiftUI
 struct TranscriptRow: View {
     let viewModel: TranscriptRowViewModel
 
+    @Environment(ChatViewModel.self) private var chatVM
     @Environment(\.settingsManager) private var settingsManager
     @Environment(\.uiCompactMode) private var uiCompactMode
     @Environment(\.uiScale) private var uiScale
@@ -36,7 +37,9 @@ struct TranscriptRow: View {
                         content: viewModel.content,
                         isStreaming: viewModel.isStreaming,
                         role: viewModel.role,
-                        generationID: viewModel.generationID
+                        generationID: viewModel.generationID,
+                        messageID: messageID,
+                        onReply: { chatVM.replyToMessageID = messageID }
                     )
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
@@ -50,7 +53,9 @@ struct TranscriptRow: View {
                         content: viewModel.content,
                         isStreaming: viewModel.isStreaming,
                         role: viewModel.role,
-                        generationID: viewModel.generationID
+                        generationID: viewModel.generationID,
+                        messageID: messageID,
+                        onReply: { chatVM.replyToMessageID = messageID }
                     )
                     .frame(maxWidth: 700, alignment: frameAlignment)
                 }
@@ -73,6 +78,11 @@ struct TranscriptRow: View {
                     ArtifactCardView(payload: artifact, startExpanded: artifact.kind != .toolResult)
                 }
             }
+
+            // Reply count badge
+            if viewModel.replyCount > 0 {
+                replyCountBadge
+            }
         }
         .frame(maxWidth: .infinity, alignment: frameAlignment)
     }
@@ -81,6 +91,10 @@ struct TranscriptRow: View {
 
     private var isUser: Bool {
         viewModel.role == .user
+    }
+
+    private var messageID: UUID? {
+        UUID(uuidString: viewModel.id)
     }
 
     private var roleAlignment: HorizontalAlignment {
@@ -124,6 +138,13 @@ struct TranscriptRow: View {
                 }
             }
 
+            // Reply indicator: show if this message is a reply
+            if viewModel.parentMessageID != nil {
+                Image(systemName: "arrowshape.turn.up.left")
+                    .font(.system(size: 10 * uiScale))
+                    .foregroundStyle(AppColors.textTertiary)
+            }
+
             if settingsManager.settings.showTokenCounts,
                 let meta = viewModel.headerMetaText,
                 !meta.isEmpty
@@ -138,6 +159,24 @@ struct TranscriptRow: View {
                     )
                     .foregroundStyle(AppColors.textTertiary)
             }
+        }
+    }
+
+    // MARK: - Reply Count Badge
+
+    private var replyCountBadge: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "arrowshape.turn.up.left")
+                .font(.system(size: 10 * uiScale))
+            Text("\(viewModel.replyCount) \(viewModel.replyCount == 1 ? "reply" : "replies")")
+                .font(.system(size: 11 * uiScale, weight: .medium))
+        }
+        .foregroundStyle(AppColors.accent.opacity(0.8))
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background {
+            Capsule(style: .continuous)
+                .fill(AppColors.accent.opacity(0.1))
         }
     }
 }
@@ -156,6 +195,7 @@ struct TranscriptRow: View {
                 artifacts: []
             )
         )
+        .environment(ChatViewModel.preview())
         .padding()
         .frame(width: 900)
     }
@@ -173,6 +213,7 @@ struct TranscriptRow: View {
                 artifacts: []
             )
         )
+        .environment(ChatViewModel.preview())
         .padding()
         .frame(width: 900)
     }
@@ -190,6 +231,7 @@ struct TranscriptRow: View {
                 artifacts: []
             )
         )
+        .environment(ChatViewModel.preview())
         .padding()
         .frame(width: 900)
     }
@@ -207,6 +249,7 @@ struct TranscriptRow: View {
                 artifacts: []
             )
         )
+        .environment(ChatViewModel.preview())
         .padding()
         .frame(width: 900)
     }

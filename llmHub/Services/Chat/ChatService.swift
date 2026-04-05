@@ -1309,7 +1309,19 @@ final class ChatService {
                 if let flushed = tokenBatcher.flush() {
                     continuation.yield(.token(agentID: agentID, text: flushed))
                 }
-                continuation.yield(.usage(agentID: agentID, usage: usage))
+                // Compute cost from provider pricing metadata.
+                let calculator = CostCalculator()
+                let costBreakdown = calculator.cost(for: usage, pricing: provider.pricing)
+                let costUSD = (costBreakdown.totalCost as NSDecimalNumber).doubleValue
+                // Record cost in the agent's session for per-agent tracking.
+                let agentSession = await room.session(for: agentID)
+                await agentSession.recordUsage(
+                    inputTokens: usage.inputTokens,
+                    outputTokens: usage.outputTokens,
+                    cachedTokens: usage.cachedTokens,
+                    costUSD: costUSD
+                )
+                continuation.yield(.usage(agentID: agentID, usage: usage, costUSD: costUSD))
 
             case .completion(let msg):
                 if let flushed = tokenBatcher.flush() {

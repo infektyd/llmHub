@@ -40,7 +40,10 @@ struct AgentRosterSidebarView: View {
             ScrollView {
                 VStack(spacing: 2) {
                     ForEach(chatVM.allKnownAgents) { agent in
-                        AgentRow(agent: agent)
+                        AgentRow(
+                            agent: agent,
+                            costSnapshot: chatVM.agentCostSnapshots[agent.id]
+                        )
                     }
                 }
                 .padding(.horizontal, 8)
@@ -48,6 +51,23 @@ struct AgentRosterSidebarView: View {
             }
 
             Spacer()
+
+            // Total cost summary
+            let total = chatVM.totalAgentCost
+            if total.totalCostUSD > 0 || total.inputTokens + total.outputTokens > 0 {
+                Divider()
+                HStack(spacing: 6) {
+                    Text("Total")
+                        .font(.system(size: 11 * uiScale, weight: .medium))
+                        .foregroundStyle(AppColors.textSecondary)
+                    Spacer()
+                    Text(formatCostSummary(total))
+                        .font(.system(size: 10 * uiScale, design: .monospaced))
+                        .foregroundStyle(AppColors.textTertiary)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+            }
 
             if let error = chatVM.agentDiscoveryError {
                 HStack {
@@ -65,10 +85,26 @@ struct AgentRosterSidebarView: View {
         .padding(8)
         .frame(minWidth: 220)
     }
+
+    private func formatCostSummary(_ snapshot: AgentCostSnapshot) -> String {
+        let tokens = snapshot.inputTokens + snapshot.outputTokens
+        let tokenStr = formatTokens(tokens)
+        return "\(tokenStr) · $\(String(format: "%.2f", snapshot.totalCostUSD))"
+    }
+
+    private func formatTokens(_ tokens: Int) -> String {
+        if tokens >= 1_000_000 {
+            return String(format: "%.1fM", Double(tokens) / 1_000_000)
+        } else if tokens >= 1_000 {
+            return String(format: "%.1fK", Double(tokens) / 1_000)
+        }
+        return "\(tokens)"
+    }
 }
 
 private struct AgentRow: View {
     let agent: Agent
+    let costSnapshot: AgentCostSnapshot?
     @Environment(\.uiScale) private var uiScale
 
     var body: some View {
@@ -83,9 +119,19 @@ private struct AgentRow: View {
                 Text(agent.name)
                     .font(.system(size: 13 * uiScale, weight: .medium))
                     .foregroundStyle(AppColors.textPrimary)
-                Text("@\(agent.id)")
-                    .font(.system(size: 10 * uiScale))
-                    .foregroundStyle(AppColors.textTertiary)
+                HStack(spacing: 4) {
+                    Text("@\(agent.id)")
+                        .font(.system(size: 10 * uiScale))
+                        .foregroundStyle(AppColors.textTertiary)
+                    if let cost = costSnapshot, cost.totalCostUSD > 0 {
+                        Text("·")
+                            .font(.system(size: 10 * uiScale))
+                            .foregroundStyle(AppColors.textTertiary)
+                        Text("$\(String(format: "%.2f", cost.totalCostUSD))")
+                            .font(.system(size: 10 * uiScale, design: .monospaced))
+                            .foregroundStyle(AppColors.accent.opacity(0.8))
+                    }
+                }
             }
             Spacer()
         }
@@ -115,6 +161,10 @@ private struct AgentRow: View {
         Agent(id: "recon", name: "Recon", emoji: "🔍", status: .busy),
         Agent(id: "pulse", name: "Pulse", emoji: "💓", status: .online),
         Agent(id: "council", name: "Council", emoji: "🏛️", status: .offline),
+    ]
+    vm.agentCostSnapshots = [
+        "forge": AgentCostSnapshot(inputTokens: 450_000, outputTokens: 120_000, cachedTokens: 50_000, totalCostUSD: 0.42),
+        "syntra": AgentCostSnapshot(inputTokens: 200_000, outputTokens: 80_000, cachedTokens: 20_000, totalCostUSD: 0.18),
     ]
     return AgentRosterSidebarView()
         .environment(vm)

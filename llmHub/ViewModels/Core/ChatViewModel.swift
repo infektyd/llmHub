@@ -55,6 +55,9 @@ class ChatViewModel {
     /// Staged attachments for the next message.
     var stagedAttachments: [Attachment] = []
 
+    /// The message ID this message is replying to (for threaded conversations).
+    var replyToMessageID: UUID?
+
     /// User preference: force all pastes to stay inline regardless of size.
     /// Persisted via UserDefaults.
     @ObservationIgnored
@@ -97,6 +100,42 @@ class ChatViewModel {
     var isLoadingAgents: Bool = false
     /// Last error during agent discovery, if any.
     var agentDiscoveryError: String?
+
+    // MARK: - Per-Agent Cost Tracking
+
+    /// Per-agent cost snapshots for display in the roster sidebar.
+    var agentCostSnapshots: [String: AgentCostSnapshot] = [:]
+
+    /// Records usage for a specific agent (called from OpenClaw provider events).
+    func recordAgentUsage(agentID: String, inputTokens: Int, outputTokens: Int, cachedTokens: Int, costUSD: Double) {
+        let existing = agentCostSnapshots[agentID]
+        agentCostSnapshots[agentID] = AgentCostSnapshot(
+            inputTokens: (existing?.inputTokens ?? 0) + inputTokens,
+            outputTokens: (existing?.outputTokens ?? 0) + outputTokens,
+            cachedTokens: (existing?.cachedTokens ?? 0) + cachedTokens,
+            totalCostUSD: (existing?.totalCostUSD ?? 0) + costUSD
+        )
+    }
+
+    /// Total cost across all agents in the current session.
+    var totalAgentCost: AgentCostSnapshot {
+        var inputTokens = 0
+        var outputTokens = 0
+        var cachedTokens = 0
+        var totalCost: Double = 0
+        for snap in agentCostSnapshots.values {
+            inputTokens += snap.inputTokens
+            outputTokens += snap.outputTokens
+            cachedTokens += snap.cachedTokens
+            totalCost += snap.totalCostUSD
+        }
+        return AgentCostSnapshot(
+            inputTokens: inputTokens,
+            outputTokens: outputTokens,
+            cachedTokens: cachedTokens,
+            totalCostUSD: totalCost
+        )
+    }
 
     // MARK: - Memory Usage Indicator
 
@@ -1185,8 +1224,12 @@ class ChatViewModel {
                 createdAt: Date(),
                 codeBlocks: [],
                 tokenUsage: nil,
-                costBreakdown: nil
+                costBreakdown: nil,
+                parentMessageID: replyToMessageID
             )
+            // Clear reply state after capturing it
+            replyToMessageID = nil
+
             let userEntity = ChatMessageEntity(message: userDomainMessage)
             userEntity.session = session
             session.updatedAt = Date()

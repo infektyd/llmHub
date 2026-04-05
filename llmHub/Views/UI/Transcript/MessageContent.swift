@@ -14,6 +14,8 @@ struct TextualMessageView: View, Equatable {
     let isStreaming: Bool
     let role: MessageRole
     let generationID: UUID?
+    let messageID: UUID?
+    let onReply: (() -> Void)?
     @State private var didCopy: Bool = false
 
     @Environment(\.uiScale) private var uiScale
@@ -23,6 +25,7 @@ struct TextualMessageView: View, Equatable {
             && lhs.isStreaming == rhs.isStreaming
             && lhs.role == rhs.role
             && lhs.generationID == rhs.generationID
+            && lhs.messageID == rhs.messageID
     }
 
     var body: some View {
@@ -41,7 +44,15 @@ struct TextualMessageView: View, Equatable {
         .foregroundStyle(AppColors.textPrimary)
         .fixedSize(horizontal: false, vertical: true)
         .contextMenu {
+            if role == .assistant || role == .user {
+                Button {
+                    onReply?()
+                } label: {
+                    Label("Reply", systemImage: "arrowshape.turn.up.left")
+                }
+            }
             if role == .assistant {
+                Divider()
                 Button(didCopy ? "Copied" : "Copy") {
                     copyToClipboard(content)
                     didCopy = true
@@ -92,7 +103,9 @@ struct TextualMessageView: View, Equatable {
         content: Canvas2PreviewFixtures.markdownShort,
         isStreaming: false,
         role: .assistant,
-        generationID: UUID(uuidString: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+        generationID: UUID(uuidString: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
+        messageID: nil,
+        onReply: nil
     )
     .padding()
     .frame(width: 900)
@@ -103,7 +116,9 @@ struct TextualMessageView: View, Equatable {
         content: Canvas2PreviewFixtures.markdownLongWithCode,
         isStreaming: false,
         role: .assistant,
-        generationID: UUID(uuidString: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+        generationID: UUID(uuidString: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
+        messageID: nil,
+        onReply: nil
     )
     .padding()
     .frame(width: 900)
@@ -114,7 +129,9 @@ struct TextualMessageView: View, Equatable {
         content: Canvas2PreviewFixtures.streamingRow().content,
         isStreaming: true,
         role: .assistant,
-        generationID: Canvas2PreviewFixtures.IDs.streamingGeneration
+        generationID: Canvas2PreviewFixtures.IDs.streamingGeneration,
+        messageID: nil,
+        onReply: nil
     )
     .padding()
     .frame(width: 900)

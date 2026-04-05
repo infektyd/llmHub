@@ -21,7 +21,7 @@ nonisolated enum GroupChatEvent: Sendable {
     case token(agentID: String, text: String)
     case thinking(agentID: String, thought: String)
     case toolUse(agentID: String, id: String, name: String, input: String)
-    case usage(agentID: String, usage: TokenUsage)
+    case usage(agentID: String, usage: TokenUsage, costUSD: Double)
     case completion(agentID: String, message: ChatMessage)
     case truncated(agentID: String, message: ChatMessage)
     case error(agentID: String, error: LLMProviderError)
@@ -150,6 +150,37 @@ actor ChatRoom {
         }
     }
 
+    // MARK: - Cost Tracking
+
+    /// Returns a cost snapshot for a specific agent.
+    func costSnapshot(for agentID: String) async -> AgentCostSnapshot? {
+        guard let session = agentSessions[agentID] else { return nil }
+        return await session.costSnapshot()
+    }
+
+    /// Returns a room-level total cost snapshot across all agents.
+    func roomCostSnapshot() async -> AgentCostSnapshot {
+        var inputTokens = 0
+        var outputTokens = 0
+        var cachedTokens = 0
+        var totalCostUSD: Double = 0
+
+        for session in agentSessions.values {
+            let snap = await session.costSnapshot()
+            inputTokens += snap.inputTokens
+            outputTokens += snap.outputTokens
+            cachedTokens += snap.cachedTokens
+            totalCostUSD += snap.totalCostUSD
+        }
+
+        return AgentCostSnapshot(
+            inputTokens: inputTokens,
+            outputTokens: outputTokens,
+            cachedTokens: cachedTokens,
+            totalCostUSD: totalCostUSD
+        )
+    }
+
     // MARK: - Cleanup
 
     func close() async {
@@ -198,6 +229,16 @@ actor ChatRoom {
     }
 }
 
+// MARK: - AgentCostTracking
+
+/// Per-agent cost tracking state (Sendable, safe to cross actor boundaries).
+nonisolated struct AgentCostSnapshot: Sendable {
+    let inputTokens: Int
+    let outputTokens: Int
+    let cachedTokens: Int
+    let totalCostUSD: Double
+}
+
 // MARK: - AgentSession Actor
 
 /// Per-agent session state machine within a ChatRoom.
@@ -206,8 +247,18 @@ actor AgentSession {
     private(set) var state: AgentSessionState = .created
     private(set) var accumulatedResponse: String = ""
 
-    init(agentID: String) {
+    /// Isolated tool session for this agent (persistent cache, shell sessions).
+    let toolSession: ToolSession
+
+    /// Accumulated token usage for this agent.
+    private var totalInputTokens: Int = 0
+    private var totalOutputTokens: Int = 0
+    private var totalCachedTokens: Int = 0
+    private var totalCostUSD: Double = 0
+
+    init(agentID: String, toolSession: ToolSession? = nil) {
         self.agentID = agentID
+        self.toolSession = toolSession ?? ToolSession()
     }
 
     func beginProcessing() {
@@ -237,6 +288,24 @@ actor AgentSession {
 
     func canReceiveMessage() -> Bool {
         state.canReceive
+    }
+
+    // MARK: - Cost Tracking
+
+    func recordUsage(inputTokens: Int, outputTokens: Int, cachedTokens: Int, costUSD: Double) {
+        totalInputTokens += inputTokens
+        totalOutputTokens += outputTokens
+        totalCachedTokens += cachedTokens
+        totalCostUSD += costUSD
+    }
+
+    func costSnapshot() -> AgentCostSnapshot {
+        AgentCostSnapshot(
+            inputTokens: totalInputTokens,
+            outputTokens: totalOutputTokens,
+            cachedTokens: totalCachedTokens,
+            totalCostUSD: totalCostUSD
+        )
     }
 }
 

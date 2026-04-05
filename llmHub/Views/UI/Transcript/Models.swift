@@ -356,6 +356,12 @@ struct TranscriptRowViewModel: Identifiable, Equatable {
     let toolResultMeta: ToolResultMeta?
     let toolCallArguments: String?
 
+    // Threading support
+    /// The parent message ID if this is a threaded reply.
+    let parentMessageID: UUID?
+    /// Number of direct replies to this message.
+    let replyCount: Int
+
     init(
         id: String,
         kind: TranscriptRowKind = .message,
@@ -369,7 +375,9 @@ struct TranscriptRowViewModel: Identifiable, Equatable {
         attachments: [AttachmentChipInfo] = [],
         toolCallID: String? = nil,
         toolResultMeta: ToolResultMeta? = nil,
-        toolCallArguments: String? = nil
+        toolCallArguments: String? = nil,
+        parentMessageID: UUID? = nil,
+        replyCount: Int = 0
     ) {
         self.id = id
         self.kind = kind
@@ -384,6 +392,8 @@ struct TranscriptRowViewModel: Identifiable, Equatable {
         self.toolCallID = toolCallID
         self.toolResultMeta = toolResultMeta
         self.toolCallArguments = toolCallArguments
+        self.parentMessageID = parentMessageID
+        self.replyCount = replyCount
     }
 
     // Equatable conformance for efficient SwiftUI diffing
@@ -398,6 +408,8 @@ struct TranscriptRowViewModel: Identifiable, Equatable {
             && lhs.toolCallID == rhs.toolCallID
             && lhs.toolResultMeta == rhs.toolResultMeta
             && lhs.toolCallArguments == rhs.toolCallArguments
+            && lhs.parentMessageID == rhs.parentMessageID
+            && lhs.replyCount == rhs.replyCount
     }
 }
 

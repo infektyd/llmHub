@@ -135,6 +135,20 @@ actor ChatRoomCoordinator {
         return await room.history()
     }
 
+    // MARK: - Cost Tracking
+
+    /// Returns a cost snapshot for a specific agent in a room.
+    func costSnapshot(for agentID: String, in roomID: UUID) async -> AgentCostSnapshot? {
+        guard let room = activeRooms[roomID] else { return nil }
+        return await room.costSnapshot(for: agentID)
+    }
+
+    /// Returns a room-level total cost snapshot across all agents.
+    func roomCostSnapshot(_ roomID: UUID) async -> AgentCostSnapshot? {
+        guard let room = activeRooms[roomID] else { return nil }
+        return await room.roomCostSnapshot()
+    }
+
     // MARK: - Cleanup
 
     /// Closes all active rooms.

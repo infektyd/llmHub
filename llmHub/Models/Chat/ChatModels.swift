@@ -314,6 +314,10 @@ nonisolated struct ChatMessage: Identifiable, Equatable, Sendable {
     /// Identifies which agent sent this message in a group chat, if applicable.
     var senderAgentID: String?
 
+    // Message threading
+    /// The ID of the message this message is replying to, for threaded conversations.
+    var parentMessageID: UUID?
+
     // Tool calling support
     /// The ID of the tool call this message is a response to (only for tool role).
     var toolCallID: String?
@@ -321,6 +325,44 @@ nonisolated struct ChatMessage: Identifiable, Equatable, Sendable {
     var toolCalls: [ToolCall]?
     /// Structured metadata for tool result messages (only for tool role).
     var toolResultMeta: ToolResultMeta?
+
+    init(
+        id: UUID = UUID(),
+        generationID: UUID? = nil,
+        role: MessageRole,
+        content: String,
+        thoughtProcess: String? = nil,
+        parts: [ChatContentPart],
+        attachments: [Attachment] = [],
+        createdAt: Date = Date(),
+        codeBlocks: [CodeBlock] = [],
+        tokenUsage: TokenUsage? = nil,
+        costBreakdown: CostBreakdown? = nil,
+        provenance: MessageProvenance = .chat,
+        senderAgentID: String? = nil,
+        parentMessageID: UUID? = nil,
+        toolCallID: String? = nil,
+        toolCalls: [ToolCall]? = nil,
+        toolResultMeta: ToolResultMeta? = nil
+    ) {
+        self.id = id
+        self.generationID = generationID
+        self.role = role
+        self.content = content
+        self.thoughtProcess = thoughtProcess
+        self.parts = parts
+        self.attachments = attachments
+        self.createdAt = createdAt
+        self.codeBlocks = codeBlocks
+        self.tokenUsage = tokenUsage
+        self.costBreakdown = costBreakdown
+        self.provenance = provenance
+        self.senderAgentID = senderAgentID
+        self.parentMessageID = parentMessageID
+        self.toolCallID = toolCallID
+        self.toolCalls = toolCalls
+        self.toolResultMeta = toolResultMeta
+    }
 
     static func == (lhs: ChatMessage, rhs: ChatMessage) -> Bool {
         lhs.id == rhs.id && lhs.generationID == rhs.generationID && lhs.role == rhs.role
@@ -330,6 +372,7 @@ nonisolated struct ChatMessage: Identifiable, Equatable, Sendable {
             && lhs.codeBlocks == rhs.codeBlocks && lhs.tokenUsage == rhs.tokenUsage
             && lhs.costBreakdown == rhs.costBreakdown && lhs.provenance == rhs.provenance
             && lhs.senderAgentID == rhs.senderAgentID
+            && lhs.parentMessageID == rhs.parentMessageID
             && lhs.toolCallID == rhs.toolCallID
             && lhs.toolCalls == rhs.toolCalls && lhs.toolResultMeta == rhs.toolResultMeta
     }
@@ -970,6 +1013,8 @@ final class ChatMessageEntity {
     var provenanceAgentName: String?
     /// Agent identifier for multi-agent group chat messages.
     var senderAgentID: String?
+    /// The ID of the parent message this is replying to (for threaded conversations).
+    var parentMessageID: UUID?
 
     /// Initializes a new `ChatMessageEntity` from a domain model.
     /// - Parameter message: The `ChatMessage` domain model.
@@ -1001,6 +1046,7 @@ final class ChatMessageEntity {
         provenanceAgentID = message.provenance.agentID
         provenanceAgentName = message.provenance.agentName
         senderAgentID = message.senderAgentID
+        parentMessageID = message.parentMessageID
     }
 
     /// Converts the entity back to a domain model.
@@ -1040,6 +1086,7 @@ final class ChatMessageEntity {
 
         domainMsg.thoughtProcess = thoughtProcess
         domainMsg.senderAgentID = senderAgentID
+        domainMsg.parentMessageID = parentMessageID
         // Decode tool result metadata only if data is present and non-empty
         if let metaData = toolResultMetaData, !metaData.isEmpty {
             domainMsg.toolResultMeta = try? JSONDecoder().decode(

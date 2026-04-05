@@ -118,7 +118,9 @@ struct ArtifactCardView: View {
                     content: payload.previewText,
                     isStreaming: false,
                     role: .tool,
-                    generationID: nil
+                    generationID: nil,
+                    messageID: nil,
+                    onReply: nil
                 )
             } else {
                 Text(payload.previewText)

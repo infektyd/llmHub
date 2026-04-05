@@ -46,7 +46,7 @@ struct TranscriptCanvasView: View {
                     spacing: uiCompactMode ? 16 : 24
                 ) {
                     ForEach(mergedRows) { rowVM in
-                        TranscriptRow(viewModel: rowVM)
+                        threadedRow(rowVM)
                             .id(rowVM.id)
                     }
                 }
@@ -68,6 +68,25 @@ struct TranscriptCanvasView: View {
             .onChange(of: mergedRows.count) { _, _ in
                 scrollToBottom()
             }
+        }
+    }
+
+    /// Renders a row with threading indentation and connector line if it is a reply.
+    @ViewBuilder
+    private func threadedRow(_ rowVM: TranscriptRowViewModel) -> some View {
+        if rowVM.parentMessageID != nil {
+            HStack(alignment: .top, spacing: 0) {
+                // Connector line
+                RoundedRectangle(cornerRadius: 1, style: .continuous)
+                    .fill(AppColors.accent.opacity(0.3))
+                    .frame(width: 2)
+                    .padding(.horizontal, 12)
+                // Indented reply content
+                TranscriptRow(viewModel: rowVM)
+            }
+            .padding(.leading, 28)
+        } else {
+            TranscriptRow(viewModel: rowVM)
         }
     }
 
@@ -103,7 +122,18 @@ struct TranscriptCanvasSessionView: View {
 
     private var persistedRows: [TranscriptRowViewModel] {
         let toolCallArgumentsByID = buildToolCallArgumentsIndex(messages)
-        return buildTranscriptRows(messages, toolCallArgumentsByID: toolCallArgumentsByID)
+        let replyCountIndex = buildReplyCountIndex(messages)
+        return buildTranscriptRows(messages, toolCallArgumentsByID: toolCallArgumentsByID, replyCountIndex: replyCountIndex)
+    }
+
+    private func buildReplyCountIndex(_ messages: [ChatMessageEntity]) -> [String: Int] {
+        var index: [String: Int] = [:]
+        for entity in messages {
+            if let parentID = entity.parentMessageID {
+                index[parentID.uuidString, default: 0] += 1
+            }
+        }
+        return index
     }
 
     private var streamingOverlayRow: TranscriptRowViewModel? {
@@ -134,13 +164,15 @@ struct TranscriptCanvasSessionView: View {
 
     private func mapToViewModel(
         _ entity: ChatMessageEntity,
-        toolCallArgumentsByID: [String: String]
+        toolCallArgumentsByID: [String: String],
+        replyCountIndex: [String: Int]
     ) -> TranscriptRowViewModel {
         mapToViewModel(
             entity.asDomain(),
             isStreaming: false,
             rowID: persistedRowID(entity.id),
-            toolCallArgumentsByID: toolCallArgumentsByID
+            toolCallArgumentsByID: toolCallArgumentsByID,
+            replyCountIndex: replyCountIndex
         )
     }
 
@@ -149,7 +181,8 @@ struct TranscriptCanvasSessionView: View {
         _ message: ChatMessage,
         isStreaming: Bool,
         rowID: UUID,
-        toolCallArgumentsByID: [String: String]
+        toolCallArgumentsByID: [String: String],
+        replyCountIndex: [String: Int] = [:]
     ) -> TranscriptRowViewModel {
         let toolCallArguments = message.toolCallID.flatMap { toolCallArgumentsByID[$0] }
 
@@ -164,6 +197,8 @@ struct TranscriptCanvasSessionView: View {
             )
         }
 
+        let replyCount = replyCountIndex[message.id.uuidString] ?? 0
+
         return TranscriptRowViewModel(
             id: rowID.uuidString,
             role: message.role,
@@ -176,7 +211,9 @@ struct TranscriptCanvasSessionView: View {
             attachments: attachmentChips,
             toolCallID: message.toolCallID,
             toolResultMeta: message.toolResultMeta,
-            toolCallArguments: toolCallArguments
+            toolCallArguments: toolCallArguments,
+            parentMessageID: message.parentMessageID,
+            replyCount: replyCount
         )
     }
 
@@ -217,7 +254,8 @@ struct TranscriptCanvasSessionView: View {
 
     private func buildTranscriptRows(
         _ messages: [ChatMessageEntity],
-        toolCallArgumentsByID: [String: String]
+        toolCallArgumentsByID: [String: String],
+        replyCountIndex: [String: Int]
     ) -> [TranscriptRowViewModel] {
         var rows: [TranscriptRowViewModel] = []
         var index = 0
@@ -230,7 +268,7 @@ struct TranscriptCanvasSessionView: View {
             {
                 let toolCallIDs = toolCalls.map { $0.id }.filter { !$0.isEmpty }
                 let assistantRow = mapToViewModel(
-                    entity, toolCallArgumentsByID: toolCallArgumentsByID)
+                    entity, toolCallArgumentsByID: toolCallArgumentsByID, replyCountIndex: replyCountIndex)
                 rows.append(assistantRow)
                 if toolCallIDs.count == toolCalls.count,
                     let bundleResult = buildToolRunBundleRow(
@@ -249,7 +287,7 @@ struct TranscriptCanvasSessionView: View {
                 continue
             }
 
-            rows.append(mapToViewModel(entity, toolCallArgumentsByID: toolCallArgumentsByID))
+            rows.append(mapToViewModel(entity, toolCallArgumentsByID: toolCallArgumentsByID, replyCountIndex: replyCountIndex))
             index += 1
         }
         return rows
