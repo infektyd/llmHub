@@ -65,17 +65,27 @@ struct OpenClawProvider: LLMProvider {
         options: LLMRequestOptions
     ) async throws -> URLRequest {
         // Gateway requires "openclaw" or "openclaw/<agentId>" as model ID.
-        var targetModel = "openclaw"
+        // Priority 1: Use the model parameter if it already specifies a specific agent.
+        // This is set by handleGroupChat when routing to individual agents.
+        let knownAgents = ["syntra", "forge", "recon", "pulse", "council"]
 
-        // MARK: - Dynamic Agent Routing (@mention)
-        // If the user @mentions a specific agent, route to "openclaw/<agentId>" on the gateway.
-        if let lastUserMessage = messages.last(where: { $0.role == .user }) {
-            let content = lastUserMessage.content.lowercased()
-            if let mentionRange = content.range(of: "@[a-z0-9-]+", options: .regularExpression) {
-                let agentName = String(content[mentionRange].dropFirst())
-                let knownAgents = ["syntra", "forge", "recon", "pulse", "council"]
-                if knownAgents.contains(agentName) {
-                    targetModel = "openclaw/\(agentName)"
+        var targetModel: String
+        if knownAgents.contains(model) {
+            // Model parameter already specifies the target agent — use it directly.
+            targetModel = "openclaw/\(model)"
+        } else if model.hasPrefix("openclaw/") {
+            // Model already has the openclaw/ prefix — use as-is.
+            targetModel = model
+        } else {
+            // Fallback: extract from @mention in message text for single-agent routing.
+            targetModel = "openclaw"
+            if let lastUserMessage = messages.last(where: { $0.role == .user }) {
+                let content = lastUserMessage.content.lowercased()
+                if let mentionRange = content.range(of: "@[a-z0-9-]+", options: .regularExpression) {
+                    let agentName = String(content[mentionRange].dropFirst())
+                    if knownAgents.contains(agentName) {
+                        targetModel = "openclaw/\(agentName)"
+                    }
                 }
             }
         }

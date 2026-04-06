@@ -16,24 +16,26 @@ import OSLog
 @MainActor
 final class AgentRoutingService {
     private let baseURL: URL
+    private let manager: OpenClawManager
     private let logger = Logger(subsystem: "com.llmHub", category: "AgentRoutingService")
 
     init(baseURL: URL = URL(string: "http://localhost:18789/v1")!) {
         self.baseURL = baseURL
+        self.manager = OpenClawManager(baseURL: baseURL)
     }
 
     // MARK: - Agent Response Streaming
 
-    /// Streams a response from a specific agent in a session.
+    /// Streams a response from a specific agent using the chat/completions endpoint.
     ///
-    /// This method opens a dedicated session to the target agent and streams
-    /// the response back, tagging each event with the agent's ID.
+    /// Routes to the target agent via the `openclaw/<agentID>` model identifier,
+    /// which the OpenClaw gateway resolves to the correct agent. Uses the standard
+    /// streaming chat completions API (POST /v1/chat/completions) with SSE.
     ///
     /// - Parameters:
     ///   - agentID: The agent ID to route to (e.g., "forge").
-    ///   - sessionKey: The session key to use (e.g., "agent:forge:main").
     ///   - message: The user message content.
-    ///   - history: Prior conversation messages, if any.
+    ///   - history: Prior conversation messages to include as context.
     /// - Returns: An async throwing stream of ProviderEvent tagged with agentID.
     func streamAgentSession(
         agentID: String,
@@ -45,22 +47,20 @@ final class AgentRoutingService {
             let task = Task {
                 do {
                     logger.info(
-                        "🔵 [AgentRouter] Routing to agent: \(agentID) sessionKey: \(sessionKey)"
+                        "🔵 [AgentRouter] Routing to agent: \(agentID) via openclaw/\(agentID)"
                     )
 
-                    // Build a sessions_send request
-                    let endpoint = baseURL.appendingPathComponent("sessions.send")
+                    // Build messages array: history + current user message
+                    var ocMessages: [XAIChatMessage] = history.map { msg in
+                        XAIChatMessage(role: msg.role.rawValue, content: msg.content)
+                    }
+                    ocMessages.append(XAIChatMessage(role: "user", content: message))
 
-                    let payload: [String: Any] = [
-                        "sessionKey": sessionKey,
-                        "content": message,
-                    ]
-
-                    var request = URLRequest(url: endpoint)
-                    request.httpMethod = "POST"
-                    request.addValue("Bearer 3d0f30ebdb793f1d86523ea3f2ecc52615435a3874810790", forHTTPHeaderField: "Authorization")
-                    request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-                    request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+                    let request = try manager.makeChatRequest(
+                        messages: ocMessages,
+                        model: "openclaw/\(agentID)",
+                        stream: true
+                    )
 
                     let (result, response) = try await LLMURLSession.bytes(for: request)
 
@@ -71,7 +71,7 @@ final class AgentRoutingService {
                         var errorBody = ""
                         for try await line in result.lines { errorBody += line }
                         logger.error(
-                            "🔴 [AgentRouter] sessions_send failed for \(agentID): HTTP \(statusCode) body: \(errorBody)"
+                            "🔴 [AgentRouter] chat/completions failed for \(agentID): HTTP \(statusCode) body: \(errorBody)"
                         )
                         continuation.yield(
                             .error(.server(reason: "Gateway error for \(agentID) (HTTP \(statusCode))"))
@@ -80,7 +80,7 @@ final class AgentRoutingService {
                         return
                     }
 
-                    // Parse SSE lines from sessions_send response
+                    // Parse SSE streaming response from chat/completions
                     var fullText = ""
                     for try await line in result.lines {
                         try Task.checkCancellation()

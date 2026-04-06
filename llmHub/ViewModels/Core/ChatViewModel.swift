@@ -522,6 +522,23 @@ class ChatViewModel {
         return String(text[atRange].dropFirst())
     }
 
+    /// Extracts @mentions from message text using regex matching.
+    /// Returns only agent IDs that are in the validAgentIDs set.
+    func extractAgentMentions(from content: String, validAgentIDs: [String]) -> [String] {
+        let pattern = "@([a-z0-9-]+)"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
+            return []
+        }
+        let range = NSRange(content.startIndex..<content.endIndex, in: content)
+        let matches = regex.matches(in: content, options: [], range: range)
+        let validSet = Set(validAgentIDs.map { $0.lowercased() })
+        return matches.compactMap { match -> String? in
+            guard let matchRange = Range(match.range(at: 1), in: content) else { return nil }
+            let agentName = String(content[matchRange]).lowercased()
+            return validSet.contains(agentName) ? agentName : nil
+        }
+    }
+
     /// Filters available agents by a search prefix (for @mention autocomplete).
     func agentsMatching(_ prefix: String) -> [Agent] {
         guard !prefix.isEmpty else { return allKnownAgents }
@@ -1221,12 +1238,10 @@ class ChatViewModel {
         let openClawAgentIDs = shortAgentNames.isEmpty
             ? ["syntra", "forge", "recon", "pulse", "council"]
             : shortAgentNames
-        var mentionedAgentIDs: [String] = []
-        for agent in openClawAgentIDs {
-            if userMessageText.lowercased().contains("@" + agent) {
-                mentionedAgentIDs.append(agent)
-            }
-        }
+        // Extract @mentions using regex to avoid false positives
+        // (e.g. "forge" in "blacksmith forge" without @ prefix)
+        let mentionedAgentIDs = extractAgentMentions(
+            from: userMessageText, validAgentIDs: openClawAgentIDs)
 
         // Single @mention: override provider/model for this message's stream.
         if let firstMention = mentionedAgentIDs.first, mentionedAgentIDs.count == 1 {
@@ -1952,6 +1967,8 @@ class ChatViewModel {
     // MARK: - Group Chat (@mention routing to multiple agents)
 
     /// Handles a group chat message where one or more OpenClaw agents are @mentioned.
+    /// Routes each agent via the gateway's sessions_send API with dedicated session keys,
+    /// ensuring the gateway delivers to the correct agent (not just the first mention).
     /// Streams responses sequentially (one agent at a time), tagging each with senderAgentID.
     private func handleGroupChat(
         messageText: String,
@@ -1968,16 +1985,30 @@ class ChatViewModel {
             "🔵 [GroupChat] Routing to agents: \(mentionedAgentIDs.joined(separator: ", "))"
         )
 
+        // Initialize AgentRoutingService for per-agent session routing.
+        let routingService = AgentRoutingService()
+
         isGenerating = true
         let streamToken = UUID().uuidString
         let generationID = UUID()
 
         generationTask = Task { @MainActor in
-            let service = await ensureChatService(modelContext: modelContext)
-            let domainSession = session.asDomain()
+            // Load chat history from the session so the agent sees context.
+            let _: [ChatMessage] = await MainActor.run {
+                (try? modelContext.fetch(FetchDescriptor<ChatMessageEntity>()).map { entity in
+                    entity.asDomain()
+                }) ?? []
+            }
 
             for agent in targetAgents {
                 if Task.isCancelled { break }
+
+                // Each agent gets its own dedicated session: "agent:<agentID>:main"
+                let sessionKey = "agent:\(agent.id):main"
+
+                logger.info(
+                    "🔵 [GroupChat] Streaming response from agent: \(agent.id) via session \(sessionKey)"
+                )
 
                 let streamingID = UUID()
                 streamingText = nil
@@ -1995,15 +2026,12 @@ class ChatViewModel {
                     flushStreamingUpdate(messageID: streamingID)
                 }
 
-                logger.info(
-                    "🔵 [GroupChat] Streaming response from agent: \(agent.id) (provider=openclaw, model=\(agent.id))"
-                )
-
-                let stream = service.streamAgentResponse(
-                    providerID: "openclaw",
-                    modelID: agent.id,
+                // Route via sessions.send with the agent-specific session key.
+                let stream = routingService.streamAgentSession(
                     agentID: agent.id,
-                    session: domainSession
+                    sessionKey: sessionKey,
+                    message: messageText,
+                    history: []  // sessions_send manages its own session history
                 )
 
                 do {
@@ -2047,9 +2075,11 @@ class ChatViewModel {
 
                             var tagged = message
                             tagged.senderAgentID = agent.id
+                            tagged.generationID = generationID
                             let entity = ChatMessageEntity(message: tagged)
                             entity.session = session
                             modelContext.insert(entity)
+                            session.updatedAt = Date()
                             try? modelContext.save()
 
                             resetStreamingState()
