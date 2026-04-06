@@ -19,7 +19,7 @@ struct AgentTypingIndicator: View {
         AgentIdentityRegistry.lookup(agentID, knownAgents: knownAgents)
     }
 
-    @State private var animationPhase = 0
+    @State private var dotIndex = 0
 
     var body: some View {
         HStack(spacing: 8) {
@@ -43,7 +43,20 @@ struct AgentTypingIndicator: View {
             }
 
             // Three-dot typing animation
-            typingDots
+            HStack(spacing: 3) {
+                Circle()
+                    .fill(identity.color)
+                    .frame(width: 5 * uiScale, height: 5 * uiScale)
+                    .opacity(dotIndex == 0 ? 1 : 0.3)
+                Circle()
+                    .fill(identity.color)
+                    .frame(width: 5 * uiScale, height: 5 * uiScale)
+                    .opacity(dotIndex == 1 ? 1 : 0.3)
+                Circle()
+                    .fill(identity.color)
+                    .frame(width: 5 * uiScale, height: 5 * uiScale)
+                    .opacity(dotIndex == 2 ? 1 : 0.3)
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -59,38 +72,9 @@ struct AgentTypingIndicator: View {
         .onAppear { startTypingAnimation() }
     }
 
-    // MARK: - Typing Dots Animation
-
-    @ViewBuilder
-    private var typingDots: some View {
-        HStack(spacing: 3) {
-            typingDot(delay: 0)
-            typingDot(delay: 0.2)
-            typingDot(delay: 0.4)
-        }
-    }
-
-    private func typingDot(delay: Double) -> some View {
-        Circle()
-            .fill(identity.color)
-            .frame(width: 5 * uiScale, height: 5 * uiScale)
-            .scaleEffect(dotScale(for: delay))
-            .opacity(dotOpacity(for: delay))
-    }
-
-    private func dotScale(_ delay: Double) -> Double {
-        let t = (Double(animationPhase) * 0.1 + delay).truncatingRemainder(dividingBy: 1.0)
-        return 1.0 + 0.4 * sin(t * .pi * 2)
-    }
-
-    private func dotOpacity(_ delay: Double) -> Double {
-        let t = (Double(animationPhase) * 0.1 + delay).truncatingRemainder(dividingBy: 1.0)
-        return 0.4 + 0.6 * sin(t * .pi * 2)
-    }
-
     private func startTypingAnimation() {
-        withAnimation(.easeInOut(duration: 0.5).repeatForever(autoreverses: false)) {
-            animationPhase = 10
+        withAnimation(.easeInOut(duration: 0.4).repeatForever(autoreverses: false)) {
+            dotIndex = 3
         }
     }
 }

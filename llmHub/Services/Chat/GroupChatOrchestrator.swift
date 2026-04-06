@@ -38,22 +38,41 @@ nonisolated final class GroupChatOrchestrator {
         let persistenceBox = PersistenceBox(session: session, modelContext: modelContext)
 
         return cappedAgents.enumerated().map { (index, agent) in
-            CallbackDispatcher.createTask(
-                agentId: agent.id,
-                agentName: agent.name,
-                messageText: messageText,
-                contextId: contextId,
-                index: index,
-                generationID: generationID,
-                persistenceBox: persistenceBox,
-                stateUpdater: stateUpdater,
-                onAllComplete: onAllComplete
-            )
+            Task {
+                // Hop to MainActor to initialize routing service and stream
+                let (initialState, stream) = await MainActor.run {
+                    let routingService = AgentRoutingService()
+                    var state = AgentResponseState(
+                        agentId: agent.id,
+                        contextId: contextId,
+                        orderIndex: index,
+                        status: .thinking
+                    )
+                    state.startedAt = Date()
+                    let sessionKey = "agent:\(agent.id):main"
+                    let s = routingService.streamAgentSession(
+                        agentID: agent.id,
+                        sessionKey: sessionKey,
+                        message: messageText,
+                        history: []
+                    )
+                    return (state, s)
+                }
+
+                await streamAgentEvents(
+                    initialState: initialState,
+                    agentId: agent.id,
+                    agentName: agent.name,
+                    stream: stream,
+                    generationID: generationID,
+                    persistenceBox: persistenceBox,
+                    stateUpdater: stateUpdater,
+                    onAllComplete: onAllComplete
+                )
+            }
         }
     }
 }
-
-// MARK: - Stream Processing (static to avoid actor/Task capture issues)
 
 /// Streams agent responses off-MainActor, dispatching @MainActor callbacks.
 private func streamAgentEvents(
@@ -143,58 +162,6 @@ private func streamAgentEvents(
             ))
             await notifyComplete()
             logger.error("🔵 [GroupChat] Agent \(agentId) stream error: \(error.localizedDescription)")
-        }
-    }
-}
-
-// MARK: - CallbackDispatcher
-
-/// Creates tasks and dispatches @MainActor callbacks.
-/// The static `createTask` method avoids `sending` closure issues by keeping
-/// all task creation logic in a single static function scope.
-private struct CallbackDispatcher {
-    static func createTask(
-        agentId: String,
-        agentName: String,
-        messageText: String,
-        contextId: String,
-        index: Int,
-        generationID: UUID,
-        persistenceBox: PersistenceBox,
-        stateUpdater: @escaping GroupChatOrchestrator.StateUpdater,
-        onAllComplete: @escaping GroupChatOrchestrator.OnAllComplete
-    ) -> Task<Void, Never> {
-        Task {
-            // Hop to MainActor to initialize routing service and stream
-            let (initialState, stream) = await MainActor.run {
-                let routingService = AgentRoutingService()
-                var state = AgentResponseState(
-                    agentId: agentId,
-                    contextId: contextId,
-                    orderIndex: index,
-                    status: .thinking
-                )
-                state.startedAt = Date()
-                let sessionKey = "agent:\(agentId):main"
-                let s = routingService.streamAgentSession(
-                    agentID: agentId,
-                    sessionKey: sessionKey,
-                    message: messageText,
-                    history: []
-                )
-                return (state, s)
-            }
-
-            await streamAgentEvents(
-                initialState: initialState,
-                agentId: agentId,
-                agentName: agentName,
-                stream: stream,
-                generationID: generationID,
-                persistenceBox: persistenceBox,
-                stateUpdater: stateUpdater,
-                onAllComplete: onAllComplete
-            )
         }
     }
 }

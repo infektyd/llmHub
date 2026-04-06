@@ -8,6 +8,66 @@
 
 import SwiftUI
 
+// MARK: - Agent Avatar for Multi-Agent Streaming
+
+/// Small avatar used in multi-agent response headers.
+struct AgentAvatarView: View {
+    let agentId: String
+    var knownAgents: [Agent]
+    @Environment(\.uiScale) private var uiScale
+
+    private var identity: AgentIdentity {
+        AgentIdentityRegistry.lookup(agentId, knownAgents: knownAgents)
+    }
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(identity.color.opacity(0.18))
+                .frame(width: 18 * uiScale, height: 18 * uiScale)
+            Text(identity.emoji)
+                .font(.system(size: 10 * uiScale))
+        }
+    }
+}
+
+// MARK: - Elapsed Time Label
+
+/// Displays elapsed time since a given start date, updating every second.
+/// Used to show streaming duration for multi-agent responses.
+struct ElapsedTimeLabel: View {
+    let startedAt: Date
+    @State private var now: Date = Date()
+    @State private var tickTask: Task<Void, Never>?
+
+    var body: some View {
+        Text(formattedElapsed)
+            .font(.system(size: 10, design: .monospaced))
+            .foregroundStyle(AppColors.textTertiary)
+            .onAppear {
+                tickTask = Task { @MainActor in
+                    while !Task.isCancelled {
+                        now = Date()
+                        try? await Task.sleep(nanoseconds: 1_000_000_000)
+                    }
+                }
+            }
+            .onDisappear {
+                tickTask?.cancel()
+                tickTask = nil
+            }
+    }
+
+    private var formattedElapsed: String {
+        let seconds = Int(now.timeIntervalSince(startedAt))
+        if seconds < 60 {
+            return "\(seconds)s"
+        } else {
+            return "\(seconds / 60)m \(seconds % 60)s"
+        }
+    }
+}
+
 // MARK: - Composer Height Environment
 
 private struct ComposerHeightKey: EnvironmentKey {
@@ -33,42 +93,233 @@ struct ComposerHeightPreferenceKey: PreferenceKey {
 struct TranscriptCanvasView: View {
     let rows: [TranscriptRowViewModel]
     let streamingRow: TranscriptRowViewModel?
+    /// Multi-agent concurrent streaming states (nil when not in group chat)
+    let multiAgentResponses: [String: AgentResponseState]?
 
     @State private var scrollProxy: ScrollViewProxy?
+    /// Tracks whether the user is pinned to the bottom of the transcript.
+    /// When false, auto-scroll is disabled and a "Jump to latest" pill appears.
+    @State private var isPinnedToBottom: Bool = true
     @Environment(\.composerHeight) private var composerHeight
     @Environment(\.uiCompactMode) private var uiCompactMode
 
     var body: some View {
         ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(
-                    alignment: .leading,
-                    spacing: uiCompactMode ? 16 : 24
-                ) {
-                    ForEach(mergedRows) { rowVM in
-                        threadedRow(rowVM)
-                            .id(rowVM.id)
+            ZStack(alignment: .bottomTrailing) {
+                ScrollView {
+                    LazyVStack(
+                        alignment: .leading,
+                        spacing: uiCompactMode ? 16 : 24
+                    ) {
+                        ForEach(mergedRows) { rowVM in
+                            threadedRow(rowVM)
+                                .id(rowVM.id)
+                        }
+
+                        // Multi-agent typing indicators appear below the transcript
+                        if let responses = multiAgentResponses, !responses.isEmpty {
+                            multiAgentIndicators(responses)
+                        }
+
+                        // Bottom anchor marker — LazyVStack only materializes this
+                        // when it scrolls into view, so onAppear/onDisappear
+                        // accurately detect whether the user is at the bottom.
+                        Color.clear
+                            .frame(height: 1)
+                            .id("scroll-bottom-anchor")
+                            .onAppear {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    isPinnedToBottom = true
+                                }
+                            }
+                            .onDisappear {
+                                isPinnedToBottom = false
+                            }
+                    }
+                    // 🔧 CRITICAL FIX — expand transcript width
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, uiCompactMode ? 16 : 24)
+                    .padding(.vertical, uiCompactMode ? 16 : 24)
+                }
+                // 🔧 CRITICAL FIX — expand scroll container width
+                .frame(maxWidth: .infinity)
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    Color.clear.frame(height: composerHeight)
+                }
+                .background(AppColors.backgroundPrimary)
+                .onAppear {
+                    scrollProxy = proxy
+                    scrollToBottom()
+                }
+                .onChange(of: mergedRows.count) { _, _ in
+                    if isPinnedToBottom {
+                        scrollToBottom()
                     }
                 }
-                // 🔧 CRITICAL FIX — expand transcript width
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, uiCompactMode ? 16 : 24)
-                .padding(.vertical, uiCompactMode ? 16 : 24)
-            }
-            // 🔧 CRITICAL FIX — expand scroll container width
-            .frame(maxWidth: .infinity)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                Color.clear.frame(height: composerHeight)
-            }
-            .background(AppColors.backgroundPrimary)
-            .onAppear {
-                scrollProxy = proxy
-                scrollToBottom()
-            }
-            .onChange(of: mergedRows.count) { _, _ in
-                scrollToBottom()
+                .onChange(of: multiAgentResponses?.count) { _, _ in
+                    if isPinnedToBottom {
+                        scrollToBottom()
+                    }
+                }
+
+                // "Jump to latest" floating pill — appears when user scrolls up
+                if !isPinnedToBottom {
+                    jumpToLatestButton
+                        .padding(.trailing, 16)
+                        .padding(.bottom, composerHeight + 12)
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                }
             }
         }
+    }
+
+    /// Floating pill button to jump back to the latest messages.
+    private var jumpToLatestButton: some View {
+        Button {
+            isPinnedToBottom = true
+            scrollToBottom()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.down")
+                    .font(.system(size: 12, weight: .semibold))
+                Text("Jump to latest")
+                    .font(.system(size: 12, weight: .medium))
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background {
+                Capsule(style: .continuous)
+                    .fill(AppColors.accent)
+                    .shadow(color: AppColors.shadowSmoke, radius: 8, x: 0, y: 2)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Renders typing indicators and completed streaming rows for concurrent multi-agent chat.
+    @ViewBuilder
+    private func multiAgentIndicators(_ responses: [String: AgentResponseState]) -> some View {
+        VStack(spacing: 12) {
+            // Render in @mention order (orderIndex)
+            ForEach(responses.values.sorted(by: { $0.orderIndex < $1.orderIndex })) { response in
+                multiAgentResponseRow(response)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .animation(.easeInOut(duration: 0.3), value: responses.count)
+        .id("multi-agent-section")
+    }
+
+    /// Renders a single agent response row during concurrent streaming.
+    @ViewBuilder
+    private func multiAgentResponseRow(_ response: AgentResponseState) -> some View {
+        let identity = AgentIdentityRegistry.lookup(response.id, knownAgents: [])
+        VStack(alignment: .leading, spacing: 6) {
+            // Role label row with avatar, name, role description, status
+            HStack(spacing: 6) {
+                AgentAvatarView(agentId: response.id, knownAgents: [])
+                Text(identity.name)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(identity.color)
+
+                // Role description subtitle
+                if !identity.roleDescription.isEmpty {
+                    Text("· \(identity.roleDescription)")
+                        .font(.system(size: 11))
+                        .foregroundStyle(AppColors.textTertiary)
+                }
+
+                statusBadge(for: response.status)
+
+                // Elapsed time while streaming
+                if case .streaming = response.status, let startedAt = response.startedAt {
+                    ElapsedTimeLabel(startedAt: startedAt)
+                }
+
+                // Completed timestamp
+                if case .complete = response.status, let completedAt = response.completedAt {
+                    Text(completedAt.formatted(date: .omitted, time: .shortened))
+                        .font(.system(size: 10))
+                        .foregroundStyle(AppColors.textTertiary)
+                }
+            }
+
+            // Content or typing indicator
+            Group {
+                if case .queued = response.status {
+                    Text("Waiting...")
+                        .font(.system(size: 13))
+                        .foregroundStyle(AppColors.textTertiary)
+                        .padding(.horizontal, 12)
+                } else if case .thinking = response.status {
+                    AgentTypingIndicator(agentID: response.id, knownAgents: [])
+                } else if case .streaming = response.status {
+                    if response.content.isEmpty {
+                        // Content hasn't arrived yet — show minimal placeholder
+                        Text("…")
+                            .font(.body)
+                            .foregroundStyle(AppColors.textTertiary)
+                            .frame(maxWidth: 700, alignment: .leading)
+                    } else {
+                        TextualMessageView(
+                            content: response.content,
+                            isStreaming: true,
+                            role: .assistant,
+                            generationID: nil,
+                            messageID: nil,
+                            onReply: nil
+                        )
+                        .frame(maxWidth: 700, alignment: .leading)
+                    }
+                } else if case .complete = response.status {
+                    TextualMessageView(
+                        content: response.content,
+                        isStreaming: false,
+                        role: .assistant,
+                        generationID: nil,
+                        messageID: nil,
+                        onReply: nil
+                    )
+                    .frame(maxWidth: 700, alignment: .leading)
+                } else if case .error(let message) = response.status {
+                    Label(message, systemImage: "exclamationmark.triangle")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.red)
+                        .padding(.horizontal, 12)
+                }
+            }
+            .animation(.easeInOut(duration: 0.3), value: response.status)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Status badge for an agent response
+    @ViewBuilder
+    private func statusBadge(for status: AgentResponseState.Status) -> some View {
+        switch status {
+        case .thinking, .streaming:
+            ProgressView()
+                .controlSize(.mini)
+        case .complete:
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+                .font(.system(size: 12))
+        case .error:
+            Image(systemName: "exclamationmark.circle.fill")
+                .foregroundStyle(.red)
+                .font(.system(size: 12))
+        case .queued:
+            EmptyView()
+        }
+    }
+
+    private func agentDisplayName(_ agentId: String) -> String {
+        AgentIdentityRegistry.lookup(agentId, knownAgents: []).name
+    }
+
+    private func agentColor(_ agentId: String) -> Color {
+        AgentIdentityRegistry.lookup(agentId, knownAgents: []).color
     }
 
     /// Renders a row with threading indentation and connector line if it is a reply.
@@ -91,6 +342,8 @@ struct TranscriptCanvasView: View {
     }
 
     private var mergedRows: [TranscriptRowViewModel] {
+        // When in group chat mode, don't show the single streaming overlay
+        if multiAgentResponses?.isEmpty == false { return rows }
         guard let streamingRow else { return rows }
         return rows + [streamingRow]
     }
@@ -117,7 +370,13 @@ struct TranscriptCanvasSessionView: View {
     }
 
     var body: some View {
-        TranscriptCanvasView(rows: persistedRows, streamingRow: streamingOverlayRow)
+        TranscriptCanvasView(rows: persistedRows, streamingRow: streamingOverlayRow, multiAgentResponses: multiAgentStreamingResponses)
+    }
+
+    /// Returns multi-agent responses if we're in a concurrent group chat stream.
+    private var multiAgentStreamingResponses: [String: AgentResponseState]? {
+        guard !chatVM.multiAgentResponses.isEmpty else { return nil }
+        return chatVM.multiAgentResponses
     }
 
     private var persistedRows: [TranscriptRowViewModel] {
@@ -176,6 +435,11 @@ struct TranscriptCanvasSessionView: View {
         )
     }
 
+    /// Resolves a display identity for an agent ID from the discovered agents list.
+    private func resolveAgent(for agentID: String) -> Agent? {
+        return chatVM.discoveredAgents.first { $0.id == agentID }
+    }
+
     // Map a domain ChatMessage into a TranscriptRowViewModel with streaming/rowID context
     private func mapToViewModel(
         _ message: ChatMessage,
@@ -213,7 +477,8 @@ struct TranscriptCanvasSessionView: View {
             toolResultMeta: message.toolResultMeta,
             toolCallArguments: toolCallArguments,
             parentMessageID: message.parentMessageID,
-            replyCount: replyCount
+            replyCount: replyCount,
+            senderAgentID: message.senderAgentID
         )
     }
 
@@ -412,7 +677,12 @@ struct TranscriptCanvasSessionView: View {
     private func headerLabel(for message: ChatMessage) -> String {
         switch message.role {
         case .user: return "You"
-        case .assistant: return "Assistant"
+        case .assistant:
+            if let senderAgentID = message.senderAgentID {
+                let agent = resolveAgent(for: senderAgentID)
+                return agent?.name ?? senderAgentID.capitalized
+            }
+            return "Assistant"
         case .system: return "System"
         case .tool: return "Tool"
         }

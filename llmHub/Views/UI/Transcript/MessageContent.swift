@@ -16,6 +16,8 @@ struct TextualMessageView: View, Equatable {
     let generationID: UUID?
     let messageID: UUID?
     let onReply: (() -> Void)?
+    let onRegenerate: (() -> Void)? = nil
+    let onEdit: (() -> Void)? = nil
     @State private var didCopy: Bool = false
 
     @Environment(\.uiScale) private var uiScale
@@ -44,6 +46,7 @@ struct TextualMessageView: View, Equatable {
         .foregroundStyle(AppColors.textPrimary)
         .fixedSize(horizontal: false, vertical: true)
         .contextMenu {
+            // Reply — available for both user and assistant
             if role == .assistant || role == .user {
                 Button {
                     onReply?()
@@ -51,16 +54,44 @@ struct TextualMessageView: View, Equatable {
                     Label("Reply", systemImage: "arrowshape.turn.up.left")
                 }
             }
+
+            // Copy — available for all message roles
+            Button(didCopy ? "Copied" : "Copy") {
+                copyToClipboard(content)
+                didCopy = true
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 1_500_000_000)
+                    didCopy = false
+                }
+            }
+
             if role == .assistant {
                 Divider()
-                Button(didCopy ? "Copied" : "Copy") {
-                    copyToClipboard(content)
-                    didCopy = true
-                    Task { @MainActor in
-                        try? await Task.sleep(nanoseconds: 1_500_000_000)
-                        didCopy = false
-                    }
+
+                // Regenerate — re-send the request to get a new response
+                Button {
+                    onRegenerate?()
+                } label: {
+                    Label("Regenerate", systemImage: "arrow.clockwise")
                 }
+            }
+
+            if role == .user {
+                Divider()
+
+                // Edit — copies content to composer for re-send
+                Button {
+                    onEdit?()
+                } label: {
+                    Label("Edit & Resend", systemImage: "pencil")
+                }
+            }
+
+            // View Raw — copies the raw markdown to clipboard
+            Button {
+                copyToClipboard(content)
+            } label: {
+                Label("Copy Raw Markdown", systemImage: "doc.text")
             }
         }
     }

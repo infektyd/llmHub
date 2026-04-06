@@ -27,7 +27,7 @@ nonisolated struct AgentIdentity: Equatable, Sendable {
 
 /// Registry of known agent identities.
 /// Agents may override these dynamically later via discovery metadata.
-nonisolated enum AgentIdentityRegistry {
+enum AgentIdentityRegistry {
 
     /// Look up an agent's visual identity by ID.
     /// Falls back to a generic "Agent" identity for unknown IDs.
@@ -71,12 +71,14 @@ nonisolated enum AgentIdentityRegistry {
 
     // MARK: - Default agent identities
 
-    static let defaults: [AgentIdentity] = [
-        AgentIdentity(id: "syntra", name: "Syntra", emoji: "🟢", color: Color(hex: "#4CAF50"), roleDescription: "Coordinator"),
-        AgentIdentity(id: "forge", name: "Forge", emoji: "🔨", color: Color(hex: "#FF6B35"), roleDescription: "Developer"),
-        AgentIdentity(id: "recon", name: "Recon", emoji: "🔍", color: Color(hex: "#9C27B0"), roleDescription: "Researcher"),
-        AgentIdentity(id: "pulse", name: "Pulse", emoji: "💓", color: Color(hex: "#FF69B4"), roleDescription: "Heartbeat"),
-    ]
+    static let defaults: [AgentIdentity] = {
+        [
+            AgentIdentity(id: "syntra", name: "Syntra", emoji: "🟢", color: Color(hex: "#4CAF50"), roleDescription: "Coordinator"),
+            AgentIdentity(id: "forge", name: "Forge", emoji: "🔨", color: Color(hex: "#FF6B35"), roleDescription: "Developer"),
+            AgentIdentity(id: "recon", name: "Recon", emoji: "🔍", color: Color(hex: "#9C27B0"), roleDescription: "Researcher"),
+            AgentIdentity(id: "pulse", name: "Pulse", emoji: "💓", color: Color(hex: "#FF69B4"), roleDescription: "Heartbeat"),
+        ]
+    }()
 
     private static let brandColorHexs: [String: String] = [
         "syntra": "#4CAF50",

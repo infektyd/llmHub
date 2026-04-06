@@ -33,6 +33,9 @@ struct ComposerBarView: View {
     let onLargePaste: (String, @escaping (String?) -> Void) -> Void
     let forceInlinePaste: Bool
 
+    /// Agent IDs from @mentions in the current text (nil = council / all agents).
+    let selectedTargetAgents: [String]
+
     @FocusState private var isInputFocused: Bool
     @State private var isSelectionAtEnd = true
     @State private var isNormalizingMarkdown = false
@@ -115,6 +118,7 @@ struct ComposerBarView: View {
 
     private var inputBubble: some View {
         VStack(alignment: .leading, spacing: 4) {
+            targetIndicator
             stagedArtifactsStrip
             inputRow
         }
@@ -128,6 +132,22 @@ struct ComposerBarView: View {
         .overlay {
             RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .stroke(AppColors.textPrimary.opacity(0.08), lineWidth: 1)
+        }
+    }
+
+    @ViewBuilder
+    private var targetIndicator: some View {
+        if !selectedTargetAgents.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 4) {
+                    ForEach(Array(selectedTargetAgents.enumerated()), id: \.offset) { _, agentID in
+                        let identity = AgentIdentityRegistry.lookup(agentID, knownAgents: nil)
+                        AgentTargetPill(identity: identity)
+                    }
+                }
+            }
+            .padding(.horizontal, 4)
+            .padding(.top, 4)
         }
     }
 
@@ -299,6 +319,35 @@ struct ComposerBarView: View {
     }
 }
 
+// MARK: - Agent Target Pill
+
+/// A small pill showing a target agent's identity.
+struct AgentTargetPill: View {
+    let identity: AgentIdentity
+
+    @Environment(\.uiScale) private var uiScale
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Text(identity.emoji)
+                .font(.system(size: 10 * uiScale))
+            Text(identity.name)
+                .font(.system(size: 11 * uiScale, weight: .medium))
+                .foregroundStyle(identity.color)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background {
+            Capsule(style: .continuous)
+                .fill(identity.color.opacity(0.12))
+        }
+        .overlay {
+            Capsule(style: .continuous)
+                .stroke(identity.color.opacity(0.35), lineWidth: 1)
+        }
+    }
+}
+
 
 /// Bottom composer bar for input and controls
 /// Flat matte surface with shadow (no glass blur)
@@ -319,6 +368,13 @@ struct ComposerBar: View {
     @State private var showAgentAutocomplete: Bool = false
 
     @Environment(\.modelContext) private var modelContext
+
+    /// Parses @mention targets from the current input text.
+    private var selectedTargetAgents: [String] {
+        let plain = String(inputText.characters)
+        let agentIDs = chatVM.allKnownAgents.map { $0.id }
+        return chatVM.extractAgentMentions(from: plain, validAgentIDs: agentIDs)
+    }
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -357,7 +413,8 @@ struct ComposerBar: View {
                         completion(result)
                     }
                 },
-                forceInlinePaste: chatVM.forceInlinePaste
+                forceInlinePaste: chatVM.forceInlinePaste,
+                selectedTargetAgents: selectedTargetAgents
             )
             .fileImporter(
                 isPresented: $isFilePickerPresented,
@@ -514,7 +571,8 @@ struct ComposerBar: View {
             onLargePaste: { _, completion in
                 completion(nil)
             },
-            forceInlinePaste: false
+            forceInlinePaste: false,
+            selectedTargetAgents: []
         )
         .padding()
         .frame(width: 900)
@@ -544,7 +602,8 @@ struct ComposerBar: View {
             onLargePaste: { _, completion in
                 completion(nil)
             },
-            forceInlinePaste: false
+            forceInlinePaste: false,
+            selectedTargetAgents: []
         )
         .padding()
         .frame(width: 900)
@@ -574,7 +633,8 @@ struct ComposerBar: View {
             onLargePaste: { _, completion in
                 completion(nil)
             },
-            forceInlinePaste: false
+            forceInlinePaste: false,
+            selectedTargetAgents: []
         )
         .padding()
         .frame(width: 900)
@@ -604,7 +664,8 @@ struct ComposerBar: View {
             onLargePaste: { _, completion in
                 completion(nil)
             },
-            forceInlinePaste: false
+            forceInlinePaste: false,
+            selectedTargetAgents: []
         )
         .padding()
         .frame(width: 900)

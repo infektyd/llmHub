@@ -39,7 +39,16 @@ struct TranscriptRow: View {
                         role: viewModel.role,
                         generationID: viewModel.generationID,
                         messageID: messageID,
-                        onReply: { chatVM.replyToMessageID = messageID }
+                        onReply: { chatVM.replyToMessageID = messageID },
+                        onEdit: {
+                            // Copy content to clipboard as a placeholder for edit-and-resend
+                            #if os(macOS)
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(viewModel.content, forType: .string)
+                            #else
+                            UIPasteboard.general.string = viewModel.content
+                            #endif
+                        }
                     )
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
@@ -55,7 +64,13 @@ struct TranscriptRow: View {
                         role: viewModel.role,
                         generationID: viewModel.generationID,
                         messageID: messageID,
-                        onReply: { chatVM.replyToMessageID = messageID }
+                        onReply: { chatVM.replyToMessageID = messageID },
+                        onRegenerate: {
+                            chatVM.requestRegeneration(
+                                messageID: messageID,
+                                sessionID: nil
+                            )
+                        }
                     )
                     .frame(maxWidth: 700, alignment: frameAlignment)
                 }
@@ -105,6 +120,13 @@ struct TranscriptRow: View {
         isUser ? .trailing : .leading
     }
 
+    /// Resolved agent identity, if this message came from a known agent.
+    private var agentIdentity: AgentIdentity? {
+        guard let senderID = viewModel.senderAgentID,
+              viewModel.role == .assistant else { return nil }
+        return AgentIdentityRegistry.lookup(senderID, knownAgents: chatVM.discoveredAgents)
+    }
+
     private var roleLabel: some View {
         HStack(spacing: 6) {
             if isUser {
@@ -113,24 +135,40 @@ struct TranscriptRow: View {
                     .foregroundStyle(AppColors.textSecondary)
 
                 Text(viewModel.headerLabel)
-                    .font(
-                        .system(
-                            size: 12 * uiScale,
-                            weight: .semibold
-                        )
-                    )
+                    .font(.system(size: 12 * uiScale, weight: .semibold))
                     .foregroundStyle(AppColors.textSecondary)
+            } else if let identity = agentIdentity {
+                // Agent avatar: emoji in colored circle
+                ZStack {
+                    Circle()
+                        .fill(identity.color.opacity(0.18))
+                        .frame(width: 18 * uiScale, height: 18 * uiScale)
+                    Text(identity.emoji)
+                        .font(.system(size: 10 * uiScale))
+                }
+
+                Text(identity.name)
+                    .font(.system(size: 12 * uiScale, weight: .semibold))
+                    .foregroundStyle(identity.color)
+
+                // Role description
+                if !identity.roleDescription.isEmpty {
+                    Text("· \(identity.roleDescription)")
+                        .font(.system(size: 11 * uiScale))
+                        .foregroundStyle(AppColors.textTertiary)
+                }
+
+                // Optional: streaming indicator
+                if viewModel.isStreaming {
+                    ProgressView()
+                        .controlSize(.mini)
+                        .padding(.leading, 4)
+                }
             } else {
                 Text(viewModel.headerLabel)
-                    .font(
-                        .system(
-                            size: 12 * uiScale,
-                            weight: .semibold
-                        )
-                    )
+                    .font(.system(size: 12 * uiScale, weight: .semibold))
                     .foregroundStyle(AppColors.textSecondary)
 
-                // Optional: visual indicator for streaming
                 if viewModel.isStreaming {
                     ProgressView()
                         .controlSize(.mini)
@@ -150,13 +188,7 @@ struct TranscriptRow: View {
                 !meta.isEmpty
             {
                 Text(meta)
-                    .font(
-                        .system(
-                            size: 11 * uiScale,
-                            weight: .medium,
-                            design: .monospaced
-                        )
-                    )
+                    .font(.system(size: 11 * uiScale, weight: .medium, design: .monospaced))
                     .foregroundStyle(AppColors.textTertiary)
             }
         }

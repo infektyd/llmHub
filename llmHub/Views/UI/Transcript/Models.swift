@@ -362,6 +362,10 @@ struct TranscriptRowViewModel: Identifiable, Equatable {
     /// Number of direct replies to this message.
     let replyCount: Int
 
+    // Multi-agent support
+    /// Agent ID that sent this message, if known.
+    let senderAgentID: String?
+
     init(
         id: String,
         kind: TranscriptRowKind = .message,
@@ -377,7 +381,8 @@ struct TranscriptRowViewModel: Identifiable, Equatable {
         toolResultMeta: ToolResultMeta? = nil,
         toolCallArguments: String? = nil,
         parentMessageID: UUID? = nil,
-        replyCount: Int = 0
+        replyCount: Int = 0,
+        senderAgentID: String? = nil
     ) {
         self.id = id
         self.kind = kind
@@ -394,6 +399,7 @@ struct TranscriptRowViewModel: Identifiable, Equatable {
         self.toolCallArguments = toolCallArguments
         self.parentMessageID = parentMessageID
         self.replyCount = replyCount
+        self.senderAgentID = senderAgentID
     }
 
     // Equatable conformance for efficient SwiftUI diffing
@@ -410,6 +416,7 @@ struct TranscriptRowViewModel: Identifiable, Equatable {
             && lhs.toolCallArguments == rhs.toolCallArguments
             && lhs.parentMessageID == rhs.parentMessageID
             && lhs.replyCount == rhs.replyCount
+            && lhs.senderAgentID == rhs.senderAgentID
     }
 }
 

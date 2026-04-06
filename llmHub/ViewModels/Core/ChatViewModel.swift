@@ -92,6 +92,15 @@ class ChatViewModel {
     /// AFM diagnostics information
     var afmDiagnostics: AFMDiagnostics = AFMDiagnostics()
 
+    // MARK: - Multi-Agent Concurrent Streaming
+
+    /// Per-agent response state for concurrent group chat streaming.
+    /// Keyed by agentId, displays in @mention order via orderIndex.
+    var multiAgentResponses: [String: AgentResponseState] = [:]
+
+    /// The current context ID for multi-agent streaming (groups responses to same user message).
+    private var activeGroupChatContextId: String?
+
     // MARK: - Multi-Agent Discovery
 
     /// Discovered agents from the OpenClaw gateway.
@@ -1885,6 +1894,8 @@ class ChatViewModel {
         streamingMessageID = nil
         streamingStartedAt = nil
         activeGenerationID = nil
+        multiAgentResponses.removeAll()
+        activeGroupChatContextId = nil
     }
 
     func handleStreamCompletion(
@@ -1969,7 +1980,9 @@ class ChatViewModel {
     /// Handles a group chat message where one or more OpenClaw agents are @mentioned.
     /// Routes each agent via the gateway's sessions_send API with dedicated session keys,
     /// ensuring the gateway delivers to the correct agent (not just the first mention).
-    /// Streams responses sequentially (one agent at a time), tagging each with senderAgentID.
+    /// Streams all agents concurrently using TaskGroup, with per-agent state tracking.
+    /// Responses appear in @mention order (orderIndex), not arrival order.
+    /// Max 4 agents per message, 120s timeout per agent.
     private func handleGroupChat(
         messageText: String,
         mentionedAgentIDs: [String],
@@ -1981,150 +1994,60 @@ class ChatViewModel {
         let targetAgents = mentionedAgentIDs.compactMap { agentMap[$0] }
         guard !targetAgents.isEmpty else { return }
 
+        // Enforce max 4 agents per message
+        let cappedAgents = Array(targetAgents.prefix(4))
+        if cappedAgents.count < targetAgents.count {
+            logger.warning(
+                "🔵 [GroupChat] Capped from \(targetAgents.count) to \(cappedAgents.count) agents (max 4)"
+            )
+        }
+
         logger.info(
-            "🔵 [GroupChat] Routing to agents: \(mentionedAgentIDs.joined(separator: ", "))"
+            "🔵 [GroupChat] Concurrent routing to agents: \(cappedAgents.map { $0.id }.joined(separator: ", "))"
         )
 
-        // Initialize AgentRoutingService for per-agent session routing.
-        let routingService = AgentRoutingService()
-
+        let contextId = UUID().uuidString
+        activeGroupChatContextId = contextId
         isGenerating = true
-        let streamToken = UUID().uuidString
         let generationID = UUID()
 
+        // Initialize per-agent response states in @mention order
+        for (index, agent) in cappedAgents.enumerated() {
+            multiAgentResponses[agent.id] = AgentResponseState(
+                agentId: agent.id,
+                contextId: contextId,
+                orderIndex: index,
+                status: .queued
+            )
+        }
+
+        // Launch concurrent streaming via the orchestrator
+        let orchestrator = GroupChatOrchestrator()
+
+        let agentTasks = orchestrator.startStreaming(
+            agents: cappedAgents,
+            messageText: messageText,
+            contextId: contextId,
+            generationID: generationID,
+            session: session,
+            modelContext: modelContext,
+            stateUpdater: { [weak self] state in
+                guard let self else { return }
+                self.multiAgentResponses[state.id] = state
+            },
+            onAllComplete: { [weak self] in
+                guard let self else { return }
+                self.isGenerating = false
+                self.generationTask = nil
+                self.logger.info("[GroupChat] All agents completed")
+            }
+        )
+
+        // Store for cancellation via stopGeneration()
         generationTask = Task { @MainActor in
-            // Load chat history from the session so the agent sees context.
-            let _: [ChatMessage] = await MainActor.run {
-                (try? modelContext.fetch(FetchDescriptor<ChatMessageEntity>()).map { entity in
-                    entity.asDomain()
-                }) ?? []
+            for task in agentTasks {
+                _ = await task.result
             }
-
-            for agent in targetAgents {
-                if Task.isCancelled { break }
-
-                // Each agent gets its own dedicated session: "agent:<agentID>:main"
-                let sessionKey = "agent:\(agent.id):main"
-
-                logger.info(
-                    "🔵 [GroupChat] Streaming response from agent: \(agent.id) via session \(sessionKey)"
-                )
-
-                let streamingID = UUID()
-                streamingText = nil
-                streamingMessageID = streamingID
-                activeGenerationID = generationID
-
-                await streamAccumulator.reset()
-                await streamAccumulator.begin(token: streamToken)
-
-                let (uiStream, uiContinuation) = AsyncStream<String>.makeStream()
-                let updateTask = Task { @MainActor in
-                    for await text in uiStream {
-                        scheduleStreamingUpdate(text, messageID: streamingID)
-                    }
-                    flushStreamingUpdate(messageID: streamingID)
-                }
-
-                // Route via sessions.send with the agent-specific session key.
-                let stream = routingService.streamAgentSession(
-                    agentID: agent.id,
-                    sessionKey: sessionKey,
-                    message: messageText,
-                    history: []  // sessions_send manages its own session history
-                )
-
-                do {
-                    for try await event in stream {
-                        try Task.checkCancellation()
-                        switch event {
-                        case .token(let text):
-                            if let updated = await streamAccumulator.append(
-                                token: streamToken, delta: text
-                            ) {
-                                uiContinuation.yield(updated)
-                            }
-                        case .completion(let message):
-                            _ = await streamAccumulator.complete(
-                                token: streamToken, final: message.content
-                            )
-                            uiContinuation.finish()
-                            _ = await updateTask.result
-
-                            // Persist message with senderAgentID
-                            var tagged = message
-                            tagged.senderAgentID = agent.id
-                            tagged.generationID = generationID
-                            let entity = ChatMessageEntity(message: tagged)
-                            entity.session = session
-                            modelContext.insert(entity)
-                            session.updatedAt = Date()
-                            try? modelContext.save()
-
-                            resetStreamingState()
-                            logger.info(
-                                "🔵 [GroupChat] Agent \(agent.id) completed (\(message.content.count) chars)"
-                            )
-
-                        case .truncated(let message):
-                            _ = await streamAccumulator.complete(
-                                token: streamToken, final: message.content
-                            )
-                            uiContinuation.finish()
-                            _ = await updateTask.result
-
-                            var tagged = message
-                            tagged.senderAgentID = agent.id
-                            tagged.generationID = generationID
-                            let entity = ChatMessageEntity(message: tagged)
-                            entity.session = session
-                            modelContext.insert(entity)
-                            session.updatedAt = Date()
-                            try? modelContext.save()
-
-                            resetStreamingState()
-                            logger.warning("🔵 [GroupChat] Agent \(agent.id) response truncated")
-
-                        case .error(let error):
-                            await streamAccumulator.fail(token: streamToken, error: error)
-                            uiContinuation.finish()
-                            _ = await updateTask.result
-
-                            let errorMsg = ChatMessage(
-                                role: .assistant,
-                                content: "Error from \(agent.name): \(error.localizedDescription)",
-                                parts: [.text("Error from \(agent.name): \(error.localizedDescription)")],
-                                senderAgentID: agent.id
-                            )
-                            let entity = ChatMessageEntity(message: errorMsg)
-                            entity.session = session
-                            modelContext.insert(entity)
-                            try? modelContext.save()
-
-                            resetStreamingState()
-                            logger.error(
-                                "🔵 [GroupChat] Agent \(agent.id) error: \(error.localizedDescription)"
-                            )
-
-                        default:
-                            break
-                        }
-                    }
-                } catch {
-                    if error is CancellationError { break }
-                    logger.error(
-                        "🔵 [GroupChat] Agent \(agent.id) stream error: \(error.localizedDescription)"
-                    )
-                }
-
-                await streamAccumulator.reset()
-            }
-
-            // All agents done
-            isGenerating = false
-            generationTask = nil
-            resetStreamingState()
-            logger.info("🔵 [GroupChat] All agents completed")
         }
     }
 
@@ -2170,6 +2093,24 @@ class ChatViewModel {
     /// Stops the current generation if one is in progress
     func stopGeneration() async {
         guard isGenerating else { return }
+
+        // Mark any in-progress multi-agent responses as stale before cancelling
+        if !multiAgentResponses.isEmpty {
+            let staleContextId = activeGroupChatContextId
+            for (agentId, _) in multiAgentResponses {
+                if var state = multiAgentResponses[agentId] {
+                    let isInProgress: Bool
+                    switch state.status {
+                    case .streaming, .thinking: isInProgress = true
+                    default: isInProgress = false
+                    }
+                    if isInProgress {
+                        state.completedAt = Date()
+                        multiAgentResponses[agentId] = state
+                    }
+                }
+            }
+        }
 
         // Flip this early to prevent recursive stopGeneration calls via tool cancel handlers.
         isGenerating = false
