@@ -43,8 +43,8 @@ line_length:
 
 # Function body length
 function_body_length:
-  warning: 640
-  error: 700
+  warning: 150
+  error: 400
 
 # File length
 file_length:
@@ -54,8 +54,8 @@ file_length:
 
 # Type body length
 type_body_length:
-  warning: 1700
-  error: 3000
+  warning: 600
+  error: 1200
 
 # Nesting
 nesting:
