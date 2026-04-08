@@ -2135,12 +2135,64 @@ class ChatViewModel {
     }
 
     /// Requests regeneration of an assistant message by re-sending the preceding user message.
-    /// - Parameter messageID: The UUID of the assistant message to regenerate.
-    func requestRegeneration(messageID: UUID) {
+    /// - Parameters:
+    ///   - messageID: The UUID of the assistant message to regenerate.
+    ///   - session: The chat session containing the message.
+    ///   - modelContext: The SwiftData model context for persistence.
+    func requestRegeneration(
+        messageID: UUID,
+        session: ChatSessionEntity,
+        modelContext: ModelContext
+    ) {
+        guard !isGenerating else {
+            logger.warning("Cannot regenerate while generating")
+            return
+        }
+
         logger.info("Regeneration requested for message \(messageID)")
-        // Full regeneration requires replaying the conversation up to the preceding user message
-        // and re-invoking the provider. This is a stub that logs the request.
-        // TODO: Implement full regeneration by finding the parent user message and re-sending
+
+        // Find the assistant message by ID in the session's sorted messages
+        let sortedMessages = session.messages.sorted { $0.createdAt < $1.createdAt }
+
+        guard let targetIndex = sortedMessages.firstIndex(where: { $0.id == messageID }) else {
+            logger.warning("Message \(messageID) not found in session")
+            return
+        }
+
+        let targetMessage = sortedMessages[targetIndex]
+        guard targetMessage.role == "assistant" else {
+            logger.warning("Message \(messageID) is not an assistant message")
+            return
+        }
+
+        // Find the preceding user message
+        let precedingMessages = sortedMessages[..<targetIndex]
+        guard let userMessageEntity = precedingMessages.last(where: { $0.role == "user" }) else {
+            logger.warning("No preceding user message found for regeneration")
+            return
+        }
+
+        let userContent = userMessageEntity.content
+
+        // Remove the assistant message and all subsequent messages from SwiftData
+        let messagesToRemove = sortedMessages[targetIndex...]
+        for message in messagesToRemove {
+            modelContext.delete(message)
+        }
+
+        do {
+            try modelContext.save()
+        } catch {
+            logger.error("Failed to save after removing messages: \(error.localizedDescription)")
+            return
+        }
+
+        // Re-send the user message
+        sendMessage(
+            messageText: userContent,
+            session: session,
+            modelContext: modelContext
+        )
     }
 
     // MARK: - AFM Diagnostics
