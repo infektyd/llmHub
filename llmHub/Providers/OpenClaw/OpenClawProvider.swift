@@ -242,7 +242,7 @@ struct OpenClawProvider: LLMProvider {
             )
         }
 
-        return try manager.makeChatRequest(
+        return try await manager.makeChatRequest(
             messages: ocMessages,
             model: targetModel,
             stream: false,

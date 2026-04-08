@@ -46,13 +46,7 @@ struct TranscriptRow: View {
                         onReply: { chatVM.replyToMessageID = messageID },
                         onRegenerate: nil,
                         onEdit: {
-                            // Copy content to clipboard as a placeholder for edit-and-resend
-                            #if os(macOS)
-                            NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString(viewModel.content, forType: .string)
-                            #else
-                            UIPasteboard.general.string = viewModel.content
-                            #endif
+                            onEdit?(viewModel.content)
                         }
                     )
                     .padding(.horizontal, 14)
@@ -72,7 +66,7 @@ struct TranscriptRow: View {
                         onReply: { chatVM.replyToMessageID = messageID },
                         onRegenerate: {
                             if let messageID {
-                                chatVM.requestRegeneration(messageID: messageID)
+                                onRegenerate?(messageID)
                             }
                         }
                     )
