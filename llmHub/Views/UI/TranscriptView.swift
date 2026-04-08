@@ -96,6 +96,9 @@ struct TranscriptCanvasView: View {
     /// Multi-agent concurrent streaming states (nil when not in group chat)
     let multiAgentResponses: [String: AgentResponseState]?
 
+    var onRegenerate: ((UUID) -> Void)?
+    var onEdit: ((String) -> Void)?
+
     @State private var scrollProxy: ScrollViewProxy?
     /// Tracks whether the user is pinned to the bottom of the transcript.
     /// When false, auto-scroll is disabled and a "Jump to latest" pill appears.
@@ -333,11 +336,19 @@ struct TranscriptCanvasView: View {
                     .frame(width: 2)
                     .padding(.horizontal, 12)
                 // Indented reply content
-                TranscriptRow(viewModel: rowVM)
+                TranscriptRow(
+                    viewModel: rowVM,
+                    onRegenerate: onRegenerate,
+                    onEdit: onEdit
+                )
             }
             .padding(.leading, 28)
         } else {
-            TranscriptRow(viewModel: rowVM)
+            TranscriptRow(
+                viewModel: rowVM,
+                onRegenerate: onRegenerate,
+                onEdit: onEdit
+            )
         }
     }
 
@@ -364,13 +375,28 @@ struct TranscriptCanvasSessionView: View {
     let session: ChatSessionEntity
 
     @Environment(ChatViewModel.self) private var chatVM
+    @Environment(\.modelContext) private var modelContext
 
     private var messages: [ChatMessageEntity] {
         session.messages.sorted { $0.createdAt < $1.createdAt }
     }
 
     var body: some View {
-        TranscriptCanvasView(rows: persistedRows, streamingRow: streamingOverlayRow, multiAgentResponses: multiAgentStreamingResponses)
+        TranscriptCanvasView(
+            rows: persistedRows,
+            streamingRow: streamingOverlayRow,
+            multiAgentResponses: multiAgentStreamingResponses,
+            onRegenerate: { messageID in
+                chatVM.requestRegeneration(
+                    messageID: messageID,
+                    session: session,
+                    modelContext: modelContext
+                )
+            },
+            onEdit: { content in
+                chatVM.composerDraft = content
+            }
+        )
     }
 
     /// Returns multi-agent responses if we're in a concurrent group chat stream.

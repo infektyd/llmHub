@@ -69,6 +69,10 @@ class ChatViewModel {
     /// Indicates whether the view model is currently streaming/generating a response.
     var isGenerating: Bool = false
 
+    /// Holds text to pre-fill the composer when the user taps Edit on a message.
+    /// The composer observes this and consumes it on change, then sets it back to nil.
+    var composerDraft: String?
+
     /// Agent IDs currently mentioned in the composer input.
     /// Updated by the composer view via .onChange of input text.
     /// When non-empty, model routing is driven by these mentions instead of manual picker selection.

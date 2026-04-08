@@ -449,6 +449,12 @@ struct ComposerBar: View {
                 showAgentAutocomplete = false
             }
         }
+        .onChange(of: chatVM.composerDraft) { _, newValue in
+            if let draft = newValue {
+                inputText = AttributedString(draft)
+                chatVM.composerDraft = nil
+            }
+        }
     }
 
     private func insertAgentMention(_ agent: Agent) {
