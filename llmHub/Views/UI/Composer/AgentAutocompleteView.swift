@@ -26,7 +26,7 @@ struct AgentAutocompleteView: View {
             .padding(4)
             .background {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color(nsColor: .windowBackgroundColor))
+                    .fill(Color(NSColor.windowBackgroundColor))
                     .shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 2)
             }
         )
@@ -67,7 +67,7 @@ private struct AgentAutocompleteRow: View {
 #Preview("Agent Autocomplete") {
     let agents: [Agent] = [
         Agent(id: "syntra", name: "Syntra", emoji: "🔵", status: .online),
-        Agent(id: "forge", name: "Forge", emoji: "⚒️", status: .online),
+        Agent(id: "forge", name: "Forge", emoji: "⚒️", status: .online)
     ]
     return AgentAutocompleteView(agents: agents) { agent in
         print("Selected \(agent.name)")

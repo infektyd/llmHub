@@ -82,7 +82,7 @@ final class MessageSequenceValidatorTests: XCTestCase {
             userMessage(content: "Read the file"),
             assistantMessage(content: "", toolCalls: [toolCall]),
             toolMessage(content: "File contents", toolCallID: "call_123"),
-            assistantMessage(content: "Done"),
+            assistantMessage(content: "Done")
         ]
 
         // When
@@ -114,7 +114,7 @@ final class MessageSequenceValidatorTests: XCTestCase {
             assistantMessage(content: "", toolCalls: [toolCall1, toolCall2]),
             toolMessage(content: "File 1 result", toolCallID: "call_1"),
             toolMessage(content: "File 2 result", toolCallID: "call_2"),
-            assistantMessage(content: "Done"),
+            assistantMessage(content: "Done")
         ]
 
         // When
@@ -136,7 +136,7 @@ final class MessageSequenceValidatorTests: XCTestCase {
             userMessage(content: "Read the file"),
             assistantMessage(content: "", toolCalls: [toolCall]),
             userMessage(content: "Wait, cancel that"),  // User interrupts
-            toolMessage(content: "File contents", toolCallID: "call_123"),  // Tool result orphaned
+            toolMessage(content: "File contents", toolCallID: "call_123")  // Tool result orphaned
         ]
 
         // When
@@ -154,7 +154,7 @@ final class MessageSequenceValidatorTests: XCTestCase {
         let messages: [ChatMessage] = [
             userMessage(content: "Hello"),
             toolMessage(content: "Orphaned tool result", toolCallID: "call_orphan"),
-            assistantMessage(content: "Response"),
+            assistantMessage(content: "Response")
         ]
 
         // When
@@ -185,7 +185,7 @@ final class MessageSequenceValidatorTests: XCTestCase {
             assistantMessage(content: "", toolCalls: [toolCall]),
             toolMessage(content: "First result", toolCallID: "call_123"),
             toolMessage(content: "Duplicate result", toolCallID: "call_123"),  // Duplicate
-            assistantMessage(content: "Done"),
+            assistantMessage(content: "Done")
         ]
 
         // When
@@ -208,7 +208,7 @@ final class MessageSequenceValidatorTests: XCTestCase {
         let messages: [ChatMessage] = [
             userMessage(content: "Hello"),
             assistantMessage(content: "Response"),
-            assistantMessage(content: "   \n\t  ", toolCalls: nil),  // Trailing empty
+            assistantMessage(content: "   \n\t  ", toolCalls: nil)  // Trailing empty
         ]
 
         // When
@@ -230,7 +230,7 @@ final class MessageSequenceValidatorTests: XCTestCase {
         let messages: [ChatMessage] = [
             userMessage(content: "Hello"),
             toolMsgWithoutID,
-            assistantMessage(content: "Response"),
+            assistantMessage(content: "Response")
         ]
 
         // When
@@ -250,7 +250,7 @@ final class MessageSequenceValidatorTests: XCTestCase {
         let messages: [ChatMessage] = [
             userMessage(content: "Read file"),
             assistantMessage(content: "  ", toolCalls: [toolCall]),  // Trailing empty with toolCalls - won't be dropped
-            toolMessage(content: "Result", toolCallID: "call_123"),
+            toolMessage(content: "Result", toolCallID: "call_123")
         ]
 
         // When
@@ -274,7 +274,7 @@ final class MessageSequenceValidatorTests: XCTestCase {
             toolMessage(content: "Valid result", toolCallID: "call_valid"),
             toolMessage(content: "Orphan", toolCallID: "call_orphan"),  // Orphan
             toolMessage(content: "Duplicate", toolCallID: "call_valid"),  // Duplicate
-            assistantMessage(content: "   "),  // Trailing empty
+            assistantMessage(content: "   ")  // Trailing empty
         ]
 
         // When
@@ -302,7 +302,7 @@ final class MessageSequenceValidatorTests: XCTestCase {
             userMessage(content: "User query"),
             assistantMessage(content: "", toolCalls: [toolCall]),
             toolMessage(content: "Tool result", toolCallID: "call_abc"),
-            assistantMessage(content: "Final response"),
+            assistantMessage(content: "Final response")
         ]
 
         // When
@@ -331,7 +331,7 @@ final class MessageSequenceValidatorTests: XCTestCase {
             userMessage(content: "Query"),
             assistantMessage(content: "", toolCalls: [toolCall]),
             toolMessage(content: "Orphan", toolCallID: "call_orphan"),
-            toolMessage(content: "Valid", toolCallID: "call_deterministic"),
+            toolMessage(content: "Valid", toolCallID: "call_deterministic")
         ]
 
         // When: Run sanitization multiple times
@@ -370,7 +370,7 @@ final class MessageSequenceValidatorTests: XCTestCase {
             systemMessage(content: "System 1"),
             systemMessage(content: "System 2"),
             userMessage(content: "User 1"),
-            userMessage(content: "User 2"),
+            userMessage(content: "User 2")
         ]
 
         // When
@@ -390,7 +390,7 @@ final class MessageSequenceValidatorTests: XCTestCase {
         let messages: [ChatMessage] = [
             userMessage(content: "Hello"),
             toolMessage(content: "Orphan", toolCallID: "call_orphan"),
-            assistantMessage(content: "  "),
+            assistantMessage(content: "  ")
         ]
 
         // When

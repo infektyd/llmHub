@@ -183,7 +183,7 @@ struct ModelPickerSheet: View {
     private func checkConfiguredProviders() async {
         let keychain = KeychainStore()
         var configured = Set<String>()
-        
+
         for provider in providers {
             if provider == .openclaw {
                 configured.insert(provider.rawValue)  // OpenClaw is always configured (local gateway)
@@ -191,7 +191,7 @@ struct ModelPickerSheet: View {
                 configured.insert(provider.rawValue)
             }
         }
-        
+
         configuredProviders = configured
     }
 }

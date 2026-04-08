@@ -387,7 +387,7 @@ struct ProviderRow: View {
                                 .foregroundStyle(AppColors.success)
                         }
                         .padding(.vertical, 8)
-                    } 
+                    }
                     // API key input - hidden for OpenClaw (uses local gateway token)
                     else if info.provider != .openclaw {
                         HStack(spacing: 8) {
@@ -554,8 +554,7 @@ struct ToolsSection: View {
                         Spacer()
                     }
                 } else {
-                    ForEach(Array(viewModel.toolToggles.enumerated()), id: \.element.id) {
-                        index, tool in
+                    ForEach(Array(viewModel.toolToggles.enumerated()), id: \.element.id) { index, tool in
                         ToolToggleRow(
                             tool: tool,
                             onToggle: { enabled in
@@ -646,7 +645,7 @@ struct AppearanceSection: View {
 
     private let emoteOptions: [String] = [
         "👤", "🧑‍💻", "🧑", "👨", "👩", "🧔", "👨‍💼", "👩‍💼",
-        "🦊", "🐱", "🤖", "👾", "🎮", "⚡️", "🔥", "💎", "🌟",
+        "🦊", "🐱", "🤖", "👾", "🎮", "⚡️", "🔥", "💎", "🌟"
     ]
 
     var body: some View {
@@ -1102,13 +1101,12 @@ struct LinkRow: View {
                     isEnabled: false,
                     isAvailable: false,
                     unavailableReason: "Requires macOS"
-                ),
+                )
             ]
         }
 
         static func mockSettingsViewModel(withKeys: Bool = false, withTools: Bool = true)
-            -> SettingsViewModel
-        {
+            -> SettingsViewModel {
             let viewModel = SettingsViewModel()
             if withKeys {
                 viewModel.openAIKey = "sk-mock-key-12345"

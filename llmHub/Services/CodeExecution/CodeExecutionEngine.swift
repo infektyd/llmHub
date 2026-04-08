@@ -94,7 +94,7 @@ actor CodeExecutionEngine {
         print("🔍 [Engine] Code length: \(request.code.count) chars")
         print("🔍 [Engine] Security mode: \(securityMode)")
         print("🔍 [Engine] Timeout: \(request.timeoutSeconds)s")
-        
+
         let languageName = request.language.rawValue
         let codeLength = request.code.count
         logger.info("Executing \(languageName) code (\(codeLength) chars)")
@@ -103,7 +103,7 @@ actor CodeExecutionEngine {
         print("🔍 [Engine] Checking backend availability...")
         let isAvailable = await backend.isAvailable
         print("🔍 [Engine] Backend isAvailable: \(isAvailable)")
-        
+
         guard isAvailable else {
             print("❌ [Engine] FAILED: Backend not available")
             throw CodeExecutionError.processLaunchFailed(
@@ -119,7 +119,7 @@ actor CodeExecutionEngine {
         print("  ├─ isAvailable: \(interpreter.isAvailable)")
         print("  ├─ path: \(interpreter.path)")
         print("  └─ version: \(interpreter.version ?? "nil")")
-        
+
         guard interpreter.isAvailable else {
             print("❌ [Engine] FAILED: Interpreter not found")
             throw CodeExecutionError.interpreterNotFound(request.language)
@@ -130,7 +130,7 @@ actor CodeExecutionEngine {
         var workingDirectory: URL?
         let isSandboxMode = securityMode.rawValue == CodeSecurityMode.sandbox.rawValue
         print("🔍 [Engine] isSandboxMode: \(isSandboxMode)")
-        
+
         if isSandboxMode {
             print("🔍 [Engine] Creating sandbox for request \(request.id)...")
             // Create a sandbox directory for output files
@@ -174,7 +174,7 @@ actor CodeExecutionEngine {
                     await sandboxManager.cleanupSandbox(for: request.id)
                 }
             }
-            
+
             print("🔍 [Engine] ========== ENGINE EXECUTE COMPLETED ==========\n")
             return enrichedResult
 

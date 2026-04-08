@@ -16,11 +16,31 @@ struct TextualMessageView: View, Equatable {
     let generationID: UUID?
     let messageID: UUID?
     let onReply: (() -> Void)?
-    let onRegenerate: (() -> Void)? = nil
-    let onEdit: (() -> Void)? = nil
+    let onRegenerate: (() -> Void)?
+    let onEdit: (() -> Void)?
     @State private var didCopy: Bool = false
 
     @Environment(\.uiScale) private var uiScale
+
+    init(
+        content: String,
+        isStreaming: Bool,
+        role: MessageRole,
+        generationID: UUID?,
+        messageID: UUID?,
+        onReply: (() -> Void)?,
+        onRegenerate: (() -> Void)? = nil,
+        onEdit: (() -> Void)? = nil
+    ) {
+        self.content = content
+        self.isStreaming = isStreaming
+        self.role = role
+        self.generationID = generationID
+        self.messageID = messageID
+        self.onReply = onReply
+        self.onRegenerate = onRegenerate
+        self.onEdit = onEdit
+    }
 
     static func == (lhs: TextualMessageView, rhs: TextualMessageView) -> Bool {
         lhs.content == rhs.content

@@ -34,7 +34,7 @@ struct MistralProvider: LLMProvider {
             guard let key = await keychain.apiKey(for: .mistral) else { return [:] }
             return [
                 "Authorization": "Bearer \(key)",
-                "Content-Type": "application/json",
+                "Content-Type": "application/json"
             ]
         }
     }
@@ -256,8 +256,7 @@ struct MistralProvider: LLMProvider {
                 let end = sanitized.range(
                     of: ToolManifest.endMarker,
                     range: start.upperBound..<sanitized.endIndex
-                )
-            {
+                ) {
                 sanitized.replaceSubrange(
                     start.lowerBound..<end.upperBound,
                     with: "[tool manifest omitted]"
@@ -298,16 +297,14 @@ struct MistralProvider: LLMProvider {
                     // Ensure stream=true in body
                     if let bodyData = request.httpBody,
                         var json = try? JSONSerialization.jsonObject(with: bodyData)
-                            as? [String: Any]
-                    {
+                            as? [String: Any] {
                         json["stream"] = true
                         streamRequest.httpBody = try JSONSerialization.data(withJSONObject: json)
                     }
                     streamRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
 
                     if let bodyData = streamRequest.httpBody,
-                        let bodyStr = String(data: bodyData, encoding: .utf8)
-                    {
+                        let bodyStr = String(data: bodyData, encoding: .utf8) {
                         LLMTrace.requestDetails(
                             provider: "Mistral",
                             url: streamRequest.url?.absoluteString ?? "unknown",

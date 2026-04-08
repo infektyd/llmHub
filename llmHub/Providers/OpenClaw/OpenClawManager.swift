@@ -37,7 +37,7 @@ public class OpenClawManager {
         request.httpMethod = "POST"
         request.addValue("Bearer 3d0f30ebdb793f1d86523ea3f2ecc52615435a3874810790", forHTTPHeaderField: "Authorization")
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        
+
         let encoder = JSONEncoder()
         request.httpBody = try encoder.encode(payload)
 

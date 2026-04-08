@@ -36,8 +36,7 @@ nonisolated struct ArtifactOpenTool: Tool {
     init() {}
 
     nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws
-        -> ToolResult
-    {
+        -> ToolResult {
         guard let idString = arguments.string("id"), !idString.isEmpty else {
             throw ToolError.invalidArguments("id is required")
         }
@@ -58,7 +57,7 @@ nonisolated struct ArtifactOpenTool: Tool {
             "name": artifact.filename,
             "mimeType": artifact.mimeType,
             "bytes": artifact.sizeBytes,
-            "importedAt": ISO8601DateFormatter().string(from: artifact.importedAt),
+            "importedAt": ISO8601DateFormatter().string(from: artifact.importedAt)
         ]
 
         let jsonData = try JSONSerialization.data(withJSONObject: metadata, options: .prettyPrinted)

@@ -37,8 +37,13 @@ nonisolated final class GroupChatOrchestrator {
         let cappedAgents = Array(agents.prefix(4))
         let persistenceBox = PersistenceBox(session: session, modelContext: modelContext)
 
-        return cappedAgents.enumerated().map { (index, agent) in
-            Task {
+        let allAgentIDs = cappedAgents.map { $0.id }
+
+        return cappedAgents.enumerated().map { (index, agent) -> Task<Void, Never> in
+            // Each agent needs the list of OTHER agents (excluding itself)
+            let otherAgentIDs = allAgentIDs.filter { $0 != agent.id }
+
+            return Task {
                 // Hop to MainActor to initialize routing service and stream
                 let (initialState, stream) = await MainActor.run {
                     let routingService = AgentRoutingService()
@@ -54,7 +59,10 @@ nonisolated final class GroupChatOrchestrator {
                         agentID: agent.id,
                         sessionKey: sessionKey,
                         message: messageText,
-                        history: []
+                        history: [],
+                        otherAgentIDs: otherAgentIDs,
+                        groupContextId: contextId,
+                        agentName: agent.name
                     )
                     return (state, s)
                 }

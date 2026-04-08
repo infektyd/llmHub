@@ -116,6 +116,16 @@ public struct AppSettings: Codable, Sendable {
     /// Enable smart tool run labels for run bundles
     public var smartRunLabelsEnabled: Bool = false
 
+    // MARK: - Sovereign Memory
+
+    /// Enable Sovereign Memory integration (pre/post-LLM hooks).
+    /// When enabled, the gateway calls the Sovereign Memory FastAPI service
+    /// for context retrieval before LLM calls and conversation logging after.
+    public var sovereignMemoryEnabled: Bool = false
+
+    /// Base URL for the Sovereign Memory FastAPI service.
+    public var sovereignMemoryBaseURL: String = "http://localhost:8901"
+
     // MARK: - Initialization
 
     public init() {
@@ -141,6 +151,8 @@ public struct AppSettings: Codable, Sendable {
         case maxContextTokens
         case summaryGenerationEnabled
         case smartRunLabelsEnabled
+        case sovereignMemoryEnabled
+        case sovereignMemoryBaseURL
     }
 
     public init(from decoder: Decoder) throws {
@@ -190,6 +202,12 @@ public struct AppSettings: Codable, Sendable {
         smartRunLabelsEnabled =
             try container.decodeIfPresent(Bool.self, forKey: .smartRunLabelsEnabled)
             ?? defaults.smartRunLabelsEnabled
+        sovereignMemoryEnabled =
+            try container.decodeIfPresent(Bool.self, forKey: .sovereignMemoryEnabled)
+            ?? defaults.sovereignMemoryEnabled
+        sovereignMemoryBaseURL =
+            try container.decodeIfPresent(String.self, forKey: .sovereignMemoryBaseURL)
+            ?? defaults.sovereignMemoryBaseURL
     }
 
     // MARK: - Validation

@@ -44,7 +44,7 @@ enum AppColors {
         /// Neutral gray option for pickers
         static let smoke = Color(red: 0.55, green: 0.56, blue: 0.58)
     }
-    
+
     enum Light {
         /// Main background (warm paper)
         static let backgroundPrimary = Color(red: 0.980, green: 0.976, blue: 0.961) // #FAF9F5-ish

@@ -348,7 +348,6 @@ struct AgentTargetPill: View {
     }
 }
 
-
 /// Bottom composer bar for input and controls
 /// Flat matte surface with shadow (no glass blur)
 struct ComposerBar: View {
@@ -438,6 +437,10 @@ struct ComposerBar: View {
             }
         }
         .onChange(of: String(inputText.characters)) { _, newText in
+            // Sync active mentions to ChatViewModel so the header bar can react
+            let agentIDs = chatVM.allKnownAgents.map { $0.id }
+            chatVM.activeMentions = chatVM.extractAgentMentions(from: newText, validAgentIDs: agentIDs)
+
             if let mentionSearch = chatVM.currentMentionAgentSearch(from: newText) {
                 agentAutocompleteQuery = mentionSearch
                 showAgentAutocomplete = true

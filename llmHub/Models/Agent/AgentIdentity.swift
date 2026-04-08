@@ -15,14 +15,6 @@ nonisolated struct AgentIdentity: Equatable, Sendable {
     let emoji: String
     let color: Color
     let roleDescription: String
-
-    init(id: String, name: String, emoji: String, color: Color, roleDescription: String) {
-        self.id = id
-        self.name = name
-        self.emoji = emoji
-        self.color = color
-        self.roleDescription = roleDescription
-    }
 }
 
 /// Registry of known agent identities.
@@ -76,7 +68,7 @@ enum AgentIdentityRegistry {
             AgentIdentity(id: "syntra", name: "Syntra", emoji: "🟢", color: Color(hex: "#4CAF50"), roleDescription: "Coordinator"),
             AgentIdentity(id: "forge", name: "Forge", emoji: "🔨", color: Color(hex: "#FF6B35"), roleDescription: "Developer"),
             AgentIdentity(id: "recon", name: "Recon", emoji: "🔍", color: Color(hex: "#9C27B0"), roleDescription: "Researcher"),
-            AgentIdentity(id: "pulse", name: "Pulse", emoji: "💓", color: Color(hex: "#FF69B4"), roleDescription: "Heartbeat"),
+            AgentIdentity(id: "pulse", name: "Pulse", emoji: "💓", color: Color(hex: "#FF69B4"), roleDescription: "Heartbeat")
         ]
     }()
 
@@ -84,6 +76,6 @@ enum AgentIdentityRegistry {
         "syntra": "#4CAF50",
         "forge": "#FF6B35",
         "recon": "#9C27B0",
-        "pulse": "#FF69B4",
+        "pulse": "#FF69B4"
     ]
 }

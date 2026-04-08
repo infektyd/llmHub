@@ -76,7 +76,7 @@ struct llmHubApp: App {
         }
 
         Self.ensureDataDirectoriesExist()
-        
+
         #if DEBUG
         ArtifactImportDiagnostics.isEnabled = true
         print("🔍 Artifact import diagnostics enabled (DEBUG build)")
@@ -125,7 +125,7 @@ struct llmHubApp: App {
 
                     // Fetch models on app launch
                     await modelRegistry.fetchAllModels()
-                    
+
                     // Bootstrap iCloud workspace
                     await bootstrapCloudWorkspace()
                 }
@@ -186,7 +186,7 @@ struct llmHubApp: App {
     /// Bootstraps the iCloud workspace, logging availability and ensuring the default workspace exists.
     private func bootstrapCloudWorkspace() async {
         let manager = CloudWorkspaceManager.shared
-        
+
         // 1. Log iCloud container availability
         let containerURL = await manager.containerURL()
         if let url = containerURL {
@@ -194,7 +194,7 @@ struct llmHubApp: App {
         } else {
             print("⚠️ iCloud container unavailable — using local fallback")
         }
-        
+
         // 2. Ensure default workspace exists
         let defaultID = manager.defaultWorkspaceID()
         do {
@@ -204,7 +204,7 @@ struct llmHubApp: App {
             print("❌ Failed to create default workspace: \(error.localizedDescription)")
         }
     }
-    
+
     /// Opens the Settings window.
     private func openSettings() {
         #if os(macOS)

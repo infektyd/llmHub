@@ -89,7 +89,7 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
         // ============================================================================
         print("\n🔍 [CodeInterpreter] ========== EXECUTION STARTED ==========")
         print("🔍 [CodeInterpreter] Timestamp: \(Date())")
-        
+
         #if os(iOS)
         print("🔍 [CodeInterpreter] Platform: iOS (compiled)")
         #elseif os(macOS)
@@ -97,13 +97,13 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
         #else
         print("🔍 [CodeInterpreter] Platform: Unknown")
         #endif
-        
+
         print("🔍 [CodeInterpreter] Environment checks:")
         print("  ├─ environment.platform: \(environment.platform)")
         print("  ├─ environment.hasCodeExecutionBackend: \(environment.hasCodeExecutionBackend)")
         print("  ├─ environment.supports(.codeExecution): \(environment.supports(.codeExecution))")
         print("  └─ securityMode: \(securityMode)")
-        
+
         // Original capability check
         guard environment.supports(.codeExecution) else {
             print("❌ [CodeInterpreter] FAILED at capability check")
@@ -111,14 +111,14 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
             throw ToolError.unavailable(reason: "Code execution unavailable on this platform")
         }
         print("✅ [CodeInterpreter] Passed capability check")
-        
+
         // Original argument extraction
         guard let code = arguments.string("code") else {
             print("❌ [CodeInterpreter] FAILED: Missing 'code' argument")
             throw ToolError.invalidArguments("code is required")
         }
         print("✅ [CodeInterpreter] Extracted code: \(code.count) chars")
-        
+
         guard let languageStr = arguments.string("language"),
             let language = SupportedLanguage(rawValue: languageStr)
         else {
@@ -128,15 +128,15 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
             )
         }
         print("✅ [CodeInterpreter] Extracted language: \(language.rawValue)")
-        
+
         print("🔍 [CodeInterpreter] Calling executeCode()...")
         // ============================================================================
-        
+
         let output = try await executeCode(code: code, language: language)
-        
+
         print("✅ [CodeInterpreter] executeCode() returned successfully")
         print("🔍 [CodeInterpreter] ========== EXECUTION COMPLETED ==========\n")
-        
+
         return await MainActor.run {
             ToolResult.success(output)
         }
@@ -162,7 +162,7 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
             )
         }
         #endif
-        
+
         logger.info("Executing \(language.rawValue) code (\(code.count) chars)")
 
         // Check for approval if required
@@ -215,7 +215,7 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
 
             logger.info(
                 "Execution completed: exit=\(result.exitCode), time=\(result.executionTimeMs)ms")
-            
+
             print("🔍 [executeCode] ========== METHOD EXIT (SUCCESS) ==========\n")
             return result.llmSummary
 

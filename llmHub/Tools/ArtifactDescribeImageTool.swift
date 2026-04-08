@@ -27,7 +27,7 @@ nonisolated struct ArtifactDescribeImageTool: Tool {
                 "detail": ToolProperty(
                     type: .string,
                     description: "Detail level (reserved for future use): 'low' or 'high'."
-                ),
+                )
             ],
             required: ["id"]
         )
@@ -41,8 +41,7 @@ nonisolated struct ArtifactDescribeImageTool: Tool {
     init() {}
 
     nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws
-        -> ToolResult
-    {
+        -> ToolResult {
         guard let idString = arguments.string("id"), !idString.isEmpty else {
             throw ToolError.invalidArguments("id is required")
         }
@@ -72,8 +71,7 @@ nonisolated struct ArtifactDescribeImageTool: Tool {
         var height: Int?
         if let imageSource = CGImageSourceCreateWithURL(fileURL as CFURL, nil) {
             if let properties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil)
-                as? [CFString: Any]
-            {
+                as? [CFString: Any] {
                 width = properties[kCGImagePropertyPixelWidth] as? Int
                 height = properties[kCGImagePropertyPixelHeight] as? Int
             }
@@ -84,7 +82,7 @@ nonisolated struct ArtifactDescribeImageTool: Tool {
             "filename": artifact.filename,
             "mimeType": artifact.mimeType,
             "bytes": artifact.sizeBytes,
-            "description": "Image description not yet implemented. Vision integration planned.",
+            "description": "Image description not yet implemented. Vision integration planned."
         ]
 
         if let w = width, let h = height {

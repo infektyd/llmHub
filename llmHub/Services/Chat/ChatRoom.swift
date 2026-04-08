@@ -119,8 +119,7 @@ actor ChatRoom {
 
         for agent in participants {
             if content.contains("@" + agent.id.lowercased())
-                || content.contains("@" + agent.name.lowercased())
-            {
+                || content.contains("@" + agent.name.lowercased()) {
                 mentioned.append(agent)
             }
         }

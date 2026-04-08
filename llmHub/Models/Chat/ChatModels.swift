@@ -78,12 +78,6 @@ nonisolated struct GroupChatAgentConfig: Sendable {
     /// An opaque handle that can resolve to the actual `LLMProvider` at call time.
     let providerHandle: ProviderHandle
     let modelID: String
-
-    init(agent: Agent, providerHandle: ProviderHandle, modelID: String) {
-        self.agent = agent
-        self.providerHandle = providerHandle
-        self.modelID = modelID
-    }
 }
 
 /// An opaque, Sendable handle to an LLM provider that can be resolved
@@ -93,11 +87,6 @@ nonisolated struct ProviderHandle: Sendable {
     let providerID: String
     /// The model ID string this agent should use.
     let modelID: String
-
-    init(providerID: String, modelID: String) {
-        self.providerID = providerID
-        self.modelID = modelID
-    }
 }
 
 // MARK: - Artifact Detection

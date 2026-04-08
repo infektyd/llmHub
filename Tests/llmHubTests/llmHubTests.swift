@@ -180,7 +180,9 @@ struct llmHubTests {
             ChatSessionEntity.self,
             ChatMessageEntity.self,
             ChatFolderEntity.self,
-            ChatTagEntity.self
+            ChatTagEntity.self,
+            ProjectEntity.self,
+            ArtifactEntity.self
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: schema, configurations: [config])
@@ -223,7 +225,9 @@ struct llmHubTests {
             ChatSessionEntity.self,
             ChatMessageEntity.self,
             ChatFolderEntity.self,
-            ChatTagEntity.self
+            ChatTagEntity.self,
+            ProjectEntity.self,
+            ArtifactEntity.self
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: schema, configurations: [config])

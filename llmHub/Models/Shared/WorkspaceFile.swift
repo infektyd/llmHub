@@ -14,7 +14,7 @@ struct WorkspaceFile: Identifiable, Equatable, Sendable {
     let sizeBytes: Int
     let modifiedAt: Date?
     let fileType: FileType
-    
+
     enum FileType: String, CaseIterable, Sendable {
         case code       // .swift, .py, .js, etc.
         case output     // output_*.txt
@@ -22,7 +22,7 @@ struct WorkspaceFile: Identifiable, Equatable, Sendable {
         case image      // .png, .jpg, .svg
         case data       // .json, .csv
         case other
-        
+
         var icon: String {
             switch self {
             case .code: return "chevron.left.forwardslash.chevron.right"
@@ -33,7 +33,7 @@ struct WorkspaceFile: Identifiable, Equatable, Sendable {
             case .other: return "doc"
             }
         }
-        
+
         var tintColor: String {
             switch self {
             case .code: return "accent"
@@ -45,15 +45,15 @@ struct WorkspaceFile: Identifiable, Equatable, Sendable {
             }
         }
     }
-    
+
     static func detect(filename: String) -> FileType {
         let lower = filename.lowercased()
-        
+
         // Output patterns from CodeInterpreterTool
         if lower.hasPrefix("output_") && lower.hasSuffix(".txt") { return .output }
         if lower.hasPrefix("error_") && lower.hasSuffix(".txt") { return .error }
         if lower.hasPrefix("code_") { return .code }
-        
+
         // Extension-based
         let ext = (filename as NSString).pathExtension.lowercased()
         switch ext {

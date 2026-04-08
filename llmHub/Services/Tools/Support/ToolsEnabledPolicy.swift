@@ -21,13 +21,11 @@ struct ToolsEnabledPolicyResolver {
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) -> ToolsEnabledPolicy {
         if let raw = environment[environmentKey]?.lowercased(),
-            let policy = ToolsEnabledPolicy(rawValue: raw)
-        {
+            let policy = ToolsEnabledPolicy(rawValue: raw) {
             return policy
         }
         if let raw = defaults.string(forKey: userDefaultsKey)?.lowercased(),
-            let policy = ToolsEnabledPolicy(rawValue: raw)
-        {
+            let policy = ToolsEnabledPolicy(rawValue: raw) {
             return policy
         }
         return .zen
@@ -39,7 +37,7 @@ struct ToolRelevanceHeuristics {
 
     /// Artifact tools that should always be available when attachments are present.
     static let artifactTools: Set<String> = [
-        "artifact_list", "artifact_open", "artifact_read_text", "artifact_describe_image",
+        "artifact_list", "artifact_open", "artifact_read_text", "artifact_describe_image"
     ]
 
     static func allowedToolNames(
@@ -80,11 +78,11 @@ struct ToolRelevanceHeuristics {
 
         let fileKeywords = [
             "file", "files", "folder", "folders", "directory", "directories", "path", "paths",
-            "workspace", "repo", "project", "artifact", "artifacts", "diff", "patch", "grep",
+            "workspace", "repo", "project", "artifact", "artifacts", "diff", "patch", "grep"
         ]
         let filePhrases = [
             "read file", "open file", "edit file", "apply patch", "unified diff", "list files",
-            "search files", "search in files", "file contents", "workspace",
+            "search files", "search in files", "file contents", "workspace"
         ]
         let hasFileContext =
             hasAnyToken(fileKeywords) || filePhrases.contains(where: containsPhrase)
@@ -101,7 +99,7 @@ struct ToolRelevanceHeuristics {
 
         let calcKeywords = [
             "calculate", "calc", "math", "sum", "average", "avg", "mean", "median", "percent",
-            "percentage", "ratio", "total",
+            "percentage", "ratio", "total"
         ]
         if hasAnyToken(calcKeywords) || containsPhrase("calculate ") {
             tools.insert("calculator")
@@ -109,7 +107,7 @@ struct ToolRelevanceHeuristics {
 
         let plotKeywords = [
             "plot", "graph", "chart", "visualize", "visualization", "histogram", "scatter",
-            "line", "bar", "pie", "heatmap",
+            "line", "bar", "pie", "heatmap"
         ]
         if hasAnyToken(plotKeywords) {
             tools.insert("data_visualization")
@@ -117,7 +115,7 @@ struct ToolRelevanceHeuristics {
 
         let webQualifiers = [
             "web", "internet", "online", "news", "latest", "current", "google", "bing",
-            "duckduckgo",
+            "duckduckgo"
         ]
         let webSearchVerbs = ["search", "lookup"]
         let wantsWebSearch =
@@ -128,7 +126,7 @@ struct ToolRelevanceHeuristics {
 
         let httpKeywords = [
             "http", "https", "api", "endpoint", "curl", "request", "fetch", "webhook", "rest",
-            "graphql",
+            "graphql"
         ]
         if hasAnyToken(httpKeywords) {
             tools.insert("http_request")
@@ -141,10 +139,9 @@ struct ToolRelevanceHeuristics {
 
         let codeKeywords = [
             "code", "python", "javascript", "js", "typescript", "ts", "swift", "dart", "script",
-            "program", "programming",
+            "program", "programming"
         ]
-        if hasAnyToken(codeKeywords) || containsPhrase("run code") || containsPhrase("execute code")
-        {
+        if hasAnyToken(codeKeywords) || containsPhrase("run code") || containsPhrase("execute code") {
             tools.insert("code_interpreter")
         }
 

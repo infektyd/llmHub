@@ -305,8 +305,7 @@ nonisolated struct FileReaderTool: Tool {
             details.insert(fileType, at: 0)
         }
 
-        if let bytes = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size]) as? NSNumber
-        {
+        if let bytes = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size]) as? NSNumber {
             details.append("\(bytes.intValue) bytes")
         }
 

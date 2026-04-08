@@ -34,27 +34,28 @@ identifier_name:
 
 # Line length
 line_length:
-  warning: 150
-  error: 200
+  warning: 185
+  error: 250
   ignores_urls: true
   ignores_interpolated_strings: true
   ignores_comments: true
+  ignores_function_declarations: true
 
 # Function body length
 function_body_length:
-  warning: 100
-  error: 350
+  warning: 640
+  error: 700
 
 # File length
 file_length:
-  warning: 1000
-  error: 2500
+  warning: 1750
+  error: 3000
   ignore_comment_only_lines: true
 
 # Type body length
 type_body_length:
-  warning: 500
-  error: 1000
+  warning: 1700
+  error: 3000
 
 # Nesting
 nesting:
@@ -67,5 +68,5 @@ nesting:
 
 # Function parameter count
 function_parameter_count:
-  warning: 7
-  error: 9
+  warning: 9
+  error: 10

@@ -594,7 +594,7 @@ final class ModelFetchService {
             .map { $0.capitalized }
             .joined(separator: " ")
     }
-    
+
     // MARK: - OpenClaw Models (Dynamic)
 
     /// Fetches OpenClaw agents dynamically from the gateway's /v1/models endpoint.

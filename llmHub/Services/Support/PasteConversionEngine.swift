@@ -128,8 +128,7 @@ enum PasteConversionEngine {
         if trimmed.hasPrefix("{") || trimmed.hasPrefix("[") {
             // Validate it looks like JSON (has matching brackets)
             if (trimmed.hasPrefix("{") && trimmed.hasSuffix("}"))
-                || (trimmed.hasPrefix("[") && trimmed.hasSuffix("]"))
-            {
+                || (trimmed.hasPrefix("[") && trimmed.hasSuffix("]")) {
                 return "json"
             }
         }
@@ -171,7 +170,7 @@ enum PasteConversionEngine {
             "- [x]",
             "**",  // Bold
             "| ",  // Tables
-            "[!",  // GitHub alerts
+            "[!"  // GitHub alerts
         ]
 
         for pattern in patterns {

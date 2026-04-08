@@ -36,12 +36,18 @@ final class AgentRoutingService {
     ///   - agentID: The agent ID to route to (e.g., "forge").
     ///   - message: The user message content.
     ///   - history: Prior conversation messages to include as context.
+    ///   - otherAgentIDs: IDs of other agents in this group chat turn (for roster injection).
+    ///   - groupContextId: Shared ID tying all agents' responses to the same turn.
+    ///   - agentName: Display name of the target agent (for roster context).
     /// - Returns: An async throwing stream of ProviderEvent tagged with agentID.
     func streamAgentSession(
         agentID: String,
         sessionKey: String,
         message: String,
-        history: [ChatMessage] = []
+        history: [ChatMessage] = [],
+        otherAgentIDs: [String] = [],
+        groupContextId: String? = nil,
+        agentName: String? = nil
     ) -> AsyncThrowingStream<ProviderEvent, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
@@ -50,10 +56,27 @@ final class AgentRoutingService {
                         "🔵 [AgentRouter] Routing to agent: \(agentID) via openclaw/\(agentID)"
                     )
 
-                    // Build messages array: history + current user message
-                    var ocMessages: [XAIChatMessage] = history.map { msg in
-                        XAIChatMessage(role: msg.role.rawValue, content: msg.content)
+                    // Build messages array: system context (roster) + history + current user message
+                    var ocMessages: [XAIChatMessage] = []
+
+                    // Inject agent roster system message for multi-agent awareness
+                    if !otherAgentIDs.isEmpty, let agentName {
+                        let rosterText = AgentRosterBuilder.systemMessage(
+                            agentName: agentName,
+                            otherAgentIDs: otherAgentIDs
+                        )
+
+                        ocMessages.append(XAIChatMessage(role: "system", content: rosterText))
+
+                        if let groupContextId {
+                            let contextNote = "This conversation turn is identified by \(groupContextId). The message below was sent to all agents simultaneously."
+                            ocMessages.append(XAIChatMessage(role: "system", content: contextNote))
+                        }
                     }
+
+                    ocMessages.append(contentsOf: history.map { msg in
+                        XAIChatMessage(role: msg.role.rawValue, content: msg.content)
+                    })
                     ocMessages.append(XAIChatMessage(role: "user", content: message))
 
                     let request = try manager.makeChatRequest(

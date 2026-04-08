@@ -12,10 +12,10 @@ struct MemoryIndicatorView: View {
     let count: Int
     let summary: String?
     @Binding var isVisible: Bool
-    
+
     @State private var isAnimating = false
     @Environment(\.uiScale) private var uiScale
-    
+
     var body: some View {
         if isVisible && count > 0 {
             HStack(spacing: 6) {
@@ -23,7 +23,7 @@ struct MemoryIndicatorView: View {
                     .font(.system(size: 12 * uiScale, weight: .semibold))
                     .foregroundStyle(.purple)
                     .symbolEffect(.pulse, isActive: isAnimating)
-                
+
                 Text("\(count) \(count == 1 ? "memory" : "memories")")
                     .font(.system(size: 11 * uiScale, weight: .medium))
                     .foregroundStyle(AppColors.textSecondary)

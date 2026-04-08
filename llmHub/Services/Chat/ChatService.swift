@@ -130,6 +130,9 @@ final class ChatService {
     /// Service for labeling tool run bundles.
     private let toolRunLabelerService: ToolRunLabelerService
 
+    /// Sovereign Memory client (optional, feature-flagged).
+    private let sovereignMemoryClient: SovereignMemoryClient?
+
     /// Logger instance.
     private let logger = Logger(subsystem: "com.llmhub", category: "ChatService")
 
@@ -213,6 +216,21 @@ final class ChatService {
         self.memoryRetrievalService = memoryRetrievalService
         self.memoryManagementService = memoryManagementService
         self.toolRunLabelerService = toolRunLabelerService
+
+        // Initialize Sovereign Memory client if feature flag is enabled
+        let settings = AppSettings.load()
+        if settings.sovereignMemoryEnabled,
+           let url = URL(string: settings.sovereignMemoryBaseURL) {
+            self.sovereignMemoryClient = SovereignMemoryClient(
+                config: SovereignMemoryConfig(
+                    baseURL: url,
+                    recallTimeoutSeconds: 0.2,
+                    writeTimeoutSeconds: 5.0
+                )
+            )
+        } else {
+            self.sovereignMemoryClient = nil
+        }
     }
 
     // MARK: - Timeout Helper
@@ -519,8 +537,7 @@ final class ChatService {
                         // even if it somehow made it into persistence.
                         llmMessages.removeAll { $0.provenance.channel == .sidecar }
                         if !images.isEmpty || !attachments.isEmpty || !references.isEmpty,
-                            let lastUserIndex = llmMessages.lastIndex(where: { $0.role == .user })
-                        {
+                            let lastUserIndex = llmMessages.lastIndex(where: { $0.role == .user }) {
                             let baseUserMessage = llmMessages[lastUserIndex]
 
                             // Build updated parts by appending images if provided
@@ -603,8 +620,7 @@ final class ChatService {
                                     .memoriesUsed(count: snapshots.count, summary: memorySummary))
 
                                 if var firstMsg = messagesForCompaction.first,
-                                    firstMsg.role == .system
-                                {
+                                    firstMsg.role == .system {
                                     firstMsg.content = "\(memoryXML)\n\n\(firstMsg.content)"
                                     messagesForCompaction[0] = firstMsg
                                 } else {
@@ -617,6 +633,57 @@ final class ChatService {
                                         codeBlocks: []
                                     )
                                     messagesForCompaction.insert(systemMsg, at: 0)
+                                }
+                            }
+                        }
+
+                        // SOVEREIGN MEMORY: Pre-LLM recall hook.
+                        // Queries the Sovereign Memory FastAPI service for relevant context
+                        // and injects it into the system prompt as <sovereign_memory> tags.
+                        // Runs on every user message (not just first interaction).
+                        // Fails fast (200ms timeout) — skips silently if service is offline.
+                        if let sovereignClient = service.sovereignMemoryClient {
+                            let sovereignAgentID = service.extractAgentIDFromModel(currentSession.model)
+                                ?? "syntra"
+                            let sovereignThreadID = currentSession.id.uuidString
+
+                            if let sovereignContext = await sovereignClient.recall(
+                                query: userMessage,
+                                agentID: sovereignAgentID,
+                                threadID: sovereignThreadID
+                            ) {
+                                let injectionBlock =
+                                    SovereignMemoryClient.formatForInjection(
+                                        context: sovereignContext
+                                    )
+                                if let injection = injectionBlock {
+                                    logger.info(
+                                        "Sovereign memory: injected context for agent=\(sovereignAgentID)"
+                                    )
+
+                                    // Emit memory usage event for UI
+                                    continuation.yield(
+                                        .memoriesUsed(
+                                            count: 1,
+                                            summary: "Sovereign memory context informing this response"
+                                        ))
+
+                                    if var firstMsg = messagesForCompaction.first,
+                                        firstMsg.role == .system {
+                                        firstMsg.content =
+                                            "\(firstMsg.content)\n\n\(injection)"
+                                        messagesForCompaction[0] = firstMsg
+                                    } else {
+                                        let systemMsg = ChatMessage(
+                                            id: UUID(),
+                                            role: .system,
+                                            content: injection,
+                                            parts: [],
+                                            createdAt: Date(),
+                                            codeBlocks: []
+                                        )
+                                        messagesForCompaction.insert(systemMsg, at: 0)
+                                    }
                                 }
                             }
                         }
@@ -797,8 +864,7 @@ final class ChatService {
                             messages: messagesForCompaction,
                             maxTokens: nil,  // Will use model's context window or config default
                             providerID: currentSession.providerID,
-                            rollingSummaryGenerator: {
-                                @MainActor messagesToSummarize, summaryMaxTokens in
+                            rollingSummaryGenerator: { @MainActor messagesToSummarize, summaryMaxTokens in
                                 try await service.generateRollingSummary(
                                     provider: provider,
                                     model: currentSession.model,
@@ -923,8 +989,7 @@ final class ChatService {
                                 // and keep the agent loop going.
                                 if accumulatedToolCalls.isEmpty,
                                     let toolCalls = msg.toolCalls,
-                                    !toolCalls.isEmpty
-                                {
+                                    !toolCalls.isEmpty {
                                     logger.info(
                                         "Completion contained tool calls: \(toolCalls.count), continuing agent loop."
                                     )
@@ -941,8 +1006,7 @@ final class ChatService {
                                 if !accumulatedToolCalls.isEmpty {
                                     var assistantMsg = msg
                                     assistantMsg.generationID = generationID
-                                    if assistantMsg.content.isEmpty && !assistantTextBuffer.isEmpty
-                                    {
+                                    if assistantMsg.content.isEmpty && !assistantTextBuffer.isEmpty {
                                         // Rebuild message to update immutable `parts`
                                         assistantMsg = ChatMessage(
                                             id: msg.id,
@@ -977,6 +1041,26 @@ final class ChatService {
                                     }
                                     continuation.yield(.completion(message: persisted))
                                     didPersistAssistantMessage = true
+
+                                    // SOVEREIGN MEMORY: Post-LLM hook (fire-and-forget).
+                                    // Logs the conversation turn and extracts learnings.
+                                    // Non-blocking — errors are logged silently.
+                                    if let sovereignClient = service.sovereignMemoryClient {
+                                        let assistantText =
+                                            persisted.content.isEmpty
+                                            ? assistantTextBuffer
+                                            : persisted.content
+                                        if !assistantText.isEmpty {
+                                            let sovereignAgentID = service.extractAgentIDFromModel(currentSession.model)
+                                ?? "syntra"
+                                            sovereignClient.processConversation(
+                                                agentID: sovereignAgentID,
+                                                userMessage: userMessage,
+                                                assistantResponse: assistantText,
+                                                threadID: currentSession.id.uuidString
+                                            )
+                                        }
+                                    }
                                 }
 
                             case .error(let error):
@@ -993,8 +1077,7 @@ final class ChatService {
                                 // Handle like completion but forward the truncated event
                                 if accumulatedToolCalls.isEmpty,
                                     let toolCalls = msg.toolCalls,
-                                    !toolCalls.isEmpty
-                                {
+                                    !toolCalls.isEmpty {
                                     accumulatedToolCalls = toolCalls
                                     for tc in toolCalls {
                                         continuation.yield(
@@ -1647,8 +1730,7 @@ final class ChatService {
 
     /// Updates the session metadata (last usage, total cost).
     func updateSessionMetadata(sessionID: UUID, lastTokenUsage: TokenUsage, additionalCost: Decimal)
-        throws
-    {
+        throws {
         guard
             let entity = try modelContext.fetch(
                 FetchDescriptor<ChatSessionEntity>(predicate: #Predicate { $0.id == sessionID })
@@ -1950,15 +2032,13 @@ final class ChatService {
 
         // WebP: RIFF....WEBP (bytes 0-3: RIFF, bytes 8-11: WEBP)
         if bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46
-            && bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50
-        {
+            && bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50 {
             return "image/webp"
         }
 
         // TIFF: 49 49 2A 00 (little-endian) or 4D 4D 00 2A (big-endian)
         if (bytes[0] == 0x49 && bytes[1] == 0x49 && bytes[2] == 0x2A && bytes[3] == 0x00)
-            || (bytes[0] == 0x4D && bytes[1] == 0x4D && bytes[2] == 0x00 && bytes[3] == 0x2A)
-        {
+            || (bytes[0] == 0x4D && bytes[1] == 0x4D && bytes[2] == 0x00 && bytes[3] == 0x2A) {
             return "image/tiff"
         }
 
@@ -1967,8 +2047,17 @@ final class ChatService {
             return "image/bmp"
         }
 
-        // Default fallback
         return "image/jpeg"
+    }
+
+    // MARK: - Sovereign Memory Helpers
+
+    /// Extracts the agent ID from a model string like "openclaw/forge" → "forge".
+    /// Returns nil for non-agent models.
+    private func extractAgentIDFromModel(_ model: String) -> String? {
+        guard model.hasPrefix("openclaw/") else { return nil }
+        let agentID = String(model.dropFirst("openclaw/".count))
+        return agentID.isEmpty ? nil : agentID
     }
 }
 

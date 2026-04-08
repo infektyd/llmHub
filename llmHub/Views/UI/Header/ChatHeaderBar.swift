@@ -13,6 +13,7 @@ struct ChatHeaderBar: View {
     @Binding var agentRosterVisible: Bool
 
     @EnvironmentObject private var modelRegistry: ModelRegistry
+    @Environment(ChatViewModel.self) private var chatVM
     @State private var isEditingTitle = false
     @State private var showModelPicker = false
     @FocusState private var isTitleFocused: Bool
@@ -65,35 +66,14 @@ struct ChatHeaderBar: View {
 
             Spacer()
 
-            // Right section: Model Picker
-            Button {
-                showModelPicker = true
-            } label: {
-                HStack(spacing: 6) {
-                    providerIcon(providerID: selectedProviderID)
-                        .font(.system(size: 12 * uiScale))
-
-                    Text(currentModelName)
-                        .font(.system(size: 13 * uiScale, weight: .medium))
-
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 10 * uiScale))
-                }
-                .foregroundStyle(AppColors.textSecondary)
-                .padding(.horizontal, uiCompactMode ? 9 : 10)
-                .padding(.vertical, uiCompactMode ? 5 : 6)
-                .background {
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .fill(AppColors.surface)
-                        .shadow(color: AppColors.shadowSmoke, radius: 4, x: 0, y: 1)
-                }
-                .overlay {
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .stroke(AppColors.textPrimary.opacity(0.05), lineWidth: 1)
-                }
+            // Right section: Model Picker / Agent Routing indicator
+            if !chatVM.activeMentions.isEmpty {
+                // When agents are @mentioned, show routing indicator instead of picker
+                agentRoutingIndicator
+            } else {
+                // Normal model picker when no mentions
+                modelPickerButton
             }
-            .buttonStyle(.plain)
-            .keyboardShortcut("m", modifiers: [.command, .shift])
 
             Button {
                 withAnimation {
@@ -133,6 +113,70 @@ struct ChatHeaderBar: View {
             )
             .environmentObject(modelRegistry)
         }
+    }
+
+    // MARK: - Agent Routing Indicator
+
+    /// Dimmed indicator showing which agents will receive the message.
+    @ViewBuilder
+    private var agentRoutingIndicator: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "paperplane.fill")
+                .font(.system(size: 11 * uiScale))
+
+            Text("Routing to: \(agentRoutingLabel)")
+                .font(.system(size: 13 * uiScale, weight: .medium))
+        }
+        .foregroundStyle(AppColors.accent)
+        .padding(.horizontal, uiCompactMode ? 9 : 10)
+        .padding(.vertical, uiCompactMode ? 5 : 6)
+        .background {
+            RoundedRectangle(cornerRadius: 5, style: .continuous)
+                .fill(AppColors.accent.opacity(0.08))
+                .shadow(color: AppColors.shadowSmoke, radius: 4, x: 0, y: 1)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 5, style: .continuous)
+                .stroke(AppColors.accent.opacity(0.2), lineWidth: 1)
+        }
+    }
+
+    /// Comma-separated list of mentioned agent IDs.
+    private var agentRoutingLabel: String {
+        chatVM.activeMentions.joined(separator: ", ")
+    }
+
+    /// Normal model picker button (shown when no @mentions are present).
+    @ViewBuilder
+    private var modelPickerButton: some View {
+        Button {
+            showModelPicker = true
+        } label: {
+            HStack(spacing: 6) {
+                providerIcon(providerID: selectedProviderID)
+                    .font(.system(size: 12 * uiScale))
+
+                Text(currentModelName)
+                    .font(.system(size: 13 * uiScale, weight: .medium))
+
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 10 * uiScale))
+            }
+            .foregroundStyle(AppColors.textSecondary)
+            .padding(.horizontal, uiCompactMode ? 9 : 10)
+            .padding(.vertical, uiCompactMode ? 5 : 6)
+            .background {
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .fill(AppColors.surface)
+                    .shadow(color: AppColors.shadowSmoke, radius: 4, x: 0, y: 1)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .stroke(AppColors.textPrimary.opacity(0.05), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .keyboardShortcut("m", modifiers: [.command, .shift])
     }
 
     private var currentModelName: String {

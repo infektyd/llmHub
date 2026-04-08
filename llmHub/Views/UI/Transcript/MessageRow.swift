@@ -40,6 +40,7 @@ struct TranscriptRow: View {
                         generationID: viewModel.generationID,
                         messageID: messageID,
                         onReply: { chatVM.replyToMessageID = messageID },
+                        onRegenerate: nil,
                         onEdit: {
                             // Copy content to clipboard as a placeholder for edit-and-resend
                             #if os(macOS)
@@ -66,10 +67,9 @@ struct TranscriptRow: View {
                         messageID: messageID,
                         onReply: { chatVM.replyToMessageID = messageID },
                         onRegenerate: {
-                            chatVM.requestRegeneration(
-                                messageID: messageID,
-                                sessionID: nil
-                            )
+                            if let messageID {
+                                chatVM.requestRegeneration(messageID: messageID)
+                            }
                         }
                     )
                     .frame(maxWidth: 700, alignment: frameAlignment)
@@ -185,8 +185,7 @@ struct TranscriptRow: View {
 
             if settingsManager.settings.showTokenCounts,
                 let meta = viewModel.headerMetaText,
-                !meta.isEmpty
-            {
+                !meta.isEmpty {
                 Text(meta)
                     .font(.system(size: 11 * uiScale, weight: .medium, design: .monospaced))
                     .foregroundStyle(AppColors.textTertiary)

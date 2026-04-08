@@ -263,8 +263,7 @@ struct ArtifactLibraryView: View {
 
     private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
         for provider in providers {
-            provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) {
-                data, _ in
+            provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { data, _ in
                 guard let data = data as? Data,
                     let url = URL(dataRepresentation: data, relativeTo: nil)
                 else {

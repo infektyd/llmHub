@@ -501,8 +501,7 @@ struct ModernSidebarRight: View {
         .padding(.vertical, 16)
     }
 
-    private func fileGroupSection(group: FileTypeGroup, artifacts: [SandboxedArtifact]) -> some View
-    {
+    private func fileGroupSection(group: FileTypeGroup, artifacts: [SandboxedArtifact]) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(group.title)
                 .font(.system(size: 10 * uiScale, weight: .semibold))
@@ -535,7 +534,7 @@ struct ModernSidebarRight: View {
         let fileCount = workspaceVM.files.count
         let totalSize = workspaceVM.files.reduce(0) { $0 + $1.sizeBytes }
         let sizeText = ByteCountFormatter.string(fromByteCount: Int64(totalSize), countStyle: .file)
-        
+
         return sidebarSection(
             title: "Workspace",
             systemImage: "externaldrive.connected.to.line.below",
@@ -548,7 +547,7 @@ struct ModernSidebarRight: View {
                         .font(.system(size: 10 * uiScale))
                         .foregroundStyle(workspaceVM.isICloudAvailable ? .green : AppColors.textTertiary)
                         .help(workspaceVM.isICloudAvailable ? "Syncing to iCloud" : "Using local storage")
-                    
+
                     // Refresh button
                     Button {
                         Task { await workspaceVM.refresh() }
@@ -559,7 +558,7 @@ struct ModernSidebarRight: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(workspaceVM.isLoading)
-                    
+
                     // Actions menu
                     Menu {
                         #if os(macOS)
@@ -568,10 +567,10 @@ struct ModernSidebarRight: View {
                         } label: {
                             Label("Show in Finder", systemImage: "folder")
                         }
-                        
+
                         Divider()
                         #endif
-                        
+
                         Button(role: .destructive) {
                             Task { await workspaceVM.clearAllFiles() }
                         } label: {
@@ -616,7 +615,7 @@ struct ModernSidebarRight: View {
                     .truncationMode(.middle)
                     .padding(.horizontal, 4)
                     .padding(.bottom, 4)
-                
+
                 // File list
                 ForEach(workspaceVM.files) { file in
                     WorkspaceFileRow(
@@ -648,11 +647,11 @@ struct ModernSidebarRight: View {
             Image(systemName: "doc.text.magnifyingglass")
                 .font(.system(size: 24))
                 .foregroundStyle(AppColors.textTertiary)
-            
+
             Text("No execution outputs")
                 .font(.system(size: 12 * uiScale))
                 .foregroundStyle(AppColors.textSecondary)
-            
+
             Text("Run code to see outputs here")
                 .font(.system(size: 10 * uiScale))
                 .foregroundStyle(AppColors.textTertiary)
@@ -1137,9 +1136,9 @@ private struct WorkspaceFileRow: View {
     let uiScale: CGFloat
     let onCopy: () -> Void
     let onDelete: () -> Void
-    
+
     @State private var isHovering = false
-    
+
     var body: some View {
         HStack(spacing: 8) {
             // Icon with type-based color
@@ -1147,30 +1146,30 @@ private struct WorkspaceFileRow: View {
                 .font(.system(size: 11 * uiScale))
                 .foregroundStyle(iconColor)
                 .frame(width: 16)
-            
+
             // Filename
             VStack(alignment: .leading, spacing: 1) {
                 Text(displayFilename)
                     .font(.system(size: 11 * uiScale))
                     .foregroundStyle(AppColors.textPrimary)
                     .lineLimit(1)
-                
+
                 HStack(spacing: 4) {
                     Text(file.fileType.rawValue.capitalized)
                         .font(.system(size: 9 * uiScale, weight: .medium))
                         .foregroundStyle(iconColor.opacity(0.8))
-                    
+
                     Text("·")
                         .foregroundStyle(AppColors.textTertiary)
-                    
+
                     Text(ByteCountFormatter.string(fromByteCount: Int64(file.sizeBytes), countStyle: .file))
                         .font(.system(size: 9 * uiScale))
                         .foregroundStyle(AppColors.textTertiary)
                 }
             }
-            
+
             Spacer()
-            
+
             // Actions on hover
             if isHovering {
                 HStack(spacing: 6) {
@@ -1183,7 +1182,7 @@ private struct WorkspaceFileRow: View {
                     }
                     .buttonStyle(.plain)
                     .help("Copy contents")
-                    
+
                     Button {
                         onDelete()
                     } label: {
@@ -1209,7 +1208,7 @@ private struct WorkspaceFileRow: View {
             isHovering = hovering
         }
     }
-    
+
     private var iconColor: Color {
         switch file.fileType {
         case .code: return AppColors.accent
@@ -1220,11 +1219,11 @@ private struct WorkspaceFileRow: View {
         case .other: return AppColors.textSecondary
         }
     }
-    
+
     /// Strips UUID prefix from code execution output filenames for cleaner display
     private var displayFilename: String {
         let name = file.filename
-        
+
         // Pattern: output_<UUID>.txt -> output.txt
         // Pattern: code_<UUID>.swift -> code.swift
         let patterns = ["output_", "error_", "code_"]

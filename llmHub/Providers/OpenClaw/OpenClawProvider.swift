@@ -34,7 +34,7 @@ struct OpenClawProvider: LLMProvider {
         get async {
             [
                 "Authorization": "Bearer 3d0f30ebdb793f1d86523ea3f2ecc52615435a3874810790",
-                "Content-Type": "application/json",
+                "Content-Type": "application/json"
             ]
         }
     }
@@ -252,16 +252,14 @@ struct OpenClawProvider: LLMProvider {
                     var streamRequest = request
                     if let bodyData = request.httpBody,
                         var json = try? JSONSerialization.jsonObject(with: bodyData)
-                            as? [String: Any]
-                    {
+                            as? [String: Any] {
                         json["stream"] = true
                         json["stream_options"] = ["include_usage": true]
                         streamRequest.httpBody = try JSONSerialization.data(withJSONObject: json)
                     }
 
                     if let bodyData = streamRequest.httpBody,
-                        let bodyStr = String(data: bodyData, encoding: .utf8)
-                    {
+                        let bodyStr = String(data: bodyData, encoding: .utf8) {
                         LLMTrace.requestDetails(
                             provider: "OpenClaw",
                             url: streamRequest.url?.absoluteString ?? "unknown",

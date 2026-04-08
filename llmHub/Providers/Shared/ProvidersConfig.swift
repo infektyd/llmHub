@@ -205,7 +205,7 @@ func makeDefaultConfig() -> ProvidersConfig {
             id: "kimi-k2.5", name: "Kimi K2.5", maxOutputTokens: 65536, contextWindow: 203000),
         LLMModel(
             id: "grok-4-1-fast-reasoning", name: "Grok 4.1 Fast (via Gateway)",
-            maxOutputTokens: 16384, contextWindow: 2_000_000),
+            maxOutputTokens: 16384, contextWindow: 2_000_000)
     ]
 
     return config

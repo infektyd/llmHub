@@ -31,8 +31,7 @@ nonisolated struct ArtifactListTool: Tool {
     init() {}
 
     nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws
-        -> ToolResult
-    {
+        -> ToolResult {
         let artifacts = await ArtifactSandboxService.shared.listArtifacts()
 
         if artifacts.isEmpty {
@@ -49,7 +48,7 @@ nonisolated struct ArtifactListTool: Tool {
                 "id": artifact.id.uuidString,
                 "name": artifact.filename,
                 "mimeType": artifact.mimeType,
-                "bytes": artifact.sizeBytes,
+                "bytes": artifact.sizeBytes
             ]
         }
 

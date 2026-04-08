@@ -69,6 +69,11 @@ class ChatViewModel {
     /// Indicates whether the view model is currently streaming/generating a response.
     var isGenerating: Bool = false
 
+    /// Agent IDs currently mentioned in the composer input.
+    /// Updated by the composer view via .onChange of input text.
+    /// When non-empty, model routing is driven by these mentions instead of manual picker selection.
+    var activeMentions: [String] = []
+
     // MARK: - Agent Iteration Limit UI
 
     /// Last agent stop reason (if the agent stopped without normal completion).
@@ -366,7 +371,7 @@ class ChatViewModel {
             { GoogleAIProvider(keychain: keychain, config: config.googleAI) },
             { XAIProvider(keychain: keychain, config: config.xai) },
             { OpenRouterProvider(keychain: keychain, config: config.openRouter) },
-            { OpenClawProvider(config: config.openClaw) },
+            { OpenClawProvider(config: config.openClaw) }
         ])
 
         let baseEnvironment = ToolEnvironment.current
@@ -403,7 +408,7 @@ class ChatViewModel {
             ArtifactListTool(),
             ArtifactOpenTool(),
             ArtifactReadTextTool(),
-            ArtifactDescribeImageTool(),
+            ArtifactDescribeImageTool()
         ]
 
         let toolRegistry = await ToolRegistry(tools: tools)
@@ -564,7 +569,7 @@ class ChatViewModel {
         Agent(id: "forge", name: "Forge", emoji: "⚒️", status: .online),
         Agent(id: "recon", name: "Recon", emoji: "🔍", status: .online),
         Agent(id: "pulse", name: "Pulse", emoji: "💓", status: .online),
-        Agent(id: "council", name: "Council", emoji: "🏛️", status: .online),
+        Agent(id: "council", name: "Council", emoji: "🏛️", status: .online)
     ]
 
     private static func emojiForAgent(id: String) -> String {
@@ -632,8 +637,7 @@ class ChatViewModel {
                 try Task.checkCancellation()
                 switch event {
                 case .token(let text):
-                    if let updated = await streamAccumulator.append(token: streamToken, delta: text)
-                    {
+                    if let updated = await streamAccumulator.append(token: streamToken, delta: text) {
                         uiContinuation.yield(updated)
                     }
 
@@ -759,8 +763,7 @@ class ChatViewModel {
             || sandboxArtifact.filename.hasSuffix(".swift")
             || sandboxArtifact.filename.hasSuffix(".py")
             || sandboxArtifact.filename.hasSuffix(".js")
-            || sandboxArtifact.filename.hasSuffix(".json")
-        {
+            || sandboxArtifact.filename.hasSuffix(".json") {
             type = .code
         } else {
             type = .text
@@ -1123,7 +1126,10 @@ class ChatViewModel {
         if let provider = targetProvider {
             workbenchVM.selectedProvider = provider
 
-            if let model = provider.models.first(where: { $0.modelID == savedModelID }) {
+            if let model = provider.models.first(where: { model in
+                model.modelID == savedModelID
+                    || model.modelID.hasSuffix("/\(savedModelID)")
+            }) {
                 workbenchVM.selectedModel = model
                 logger.info("Hydration successful: \(provider.name) -> \(model.name)")
             } else {
@@ -1826,35 +1832,27 @@ class ChatViewModel {
     func selectEmoji(for content: String) -> String {
         if content.contains("code") || content.contains("swift") || content.contains("python")
             || content.contains("programming") || content.contains("javascript")
-            || content.contains("typescript")
-        {
+            || content.contains("typescript") {
             return "💻"
         } else if content.contains("math") || content.contains("calculate")
-            || content.contains("number") || content.contains("equation")
-        {
+            || content.contains("number") || content.contains("equation") {
             return "🧮"
         } else if content.contains("help") || content.contains("how") || content.contains("what")
-            || content.contains("why")
-        {
+            || content.contains("why") {
             return "❓"
         } else if content.contains("write") || content.contains("essay") || content.contains("blog")
-            || content.contains("article")
-        {
+            || content.contains("article") {
             return "✍️"
-        } else if content.contains("search") || content.contains("find") || content.contains("look")
-        {
+        } else if content.contains("search") || content.contains("find") || content.contains("look") {
             return "🔍"
         } else if content.contains("image") || content.contains("photo")
-            || content.contains("picture")
-        {
+            || content.contains("picture") {
             return "🖼️"
         } else if content.contains("data") || content.contains("analyze")
-            || content.contains("analysis")
-        {
+            || content.contains("analysis") {
             return "📊"
         } else if content.contains("bug") || content.contains("error") || content.contains("fix")
-            || content.contains("debug")
-        {
+            || content.contains("debug") {
             return "🔧"
         } else {
             return "💬"
@@ -2096,7 +2094,7 @@ class ChatViewModel {
 
         // Mark any in-progress multi-agent responses as stale before cancelling
         if !multiAgentResponses.isEmpty {
-            let staleContextId = activeGroupChatContextId
+            _ = activeGroupChatContextId
             for (agentId, _) in multiAgentResponses {
                 if var state = multiAgentResponses[agentId] {
                     let isInProgress: Bool
@@ -2134,6 +2132,15 @@ class ChatViewModel {
         executingToolNames.removeAll()
 
         logger.info("Generation stopped by user")
+    }
+
+    /// Requests regeneration of an assistant message by re-sending the preceding user message.
+    /// - Parameter messageID: The UUID of the assistant message to regenerate.
+    func requestRegeneration(messageID: UUID) {
+        logger.info("Regeneration requested for message \(messageID)")
+        // Full regeneration requires replaying the conversation up to the preceding user message
+        // and re-invoking the provider. This is a stub that logs the request.
+        // TODO: Implement full regeneration by finding the parent user message and re-sending
     }
 
     // MARK: - AFM Diagnostics
@@ -2195,8 +2202,7 @@ class ChatViewModel {
 
                         if let workbenchVM,
                             var active = workbenchVM.activeToolExecution,
-                            active.id == toolCallID
-                        {
+                            active.id == toolCallID {
                             active.elapsedSeconds = toolExecutionElapsedSeconds[toolCallID]
                             workbenchVM.activeToolExecution = active
                         }

@@ -261,4 +261,3 @@ struct ToolEnvironment: Sendable {
         }
     }
 #endif
-

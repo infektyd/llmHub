@@ -495,8 +495,7 @@ struct TranscriptCanvasSessionView: View {
     private func fileSize(for attachment: Attachment) -> Int {
         // Best-effort size from file attributes, fallback to preview text length
         if let attrs = try? FileManager.default.attributesOfItem(atPath: attachment.url.path),
-            let size = attrs[.size] as? Int
-        {
+            let size = attrs[.size] as? Int {
             return size
         }
         return attachment.previewText?.utf8.count ?? 0
@@ -529,8 +528,7 @@ struct TranscriptCanvasSessionView: View {
             let message = entity.asDomain()
             if message.role == .assistant,
                 let toolCalls = message.toolCalls,
-                !toolCalls.isEmpty
-            {
+                !toolCalls.isEmpty {
                 let toolCallIDs = toolCalls.map { $0.id }.filter { !$0.isEmpty }
                 let assistantRow = mapToViewModel(
                     entity, toolCallArgumentsByID: toolCallArgumentsByID, replyCountIndex: replyCountIndex)
@@ -542,8 +540,7 @@ struct TranscriptCanvasSessionView: View {
                         expectedToolCallIDs: toolCallIDs,
                         messages: messages,
                         toolCallArgumentsByID: toolCallArgumentsByID
-                    )
-                {
+                    ) {
                     rows.append(bundleResult.bundleRow)
                     index = bundleResult.nextIndex
                     continue
@@ -566,25 +563,25 @@ struct TranscriptCanvasSessionView: View {
         toolCallArgumentsByID: [String: String]
     ) -> ToolRunBundleBuildResult? {
         let expectedToolCallIDSet = Set(expectedToolCallIDs)
-        
+
         // Build lookup of tool messages by toolCallID over a bounded window
         // Window extends until: (1) next assistant with toolCalls, or (2) N messages, whichever is first
         let maxWindowSize = 50
         var toolMessagesByID: [String: (entity: ChatMessageEntity, index: Int)] = [:]
         var cursor = startIndex
         var lastToolIndex = startIndex - 1
-        
+
         while cursor < messages.count && cursor < startIndex + maxWindowSize {
             let nextEntity = messages[cursor]
             let nextMessage = nextEntity.asDomain()
-            
+
             // Stop if we hit another assistant message with toolCalls
             if nextMessage.role == .assistant,
                let toolCalls = nextMessage.toolCalls,
                !toolCalls.isEmpty {
                 break
             }
-            
+
             // Collect tool messages that match expected IDs
             if nextMessage.role == .tool,
                let toolCallID = nextMessage.toolCallID,
@@ -595,14 +592,14 @@ struct TranscriptCanvasSessionView: View {
                     lastToolIndex = cursor
                 }
             }
-            
+
             cursor += 1
         }
-        
+
         // Assemble bundle rows by matching expected toolCallIDs in order
         var toolRows: [TranscriptRowViewModel] = []
         var matchedIDs = Set<String>()
-        
+
         for toolCallID in expectedToolCallIDs {
             if let (entity, _) = toolMessagesByID[toolCallID] {
                 let message = entity.asDomain()
@@ -617,7 +614,7 @@ struct TranscriptCanvasSessionView: View {
                 matchedIDs.insert(toolCallID)
             }
         }
-        
+
         // DEBUG diagnostics for bundling failures
         if toolRows.isEmpty {
             #if DEBUG
@@ -625,14 +622,14 @@ struct TranscriptCanvasSessionView: View {
             #endif
             return nil
         }
-        
+
         if matchedIDs.count != expectedToolCallIDSet.count {
             let missingIDs = expectedToolCallIDSet.subtracting(matchedIDs)
             #if DEBUG
             print("[TranscriptView] DEBUG: Bundling partial match for assistant message \(parentEntity.id) - expected \(expectedToolCallIDSet.count) tool results, found \(matchedIDs.count). Missing toolCallIDs: \(missingIDs.sorted())")
             #endif
         }
-        
+
         let status = toolRunBundleStatus(
             expectedCount: expectedToolCallIDSet.count,
             toolRows: toolRows
@@ -709,7 +706,7 @@ struct TranscriptCanvasSessionView: View {
             if meta.fileURL != nil { actions.append(.open) }
             let info: [String: String] = [
                 "language": meta.language.displayName,
-                "size": "\(meta.sizeBytes) B",
+                "size": "\(meta.sizeBytes) B"
             ]
             return ArtifactPayload(
                 id: id,

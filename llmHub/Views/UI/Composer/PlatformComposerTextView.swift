@@ -153,8 +153,7 @@ private struct IOSComposerTextView: UIViewRepresentable {
 
             if let last = lastPasteboardChangeCount,
                 last == payload.pasteboardChangeCount,
-                Date().timeIntervalSince1970 - lastPasteTimestamp < 0.2
-            {
+                Date().timeIntervalSince1970 - lastPasteTimestamp < 0.2 {
                 notifyPasteEvent(
                     charCount: payload.plainText.count,
                     lineCount: payload.plainText.lineCount,
@@ -401,8 +400,7 @@ private struct MacComposerTextView: NSViewRepresentable {
 
             if let last = lastPasteboardChangeCount,
                 last == payload.pasteboardChangeCount,
-                Date().timeIntervalSince1970 - lastPasteTimestamp < 0.2
-            {
+                Date().timeIntervalSince1970 - lastPasteTimestamp < 0.2 {
                 notifyPasteEvent(
                     charCount: payload.plainText.count,
                     lineCount: payload.plainText.lineCount,

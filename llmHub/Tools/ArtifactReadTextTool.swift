@@ -31,7 +31,7 @@ nonisolated struct ArtifactReadTextTool: Tool {
                 "offset": ToolProperty(
                     type: .integer,
                     description: "Character offset to start reading from (default: 0)."
-                ),
+                )
             ],
             required: ["id"]
         )
@@ -49,8 +49,7 @@ nonisolated struct ArtifactReadTextTool: Tool {
     init() {}
 
     nonisolated func execute(arguments: ToolArguments, context: ToolContext) async throws
-        -> ToolResult
-    {
+        -> ToolResult {
         guard let idString = arguments.string("id"), !idString.isEmpty else {
             throw ToolError.invalidArguments("id is required")
         }
@@ -68,7 +67,7 @@ nonisolated struct ArtifactReadTextTool: Tool {
         // Validate text-based mime type
         let textMimeTypes = [
             "text/", "application/json", "application/xml", "application/javascript",
-            "application/x-yaml", "application/toml",
+            "application/x-yaml", "application/toml"
         ]
         let isTextType = textMimeTypes.contains { artifact.mimeType.hasPrefix($0) }
         if !isTextType {
@@ -126,7 +125,7 @@ nonisolated struct ArtifactReadTextTool: Tool {
             "filename": artifact.filename,
             "mimeType": artifact.mimeType,
             "offset": offset,
-            "length": excerpt.count,
+            "length": excerpt.count
         ]
         if truncated {
             result["truncated"] = true

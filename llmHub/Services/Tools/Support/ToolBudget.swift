@@ -22,10 +22,6 @@ struct ToolBudget {
     /// Unlimited budget (workhorse mode)
     static let unlimited = ToolBudget(maxTools: Int.max)
 
-    init(maxTools: Int) {
-        self.maxTools = maxTools
-    }
-
     /// Resolve budget based on current policy
     static func resolve(for policy: ToolsEnabledPolicy) -> ToolBudget {
         switch policy {
