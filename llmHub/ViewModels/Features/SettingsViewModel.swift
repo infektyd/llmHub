@@ -96,7 +96,7 @@ final class SettingsViewModel: ObservableObject {
                 icon: "terminal.fill",
                 description: "Local Gateway — API key optional",
                 docsURL: nil
-            )
+            ),
         ]
     }
 
@@ -259,7 +259,7 @@ final class SettingsViewModel: ObservableObject {
             HTTPRequestTool(),
             FileReaderTool(),
             ShellTool(),
-            WebSearchTool()
+            WebSearchTool(),
         ]
 
         let registry = await ToolRegistry(tools: tools)
@@ -273,7 +273,7 @@ final class SettingsViewModel: ObservableObject {
             "http_request": "network",
             "read_file": "doc.text.magnifyingglass",
             "shell": "terminal",
-            "web_search": "globe"
+            "web_search": "globe",
         ]
 
         var toggles: [UIToolToggleItem] = []

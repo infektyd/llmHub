@@ -214,7 +214,7 @@ public class AnthropicManager {
             "interleaved-thinking-2025-05-14",
             "structured-outputs-2025-11-13",
             "effort-2025-11-24",
-            "prompt-caching-2024-07-31"
+            "prompt-caching-2024-07-31",
         ]
         request.setValue(betas.joined(separator: ","), forHTTPHeaderField: "anthropic-beta")
 

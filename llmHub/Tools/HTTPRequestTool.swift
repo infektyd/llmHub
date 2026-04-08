@@ -48,7 +48,7 @@ nonisolated struct HTTPRequestTool: Tool {
                     type: .string,
                     description: "Preferred response format (default: json then text)",
                     enumValues: ["text", "json", "bytes"]
-                )
+                ),
             ],
             required: ["url"]
         )
@@ -209,7 +209,7 @@ nonisolated struct HTTPRequestTool: Tool {
                         "bytesReceived": "\(data.count)",
                         "elapsedMs": "\(elapsedMs)",
                         "cancellationRequested": "\(cancellationWasRequested.withLock { $0 })",
-                        "process": "\(bundleID)"
+                        "process": "\(bundleID)",
                     ],
                     truncated: truncated
                 )

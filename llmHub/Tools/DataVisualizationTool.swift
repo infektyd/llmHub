@@ -53,7 +53,7 @@ nonisolated struct DataVisualizationTool: Tool {
                     type: .string,
                     description: "How to return the chart description (default: markdown)",
                     enumValues: ["markdown", "json"]
-                )
+                ),
             ],
             required: ["chart_type", "data"]
         )
@@ -238,6 +238,6 @@ private func summarize(series: [[Double]]) -> [String: Double] {
         "max": maxVal,
         "mean": mean,
         "median": median,
-        "count": Double(flat.count)
+        "count": Double(flat.count),
     ]
 }

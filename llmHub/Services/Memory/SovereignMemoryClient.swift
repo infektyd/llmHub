@@ -230,7 +230,7 @@ final class SovereignMemoryClient: Sendable {
     ) {
         let messages = [
             SovereignConversationMessage(role: "user", content: userMessage),
-            SovereignConversationMessage(role: "assistant", content: assistantResponse)
+            SovereignConversationMessage(role: "assistant", content: assistantResponse),
         ]
 
         let request = SovereignProcessRequest(

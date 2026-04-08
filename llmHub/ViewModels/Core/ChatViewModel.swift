@@ -371,7 +371,7 @@ class ChatViewModel {
             { GoogleAIProvider(keychain: keychain, config: config.googleAI) },
             { XAIProvider(keychain: keychain, config: config.xai) },
             { OpenRouterProvider(keychain: keychain, config: config.openRouter) },
-            { OpenClawProvider(keychain: keychain, config: config.openClaw) }
+            { OpenClawProvider(keychain: keychain, config: config.openClaw) },
         ])
 
         let baseEnvironment = ToolEnvironment.current
@@ -408,7 +408,7 @@ class ChatViewModel {
             ArtifactListTool(),
             ArtifactOpenTool(),
             ArtifactReadTextTool(),
-            ArtifactDescribeImageTool()
+            ArtifactDescribeImageTool(),
         ]
 
         let toolRegistry = await ToolRegistry(tools: tools)
@@ -569,7 +569,7 @@ class ChatViewModel {
         Agent(id: "forge", name: "Forge", emoji: "⚒️", status: .online),
         Agent(id: "recon", name: "Recon", emoji: "🔍", status: .online),
         Agent(id: "pulse", name: "Pulse", emoji: "💓", status: .online),
-        Agent(id: "council", name: "Council", emoji: "🏛️", status: .online)
+        Agent(id: "council", name: "Council", emoji: "🏛️", status: .online),
     ]
 
     private static func emojiForAgent(id: String) -> String {

@@ -274,7 +274,7 @@ struct ToolResultCardView: View {
             "shell": "terminal",
             "web_search": "globe",
             "workspace": "folder",
-            "browser_preview": "safari"
+            "browser_preview": "safari",
         ]
         return iconMap[normalizedKey] ?? "wrench.and.screwdriver"
     }

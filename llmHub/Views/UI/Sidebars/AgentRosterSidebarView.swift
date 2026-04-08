@@ -160,11 +160,11 @@ private struct AgentRow: View {
         Agent(id: "forge", name: "Forge", emoji: "⚒️", status: .online),
         Agent(id: "recon", name: "Recon", emoji: "🔍", status: .busy),
         Agent(id: "pulse", name: "Pulse", emoji: "💓", status: .online),
-        Agent(id: "council", name: "Council", emoji: "🏛️", status: .offline)
+        Agent(id: "council", name: "Council", emoji: "🏛️", status: .offline),
     ]
     vm.agentCostSnapshots = [
         "forge": AgentCostSnapshot(inputTokens: 450_000, outputTokens: 120_000, cachedTokens: 50_000, totalCostUSD: 0.42),
-        "syntra": AgentCostSnapshot(inputTokens: 200_000, outputTokens: 80_000, cachedTokens: 20_000, totalCostUSD: 0.18)
+        "syntra": AgentCostSnapshot(inputTokens: 200_000, outputTokens: 80_000, cachedTokens: 20_000, totalCostUSD: 0.18),
     ]
     return AgentRosterSidebarView()
         .environment(vm)

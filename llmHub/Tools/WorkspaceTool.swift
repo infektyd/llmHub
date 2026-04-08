@@ -41,7 +41,7 @@ nonisolated struct WorkspaceTool: Tool {
                     type: .array,
                     description: "Filter by file extensions (e.g., ['swift', 'py'])",
                     items: ToolProperty(type: .string, description: "File extension")
-                )
+                ),
             ],
             required: ["operation"]
         )
@@ -161,7 +161,7 @@ nonisolated struct WorkspaceTool: Tool {
             process.launchPath = "/usr/bin/grep"
             process.arguments = [
                 "-rn", "--include=*.swift", "--include=*.py", "--include=*.js", "--include=*.json",
-                "--include=*.md", pattern
+                "--include=*.md", pattern,
             ]
             process.currentDirectoryURL = url
             let pipe = Pipe()

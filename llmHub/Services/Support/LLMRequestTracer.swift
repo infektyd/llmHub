@@ -179,7 +179,7 @@ struct LLMTrace {
             "attachments=\(attachmentsFlag)",
             "estTokensTotal=\(estimatedTokensTotal)",
             "estTokensSystem=\(estimatedTokensSystem)",
-            "toolCallIds=\(toolCallIds)"
+            "toolCallIds=\(toolCallIds)",
         ]
         let logLine = components.joined(separator: " ")
         logger.debug("\(logLine, privacy: .public)")

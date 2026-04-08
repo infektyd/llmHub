@@ -678,7 +678,7 @@ struct AppearanceSection: View {
 
     private let emoteOptions: [String] = [
         "👤", "🧑‍💻", "🧑", "👨", "👩", "🧔", "👨‍💼", "👩‍💼",
-        "🦊", "🐱", "🤖", "👾", "🎮", "⚡️", "🔥", "💎", "🌟"
+        "🦊", "🐱", "🤖", "👾", "🎮", "⚡️", "🔥", "💎", "🌟",
     ]
 
     var body: some View {
@@ -1134,7 +1134,7 @@ struct LinkRow: View {
                     isEnabled: false,
                     isAvailable: false,
                     unavailableReason: "Requires macOS"
-                )
+                ),
             ]
         }
 

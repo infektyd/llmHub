@@ -706,7 +706,7 @@ struct TranscriptCanvasSessionView: View {
             if meta.fileURL != nil { actions.append(.open) }
             let info: [String: String] = [
                 "language": meta.language.displayName,
-                "size": "\(meta.sizeBytes) B"
+                "size": "\(meta.sizeBytes) B",
             ]
             return ArtifactPayload(
                 id: id,

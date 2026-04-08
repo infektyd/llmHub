@@ -35,7 +35,7 @@ struct OpenClawProvider: LLMProvider {
     var defaultHeaders: [String: String] {
         get async {
             var headers: [String: String] = [
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             ]
             if let apiKey = await keychain.apiKey(for: .openclaw) {
                 headers["Authorization"] = "Bearer \(apiKey)"

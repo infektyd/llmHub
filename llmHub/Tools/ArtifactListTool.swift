@@ -48,7 +48,7 @@ nonisolated struct ArtifactListTool: Tool {
                 "id": artifact.id.uuidString,
                 "name": artifact.filename,
                 "mimeType": artifact.mimeType,
-                "bytes": artifact.sizeBytes
+                "bytes": artifact.sizeBytes,
             ]
         }
 

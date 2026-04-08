@@ -20,7 +20,7 @@ final class TranscriptRowBundlingTests: XCTestCase {
     override func setUp() async throws {
         let schema = Schema([
             ChatSessionEntity.self,
-            ChatMessageEntity.self
+            ChatMessageEntity.self,
         ])
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         modelContainer = try ModelContainer(for: schema, configurations: [config])
@@ -322,7 +322,7 @@ final class TranscriptRowBundlingTests: XCTestCase {
         let toolCalls = [
             ToolCall(id: "call_1", name: "read_file", input: "{}"),
             ToolCall(id: "call_2", name: "grep_search", input: "{}"),
-            ToolCall(id: "call_3", name: "list_dir", input: "{}")
+            ToolCall(id: "call_3", name: "list_dir", input: "{}"),
         ]
 
         _ = createUserMessage(content: "Do some work", session: session)
@@ -356,7 +356,7 @@ final class TranscriptRowBundlingTests: XCTestCase {
 
         let toolCalls = [
             ToolCall(id: "call_1", name: "read_file", input: "{}"),
-            ToolCall(id: "call_2", name: "grep_search", input: "{}")
+            ToolCall(id: "call_2", name: "grep_search", input: "{}"),
         ]
 
         _ = createUserMessage(content: "Do some work", session: session)
@@ -387,7 +387,7 @@ final class TranscriptRowBundlingTests: XCTestCase {
 
         let toolCalls = [
             ToolCall(id: "call_1", name: "read_file", input: "{}"),
-            ToolCall(id: "call_2", name: "grep_search", input: "{}")
+            ToolCall(id: "call_2", name: "grep_search", input: "{}"),
         ]
 
         _ = createUserMessage(content: "Do some work", session: session)
@@ -421,7 +421,7 @@ final class TranscriptRowBundlingTests: XCTestCase {
         let toolCalls = [
             ToolCall(id: "call_1", name: "read_file", input: "{}"),
             ToolCall(id: "call_2", name: "grep_search", input: "{}"),
-            ToolCall(id: "call_3", name: "list_dir", input: "{}")
+            ToolCall(id: "call_3", name: "list_dir", input: "{}"),
         ]
 
         _ = createUserMessage(content: "Do some work", session: session)
@@ -456,7 +456,7 @@ final class TranscriptRowBundlingTests: XCTestCase {
         let toolCalls = [
             ToolCall(id: "call_1", name: "read_file", input: "{}"),
             ToolCall(id: "call_2", name: "grep_search", input: "{}"),
-            ToolCall(id: "call_3", name: "list_dir", input: "{}")
+            ToolCall(id: "call_3", name: "list_dir", input: "{}"),
         ]
 
         _ = createUserMessage(content: "Do some work", session: session)
@@ -497,7 +497,7 @@ final class TranscriptRowBundlingTests: XCTestCase {
         let toolCalls = [
             ToolCall(id: "call_1", name: "read_file", input: "{}"),
             ToolCall(id: "call_2", name: "grep_search", input: "{}"),
-            ToolCall(id: "call_3", name: "list_dir", input: "{}")
+            ToolCall(id: "call_3", name: "list_dir", input: "{}"),
         ]
 
         _ = createUserMessage(content: "Do some work", session: session)
@@ -525,7 +525,7 @@ final class TranscriptRowBundlingTests: XCTestCase {
 
         let toolCalls = [
             ToolCall(id: "call_1", name: "read_file", input: "{}"),
-            ToolCall(id: "call_2", name: "grep_search", input: "{}")
+            ToolCall(id: "call_2", name: "grep_search", input: "{}"),
         ]
 
         _ = createUserMessage(content: "Do some work", session: session)
@@ -625,7 +625,7 @@ final class TranscriptRowBundlingTests: XCTestCase {
 
         let toolCalls = [
             ToolCall(id: "call_1", name: "read_file", input: "{}"),
-            ToolCall(id: "call_2", name: "grep_search", input: "{}")
+            ToolCall(id: "call_2", name: "grep_search", input: "{}"),
         ]
 
         _ = createUserMessage(content: "Do work", session: session)
@@ -648,7 +648,7 @@ final class TranscriptRowBundlingTests: XCTestCase {
 
         let toolCalls = [
             ToolCall(id: "call_1", name: "read_file", input: "{}"),
-            ToolCall(id: "call_2", name: "grep_search", input: "{}")
+            ToolCall(id: "call_2", name: "grep_search", input: "{}"),
         ]
 
         _ = createUserMessage(content: "Do work", session: session)
@@ -671,7 +671,7 @@ final class TranscriptRowBundlingTests: XCTestCase {
 
         let toolCalls = [
             ToolCall(id: "call_1", name: "read_file", input: "{}"),
-            ToolCall(id: "call_2", name: "grep_search", input: "{}")
+            ToolCall(id: "call_2", name: "grep_search", input: "{}"),
         ]
 
         _ = createUserMessage(content: "Do work", session: session)

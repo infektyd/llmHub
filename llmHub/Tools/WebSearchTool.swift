@@ -34,7 +34,7 @@ nonisolated struct WebSearchTool: Tool {
                 "region": ToolProperty(
                     type: .string, description: "Region code (e.g., us-en, uk-en)"),
                 "safe_search": ToolProperty(
-                    type: .boolean, description: "Enable safe search (default: true)")
+                    type: .boolean, description: "Enable safe search (default: true)"),
             ],
             required: ["query"]
         )

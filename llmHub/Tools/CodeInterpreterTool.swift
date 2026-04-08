@@ -35,7 +35,7 @@ final class CodeInterpreterTool: Tool, @unchecked Sendable {
                     type: .string,
                     description: "The programming language of the code",
                     enumValues: supportedLanguages.map { $0.rawValue }
-                )
+                ),
             ],
             required: ["code", "language"]
         )
@@ -356,7 +356,7 @@ extension CodeInterpreterTool {
             ("rm -rf", "⚠️ Code contains 'rm -rf' which can delete files"),
             ("system\\(", "⚠️ Code uses system() which can execute shell commands"),
             ("exec\\(", "⚠️ Code uses exec() which can execute arbitrary commands"),
-            ("eval\\(", "⚠️ Code uses eval() which can execute arbitrary code")
+            ("eval\\(", "⚠️ Code uses eval() which can execute arbitrary code"),
         ]
 
         // Add language-specific patterns
@@ -393,7 +393,7 @@ extension CodeInterpreterTool {
             "while True",
             "while 1",
             "for \\(;;\\)",
-            "loop \\{"
+            "loop \\{",
         ]
 
         for pattern in infiniteLoopPatterns where code.range(of: pattern, options: .regularExpression) != nil {

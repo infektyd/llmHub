@@ -50,13 +50,13 @@ final class ConversationDistillationSchedulerDebounceTests: XCTestCase {
 
         let msgs1: [ChatMessage] = [
             ChatMessage(id: UUID(), role: .user, content: "u1", parts: [.text("u1")], createdAt: Date(), codeBlocks: []),
-            ChatMessage(id: UUID(), role: .assistant, content: "a1", parts: [.text("a1")], createdAt: Date(), codeBlocks: [])
+            ChatMessage(id: UUID(), role: .assistant, content: "a1", parts: [.text("a1")], createdAt: Date(), codeBlocks: []),
         ]
 
         let msgs2: [ChatMessage] = [
             ChatMessage(id: UUID(), role: .user, content: "u1", parts: [.text("u1")], createdAt: Date(), codeBlocks: []),
             ChatMessage(id: UUID(), role: .assistant, content: "a1", parts: [.text("a1")], createdAt: Date(), codeBlocks: []),
-            ChatMessage(id: UUID(), role: .user, content: "u2-newest", parts: [.text("u2-newest")], createdAt: Date(), codeBlocks: [])
+            ChatMessage(id: UUID(), role: .user, content: "u2-newest", parts: [.text("u2-newest")], createdAt: Date(), codeBlocks: []),
         ]
 
         scheduler.scheduleDistillation(

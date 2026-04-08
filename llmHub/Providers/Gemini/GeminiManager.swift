@@ -268,8 +268,8 @@ public class GeminiManager {
             ],
             "parameters": [
                 "aspectRatio": aspectRatio,
-                "sampleCount": 1
-            ]
+                "sampleCount": 1,
+            ],
         ]
 
         let data = try await performRawRequest(endpoint: endpoint, payload: payload)
@@ -305,12 +305,12 @@ public class GeminiManager {
             "instances": [
                 [
                     "prompt": prompt,
-                    "video_length": "5s"
-                ]
+                    "video_length": "5s",
+                ],
             ],
             "parameters": [
                 "sampleCount": 1
-            ]
+            ],
         ]
 
         let data = try await performRawRequest(endpoint: endpoint, payload: payload)

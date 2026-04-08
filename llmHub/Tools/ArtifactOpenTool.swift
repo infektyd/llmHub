@@ -22,7 +22,7 @@ nonisolated struct ArtifactOpenTool: Tool {
                 "id": ToolProperty(
                     type: .string,
                     description: "The artifact ID to retrieve metadata for."
-                )
+                ),
             ],
             required: ["id"]
         )
@@ -57,7 +57,7 @@ nonisolated struct ArtifactOpenTool: Tool {
             "name": artifact.filename,
             "mimeType": artifact.mimeType,
             "bytes": artifact.sizeBytes,
-            "importedAt": ISO8601DateFormatter().string(from: artifact.importedAt)
+            "importedAt": ISO8601DateFormatter().string(from: artifact.importedAt),
         ]
 
         let jsonData = try JSONSerialization.data(withJSONObject: metadata, options: .prettyPrinted)

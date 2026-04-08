@@ -52,7 +52,7 @@ struct ComposerAttachmentTray: View {
                     url: URL(fileURLWithPath: "/tmp/image.png"),
                     type: .image,
                     previewText: nil
-                )
+                ),
             ],
             onRemove: { _ in }
         )
