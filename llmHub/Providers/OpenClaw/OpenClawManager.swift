@@ -5,10 +5,12 @@ import OSLog
 /// Handles chat completions and model listing against localhost:18789.
 public class OpenClawManager {
     private let baseURL: URL
+    private let keychain: KeychainStore
 
     /// Initializes with a configurable base URL (defaults to localhost:18789).
-    public init(baseURL: URL = URL(string: "http://localhost:18789/v1")!) {
+    public init(baseURL: URL = URL(string: "http://localhost:18789/v1")!, keychain: KeychainStore = KeychainStore()) {
         self.baseURL = baseURL
+        self.keychain = keychain
     }
 
     // MARK: - Chat Completion
@@ -21,7 +23,7 @@ public class OpenClawManager {
         maxTokens: Int? = nil,
         stream: Bool = false,
         tools: [XAITool]? = nil
-    ) throws -> URLRequest {
+    ) async throws -> URLRequest {
         let endpoint = baseURL.appendingPathComponent("chat/completions")
 
         let payload = XAIChatRequest(
@@ -35,7 +37,9 @@ public class OpenClawManager {
 
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
-        request.addValue("Bearer 3d0f30ebdb793f1d86523ea3f2ecc52615435a3874810790", forHTTPHeaderField: "Authorization")
+        if let apiKey = await keychain.apiKey(for: .openclaw) {
+            request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        }
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 
         let encoder = JSONEncoder()
@@ -51,7 +55,9 @@ public class OpenClawManager {
         let url = baseURL.appendingPathComponent("models")
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.addValue("Bearer 3d0f30ebdb793f1d86523ea3f2ecc52615435a3874810790", forHTTPHeaderField: "Authorization")
+        if let apiKey = await keychain.apiKey(for: .openclaw) {
+            request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        }
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -70,7 +76,9 @@ public class OpenClawManager {
         let url = baseURL.appendingPathComponent("agents")
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.addValue("Bearer 3d0f30ebdb793f1d86523ea3f2ecc52615435a3874810790", forHTTPHeaderField: "Authorization")
+        if let apiKey = await keychain.apiKey(for: .openclaw) {
+            request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        }
 
         let (data, response) = try await URLSession.shared.data(for: request)
 

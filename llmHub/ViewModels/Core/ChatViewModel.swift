@@ -371,7 +371,7 @@ class ChatViewModel {
             { GoogleAIProvider(keychain: keychain, config: config.googleAI) },
             { XAIProvider(keychain: keychain, config: config.xai) },
             { OpenRouterProvider(keychain: keychain, config: config.openRouter) },
-            { OpenClawProvider(config: config.openClaw) }
+            { OpenClawProvider(keychain: keychain, config: config.openClaw) }
         ])
 
         let baseEnvironment = ToolEnvironment.current

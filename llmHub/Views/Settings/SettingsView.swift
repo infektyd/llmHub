@@ -377,19 +377,52 @@ struct ProviderRow: View {
             // Expanded content
             if isExpanded {
                 VStack(alignment: .leading, spacing: 12) {
-                    // Special case for OpenClaw - local gateway, no API key needed
+                    // Special case for OpenClaw - local gateway, API key optional
                     if info.provider == .openclaw {
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundStyle(AppColors.success)
-                            Text("Local Gateway - Always Active")
+                            Text("Local Gateway — API key optional")
                                 .font(.system(size: 13 * uiScale, weight: .medium))
                                 .foregroundStyle(AppColors.success)
                         }
                         .padding(.vertical, 8)
+
+                        // Optional API key input for OpenClaw
+                        HStack(spacing: 8) {
+                        Group {
+                            if isKeyVisible {
+                                TextField("API Key (optional)", text: $keyBinding)
+                            } else {
+                                SecureField("API Key (optional)", text: $keyBinding)
+                            }
+                        }
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 13 * uiScale, design: .monospaced))
+                        .padding(.horizontal, uiCompactMode ? 10 : 12)
+                        .padding(.vertical, uiCompactMode ? 9 : 10)
+                        .background {
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(AppColors.backgroundPrimary)
+                        }
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .stroke(AppColors.textPrimary.opacity(0.1), lineWidth: 1)
+                        }
+
+                        // Toggle visibility
+                        Button {
+                            isKeyVisible.toggle()
+                        } label: {
+                            Image(systemName: isKeyVisible ? "eye.slash" : "eye")
+                                .font(.system(size: 13 * uiScale))
+                                .foregroundStyle(AppColors.textSecondary)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    // API key input - hidden for OpenClaw (uses local gateway token)
-                    else if info.provider != .openclaw {
+                    }
+                    // API key input for all other providers
+                    else {
                         HStack(spacing: 8) {
                         Group {
                             if isKeyVisible {
@@ -421,7 +454,7 @@ struct ProviderRow: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    }  // End: hide API key input for OpenClaw
+                    }
 
                     // Actions
                     HStack(spacing: 12) {

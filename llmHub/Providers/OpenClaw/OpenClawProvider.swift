@@ -9,6 +9,7 @@ struct OpenClawProvider: LLMProvider {
     nonisolated let id: String = "openclaw"
     nonisolated let name: String = "OpenClaw (Local)"
 
+    private let keychain: KeychainStore
     private let config: ProvidersConfig.OpenClaw
     private let manager: OpenClawManager
 
@@ -16,10 +17,11 @@ struct OpenClawProvider: LLMProvider {
         private static let logger = Logger(subsystem: "com.llmhub", category: "OpenClawProvider")
     #endif
 
-    init(config: ProvidersConfig.OpenClaw) {
+    init(keychain: KeychainStore, config: ProvidersConfig.OpenClaw) {
+        self.keychain = keychain
         self.config = config
         let url = config.baseURL ?? URL(string: "http://localhost:18789/v1")!
-        self.manager = OpenClawManager(baseURL: url)
+        self.manager = OpenClawManager(baseURL: url, keychain: keychain)
     }
 
     var endpoint: URL {
@@ -32,10 +34,13 @@ struct OpenClawProvider: LLMProvider {
 
     var defaultHeaders: [String: String] {
         get async {
-            [
-                "Authorization": "Bearer 3d0f30ebdb793f1d86523ea3f2ecc52615435a3874810790",
+            var headers: [String: String] = [
                 "Content-Type": "application/json"
             ]
+            if let apiKey = await keychain.apiKey(for: .openclaw) {
+                headers["Authorization"] = "Bearer \(apiKey)"
+            }
+            return headers
         }
     }
 
