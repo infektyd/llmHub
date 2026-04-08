@@ -15,11 +15,15 @@ import SwiftUI
 /// No bubble design - flat canvas style
 struct TranscriptRow: View {
     let viewModel: TranscriptRowViewModel
+    var onRegenerate: ((UUID) -> Void)?
+    var onEdit: ((String) -> Void)?
 
     @Environment(ChatViewModel.self) private var chatVM
     @Environment(\.settingsManager) private var settingsManager
     @Environment(\.uiCompactMode) private var uiCompactMode
     @Environment(\.uiScale) private var uiScale
+
+    @State private var isHovered: Bool = false
 
     var body: some View {
         VStack(alignment: roleAlignment, spacing: uiCompactMode ? 6 : 8) {
@@ -100,6 +104,15 @@ struct TranscriptRow: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: frameAlignment)
+        .onHover { hovering in
+            isHovered = hovering
+        }
+        .overlay(alignment: isUser ? .topTrailing : .topLeading) {
+            if isHovered && !viewModel.isStreaming {
+                hoverActionBar
+                    .padding(.top, -4)
+            }
+        }
     }
 
     // MARK: - Private Computed Properties
@@ -125,6 +138,55 @@ struct TranscriptRow: View {
         guard let senderID = viewModel.senderAgentID,
               viewModel.role == .assistant else { return nil }
         return AgentIdentityRegistry.lookup(senderID, knownAgents: chatVM.discoveredAgents)
+    }
+
+    // MARK: - Hover Action Bar
+
+    /// Floating action bar that appears on hover over a message row.
+    private var hoverActionBar: some View {
+        HStack(spacing: 4) {
+            if isUser {
+                Button {
+                    onEdit?(viewModel.content)
+                } label: {
+                    Image(systemName: "square.and.pencil")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(AppColors.textSecondary)
+                }
+                .buttonStyle(.plain)
+                .help("Edit message")
+            } else {
+                Button {
+                    if let uuid = messageUUIDFromID() {
+                        onRegenerate?(uuid)
+                    }
+                } label: {
+                    Image(systemName: "arrow.counterclockwise")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(AppColors.textSecondary)
+                }
+                .buttonStyle(.plain)
+                .help("Regenerate response")
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(AppColors.surface)
+                .shadow(color: AppColors.shadowSmoke, radius: 4, x: 0, y: 2)
+        }
+    }
+
+    /// Extracts a UUID from the view model's `id` field.
+    /// Supports "message:{UUID}" format as well as bare UUID strings.
+    private func messageUUIDFromID() -> UUID? {
+        let id = viewModel.id
+        if id.hasPrefix("message:") {
+            let uuidStr = String(id.dropFirst("message:".count))
+            return UUID(uuidString: uuidStr)
+        }
+        return UUID(uuidString: id)
     }
 
     private var roleLabel: some View {

@@ -67,7 +67,7 @@ private struct AgentAutocompleteRow: View {
 #Preview("Agent Autocomplete") {
     let agents: [Agent] = [
         Agent(id: "syntra", name: "Syntra", emoji: "🔵", status: .online),
-        Agent(id: "forge", name: "Forge", emoji: "⚒️", status: .online)
+        Agent(id: "forge", name: "Forge", emoji: "⚒️", status: .online),
     ]
     return AgentAutocompleteView(agents: agents) { agent in
         print("Selected \(agent.name)")

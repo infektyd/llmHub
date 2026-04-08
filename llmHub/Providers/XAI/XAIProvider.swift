@@ -30,7 +30,7 @@ struct XAIProvider: LLMProvider {
             guard let key = await keychain.apiKey(for: .xai) else { return [:] }
             return [
                 "Authorization": "Bearer \(key)",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             ]
         }
     }

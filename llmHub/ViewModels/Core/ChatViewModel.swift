@@ -69,6 +69,10 @@ class ChatViewModel {
     /// Indicates whether the view model is currently streaming/generating a response.
     var isGenerating: Bool = false
 
+    /// Holds text to pre-fill the composer when the user taps Edit on a message.
+    /// The composer observes this and consumes it on change, then sets it back to nil.
+    var composerDraft: String?
+
     /// Agent IDs currently mentioned in the composer input.
     /// Updated by the composer view via .onChange of input text.
     /// When non-empty, model routing is driven by these mentions instead of manual picker selection.
@@ -371,7 +375,7 @@ class ChatViewModel {
             { GoogleAIProvider(keychain: keychain, config: config.googleAI) },
             { XAIProvider(keychain: keychain, config: config.xai) },
             { OpenRouterProvider(keychain: keychain, config: config.openRouter) },
-            { OpenClawProvider(config: config.openClaw) }
+            { OpenClawProvider(keychain: keychain, config: config.openClaw) },
         ])
 
         let baseEnvironment = ToolEnvironment.current
@@ -408,7 +412,7 @@ class ChatViewModel {
             ArtifactListTool(),
             ArtifactOpenTool(),
             ArtifactReadTextTool(),
-            ArtifactDescribeImageTool()
+            ArtifactDescribeImageTool(),
         ]
 
         let toolRegistry = await ToolRegistry(tools: tools)
@@ -569,7 +573,7 @@ class ChatViewModel {
         Agent(id: "forge", name: "Forge", emoji: "⚒️", status: .online),
         Agent(id: "recon", name: "Recon", emoji: "🔍", status: .online),
         Agent(id: "pulse", name: "Pulse", emoji: "💓", status: .online),
-        Agent(id: "council", name: "Council", emoji: "🏛️", status: .online)
+        Agent(id: "council", name: "Council", emoji: "🏛️", status: .online),
     ]
 
     private static func emojiForAgent(id: String) -> String {
@@ -2135,12 +2139,64 @@ class ChatViewModel {
     }
 
     /// Requests regeneration of an assistant message by re-sending the preceding user message.
-    /// - Parameter messageID: The UUID of the assistant message to regenerate.
-    func requestRegeneration(messageID: UUID) {
+    /// - Parameters:
+    ///   - messageID: The UUID of the assistant message to regenerate.
+    ///   - session: The chat session containing the message.
+    ///   - modelContext: The SwiftData model context for persistence.
+    func requestRegeneration(
+        messageID: UUID,
+        session: ChatSessionEntity,
+        modelContext: ModelContext
+    ) {
+        guard !isGenerating else {
+            logger.warning("Cannot regenerate while generating")
+            return
+        }
+
         logger.info("Regeneration requested for message \(messageID)")
-        // Full regeneration requires replaying the conversation up to the preceding user message
-        // and re-invoking the provider. This is a stub that logs the request.
-        // TODO: Implement full regeneration by finding the parent user message and re-sending
+
+        // Find the assistant message by ID in the session's sorted messages
+        let sortedMessages = session.messages.sorted { $0.createdAt < $1.createdAt }
+
+        guard let targetIndex = sortedMessages.firstIndex(where: { $0.id == messageID }) else {
+            logger.warning("Message \(messageID) not found in session")
+            return
+        }
+
+        let targetMessage = sortedMessages[targetIndex]
+        guard targetMessage.role == "assistant" else {
+            logger.warning("Message \(messageID) is not an assistant message")
+            return
+        }
+
+        // Find the preceding user message
+        let precedingMessages = sortedMessages[..<targetIndex]
+        guard let userMessageEntity = precedingMessages.last(where: { $0.role == "user" }) else {
+            logger.warning("No preceding user message found for regeneration")
+            return
+        }
+
+        let userContent = userMessageEntity.content
+
+        // Remove the assistant message and all subsequent messages from SwiftData
+        let messagesToRemove = sortedMessages[targetIndex...]
+        for message in messagesToRemove {
+            modelContext.delete(message)
+        }
+
+        do {
+            try modelContext.save()
+        } catch {
+            logger.error("Failed to save after removing messages: \(error.localizedDescription)")
+            return
+        }
+
+        // Re-send the user message
+        sendMessage(
+            messageText: userContent,
+            session: session,
+            modelContext: modelContext
+        )
     }
 
     // MARK: - AFM Diagnostics

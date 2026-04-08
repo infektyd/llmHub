@@ -130,7 +130,7 @@ final class KeychainStore: Sendable {
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrAccount as String: account,
-            kSecAttrService as String: service
+            kSecAttrService as String: service,
         ]
 
         if let accessGroup = accessGroup {
@@ -175,7 +175,7 @@ final class KeychainStore: Sendable {
         if status == errSecDuplicateItem {
             let attributes: [String: Any] = [
                 kSecValueData as String: data,
-                kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
+                kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
             ]
             return backend.update(query as CFDictionary, attributes: attributes as CFDictionary)
         }

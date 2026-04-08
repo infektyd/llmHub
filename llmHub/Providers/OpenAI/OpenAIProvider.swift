@@ -34,7 +34,7 @@ struct OpenAIProvider: LLMProvider {
             guard let key = await keychain.apiKey(for: .openai) else { return [:] }
             return [
                 "Authorization": "Bearer \(key)",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             ]
         }
     }
@@ -444,76 +444,35 @@ struct OpenAIProvider: LLMProvider {
 
                                 switch typeName {
                                 case "content_block_start":
-                                    guard let dict,
-                                        let block = dict["content_block"] as? [String: Any]
-                                    else { break }
-                                    let blockType = (block["type"] as? String) ?? ""
-                                    let index = dict["index"] as? Int
-                                    if blockType == "text" {
-                                        if let text = firstString(
-                                            block, keys: ["text", "content", "value"]) {
-                                            if !text.isEmpty {
-                                                fullText += text
-                                                continuation.yield(.token(text: text))
-                                            }
-                                        }
-                                    } else if blockType == "tool_use" {
-                                        let callID = resolveToolCallID(
-                                            from: block, fallbackIndex: index)
-                                        if let index { contentBlockIDByIndex[index] = callID }
-                                        let name = firstString(
-                                            block, keys: ["name", "tool_name", "function_name"])
-                                        let input = block["input"].flatMap { jsonString(from: $0) }
-                                        upsertToolCall(id: callID, name: name, argsDelta: input)
-                                        finalizeToolCallIfReady(id: callID)
-                                    }
+                                    Self.handleContentBlock(
+                                        start: dict,
+                                        fullText: &fullText,
+                                        continuation: continuation,
+                                        resolveToolCallID: resolveToolCallID,
+                                        contentBlockIDByIndex: &contentBlockIDByIndex,
+                                        upsertToolCall: upsertToolCall,
+                                        finalizeToolCallIfReady: finalizeToolCallIfReady,
+                                        firstString: firstString,
+                                        jsonString: jsonString
+                                    )
 
                                 case "content_block_delta":
-                                    guard let dict else { break }
-                                    let index = dict["index"] as? Int
-                                    let delta = dict["delta"] as? [String: Any]
-                                    let deltaType =
-                                        delta.flatMap { firstString($0, keys: ["type"]) } ?? ""
-                                    if deltaType == "text_delta" {
-                                        if let text = delta.flatMap({
-                                            firstString($0, keys: ["text", "delta", "value"])
-                                        }) {
-                                            if !text.isEmpty {
-                                                fullText += text
-                                                continuation.yield(.token(text: text))
-                                            }
-                                        }
-                                    } else if deltaType == "input_json_delta" {
-                                        let callID = resolveToolCallID(
-                                            from: dict, fallbackIndex: index)
-                                        let jsonDelta = delta.flatMap({
-                                            firstString(
-                                                $0, keys: ["partial_json", "delta", "arguments"])
-                                        })
-                                        upsertToolCall(id: callID, name: nil, argsDelta: jsonDelta)
-                                        finalizeToolCallIfReady(id: callID)
-                                    }
+                                    Self.handleContentBlockDelta(
+                                        dict: dict,
+                                        fullText: &fullText,
+                                        continuation: continuation,
+                                        resolveToolCallID: resolveToolCallID,
+                                        upsertToolCall: upsertToolCall,
+                                        finalizeToolCallIfReady: finalizeToolCallIfReady,
+                                        firstString: firstString
+                                    )
 
                                 case "message_delta":
-                                    if let dict,
-                                        let usageDict = dict["usage"] as? [String: Any] {
-                                        let inputTokens =
-                                            firstInt(
-                                                usageDict, keys: ["input_tokens", "prompt_tokens"])
-                                            ?? 0
-                                        let outputTokens =
-                                            firstInt(
-                                                usageDict,
-                                                keys: ["output_tokens", "completion_tokens"]) ?? 0
-                                        let cachedTokens =
-                                            firstInt(usageDict, keys: ["cached_tokens"]) ?? 0
-                                        continuation.yield(
-                                            .usage(
-                                                TokenUsage(
-                                                    inputTokens: inputTokens,
-                                                    outputTokens: outputTokens,
-                                                    cachedTokens: cachedTokens)))
-                                    }
+                                    Self.handleMessageDelta(
+                                        dict: dict,
+                                        continuation: continuation,
+                                        firstInt: firstInt
+                                    )
 
                                 case "message_stop":
                                     // Finalization event; remaining frames may still follow.
@@ -531,51 +490,36 @@ struct OpenAIProvider: LLMProvider {
                                     }
 
                                 case "response.output_text.delta":
-                                    if let delta = dict.flatMap({
-                                        firstString($0, keys: ["delta", "text"])
-                                    }) {
-                                        if !delta.isEmpty {
-                                            fullText += delta
-                                            continuation.yield(.token(text: delta))
-                                        }
-                                    }
+                                    Self.handleResponsesTextDelta(
+                                        dict: dict,
+                                        fullText: &fullText,
+                                        continuation: continuation,
+                                        firstString: firstString
+                                    )
 
                                 case "response.reasoning_summary_text.delta":
-                                    if let delta = dict.flatMap({
-                                        firstString($0, keys: ["delta", "text"])
-                                    }) {
-                                        if !delta.isEmpty {
-                                            thinkingSummary += delta
-                                            continuation.yield(.thinking(delta))
-                                        }
-                                    }
+                                    Self.handleReasoningDelta(
+                                        dict: dict,
+                                        thinkingSummary: &thinkingSummary,
+                                        continuation: continuation,
+                                        firstString: firstString
+                                    )
 
                                 case "response.function_call_arguments.delta":
-                                    guard let dict else { break }
-                                    let callID =
-                                        firstString(dict, keys: ["call_id", "item_id", "id"])
-                                        ?? "call_0"
-                                    let name = firstString(dict, keys: ["name", "function_name"])
-                                    let delta = firstString(
-                                        dict, keys: ["delta", "arguments_delta", "arguments"])
-                                    upsertToolCall(id: callID, name: name, argsDelta: delta)
+                                    Self.handleToolCallBlock(
+                                        dict: dict,
+                                        upsertToolCall: upsertToolCall,
+                                        firstString: firstString
+                                    )
 
                                 case "response.output_item.added", "response.output_item.done":
-                                    guard let dict, let item = dict["item"] as? [String: Any] else {
-                                        break
-                                    }
-                                    let itemType = (item["type"] as? String) ?? ""
-                                    guard itemType == "function_call" else { break }
-
-                                    let callID =
-                                        firstString(item, keys: ["call_id", "id", "item_id"])
-                                        ?? "call_0"
-                                    let name = firstString(item, keys: ["name", "function_name"])
-                                    let args = firstString(item, keys: ["arguments", "input"])
-                                    upsertToolCall(id: callID, name: name, argsDelta: args)
-                                    if typeName == "response.output_item.done" {
-                                        finalizeToolCallIfReady(id: callID)
-                                    }
+                                    Self.handleToolCallBlock(
+                                        item: dict,
+                                        typeName: typeName,
+                                        upsertToolCall: upsertToolCall,
+                                        finalizeToolCallIfReady: finalizeToolCallIfReady,
+                                        firstString: firstString
+                                    )
 
                                 case "response.completed":
                                     // Usage may arrive here (best-effort).
@@ -796,4 +740,166 @@ struct OpenAIProvider: LLMProvider {
 
 extension String {
     fileprivate var nilIfEmpty: String? { isEmpty ? nil : self }
+}
+
+// MARK: - Responses API Streaming Helpers
+
+extension OpenAIProvider {
+
+    /// Handles `content_block_start` events from the Responses API stream.
+    fileprivate static func handleContentBlock(
+        start dict: [String: Any]?,
+        fullText: inout String,
+        continuation: AsyncThrowingStream<ProviderEvent, Error>.Continuation,
+        resolveToolCallID: ([String: Any], Int?) -> String,
+        contentBlockIDByIndex: inout [Int: String],
+        upsertToolCall: (String, String?, String?) -> Void,
+        finalizeToolCallIfReady: (String) -> Void,
+        firstString: ([String: Any], [String]) -> String?,
+        jsonString: (Any) -> String?
+    ) {
+        guard let dict,
+            let block = dict["content_block"] as? [String: Any]
+        else { return }
+        let blockType = (block["type"] as? String) ?? ""
+        let index = dict["index"] as? Int
+        if blockType == "text" {
+            if let text = firstString(block, keys: ["text", "content", "value"]) {
+                if !text.isEmpty {
+                    fullText += text
+                    continuation.yield(.token(text: text))
+                }
+            }
+        } else if blockType == "tool_use" {
+            let callID = resolveToolCallID(block, index)
+            if let index { contentBlockIDByIndex[index] = callID }
+            let name = firstString(block, keys: ["name", "tool_name", "function_name"])
+            let input = block["input"].flatMap { jsonString($0) }
+            upsertToolCall(callID, name, input)
+            finalizeToolCallIfReady(callID)
+        }
+    }
+
+    /// Handles `content_block_delta` events from the Responses API stream.
+    fileprivate static func handleContentBlockDelta(
+        dict: [String: Any]?,
+        fullText: inout String,
+        continuation: AsyncThrowingStream<ProviderEvent, Error>.Continuation,
+        resolveToolCallID: ([String: Any], Int?) -> String,
+        upsertToolCall: (String, String?, String?) -> Void,
+        finalizeToolCallIfReady: (String) -> Void,
+        firstString: ([String: Any], [String]) -> String?
+    ) {
+        guard let dict else { return }
+        let index = dict["index"] as? Int
+        let delta = dict["delta"] as? [String: Any]
+        let deltaType = delta.flatMap { firstString($0, keys: ["type"]) } ?? ""
+        if deltaType == "text_delta" {
+            if let text = delta.flatMap({
+                firstString($0, keys: ["text", "delta", "value"])
+            }) {
+                if !text.isEmpty {
+                    fullText += text
+                    continuation.yield(.token(text: text))
+                }
+            }
+        } else if deltaType == "input_json_delta" {
+            let callID = resolveToolCallID(dict, index)
+            let jsonDelta = delta.flatMap({
+                firstString($0, keys: ["partial_json", "delta", "arguments"])
+            })
+            upsertToolCall(callID, nil, jsonDelta)
+            finalizeToolCallIfReady(callID)
+        }
+    }
+
+    /// Handles `message_delta` events from the Responses API stream.
+    fileprivate static func handleMessageDelta(
+        dict: [String: Any]?,
+        continuation: AsyncThrowingStream<ProviderEvent, Error>.Continuation,
+        firstInt: ([String: Any], [String]) -> Int?
+    ) {
+        if let dict,
+            let usageDict = dict["usage"] as? [String: Any] {
+            let inputTokens = firstInt(usageDict, keys: ["input_tokens", "prompt_tokens"]) ?? 0
+            let outputTokens = firstInt(usageDict, keys: ["output_tokens", "completion_tokens"]) ?? 0
+            let cachedTokens = firstInt(usageDict, keys: ["cached_tokens"]) ?? 0
+            continuation.yield(
+                .usage(
+                    TokenUsage(
+                        inputTokens: inputTokens,
+                        outputTokens: outputTokens,
+                        cachedTokens: cachedTokens)))
+        }
+    }
+
+    /// Handles `response.output_text.delta` events from the Responses API stream.
+    fileprivate static func handleResponsesTextDelta(
+        dict: [String: Any]?,
+        fullText: inout String,
+        continuation: AsyncThrowingStream<ProviderEvent, Error>.Continuation,
+        firstString: ([String: Any], [String]) -> String?
+    ) {
+        if let delta = dict.flatMap({
+            firstString($0, keys: ["delta", "text"])
+        }) {
+            if !delta.isEmpty {
+                fullText += delta
+                continuation.yield(.token(text: delta))
+            }
+        }
+    }
+
+    /// Handles `response.reasoning_summary_text.delta` events from the Responses API stream.
+    fileprivate static func handleReasoningDelta(
+        dict: [String: Any]?,
+        thinkingSummary: inout String,
+        continuation: AsyncThrowingStream<ProviderEvent, Error>.Continuation,
+        firstString: ([String: Any], [String]) -> String?
+    ) {
+        if let delta = dict.flatMap({
+            firstString($0, keys: ["delta", "text"])
+        }) {
+            if !delta.isEmpty {
+                thinkingSummary += delta
+                continuation.yield(.thinking(delta))
+            }
+        }
+    }
+
+    /// Handles `response.function_call_arguments.delta` events from the Responses API stream.
+    fileprivate static func handleToolCallBlock(
+        dict: [String: Any]?,
+        upsertToolCall: (String, String?, String?) -> Void,
+        firstString: ([String: Any], [String]) -> String?
+    ) {
+        guard let dict else { return }
+        let callID = firstString(dict, keys: ["call_id", "item_id", "id"]) ?? "call_0"
+        let name = firstString(dict, keys: ["name", "function_name"])
+        let delta = firstString(dict, keys: ["delta", "arguments_delta", "arguments"])
+        upsertToolCall(callID, name, delta)
+    }
+
+    /// Handles `response.output_item.added` / `response.output_item.done` events.
+    fileprivate static func handleToolCallBlock(
+        item dict: [String: Any]?,
+        typeName: String,
+        upsertToolCall: (String, String?, String?) -> Void,
+        finalizeToolCallIfReady: (String) -> Void,
+        firstString: ([String: Any], [String]) -> String?
+    ) {
+        guard let dict, let item = dict["item"] as? [String: Any] else {
+            return
+        }
+        let itemType = (item["type"] as? String) ?? ""
+        guard itemType == "function_call" else { return }
+
+        let callID = firstString(item, keys: ["call_id", "id", "item_id"]) ?? "call_0"
+        let name = firstString(item, keys: ["name", "function_name"])
+        let args = firstString(item, keys: ["arguments", "input"])
+        upsertToolCall(callID, name, args)
+        if typeName == "response.output_item.done" {
+            finalizeToolCallIfReady(callID)
+        }
+    }
 }

@@ -225,7 +225,7 @@ enum Canvas2PreviewFixtures {
                 isStreaming: false,
                 generationID: UUID(uuidString: "12121212-1212-1212-1212-121212121212"),
                 artifacts: [toolResultArtifact()]
-            )
+            ),
         ]
     }
 
@@ -344,7 +344,7 @@ enum Canvas2PreviewFixtures {
                         url: URL(fileURLWithPath: "/tmp/Snippet.swift"),
                         type: .code,
                         previewText: "print(\"hi\")\n"
-                    )
+                    ),
                 ],
                 createdAt: baseDate.addingTimeInterval(30),
                 codeBlocks: []

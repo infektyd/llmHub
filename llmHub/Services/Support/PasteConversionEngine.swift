@@ -170,7 +170,7 @@ enum PasteConversionEngine {
             "- [x]",
             "**",  // Bold
             "| ",  // Tables
-            "[!"  // GitHub alerts
+            "[!",  // GitHub alerts
         ]
 
         for pattern in patterns {

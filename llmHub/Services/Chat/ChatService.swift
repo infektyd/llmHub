@@ -2059,6 +2059,174 @@ final class ChatService {
         let agentID = String(model.dropFirst("openclaw/".count))
         return agentID.isEmpty ? nil : agentID
     }
+
+    // MARK: - Extracted Streaming Helpers
+
+    /// Prepares messages for the LLM by sorting, filtering sidecar content,
+    /// and enriching the last user message with inline images/attachments.
+    func prepareMessagesForLLM(
+        session: ChatSession,
+        images: [Data],
+        attachments: [Attachment],
+        references: [ChatReference]
+    ) -> [ChatMessage] {
+        var llmMessages = session.messages.sorted { $0.createdAt < $1.createdAt }
+
+        // Defense-in-depth: never include sidecar-origin content in chat prompting
+        llmMessages.removeAll { $0.provenance.channel == .sidecar }
+
+        if !images.isEmpty || !attachments.isEmpty || !references.isEmpty,
+            let lastUserIndex = llmMessages.lastIndex(where: { $0.role == .user }) {
+            let baseUserMessage = llmMessages[lastUserIndex]
+            var updatedParts = baseUserMessage.parts
+            if updatedParts.isEmpty {
+                updatedParts = [.text(baseUserMessage.content)]
+            }
+            for imgData in images {
+                let mimeType = detectImageMimeType(from: imgData)
+                updatedParts.append(.image(imgData, mimeType: mimeType))
+            }
+            let updatedAttachments = attachments.isEmpty ? baseUserMessage.attachments : attachments
+            if !references.isEmpty {
+                let refBlock = ReferenceFormatter.formatForRequest(references)
+                if !refBlock.isEmpty {
+                    updatedParts.append(.text("\n\n" + refBlock))
+                }
+            }
+            if !updatedAttachments.isEmpty {
+                let attachmentBlock = formatAttachmentsForRequest(updatedAttachments)
+                if !attachmentBlock.isEmpty {
+                    updatedParts.append(.text("\n\n" + attachmentBlock))
+                }
+            }
+            let updatedUserMessage = ChatMessage(
+                id: baseUserMessage.id,
+                role: baseUserMessage.role,
+                content: baseUserMessage.content,
+                thoughtProcess: baseUserMessage.thoughtProcess,
+                parts: updatedParts,
+                attachments: updatedAttachments,
+                createdAt: baseUserMessage.createdAt,
+                codeBlocks: baseUserMessage.codeBlocks,
+                tokenUsage: baseUserMessage.tokenUsage,
+                costBreakdown: baseUserMessage.costBreakdown,
+                toolCallID: baseUserMessage.toolCallID,
+                toolCalls: baseUserMessage.toolCalls
+            )
+            llmMessages[lastUserIndex] = updatedUserMessage
+        }
+
+        return llmMessages
+    }
+
+    /// Injects sovereign memory context into the messages for compaction.
+    func injectSovereignMemory(
+        messages: inout [ChatMessage],
+        session: ChatSession,
+        userMessage: String,
+        continuation: AsyncThrowingStream<ProviderEvent, Error>.Continuation
+    ) async {
+        guard let sovereignClient = sovereignMemoryClient else { return }
+        let sovereignAgentID = extractAgentIDFromModel(session.model) ?? "syntra"
+        let sovereignThreadID = session.id.uuidString
+
+        if let sovereignContext = await sovereignClient.recall(
+            query: userMessage,
+            agentID: sovereignAgentID,
+            threadID: sovereignThreadID
+        ) {
+            let injectionBlock = SovereignMemoryClient.formatForInjection(context: sovereignContext)
+            if let injection = injectionBlock {
+                logger.info("Sovereign memory: injected context for agent=\(sovereignAgentID)")
+                continuation.yield(
+                    .memoriesUsed(count: 1, summary: "Sovereign memory context informing this response")
+                )
+                if var firstMsg = messages.first, firstMsg.role == .system {
+                    firstMsg.content = "\(firstMsg.content)\n\n\(injection)"
+                    messages[0] = firstMsg
+                } else {
+                    let systemMsg = ChatMessage(
+                        id: UUID(),
+                        role: .system,
+                        content: injection,
+                        parts: [],
+                        createdAt: Date(),
+                        codeBlocks: []
+                    )
+                    messages.insert(systemMsg, at: 0)
+                }
+            }
+        }
+    }
+
+    /// Handles a single stream event from the provider, returning the assistant message if completed.
+    func handleStreamEvent(
+        _ event: ProviderEvent,
+        fullText: inout String,
+        thinkingSummary: inout String,
+        toolCalls: inout [ToolCall],
+        session: ChatSession
+    ) -> ChatMessage? {
+        switch event {
+        case .token(let text):
+            fullText += text
+            return nil
+        case .thinking(let text):
+            thinkingSummary += text
+            return nil
+        case .toolUse(let id, let name, let input):
+            toolCalls.append(ToolCall(id: id, name: name, input: input))
+            return nil
+        case .completion(let message):
+            return message
+        case .usage, .memoriesUsed, .truncated:
+            return nil
+        case .error:
+            return nil
+        }
+    }
+
+    /// Persists the assistant message to SwiftData.
+    func persistAssistantMessage(
+        fullText: String,
+        thinkingSummary: String?,
+        toolCalls: [ToolCall],
+        sessionID: UUID,
+        generationID: UUID
+    ) {
+        do {
+            let sessionDescriptor = FetchDescriptor<ChatSessionEntity>(
+                predicate: #Predicate { $0.id == sessionID }
+            )
+            guard let sessionEntity = try modelContext.fetch(sessionDescriptor).first else {
+                logger.warning("Cannot persist assistant message: session not found")
+                return
+            }
+
+            let assistantMessage = ChatMessage(
+                id: UUID(),
+                role: .assistant,
+                content: fullText,
+                thoughtProcess: thinkingSummary,
+                parts: fullText.isEmpty ? [] : [.text(fullText)],
+                createdAt: Date(),
+                codeBlocks: [],
+                tokenUsage: nil,
+                costBreakdown: nil,
+                toolCallID: nil,
+                toolCalls: toolCalls.isEmpty ? nil : toolCalls,
+                generationID: generationID
+            )
+
+            let entity = ChatMessageEntity(message: assistantMessage)
+            entity.session = sessionEntity
+            sessionEntity.updatedAt = Date()
+            modelContext.insert(entity)
+            try modelContext.save()
+        } catch {
+            logger.error("Failed to persist assistant message: \(error.localizedDescription)")
+        }
+    }
 }
 
 /// Errors thrown by the ChatService.

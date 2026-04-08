@@ -32,7 +32,7 @@ func cleanModelName(_ raw: String) -> String {
         "preview",
         "latest",
         "experimental",
-        "turbo"
+        "turbo",
     ]
 
     // 4. Tokenize by hyphen

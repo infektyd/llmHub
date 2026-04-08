@@ -77,7 +77,7 @@ final class ModelListParsingAndOverlayTests: XCTestCase {
     func testHydrationMigrationDisplayNameToCanonicalID() {
         let available: [(id: String, displayName: String)] = [
             ("claude-3-5-sonnet-20241022", "Claude 3.5 Sonnet"),
-            ("claude-3-opus-20240229", "Claude 3 Opus")
+            ("claude-3-opus-20240229", "Claude 3 Opus"),
         ]
 
         let resolved = ChatViewModel.resolvePersistedModelID(

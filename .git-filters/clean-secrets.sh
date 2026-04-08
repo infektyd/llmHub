@@ -12,4 +12,5 @@ sed \
   -e 's/sk_[A-Za-z0-9]\{20,\}/REDACTED_SK_KEY/g' \
   -e 's/AIzaSy[A-Za-z0-9_-]\{20,\}/REDACTED_GOOGLE_KEY/g' \
   -e 's/MTQ[A-Za-z0-9._-]\{30,\}/REDACTED_DISCORD_TOKEN/g' \
-  -e 's/"token": *"[A-Za-z0-9_-]\{40,\}"/"token": "REDACTED_TOKEN"/g'
+  -e 's/"token": *"[A-Za-z0-9_-]\{40,\}"/"token": "***"/g' \
+  -e 's/Bearer [0-9a-f]\{40,\}/REDACTED_BEARER_TOKEN/g'

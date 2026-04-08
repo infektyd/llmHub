@@ -172,7 +172,7 @@ final class ToolAuthorizationSecurityTests: XCTestCase {
             "list_files",
             "workspace",
             "file_editor",
-            "file_patch"
+            "file_patch",
         ]
 
         for toolName in fileSensitiveTools {

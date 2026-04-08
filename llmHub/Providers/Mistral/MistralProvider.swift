@@ -34,7 +34,7 @@ struct MistralProvider: LLMProvider {
             guard let key = await keychain.apiKey(for: .mistral) else { return [:] }
             return [
                 "Authorization": "Bearer \(key)",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             ]
         }
     }

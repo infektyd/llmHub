@@ -50,7 +50,7 @@ struct llmHubApp: App {
             ChatTagEntity.self,
             ProjectEntity.self,
             ArtifactEntity.self,
-            MemoryEntity.self
+            MemoryEntity.self,
         ])
 
         if PreviewMode.isRunning {

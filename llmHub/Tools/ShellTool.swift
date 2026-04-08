@@ -39,7 +39,7 @@ nonisolated struct ShellTool: Tool {
                 "background": ToolProperty(
                     type: .boolean,
                     description: "Run without waiting for completion (default: false)"
-                )
+                ),
             ],
             required: ["command"]
         )

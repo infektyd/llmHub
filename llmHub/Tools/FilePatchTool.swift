@@ -42,7 +42,7 @@ nonisolated struct FilePatchTool: Tool {
                     type: .string, description: "Unified diff content for unified_diff mode"),
                 "dry_run": ToolProperty(
                     type: .boolean, description: "Preview changes without applying (default: false)"
-                )
+                ),
             ],
             required: ["file_path", "mode"]
         )
@@ -89,7 +89,7 @@ nonisolated struct FilePatchTool: Tool {
                 "mode": mode,
                 "path": filePath,
                 "resolvedPath": fileURL.path,
-                "dryRun": dryRun ? "true" : "false"
+                "dryRun": dryRun ? "true" : "false",
             ]
         )
     }

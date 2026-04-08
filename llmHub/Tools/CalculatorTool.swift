@@ -42,7 +42,7 @@ private nonisolated struct CalculatorEngine {
             rightAssociative: false,
             apply: { lhs, rhs in lhs / rhs }
         ),
-        "^": OperatorInfo(precedence: 3, rightAssociative: true, apply: { Complex.pow($0, $1) })
+        "^": OperatorInfo(precedence: 3, rightAssociative: true, apply: { Complex.pow($0, $1) }),
     ]
 
     private static let functions: [String: @Sendable (Complex) -> Complex] = [
@@ -52,7 +52,7 @@ private nonisolated struct CalculatorEngine {
         "exp": { Complex.exp($0) },
         "log": { Complex.log($0) },
         "ln": { Complex.log($0) },
-        "sqrt": { Complex.sqrt($0) }
+        "sqrt": { Complex.sqrt($0) },
     ]
 
     func evaluate(_ expression: String) throws -> Complex {
@@ -332,7 +332,7 @@ nonisolated struct CalculatorTool: Tool {
                     type: .string,
                     description: "Output format (default: decimal)",
                     enumValues: ["decimal", "scientific"]
-                )
+                ),
             ],
             required: ["expression"]
         )

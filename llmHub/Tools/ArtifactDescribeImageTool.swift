@@ -27,7 +27,7 @@ nonisolated struct ArtifactDescribeImageTool: Tool {
                 "detail": ToolProperty(
                     type: .string,
                     description: "Detail level (reserved for future use): 'low' or 'high'."
-                )
+                ),
             ],
             required: ["id"]
         )
@@ -82,7 +82,7 @@ nonisolated struct ArtifactDescribeImageTool: Tool {
             "filename": artifact.filename,
             "mimeType": artifact.mimeType,
             "bytes": artifact.sizeBytes,
-            "description": "Image description not yet implemented. Vision integration planned."
+            "description": "Image description not yet implemented. Vision integration planned.",
         ]
 
         if let w = width, let h = height {

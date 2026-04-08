@@ -55,7 +55,7 @@ nonisolated struct FileReaderTool: Tool {
                     description:
                         "Output format. annotated adds line numbers and truncation markers (default: annotated)",
                     enumValues: ["raw", "annotated"]
-                )
+                ),
             ],
             required: ["path"]
         )

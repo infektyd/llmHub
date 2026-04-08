@@ -19,6 +19,7 @@ final class SettingsViewModel: ObservableObject {
     @Published var mistralKey: String = ""
     @Published var xaiKey: String = ""
     @Published var openRouterKey: String = ""
+    @Published var openClawKey: String = ""
 
     @Published var statusMessage: String?
     @Published var isError: Bool = false
@@ -93,9 +94,9 @@ final class SettingsViewModel: ObservableObject {
                 provider: .openclaw,
                 name: "OpenClaw (Local)",
                 icon: "terminal.fill",
-                description: "Local OpenClaw gateway at localhost:18789",
+                description: "Local Gateway — API key optional",
                 docsURL: nil
-            )
+            ),
         ]
     }
 
@@ -110,6 +111,7 @@ final class SettingsViewModel: ObservableObject {
             mistralKey = await keychainStore.apiKey(for: .mistral) ?? ""
             xaiKey = await keychainStore.apiKey(for: .xai) ?? ""
             openRouterKey = await keychainStore.apiKey(for: .openrouter) ?? ""
+            openClawKey = await keychainStore.apiKey(for: .openclaw) ?? ""
 
             // Also load tools
             await loadTools()
@@ -236,10 +238,9 @@ final class SettingsViewModel: ObservableObject {
                 set: { self.openRouterKey = $0 }
             )
         case .openclaw:
-            // OpenClaw is local and doesn't require an API key
             return Binding(
-                get: { "" },
-                set: { _ in }
+                get: { self.openClawKey },
+                set: { self.openClawKey = $0 }
             )
         }
     }
@@ -258,7 +259,7 @@ final class SettingsViewModel: ObservableObject {
             HTTPRequestTool(),
             FileReaderTool(),
             ShellTool(),
-            WebSearchTool()
+            WebSearchTool(),
         ]
 
         let registry = await ToolRegistry(tools: tools)
@@ -272,7 +273,7 @@ final class SettingsViewModel: ObservableObject {
             "http_request": "network",
             "read_file": "doc.text.magnifyingglass",
             "shell": "terminal",
-            "web_search": "globe"
+            "web_search": "globe",
         ]
 
         var toggles: [UIToolToggleItem] = []
@@ -337,7 +338,7 @@ final class SettingsViewModel: ObservableObject {
         case .mistral: return mistralKey
         case .xai: return xaiKey
         case .openrouter: return openRouterKey
-        case .openclaw: return ""  // OpenClaw doesn't use keychain
+        case .openclaw: return openClawKey
         }
     }
 
@@ -349,7 +350,7 @@ final class SettingsViewModel: ObservableObject {
         case .mistral: mistralKey = value
         case .xai: xaiKey = value
         case .openrouter: openRouterKey = value
-        case .openclaw: break  // OpenClaw doesn't use keychain
+        case .openclaw: openClawKey = value
         }
     }
 

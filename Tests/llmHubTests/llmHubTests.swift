@@ -182,7 +182,7 @@ struct llmHubTests {
             ChatFolderEntity.self,
             ChatTagEntity.self,
             ProjectEntity.self,
-            ArtifactEntity.self
+            ArtifactEntity.self,
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: schema, configurations: [config])
@@ -227,7 +227,7 @@ struct llmHubTests {
             ChatFolderEntity.self,
             ChatTagEntity.self,
             ProjectEntity.self,
-            ArtifactEntity.self
+            ArtifactEntity.self,
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: schema, configurations: [config])
@@ -318,7 +318,7 @@ struct llmHubTests {
             ChatSessionEntity.self,
             ChatMessageEntity.self,
             ChatFolderEntity.self,
-            ChatTagEntity.self
+            ChatTagEntity.self,
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: schema, configurations: [config])
@@ -374,7 +374,7 @@ struct llmHubTests {
             ChatSessionEntity.self,
             ChatMessageEntity.self,
             ChatFolderEntity.self,
-            ChatTagEntity.self
+            ChatTagEntity.self,
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: schema, configurations: [config])
@@ -527,7 +527,7 @@ struct llmHubTests {
             ChatMessage(
                 id: UUID(), role: .user, content: "Please remember I like Swift", thoughtProcess: nil,
                 parts: [.text("Please remember I like Swift")], createdAt: Date(), codeBlocks: []
-            )
+            ),
         ]
 
         await service.distill(
@@ -592,7 +592,7 @@ struct llmHubTests {
             ChatSessionEntity.self,
             ChatMessageEntity.self,
             ChatFolderEntity.self,
-            ChatTagEntity.self
+            ChatTagEntity.self,
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: schema, configurations: [config])
@@ -627,7 +627,7 @@ struct llmHubTests {
             ChatSessionEntity.self,
             ChatMessageEntity.self,
             ChatFolderEntity.self,
-            ChatTagEntity.self
+            ChatTagEntity.self,
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: schema, configurations: [config])
@@ -676,7 +676,7 @@ struct llmHubTests {
             ChatSessionEntity.self,
             ChatMessageEntity.self,
             ChatFolderEntity.self,
-            ChatTagEntity.self
+            ChatTagEntity.self,
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: schema, configurations: [config])
@@ -694,7 +694,7 @@ struct llmHubTests {
             ChatMessage(
                 id: UUID(), role: .user, content: "u2", thoughtProcess: nil,
                 parts: [.text("u2")], createdAt: Date(), codeBlocks: []
-            )
+            ),
         ]
 
         let session = ChatSession(

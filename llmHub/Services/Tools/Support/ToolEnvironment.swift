@@ -254,7 +254,7 @@ struct ToolEnvironment: Sendable {
             let fileManager = FileManager.default
             let candidates: [URL] = [
                 Bundle.main.privateFrameworksURL?.appendingPathComponent("\(name).framework"),
-                Bundle.main.bundleURL.appendingPathComponent("Frameworks/\(name).framework")
+                Bundle.main.bundleURL.appendingPathComponent("Frameworks/\(name).framework"),
             ].compactMap { $0 }
 
             return candidates.contains { fileManager.fileExists(atPath: $0.path) }

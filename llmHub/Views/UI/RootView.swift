@@ -477,7 +477,7 @@ struct CanvasRootView: View {
             parts: [
                 .text(
                     "Certainly! I can regenerate this response to test streaming, or you can add artifacts."
-                )
+                ),
             ],
             createdAt: Date().addingTimeInterval(-30),
             codeBlocks: [],
@@ -592,7 +592,7 @@ struct CanvasRootView: View {
                         metadata: [
                             "filename": meta.filename,
                             "language": meta.language.rawValue,
-                            "sizeBytes": "\(meta.sizeBytes)"
+                            "sizeBytes": "\(meta.sizeBytes)",
                         ]
                     )
                 }
@@ -602,13 +602,13 @@ struct CanvasRootView: View {
             "isGenerating=\(chatVM.isGenerating)",
             "executingTools=\(chatVM.executingToolNames.sorted().joined(separator: ","))",
             "streamingTokenEstimate=\(chatVM.streamingTokenEstimate)",
-            "isTruncated=\(chatVM.isTruncated)"
+            "isTruncated=\(chatVM.isTruncated)",
         ]
 
         let contextSummary: [String] = [
             "providerID=\(session.providerID)",
             "model=\(session.model)",
-            "messages=\(session.messages.count)"
+            "messages=\(session.messages.count)",
         ]
 
         let tokenStats = CanvasInspectorState.TokenStats(

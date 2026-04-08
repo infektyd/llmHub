@@ -162,7 +162,7 @@ nonisolated final class ToolRunLabelerService: Sendable {
             "\\\\",
             "sk-",
             "api_key",
-            "apikey"
+            "apikey",
         ]
         return patterns.contains { lowered.contains($0) }
     }

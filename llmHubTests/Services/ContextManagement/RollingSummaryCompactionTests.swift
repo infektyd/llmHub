@@ -16,7 +16,7 @@ final class RollingSummaryCompactionTests: XCTestCase {
                 parts: [],
                 createdAt: Date(),
                 codeBlocks: []
-            )
+            ),
         ]
 
         // 3 user turns.
@@ -91,7 +91,7 @@ final class RollingSummaryCompactionTests: XCTestCase {
             ChatMessage(id: UUID(), role: .user, content: huge, parts: [.text(huge)], createdAt: Date(), codeBlocks: []),
             ChatMessage(id: UUID(), role: .assistant, content: huge, parts: [.text(huge)], createdAt: Date(), codeBlocks: []),
             ChatMessage(id: UUID(), role: .user, content: huge, parts: [.text(huge)], createdAt: Date(), codeBlocks: []),
-            ChatMessage(id: UUID(), role: .assistant, content: huge, parts: [.text(huge)], createdAt: Date(), codeBlocks: [])
+            ChatMessage(id: UUID(), role: .assistant, content: huge, parts: [.text(huge)], createdAt: Date(), codeBlocks: []),
         ]
 
         let config = ContextCompactor.CompactionConfig(
@@ -129,7 +129,7 @@ final class RollingSummaryCompactionTests: XCTestCase {
             ChatMessage(id: UUID(), role: .user, content: "u1", parts: [.text("u1")], createdAt: Date(), codeBlocks: []),
             ChatMessage(id: UUID(), role: .assistant, content: "a1", parts: [.text("a1")], createdAt: Date(), codeBlocks: []),
             ChatMessage(id: UUID(), role: .user, content: "u2", parts: [.text("u2")], createdAt: Date(), codeBlocks: []),
-            ChatMessage(id: UUID(), role: .assistant, content: "a2", parts: [.text("a2")], createdAt: Date(), codeBlocks: [])
+            ChatMessage(id: UUID(), role: .assistant, content: "a2", parts: [.text("a2")], createdAt: Date(), codeBlocks: []),
         ]
 
         let config = ContextCompactor.CompactionConfig(

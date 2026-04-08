@@ -36,7 +36,7 @@ nonisolated final class FileEditorTool: Tool {
                     type: .string, description: "Replacement text (for edit operation)"),
                 "destination": ToolProperty(
                     type: .string, description: "Destination path (for rename/move/copy operations)"
-                )
+                ),
             ],
             required: ["operation", "path"]
         )
@@ -84,7 +84,7 @@ nonisolated final class FileEditorTool: Tool {
                 metadata: [
                     "operation": operationStr,
                     "path": path,
-                    "resolvedPath": fileURL.path
+                    "resolvedPath": fileURL.path,
                 ]
             )
 
@@ -108,7 +108,7 @@ nonisolated final class FileEditorTool: Tool {
                 metadata: [
                     "operation": operationStr,
                     "path": path,
-                    "resolvedPath": fileURL.path
+                    "resolvedPath": fileURL.path,
                 ]
             )
 
@@ -126,7 +126,7 @@ nonisolated final class FileEditorTool: Tool {
                 metadata: [
                     "operation": operationStr,
                     "path": path,
-                    "resolvedPath": fileURL.path
+                    "resolvedPath": fileURL.path,
                 ]
             )
 
@@ -137,7 +137,7 @@ nonisolated final class FileEditorTool: Tool {
                 metadata: [
                     "operation": operationStr,
                     "path": path,
-                    "resolvedPath": fileURL.path
+                    "resolvedPath": fileURL.path,
                 ]
             )
 
@@ -154,7 +154,7 @@ nonisolated final class FileEditorTool: Tool {
                     "path": path,
                     "resolvedPath": fileURL.path,
                     "destination": dest,
-                    "resolvedDestination": destURL.path
+                    "resolvedDestination": destURL.path,
                 ]
             )
 
@@ -171,7 +171,7 @@ nonisolated final class FileEditorTool: Tool {
                     "path": path,
                     "resolvedPath": fileURL.path,
                     "destination": dest,
-                    "resolvedDestination": destURL.path
+                    "resolvedDestination": destURL.path,
                 ]
             )
 

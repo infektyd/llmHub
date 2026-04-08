@@ -372,7 +372,7 @@ extension View {
             diffLines: [
                 DiffLine(type: .added, content: "import Foundation", lineNumber: 1),
                 DiffLine(type: .added, content: "", lineNumber: 2),
-                DiffLine(type: .added, content: "print(\"Hello, World!\")", lineNumber: 3)
+                DiffLine(type: .added, content: "print(\"Hello, World!\")", lineNumber: 3),
             ]
         ),
         onApprove: {},
@@ -394,7 +394,7 @@ extension View {
             proposedContent: "print(\"Goodbye, World!\")",
             diffLines: [
                 DiffLine(type: .removed, content: "print(\"Hello, World!\")", lineNumber: 1),
-                DiffLine(type: .added, content: "print(\"Goodbye, World!\")", lineNumber: 1)
+                DiffLine(type: .added, content: "print(\"Goodbye, World!\")", lineNumber: 1),
             ]
         ),
         onApprove: {},

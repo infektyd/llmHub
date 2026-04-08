@@ -107,7 +107,7 @@ final class ModelFetchService {
                 maxOutputTokens: 4_096,
                 contextWindow: 200_000,
                 supportsToolUse: true
-            )
+            ),
         ]
     }
 
@@ -178,7 +178,7 @@ final class ModelFetchService {
                 maxOutputTokens: 8_192,
                 contextWindow: 32_000,
                 supportsToolUse: true
-            )
+            ),
         ]
     }
 

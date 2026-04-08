@@ -177,13 +177,13 @@ struct GoogleAIProvider: LLMProvider {
                         let toolName = toolNameByCallID[toolCallID] {
                         let response: [String: GeminiJSONValue] = [
                             "tool_call_id": .string(toolCallID),
-                            "result": .string(msg.content)
+                            "result": .string(msg.content),
                         ]
                         return Content(
                             role: role,
                             parts: [
                                 .functionResponse(
-                                    FunctionResponse(name: toolName, response: response))
+                                    FunctionResponse(name: toolName, response: response)),
                             ]
                         )
                     }
@@ -229,7 +229,7 @@ struct GoogleAIProvider: LLMProvider {
                         let toolName = toolNameByCallID[toolCallID] {
                         let response: [String: GeminiJSONValue] = [
                             "tool_call_id": .string(toolCallID),
-                            "result": .string(msg.content)
+                            "result": .string(msg.content),
                         ]
                         parts.append(
                             .functionResponse(FunctionResponse(name: toolName, response: response)))
