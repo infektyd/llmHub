@@ -40,16 +40,11 @@ llmHub follows a **Brain / Hand / Loop** design:
 
 ## Multi-Agent System
 
-llmHub includes a multi-agent architecture with named agent identities that participate in group chats:
+llmHub includes a multi-agent architecture where agents are discovered dynamically from your OpenClaw gateway at runtime via `/v1/models`. Each agent gets a visual identity (name, emoji, color) that's resolved through `AgentIdentityRegistry` — unknown agents receive a deterministic color based on their ID hash.
 
-| Agent | Role | Color |
-|-------|------|-------|
-| 🟢 Syntra | Coordinator | `#4CAF50` |
-| 🔨 Forge | Developer | `#FF6B35` |
-| 🔍 Recon | Researcher | `#9C27B0` |
-| 💓 Pulse | Heartbeat | `#FF69B4` |
+Agents are routed through OpenClaw with per-agent session keys (`openclaw/{agent_id}`). The `GroupChatOrchestrator` streams responses concurrently (up to 4 agents), and each agent receives a roster of other active participants for context awareness. Users trigger agent routing with `@mentions` in the composer.
 
-Agents are routed through OpenClaw with per-agent session keys. The `GroupChatOrchestrator` streams responses concurrently (up to 4 agents), and each agent receives a roster of other active participants for context awareness. Users trigger agent routing with `@mentions` in the composer.
+Agent configuration (names, roles, models) is defined in your OpenClaw gateway's `openclaw.json` — llmHub discovers and renders whatever agents your gateway exposes.
 
 ## Tools
 

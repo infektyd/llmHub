@@ -70,12 +70,11 @@ struct OpenClawProvider: LLMProvider {
         options: LLMRequestOptions
     ) async throws -> URLRequest {
         // Gateway requires "openclaw" or "openclaw/<agentId>" as model ID.
-        // Priority 1: Use the model parameter if it already specifies a specific agent.
-        // This is set by handleGroupChat when routing to individual agents.
-        let knownAgents = ["syntra", "forge", "recon", "pulse", "council"]
+        // Agent IDs are discovered dynamically from the gateway — no hardcoded names.
+        let agentIDs = await manager.knownAgentIDs()
 
         var targetModel: String
-        if knownAgents.contains(model) {
+        if agentIDs.contains(model.lowercased()) {
             // Model parameter already specifies the target agent — use it directly.
             targetModel = "openclaw/\(model)"
         } else if model.hasPrefix("openclaw/") {
@@ -88,7 +87,7 @@ struct OpenClawProvider: LLMProvider {
                 let content = lastUserMessage.content.lowercased()
                 if let mentionRange = content.range(of: "@[a-z0-9-]+", options: .regularExpression) {
                     let agentName = String(content[mentionRange].dropFirst())
-                    if knownAgents.contains(agentName) {
+                    if agentIDs.contains(agentName) {
                         targetModel = "openclaw/\(agentName)"
                     }
                 }

@@ -644,7 +644,7 @@ final class ChatService {
                         // Fails fast (200ms timeout) — skips silently if service is offline.
                         if let sovereignClient = service.sovereignMemoryClient {
                             let sovereignAgentID = service.extractAgentIDFromModel(currentSession.model)
-                                ?? "syntra"
+                                ?? "default"
                             let sovereignThreadID = currentSession.id.uuidString
 
                             if let sovereignContext = await sovereignClient.recall(
@@ -1052,7 +1052,7 @@ final class ChatService {
                                             : persisted.content
                                         if !assistantText.isEmpty {
                                             let sovereignAgentID = service.extractAgentIDFromModel(currentSession.model)
-                                ?? "syntra"
+                                ?? "default"
                                             sovereignClient.processConversation(
                                                 agentID: sovereignAgentID,
                                                 userMessage: userMessage,
@@ -2127,7 +2127,7 @@ final class ChatService {
         continuation: AsyncThrowingStream<ProviderEvent, Error>.Continuation
     ) async {
         guard let sovereignClient = sovereignMemoryClient else { return }
-        let sovereignAgentID = extractAgentIDFromModel(session.model) ?? "syntra"
+        let sovereignAgentID = extractAgentIDFromModel(session.model) ?? "default"
         let sovereignThreadID = session.id.uuidString
 
         if let sovereignContext = await sovereignClient.recall(

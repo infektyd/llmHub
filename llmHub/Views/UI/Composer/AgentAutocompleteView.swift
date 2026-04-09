@@ -65,9 +65,10 @@ private struct AgentAutocompleteRow: View {
 
 #if DEBUG
 #Preview("Agent Autocomplete") {
+    // Sample agents for preview only — real agents are discovered from the gateway.
     let agents: [Agent] = [
-        Agent(id: "syntra", name: "Syntra", emoji: "🔵", status: .online),
-        Agent(id: "forge", name: "Forge", emoji: "⚒️", status: .online),
+        Agent(id: "agent-alpha", name: "Alpha", emoji: "🔵", status: .online),
+        Agent(id: "agent-bravo", name: "Bravo", emoji: "⚒️", status: .online),
     ]
     return AgentAutocompleteView(agents: agents) { agent in
         print("Selected \(agent.name)")

@@ -7,10 +7,32 @@ public class OpenClawManager {
     private let baseURL: URL
     private let keychain: KeychainStore
 
+    /// Cached set of agent IDs discovered from the gateway.
+    /// Populated lazily on first call to `knownAgentIDs()` and refreshed
+    /// whenever `listAgents()` is called directly.
+    private var cachedAgentIDs: Set<String>?
+
     /// Initializes with a configurable base URL (defaults to localhost:18789).
     public init(baseURL: URL = URL(string: "http://localhost:18789/v1")!, keychain: KeychainStore = KeychainStore()) {
         self.baseURL = baseURL
         self.keychain = keychain
+    }
+
+    /// Returns the set of known agent IDs from the gateway.
+    /// Fetches and caches on first call; returns cached set on subsequent calls.
+    /// Fails silently and returns an empty set if the gateway is unreachable.
+    public func knownAgentIDs() async -> Set<String> {
+        if let cached = cachedAgentIDs {
+            return cached
+        }
+        do {
+            let agents = try await listAgents()
+            let ids = Set(agents.map { $0.id.lowercased() })
+            cachedAgentIDs = ids
+            return ids
+        } catch {
+            return []
+        }
     }
 
     // MARK: - Chat Completion
@@ -87,7 +109,14 @@ public class OpenClawManager {
         }
 
         let decoded = try JSONDecoder().decode(GatewayAgentsResponse.self, from: data)
-        return decoded.data
+        let agents = decoded.data
+        cachedAgentIDs = Set(agents.map { $0.id.lowercased() })
+        return agents
+    }
+
+    /// Clears the cached agent IDs so the next call to `knownAgentIDs()` re-fetches.
+    public func invalidateAgentCache() {
+        cachedAgentIDs = nil
     }
 }
 

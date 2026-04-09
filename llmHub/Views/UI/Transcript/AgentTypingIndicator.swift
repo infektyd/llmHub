@@ -104,18 +104,18 @@ struct MultiAgentTypingIndicator: View {
 // MARK: - Previews
 
 #if DEBUG
-#Preview("AgentTypingIndicator — Syntra") {
-    AgentTypingIndicator(agentID: "syntra")
+#Preview("AgentTypingIndicator — Single") {
+    AgentTypingIndicator(agentID: "agent-alpha")
         .padding()
 }
 
-#Preview("AgentTypingIndicator — Forge") {
-    AgentTypingIndicator(agentID: "forge")
+#Preview("AgentTypingIndicator — Alt") {
+    AgentTypingIndicator(agentID: "agent-bravo")
         .padding()
 }
 
 #Preview("MultiAgentTypingIndicator") {
-    MultiAgentTypingIndicator(typingAgentIDs: ["syntra", "forge", "recon"])
+    MultiAgentTypingIndicator(typingAgentIDs: ["agent-alpha", "agent-bravo", "agent-charlie"])
         .padding()
 }
 #endif

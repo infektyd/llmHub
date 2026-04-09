@@ -568,23 +568,14 @@ class ChatViewModel {
 
     // MARK: - Default Agent Definitions
 
-    private static let defaultAgents: [Agent] = [
-        Agent(id: "syntra", name: "Syntra", emoji: "🔵", status: .online),
-        Agent(id: "forge", name: "Forge", emoji: "⚒️", status: .online),
-        Agent(id: "recon", name: "Recon", emoji: "🔍", status: .online),
-        Agent(id: "pulse", name: "Pulse", emoji: "💓", status: .online),
-        Agent(id: "council", name: "Council", emoji: "🏛️", status: .online),
-    ]
+    /// Empty default — agents are discovered dynamically from the OpenClaw gateway.
+    /// If the gateway is unreachable, the agent list stays empty until reconnection.
+    private static let defaultAgents: [Agent] = []
 
+    /// Returns an emoji for an agent by checking its discovered identity.
+    /// Falls back to a generic robot emoji for unknown agents.
     private static func emojiForAgent(id: String) -> String {
-        switch id.lowercased() {
-        case "syntra": return "🔵"
-        case "forge": return "⚒️"
-        case "recon": return "🔍"
-        case "pulse": return "💓"
-        case "council": return "🏛️"
-        default: return "🤖"
-        }
+        AgentIdentityRegistry.lookup(id, knownAgents: nil).emoji
     }
 
     func resumeAfterStepLimit(modelContext: ModelContext, maxIterationsOverride: Int) async {
@@ -1255,7 +1246,7 @@ class ChatViewModel {
             return nil
         }
         let openClawAgentIDs = shortAgentNames.isEmpty
-            ? ["syntra", "forge", "recon", "pulse", "council"]
+            ? discoveredAgents.map { $0.id }
             : shortAgentNames
         // Extract @mentions using regex to avoid false positives
         // (e.g. "forge" in "blacksmith forge" without @ prefix)

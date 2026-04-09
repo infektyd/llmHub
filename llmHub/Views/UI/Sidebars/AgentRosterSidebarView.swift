@@ -154,17 +154,18 @@ private struct AgentRow: View {
 
 #if DEBUG
 #Preview("Agent Roster") {
+    // Sample agents for preview only — real agents are discovered from the gateway.
     @Previewable @State var vm = ChatViewModel.preview()
     vm.discoveredAgents = [
-        Agent(id: "syntra", name: "Syntra", emoji: "🔵", status: .online),
-        Agent(id: "forge", name: "Forge", emoji: "⚒️", status: .online),
-        Agent(id: "recon", name: "Recon", emoji: "🔍", status: .busy),
-        Agent(id: "pulse", name: "Pulse", emoji: "💓", status: .online),
-        Agent(id: "council", name: "Council", emoji: "🏛️", status: .offline),
+        Agent(id: "agent-alpha", name: "Alpha", emoji: "🔵", status: .online),
+        Agent(id: "agent-bravo", name: "Bravo", emoji: "⚒️", status: .online),
+        Agent(id: "agent-charlie", name: "Charlie", emoji: "🔍", status: .busy),
+        Agent(id: "agent-delta", name: "Delta", emoji: "💓", status: .online),
+        Agent(id: "agent-echo", name: "Echo", emoji: "🏛️", status: .offline),
     ]
     vm.agentCostSnapshots = [
-        "forge": AgentCostSnapshot(inputTokens: 450_000, outputTokens: 120_000, cachedTokens: 50_000, totalCostUSD: 0.42),
-        "syntra": AgentCostSnapshot(inputTokens: 200_000, outputTokens: 80_000, cachedTokens: 20_000, totalCostUSD: 0.18),
+        "agent-bravo": AgentCostSnapshot(inputTokens: 450_000, outputTokens: 120_000, cachedTokens: 50_000, totalCostUSD: 0.42),
+        "agent-alpha": AgentCostSnapshot(inputTokens: 200_000, outputTokens: 80_000, cachedTokens: 20_000, totalCostUSD: 0.18),
     ]
     return AgentRosterSidebarView()
         .environment(vm)
