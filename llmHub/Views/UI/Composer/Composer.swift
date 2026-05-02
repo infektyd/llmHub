@@ -114,6 +114,7 @@ struct ComposerBarView: View {
                 .foregroundStyle(AppColors.accent)
         }
         .buttonStyle(.plain)
+        .help("Add attachment")
     }
 
     private var inputBubble: some View {
@@ -221,6 +222,7 @@ struct ComposerBarView: View {
                     .foregroundStyle(AppColors.textPrimary)
             }
             .buttonStyle(.plain)
+            .help("Stop generating")
         } else {
             Button(action: onSend) {
                 Image(systemName: "arrow.up.circle.fill")
@@ -229,6 +231,7 @@ struct ComposerBarView: View {
             }
             .buttonStyle(.plain)
             .disabled(!canSend)
+            .help("Send message")
         }
     }
 
@@ -243,6 +246,7 @@ struct ComposerBarView: View {
                 .foregroundStyle(rightSidebarVisible ? AppColors.accent : AppColors.textSecondary)
         }
         .buttonStyle(.plain)
+        .help(rightSidebarVisible ? "Hide sidebar" : "Show sidebar")
     }
 
     private var settingsButton: some View {
@@ -254,6 +258,7 @@ struct ComposerBarView: View {
                 .foregroundStyle(AppColors.textSecondary)
         }
         .buttonStyle(.plain)
+        .help("Settings")
     }
 
     /// Normalizes markdown formatting in the input text when typing special characters.

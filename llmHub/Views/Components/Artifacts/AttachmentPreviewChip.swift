@@ -55,6 +55,7 @@ struct AttachmentPreviewChip: View {
             }
             .buttonStyle(.plain)
             .padding(6)
+            .help("Remove attachment")
         }
         .frame(width: 160, height: 56, alignment: .leading)
         .background {
