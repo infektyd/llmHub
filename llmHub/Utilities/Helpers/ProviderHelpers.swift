@@ -5,6 +5,7 @@
 //  Shared utilities for provider UI operations.
 //
 
+import CryptoKit
 import Foundation
 
 /// Creates a stable UUID from a string identifier.
@@ -12,28 +13,14 @@ import Foundation
 /// - Parameter string: The input string (e.g., provider ID or model ID)
 /// - Returns: A deterministic UUID based on the input string
 func stableUUID(for string: String) -> UUID {
-    // Create deterministic UUID from string hash
-    let data = string.data(using: .utf8)!
-    let hash = data.withUnsafeBytes { bytes in
-        var hasher = Hasher()
-        hasher.combine(bytes: UnsafeRawBufferPointer(start: bytes.baseAddress, count: bytes.count))
-        return hasher.finalize()
-    }
-
-    // Convert hash to UUID bytes (pad/truncate to 16 bytes)
-    var uuidBytes: [UInt8] = Array(repeating: 0, count: 16)
-    withUnsafeBytes(of: hash.bigEndian) { hashBytes in
-        let copyCount = min(hashBytes.count, 16)
-        for i in 0..<copyCount {
-            uuidBytes[i] = hashBytes[i]
-        }
-    }
+    let md5Data = Insecure.MD5.hash(data: string.data(using: .utf8) ?? Data())
+    let bytes = Array(md5Data)
 
     return UUID(uuid: (
-        uuidBytes[0], uuidBytes[1], uuidBytes[2], uuidBytes[3],
-        uuidBytes[4], uuidBytes[5], uuidBytes[6], uuidBytes[7],
-        uuidBytes[8], uuidBytes[9], uuidBytes[10], uuidBytes[11],
-        uuidBytes[12], uuidBytes[13], uuidBytes[14], uuidBytes[15]
+        bytes[0], bytes[1], bytes[2], bytes[3],
+        bytes[4], bytes[5], bytes[6], bytes[7],
+        bytes[8], bytes[9], bytes[10], bytes[11],
+        bytes[12], bytes[13], bytes[14], bytes[15]
     ))
 }
 
