@@ -221,13 +221,14 @@ actor SandboxManager {
         let files = listSandboxContents(for: executionID)
 
         var outputs: [(String, Data)] = []
+        let sourceExtensions = Set(SupportedLanguage.allCases.map { $0.fileExtensionValue })
 
         for file in files {
             let ext = file.pathExtension.lowercased()
             guard extensions.contains(ext) else { continue }
 
             // Skip the source file
-            if SupportedLanguage.allCases.map({ $0.fileExtensionValue }).contains(".\(ext)") {
+            if sourceExtensions.contains(".\(ext)") {
                 continue
             }
 
