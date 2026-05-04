@@ -167,6 +167,7 @@ struct ModernSidebarLeft: View {
                     .foregroundStyle(AppColors.accent)
             }
             .buttonStyle(.plain)
+            .help("New Chat")
 
             Button {
                 withAnimation {
@@ -178,6 +179,7 @@ struct ModernSidebarLeft: View {
                     .foregroundStyle(AppColors.textSecondary)
             }
             .buttonStyle(.plain)
+            .help("Close Sidebar")
         }
         .padding(.horizontal, uiCompactMode ? 12 : 14)
         .padding(.top, uiCompactMode ? 12 : 14)
@@ -279,6 +281,7 @@ struct ModernSidebarLeft: View {
                         .foregroundStyle(AppColors.accent)
                 }
                 .buttonStyle(.plain)
+                .help("New Project")
             },
             content: {
             let inbox = inboxSessions
@@ -533,6 +536,8 @@ struct ModernSidebarLeft: View {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .stroke(AppColors.textPrimary.opacity(0.06), lineWidth: 1)
             }
+
+            .help(isExpanded.wrappedValue ? "Collapse" : "Expand")
 
             if isExpanded.wrappedValue {
                 VStack(alignment: .leading, spacing: 4) {
@@ -871,6 +876,7 @@ struct ModernSidebarLeft: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .help(isExpanded.wrappedValue ? "Collapse" : "Expand")
             .padding(.horizontal, uiCompactMode ? 9 : 10)
             .padding(.vertical, uiCompactMode ? 7 : 8)
             .background {
