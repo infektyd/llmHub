@@ -167,6 +167,7 @@ struct ModernSidebarLeft: View {
                     .foregroundStyle(AppColors.accent)
             }
             .buttonStyle(.plain)
+            .help("New Chat")
 
             Button {
                 withAnimation {
@@ -178,6 +179,7 @@ struct ModernSidebarLeft: View {
                     .foregroundStyle(AppColors.textSecondary)
             }
             .buttonStyle(.plain)
+            .help("Close sidebar")
         }
         .padding(.horizontal, uiCompactMode ? 12 : 14)
         .padding(.top, uiCompactMode ? 12 : 14)
@@ -279,6 +281,7 @@ struct ModernSidebarLeft: View {
                         .foregroundStyle(AppColors.accent)
                 }
                 .buttonStyle(.plain)
+                .help("New Project")
             },
             content: {
             let inbox = inboxSessions
