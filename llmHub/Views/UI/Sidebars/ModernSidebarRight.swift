@@ -235,6 +235,7 @@ struct ModernSidebarRight: View {
                     .foregroundStyle(AppColors.textSecondary)
             }
             .buttonStyle(.plain)
+            .help("Close sidebar")
         }
         .padding(.horizontal, uiCompactMode ? 12 : 14)
         .padding(.top, uiCompactMode ? 12 : 14)
@@ -393,6 +394,7 @@ struct ModernSidebarRight: View {
                             .foregroundStyle(AppColors.textSecondary)
                     }
                     .buttonStyle(.plain)
+                    .help("Cancel execution")
                 }
             }
 
@@ -459,6 +461,7 @@ struct ModernSidebarRight: View {
                 }
                 .menuStyle(.borderlessButton)
                 .menuIndicator(.hidden)
+                .help("Add files")
             }
         ) {
             if isLoadingArtifacts {
@@ -558,6 +561,7 @@ struct ModernSidebarRight: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(workspaceVM.isLoading)
+                    .help("Refresh workspace")
 
                     // Actions menu
                     Menu {
@@ -583,6 +587,7 @@ struct ModernSidebarRight: View {
                     }
                     .menuStyle(.borderlessButton)
                     .menuIndicator(.hidden)
+                    .help("Workspace options")
                 }
             }
         ) {
@@ -920,6 +925,7 @@ private struct InspectorToolRow: View {
                         .foregroundStyle(AppColors.textSecondary)
                 }
                 .buttonStyle(.plain)
+                .help("Run tool")
                 .popover(isPresented: $showRunPopover) {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(tool.name)
@@ -1011,6 +1017,7 @@ private struct ArtifactFileRow: View {
                         .foregroundStyle(AppColors.textSecondary)
                 }
                 .buttonStyle(.plain)
+                .help("Delete artifact")
             }
         }
         .padding(.horizontal, 8)

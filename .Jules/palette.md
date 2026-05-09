@@ -3,3 +3,7 @@
 ## 2026-05-07 - Sidebar Icon Button Accessibility
 **Learning:** Sidebars (like `ModernSidebarLeft.swift`) often use raw SwiftUI buttons with icons but without `.help()`, missing out on accessibility features and hover tooltips.
 **Action:** When adding or modifying icon buttons in sidebars, explicitly add `.help()` for accessibility and UX consistency.
+
+## 2024-06-25 - Workspace and Action Button Accessibility
+**Learning:** Found several icon-only buttons in modern sidebars (like `ModernSidebarRight.swift` and `AgentRosterSidebarView.swift`) used for critical actions (refreshing agents, adding files, cancelling executions, running tools) that lacked `.help()` modifiers. This makes them difficult to understand for new users and inaccessible to screen readers.
+**Action:** Always verify that interactive `Button` or `Menu` components using only an `Image(systemName:)` have a descriptive `.help()` modifier. This is crucial for both hover tooltips on macOS and VoiceOver accessibility.
