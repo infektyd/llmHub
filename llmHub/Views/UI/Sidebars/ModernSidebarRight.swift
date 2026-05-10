@@ -235,6 +235,7 @@ struct ModernSidebarRight: View {
                     .foregroundStyle(AppColors.textSecondary)
             }
             .buttonStyle(.plain)
+            .help("Close Inspector")
         }
         .padding(.horizontal, uiCompactMode ? 12 : 14)
         .padding(.top, uiCompactMode ? 12 : 14)
@@ -393,6 +394,7 @@ struct ModernSidebarRight: View {
                             .foregroundStyle(AppColors.textSecondary)
                     }
                     .buttonStyle(.plain)
+                    .help("Cancel execution")
                 }
             }
 
@@ -458,6 +460,7 @@ struct ModernSidebarRight: View {
                         .foregroundStyle(AppColors.accent)
                 }
                 .menuStyle(.borderlessButton)
+                .help("Add files")
                 .menuIndicator(.hidden)
             }
         ) {
@@ -558,6 +561,7 @@ struct ModernSidebarRight: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(workspaceVM.isLoading)
+                    .help("Refresh workspace")
 
                     // Actions menu
                     Menu {
@@ -920,6 +924,7 @@ private struct InspectorToolRow: View {
                         .foregroundStyle(AppColors.textSecondary)
                 }
                 .buttonStyle(.plain)
+                .help("Run tool")
                 .popover(isPresented: $showRunPopover) {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(tool.name)
@@ -1011,6 +1016,7 @@ private struct ArtifactFileRow: View {
                         .foregroundStyle(AppColors.textSecondary)
                 }
                 .buttonStyle(.plain)
+                .help("Delete")
             }
         }
         .padding(.horizontal, 8)
