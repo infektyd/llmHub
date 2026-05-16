@@ -419,6 +419,7 @@ struct ProviderRow: View {
                                     .foregroundStyle(AppColors.textSecondary)
                             }
                             .buttonStyle(.plain)
+                            .help(isKeyVisible ? "Hide API Key" : "Show API Key")
                         }
                     // API key input for all other providers
                     else {
@@ -452,6 +453,7 @@ struct ProviderRow: View {
                                     .foregroundStyle(AppColors.textSecondary)
                             }
                             .buttonStyle(.plain)
+                            .help(isKeyVisible ? "Hide API Key" : "Show API Key")
                         }
                     }
 

@@ -3,3 +3,7 @@
 ## 2026-05-07 - Sidebar Icon Button Accessibility
 **Learning:** Sidebars (like `ModernSidebarLeft.swift`) often use raw SwiftUI buttons with icons but without `.help()`, missing out on accessibility features and hover tooltips.
 **Action:** When adding or modifying icon buttons in sidebars, explicitly add `.help()` for accessibility and UX consistency.
+
+## 2024-05-14 - Accessibility labels for Password/API Key Toggles
+**Learning:** Icon-only buttons used for toggling visibility of secure fields (like `isKeyVisible.toggle()`) need explicit accessibility labels to announce their function to VoiceOver, and tooltips on hover. Without them, screen readers may just announce "button", making it hard to interact with secure fields effectively.
+**Action:** When creating password/API key fields with visibility toggles, always add `.help(isVisible ? "Hide" : "Show")` modifiers to the toggle buttons.
