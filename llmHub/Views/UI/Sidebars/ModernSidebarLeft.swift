@@ -537,6 +537,8 @@ struct ModernSidebarLeft: View {
                     .stroke(AppColors.textPrimary.opacity(0.06), lineWidth: 1)
             }
 
+            .help(isExpanded.wrappedValue ? "Collapse" : "Expand")
+
             if isExpanded.wrappedValue {
                 VStack(alignment: .leading, spacing: 4) {
                     content()
@@ -874,6 +876,7 @@ struct ModernSidebarLeft: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .help(isExpanded.wrappedValue ? "Collapse" : "Expand")
             .padding(.horizontal, uiCompactMode ? 9 : 10)
             .padding(.vertical, uiCompactMode ? 7 : 8)
             .background {

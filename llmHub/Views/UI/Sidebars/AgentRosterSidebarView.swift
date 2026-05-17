@@ -30,7 +30,7 @@ struct AgentRosterSidebarView: View {
                             .foregroundStyle(AppColors.textSecondary)
                     }
                     .buttonStyle(.plain)
-                    .help("Refresh agents")
+                    .help("Refresh Agents")
                 }
             }
             .padding(.horizontal, 12)

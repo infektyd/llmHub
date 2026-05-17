@@ -235,7 +235,7 @@ struct ModernSidebarRight: View {
                     .foregroundStyle(AppColors.textSecondary)
             }
             .buttonStyle(.plain)
-            .help("Close sidebar")
+            .help("Close Inspector")
         }
         .padding(.horizontal, uiCompactMode ? 12 : 14)
         .padding(.top, uiCompactMode ? 12 : 14)
@@ -460,6 +460,7 @@ struct ModernSidebarRight: View {
                         .foregroundStyle(AppColors.accent)
                 }
                 .menuStyle(.borderlessButton)
+                .help("Add files")
                 .menuIndicator(.hidden)
                 .help("Add files")
             }
@@ -1017,7 +1018,7 @@ private struct ArtifactFileRow: View {
                         .foregroundStyle(AppColors.textSecondary)
                 }
                 .buttonStyle(.plain)
-                .help("Delete artifact")
+                .help("Delete")
             }
         }
         .padding(.horizontal, 8)

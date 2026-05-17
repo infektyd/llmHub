@@ -4,6 +4,10 @@
 **Learning:** Sidebars (like `ModernSidebarLeft.swift`) often use raw SwiftUI buttons with icons but without `.help()`, missing out on accessibility features and hover tooltips.
 **Action:** When adding or modifying icon buttons in sidebars, explicitly add `.help()` for accessibility and UX consistency.
 
-## 2024-06-25 - Workspace and Action Button Accessibility
-**Learning:** Found several icon-only buttons in modern sidebars (like `ModernSidebarRight.swift` and `AgentRosterSidebarView.swift`) used for critical actions (refreshing agents, adding files, cancelling executions, running tools) that lacked `.help()` modifiers. This makes them difficult to understand for new users and inaccessible to screen readers.
-**Action:** Always verify that interactive `Button` or `Menu` components using only an `Image(systemName:)` have a descriptive `.help()` modifier. This is crucial for both hover tooltips on macOS and VoiceOver accessibility.
+## 2024-05-14 - Accessibility labels for Password/API Key Toggles
+**Learning:** Icon-only buttons used for toggling visibility of secure fields (like `isKeyVisible.toggle()`) need explicit accessibility labels to announce their function to VoiceOver, and tooltips on hover. Without them, screen readers may just announce "button", making it hard to interact with secure fields effectively.
+**Action:** When creating password/API key fields with visibility toggles, always add `.help(isVisible ? "Hide" : "Show")` modifiers to the toggle buttons.
+
+## 2024-05-30 - Expand/Collapse Chevron Accessibility
+**Learning:** Chevron toggle buttons for expandable content blocks (like `ArtifactCardView`'s `isExpanded` toggles) sometimes lack accessibility labels. This causes VoiceOver to only read "button" without context.
+**Action:** When creating or modifying expand/collapse chevron toggles, always add a descriptive state-aware accessibility label like `.help(isExpanded ? "Collapse <Item>" : "Expand <Item>")`.
