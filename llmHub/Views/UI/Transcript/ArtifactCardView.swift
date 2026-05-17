@@ -58,6 +58,7 @@ struct ArtifactCardView: View {
                         .foregroundStyle(AppColors.textSecondary)
                 }
                 .buttonStyle(.plain)
+                .help(isExpanded ? "Collapse Artifact" : "Expand Artifact")
             }
 
             // Content (if expanded)
