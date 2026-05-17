@@ -55,19 +55,24 @@ actor LightweightWorkspace {
 
     /// Stores an item in the workspace.
     /// Writes to Hot Cache and persists to Disk immediately.
-    func store(_ item: WorkspaceItem) throws {
+    func store(_ item: WorkspaceItem) async throws {
         // 1. Write to Hot Cache
         hotCache[item.id] = item
 
         // 2. Write to Disk (Cold Storage)
-        try persistToDisk(item)
+        do {
+            try await persistToDisk(item)
+        } catch {
+            logger.error("Failed to persist item \(item.id): \(error.localizedDescription)")
+            throw WorkspaceError.writeFailed(error.localizedDescription)
+        }
 
         // Note: We skip Warm cache on write because Hot covers immediate usage.
         // Warm is populated on retrieval/eviction flows if needed, but here we prioritize consistency.
     }
 
     /// Retrieves an item by ID, checking Hot -> Warm -> Cold tiers.
-    func retrieve(id: UUID) -> WorkspaceItem? {
+    func retrieve(id: UUID) async -> WorkspaceItem? {
         // 1. Check Hot Cache
         if let item = hotCache[id] {
             return item
@@ -82,7 +87,7 @@ actor LightweightWorkspace {
         }
 
         // 3. Check Cold Storage
-        if let item = loadFromDisk(id: id) {
+        if let item = await loadFromDisk(id: id) {
             // Promote to Hot Cache
             hotCache[id] = item
             // Also add to Warm Cache for future fallback
@@ -97,25 +102,35 @@ actor LightweightWorkspace {
 
     /// Lists all items in the workspace.
     /// Combines Hot Cache with Disk scan (naive implementation for lightweight usage).
-    func listAll() -> [WorkspaceItem] {
+    func listAll() async -> [WorkspaceItem] {
         var itemsMap: [UUID: WorkspaceItem] = hotCache
 
         guard let dir = storageDirectory else { return Array(itemsMap.values) }
 
-        do {
-            let fileURLs = try fileManager.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
-            for url in fileURLs where url.pathExtension == "json" {
-                let uuidString = url.deletingPathExtension().lastPathComponent
-                guard let uuid = UUID(uuidString: uuidString) else { continue }
+        let knownKeys = Set(itemsMap.keys)
 
-                // If not already in map (from hot cache), load it
-                if itemsMap[uuid] == nil {
-                    // Try to load metadata only if possible? For now, load full item to be safe.
-                    // Optimization: In a real app, use a separate index file.
+        // Use detached task to list directory and decode
+        do {
+            let itemsFromDisk = try await Task.detached {
+                var items = [UUID: WorkspaceItem]()
+                let fileURLs = try self.fileManager.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
+                for url in fileURLs where url.pathExtension == "json" {
+                    let uuidString = url.deletingPathExtension().lastPathComponent
+                    guard let uuid = UUID(uuidString: uuidString) else { continue }
+
+                    if knownKeys.contains(uuid) { continue }
+
                     if let data = try? Data(contentsOf: url),
                        let item = try? JSONDecoder().decode(WorkspaceItem.self, from: data) {
-                        itemsMap[uuid] = item
+                        items[uuid] = item
                     }
+                }
+                return items
+            }.value
+
+            for (uuid, item) in itemsFromDisk {
+                if itemsMap[uuid] == nil {
+                    itemsMap[uuid] = item
                 }
             }
         } catch {
@@ -126,7 +141,7 @@ actor LightweightWorkspace {
     }
 
     /// Deletes an item from all tiers.
-    func delete(id: UUID) throws {
+    func delete(id: UUID) async throws {
         // 1. Remove from Hot Cache
         hotCache.removeValue(forKey: id)
 
@@ -137,7 +152,9 @@ actor LightweightWorkspace {
         guard let dir = storageDirectory else { return }
         let fileURL = dir.appendingPathComponent(id.uuidString).appendingPathExtension("json")
         if fileManager.fileExists(atPath: fileURL.path) {
-            try fileManager.removeItem(at: fileURL)
+            try await Task.detached {
+                try self.fileManager.removeItem(at: fileURL)
+            }.value
         }
     }
 
@@ -148,43 +165,44 @@ actor LightweightWorkspace {
         warmCache.removeAllObjects()
     }
 
-    func clearAllData() throws {
+    func clearAllData() async throws {
         clearCache()
         guard let dir = storageDirectory else { return }
-        let fileURLs = try fileManager.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
-        for url in fileURLs {
-            try fileManager.removeItem(at: url)
-        }
+        try await Task.detached {
+            let fileURLs = try self.fileManager.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
+            for url in fileURLs {
+                try self.fileManager.removeItem(at: url)
+            }
+        }.value
     }
 
     // MARK: - Private Helpers
 
-    private func persistToDisk(_ item: WorkspaceItem) throws {
+    private func persistToDisk(_ item: WorkspaceItem) async throws {
         guard let dir = storageDirectory else {
             throw WorkspaceError.writeFailed("Storage directory unavailable")
         }
 
         let fileURL = dir.appendingPathComponent(item.id.uuidString).appendingPathExtension("json")
 
-        do {
+        try await Task.detached {
             let data = try JSONEncoder().encode(item)
             try data.write(to: fileURL, options: .atomic)
-        } catch {
-            logger.error("Failed to persist item \(item.id): \(error.localizedDescription)")
-            throw WorkspaceError.writeFailed(error.localizedDescription)
-        }
+        }.value
     }
 
-    private func loadFromDisk(id: UUID) -> WorkspaceItem? {
+    private func loadFromDisk(id: UUID) async -> WorkspaceItem? {
         guard let dir = storageDirectory else { return nil }
         let fileURL = dir.appendingPathComponent(id.uuidString).appendingPathExtension("json")
 
         guard fileManager.fileExists(atPath: fileURL.path) else { return nil }
 
         do {
-            let data = try Data(contentsOf: fileURL)
-            let item = try JSONDecoder().decode(WorkspaceItem.self, from: data)
-            return item
+            return try await Task.detached {
+                let data = try Data(contentsOf: fileURL)
+                let item = try JSONDecoder().decode(WorkspaceItem.self, from: data)
+                return item
+            }.value
         } catch {
             logger.error("Failed to load item \(id): \(error.localizedDescription)")
             return nil
@@ -206,7 +224,7 @@ actor LightweightWorkspace {
     }
     /// Read file content as Data (sandboxed).
     func readFile(path: String) async throws -> Data? {
-        guard let item = retrieve(id: UUID(uuidString: path) ?? UUID()) else { return nil }
+        guard let item = await retrieve(id: UUID(uuidString: path) ?? UUID()) else { return nil }
         return item.data
     }
 
@@ -220,13 +238,13 @@ actor LightweightWorkspace {
             createdAt: Date(),
             metadata: metadata
         )
-        try store(item)
+        try await store(item)
         return item.id
     }
 
     /// List files matching pattern.
     func listFiles(matching pattern: String? = nil) async -> [WorkspaceItem] {
-        let all = listAll()
+        let all = await listAll()
         if let pattern {
             return all.filter { $0.filename.range(of: pattern, options: .caseInsensitive) != nil }
         }

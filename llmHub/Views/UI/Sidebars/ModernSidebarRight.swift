@@ -462,6 +462,7 @@ struct ModernSidebarRight: View {
                 .menuStyle(.borderlessButton)
                 .help("Add files")
                 .menuIndicator(.hidden)
+                .help("Add files")
             }
         ) {
             if isLoadingArtifacts {
@@ -587,6 +588,7 @@ struct ModernSidebarRight: View {
                     }
                     .menuStyle(.borderlessButton)
                     .menuIndicator(.hidden)
+                    .help("Workspace options")
                 }
             }
         ) {
