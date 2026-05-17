@@ -167,7 +167,7 @@ struct ModernSidebarLeft: View {
                     .foregroundStyle(AppColors.accent)
             }
             .buttonStyle(.plain)
-            .help("New Chat")
+            .help("New Conversation")
 
             Button {
                 withAnimation {
@@ -281,7 +281,7 @@ struct ModernSidebarLeft: View {
                         .foregroundStyle(AppColors.accent)
                 }
                 .buttonStyle(.plain)
-                .help("New Project")
+                .help("New Folder")
             },
             content: {
             let inbox = inboxSessions
