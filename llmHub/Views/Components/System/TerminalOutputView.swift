@@ -354,6 +354,7 @@ struct CompactTerminalView: View {
                 .padding(.vertical, 8)
             }
             .buttonStyle(.plain)
+            .help(isExpanded ? "Collapse" : "Expand")
 
             // Expanded content
             if isExpanded {

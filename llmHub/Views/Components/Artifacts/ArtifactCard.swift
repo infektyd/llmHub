@@ -87,6 +87,7 @@ struct ArtifactCard: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .help(isExpanded ? "Collapse" : "Expand")
     }
 
     private var expandedBody: some View {

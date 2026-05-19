@@ -35,6 +35,7 @@ struct AFMDiagnosticsView: View {
                     }
                 )
                 .buttonStyle(.plain)
+                .help(isExpanded ? "Collapse" : "Expand")
             }
 
             if isExpanded {
