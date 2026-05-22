@@ -373,6 +373,7 @@ struct ProviderRow: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .help(isExpanded ? "Collapse \(info.name) settings" : "Expand \(info.name) settings")
 
             // Expanded content
             if isExpanded {

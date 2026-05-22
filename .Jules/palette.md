@@ -11,3 +11,7 @@
 ## 2024-05-30 - Expand/Collapse Chevron Accessibility
 **Learning:** Chevron toggle buttons for expandable content blocks (like `ArtifactCardView`'s `isExpanded` toggles) sometimes lack accessibility labels. This causes VoiceOver to only read "button" without context.
 **Action:** When creating or modifying expand/collapse chevron toggles, always add a descriptive state-aware accessibility label like `.help(isExpanded ? "Collapse <Item>" : "Expand <Item>")`.
+
+## 2024-05-30 - Expand/Collapse Chevron Accessibility in SettingsView
+**Learning:** Found an expand/collapse chevron button in the SettingsView (specifically ProviderRow) that did not have an accessibility label. VoiceOver would simply announce "button".
+**Action:** When creating or reviewing UI with expand/collapse chevron buttons, ensure that `.help()` modifiers are applied to provide context to screen readers, like `.help(isExpanded ? "Collapse <Name>" : "Expand <Name>")`.
