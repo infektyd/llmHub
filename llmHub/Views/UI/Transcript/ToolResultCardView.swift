@@ -113,6 +113,7 @@ struct ToolResultCardView: View {
                         .foregroundStyle(AppColors.textSecondary)
                 }
                 .buttonStyle(.plain)
+                .help(isExpanded ? "Collapse tool output" : "Expand tool output")
             }
 
             Button {
