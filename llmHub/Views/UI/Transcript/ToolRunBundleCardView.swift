@@ -61,6 +61,7 @@ struct ToolRunBundleCardView: View {
             }
             .buttonStyle(.plain)
             .help(isExpanded ? "Collapse tool bundle" : "Expand tool bundle")
+            .accessibilityLabel(isExpanded ? "Collapse tool bundle" : "Expand tool bundle")
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(bundle.displayTitle)
