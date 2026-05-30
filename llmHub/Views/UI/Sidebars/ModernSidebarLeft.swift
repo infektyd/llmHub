@@ -526,6 +526,7 @@ struct ModernSidebarLeft: View {
                     isExpanded.wrappedValue.toggle()
                 }
             }
+            .help(isExpanded.wrappedValue ? "Collapse \(title)" : "Expand \(title)")
             .padding(.horizontal, uiCompactMode ? 5 : 6)
             .padding(.vertical, uiCompactMode ? 5 : 6)
             .background {
@@ -536,8 +537,6 @@ struct ModernSidebarLeft: View {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .stroke(AppColors.textPrimary.opacity(0.06), lineWidth: 1)
             }
-
-            .help(isExpanded.wrappedValue ? "Collapse" : "Expand")
 
             if isExpanded.wrappedValue {
                 VStack(alignment: .leading, spacing: 4) {
@@ -876,7 +875,7 @@ struct ModernSidebarLeft: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .help(isExpanded.wrappedValue ? "Collapse" : "Expand")
+            .help(isExpanded.wrappedValue ? "Collapse \(title)" : "Expand \(title)")
             .padding(.horizontal, uiCompactMode ? 9 : 10)
             .padding(.vertical, uiCompactMode ? 7 : 8)
             .background {

@@ -764,6 +764,7 @@ struct ModernSidebarRight: View {
                     isExpanded.wrappedValue.toggle()
                 }
             }
+            .help(isExpanded.wrappedValue ? "Collapse \(title)" : "Expand \(title)")
             .padding(.horizontal, uiCompactMode ? 5 : 6)
             .padding(.vertical, uiCompactMode ? 5 : 6)
             .background {

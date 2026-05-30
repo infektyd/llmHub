@@ -15,3 +15,7 @@
 ## 2024-05-30 - Expand/Collapse Chevron Accessibility in SettingsView
 **Learning:** Found an expand/collapse chevron button in the SettingsView (specifically ProviderRow) that did not have an accessibility label. VoiceOver would simply announce "button".
 **Action:** When creating or reviewing UI with expand/collapse chevron buttons, ensure that `.help()` modifiers are applied to provide context to screen readers, like `.help(isExpanded ? "Collapse <Name>" : "Expand <Name>")`.
+
+## 2024-05-30 - Expand/Collapse Chevron Accessibility in Sidebars and Result Cards
+**Learning:** Found several expand/collapse chevron buttons in sidebars (`ModernSidebarLeft`, `ModernSidebarRight`) and transcript cards (`ToolRunBundleCardView`, `ToolResultCardView`) that did not have an accessibility label. VoiceOver would simply announce "button".
+**Action:** When creating or reviewing UI with expand/collapse chevron buttons or `HStack` containers that toggle expansion state, ensure that `.help()` modifiers are applied to provide context to screen readers and tooltips to users, such as `.help(isExpanded ? "Collapse <Name>" : "Expand <Name>")`.
