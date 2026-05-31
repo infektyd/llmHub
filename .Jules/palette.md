@@ -15,3 +15,7 @@
 ## 2024-05-30 - Expand/Collapse Chevron Accessibility in SettingsView
 **Learning:** Found an expand/collapse chevron button in the SettingsView (specifically ProviderRow) that did not have an accessibility label. VoiceOver would simply announce "button".
 **Action:** When creating or reviewing UI with expand/collapse chevron buttons, ensure that `.help()` modifiers are applied to provide context to screen readers, like `.help(isExpanded ? "Collapse <Name>" : "Expand <Name>")`.
+
+## 2024-05-31 - Visual Feedback for Copy Actions
+**Learning:** Users lack confidence when copying items if there is no visual feedback, especially in small UI elements like WorkspaceFileRow.
+**Action:** Add visual feedback (like changing the icon to a checkmark and the tooltip to 'Copied' for a short duration, e.g. 1.5s) to all copy buttons.
