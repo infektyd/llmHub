@@ -224,6 +224,7 @@ struct CanvasRootView: View {
                             } label: {
                                 Image(systemName: "xmark")
                             }
+                            .help("Close Settings")
                         }
 
                         ToolbarItem(placement: .primaryAction) {
@@ -255,6 +256,7 @@ struct CanvasRootView: View {
                             } label: {
                                 Image(systemName: "xmark")
                             }
+                            .help("Close Sidebar")
                         }
                     }
                 }
@@ -279,6 +281,7 @@ struct CanvasRootView: View {
                             } label: {
                                 Image(systemName: "xmark")
                             }
+                            .help("Close Inspector")
                         }
                     }
                 }
@@ -298,6 +301,7 @@ struct CanvasRootView: View {
                                 Button { agentRosterVisible = false } label: {
                                     Image(systemName: "xmark")
                                 }
+                                .help("Close Agent Roster")
                             }
                         }
                 }
@@ -673,6 +677,7 @@ struct CanvasRootView: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel("Close Settings")
+                        .help("Close Settings")
                     }
                     .padding(.horizontal, uiCompactMode ? 12 : 14)
                     .padding(.vertical, uiCompactMode ? 10 : 12)

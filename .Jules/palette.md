@@ -15,3 +15,6 @@
 ## 2024-05-30 - Expand/Collapse Chevron Accessibility in SettingsView
 **Learning:** Found an expand/collapse chevron button in the SettingsView (specifically ProviderRow) that did not have an accessibility label. VoiceOver would simply announce "button".
 **Action:** When creating or reviewing UI with expand/collapse chevron buttons, ensure that `.help()` modifiers are applied to provide context to screen readers, like `.help(isExpanded ? "Collapse <Name>" : "Expand <Name>")`.
+## 2026-06-01 - Adding help modifiers to Toolbar and Navigation UI elements
+**Learning:** Even standard layout buttons (like toolbar items and generic modals) using icon-only representations (like xmark) can easily miss out on hover tooltips and screen reader descriptions. Relying on default navigation behavior is not enough for an inclusive experience.
+**Action:** Always add `.help()` descriptions to all icon-only buttons across the app layout including NavigationBars and Toolbars, not just localized UI components like Transcript rows.
