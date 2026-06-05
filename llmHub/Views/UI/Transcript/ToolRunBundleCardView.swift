@@ -60,6 +60,7 @@ struct ToolRunBundleCardView: View {
                     .frame(width: 18, height: 18)
             }
             .buttonStyle(.plain)
+            .help(isExpanded ? "Collapse Tool Run" : "Expand Tool Run")
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(bundle.displayTitle)
