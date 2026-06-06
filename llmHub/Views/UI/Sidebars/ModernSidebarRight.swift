@@ -1146,6 +1146,7 @@ private struct WorkspaceFileRow: View {
     let onDelete: () -> Void
 
     @State private var isHovering = false
+    @State private var hasCopied = false
 
     var body: some View {
         HStack(spacing: 8) {
@@ -1183,13 +1184,22 @@ private struct WorkspaceFileRow: View {
                 HStack(spacing: 6) {
                     Button {
                         onCopy()
+                        withAnimation {
+                            hasCopied = true
+                        }
+                        Task {
+                            try? await Task.sleep(nanoseconds: 1_500_000_000)
+                            withAnimation {
+                                hasCopied = false
+                            }
+                        }
                     } label: {
-                        Image(systemName: "doc.on.doc")
+                        Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
                             .font(.system(size: 10 * uiScale))
-                            .foregroundStyle(AppColors.textSecondary)
+                            .foregroundStyle(hasCopied ? AppColors.success : AppColors.textSecondary)
                     }
                     .buttonStyle(.plain)
-                    .help("Copy contents")
+                    .help(hasCopied ? "Copied" : "Copy contents")
 
                     Button {
                         onDelete()
