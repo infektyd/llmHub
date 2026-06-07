@@ -18,3 +18,7 @@
 ## 2026-06-01 - Adding help modifiers to Toolbar and Navigation UI elements
 **Learning:** Even standard layout buttons (like toolbar items and generic modals) using icon-only representations (like xmark) can easily miss out on hover tooltips and screen reader descriptions. Relying on default navigation behavior is not enough for an inclusive experience.
 **Action:** Always add `.help()` descriptions to all icon-only buttons across the app layout including NavigationBars and Toolbars, not just localized UI components like Transcript rows.
+
+## 2024-05-30 - Immediate Visual Feedback for Small Copy Actions
+**Learning:** Found small copy buttons in the UI (specifically the WorkspaceFileRow and hoverActionBar) that did not provide immediate visual feedback upon clicking. Users might click multiple times because they are unsure if the action succeeded.
+**Action:** Provide immediate visual feedback for copy actions (e.g., changing the icon to a checkmark, the color to a success color, and the tooltip to 'Copied' for a short duration like 1.5 seconds) to ensure user confidence.

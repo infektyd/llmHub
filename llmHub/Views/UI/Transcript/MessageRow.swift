@@ -136,9 +136,26 @@ struct TranscriptRow: View {
 
     // MARK: - Hover Action Bar
 
+    @State private var didCopy = false
+
     /// Floating action bar that appears on hover over a message row.
     private var hoverActionBar: some View {
         HStack(spacing: 4) {
+            Button {
+                copyToClipboard(viewModel.content)
+                didCopy = true
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 1_500_000_000)
+                    didCopy = false
+                }
+            } label: {
+                Image(systemName: didCopy ? "checkmark" : "doc.on.doc")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(didCopy ? AppColors.success : AppColors.textSecondary)
+            }
+            .buttonStyle(.plain)
+            .help(didCopy ? "Copied" : "Copy message")
+
             if isUser {
                 Button {
                     onEdit?(viewModel.content)
@@ -170,6 +187,16 @@ struct TranscriptRow: View {
                 .fill(AppColors.surface)
                 .shadow(color: AppColors.shadowSmoke, radius: 4, x: 0, y: 2)
         }
+    }
+
+    private func copyToClipboard(_ string: String) {
+        #if os(macOS)
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(string, forType: .string)
+        #else
+        UIPasteboard.general.string = string
+        #endif
     }
 
     /// Extracts a UUID from the view model's `id` field.
