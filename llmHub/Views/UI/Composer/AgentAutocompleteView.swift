@@ -60,6 +60,7 @@ private struct AgentAutocompleteRow: View {
             }
         }
         .buttonStyle(.plain)
+        .help("Select agent \(agent.name)")
     }
 }
 

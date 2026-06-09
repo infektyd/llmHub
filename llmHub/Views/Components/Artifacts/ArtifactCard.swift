@@ -239,6 +239,7 @@ struct ArtifactCard: View {
             .clipShape(RoundedRectangle(cornerRadius: 03, style: .continuous))
         }
         .buttonStyle(.plain)
+        .help(title)
     }
 
     private func copyContentToClipboard() {
