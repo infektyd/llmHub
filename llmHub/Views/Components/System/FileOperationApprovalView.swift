@@ -221,6 +221,7 @@ struct FileOperationApprovalView: View {
             }
             .keyboardShortcut(.escape, modifiers: [])
             .buttonStyle(.bordered)
+            .help("Reject file operation")
 
             Spacer()
 
@@ -239,6 +240,7 @@ struct FileOperationApprovalView: View {
             .keyboardShortcut(.return, modifiers: [.command])
             .buttonStyle(.borderedProminent)
             .tint(operationColor)
+            .help("Approve file operation")
         }
         .padding()
     }
