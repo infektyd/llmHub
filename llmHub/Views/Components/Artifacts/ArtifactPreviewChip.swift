@@ -31,7 +31,7 @@ struct ArtifactPreviewChip: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .help("Remove artifact")
+            .help("Remove Artifact")
             .padding(.leading, 4)
         }
         .padding(.horizontal, 10)
