@@ -116,6 +116,9 @@ struct ArtifactLibraryView: View {
                     .font(.title2)
                     .foregroundStyle(.tint)
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Add Artifact")
+            .help("Add Artifact")
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
         }
